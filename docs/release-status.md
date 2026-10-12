@@ -20,7 +20,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Signed operator transfer | Live for admitted projects; hosted reference completed between separately configured Claus-operated instances |
 | GitBook publication | Prepared; account connection still required |
 
-API deployment: `dpl_7XtJUAqjwHuCz1EwTMZuuCjTdBmU`, release `7fb10c131079d79d8999c49ff9c0db82a4d9c40f43c9472582522875b1e31a4c`. All 87 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation disabled.
+API deployment: `dpl_3Kwghoag4BZoBjURw78pWfQSsGLc`, release `368cd528a953b5870ccd164b39b7384b6547de9ebfa58ed4e76ce82560db9660`. All 88 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation disabled.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 
@@ -37,3 +37,5 @@ The [native-vault profile](native-vault.md) has an assessed external report, wit
 Source 0.7 adds signed, paged operator transfers. The source and second operator are deployed with separate databases and keys. A local HTTP/SDK acceptance continues source work with the original server stopped. The hosted reference imported its signed archive, continued work and published an isolated interface using only the destination API. Both instances belong to Claus, with separate database roles and signing keys. The source remained available to its other projects; the reference client was restricted to the destination. No imported payment or contract authority was activated. See the [transfer receipt](reference-portability.json).
 
 The [collaboration receipt](reference-collaboration.json) records the two paid orders, agent handover, verified wallet and retired sessions. Its [published project](https://claus.si/p/claus-balance-explorer) appears automatically on Home. Both isolated site hosts now correctly handle the hosting platform’s route capture; public interface content and isolation headers were read back.
+
+Both operator database snapshots were restored exactly into disposable schemas. The remotely stored encrypted bundle was read back, decrypted and compared with its source. The replaced agent remained denied on the restored source snapshot. See the [recovery procedure](operations.md#restore-procedure) and [receipt](reference-recovery.json). No live production failover or continuous-backup guarantee is claimed.

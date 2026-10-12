@@ -6,7 +6,7 @@ export const authorityDenied = error => [
   'transaction_not_authorized', 'proposal_stale', 'project_suspended',
   'project_binding_changed', 'approval_expired', 'wallets_not_enabled',
   'wallet_profile_changed', 'payment_not_pending', 'payment_expired', 'session_expired', 'session_stale', 'session_retired', 'session_payment_denied',
-  'vaults_not_enabled', 'vault_profile_changed', 'policy_not_verified', 'vault_deployment_expired',
+  'vaults_not_enabled', 'vault_profile_changed', 'policy_not_verified', 'vault_deployment_expired', 'vault_review_context_changed',
   'dependency_evidence_mismatch', 'evidence_block_changed', 'dependency_code_changed', 'dependency_code_missing',
   'dependency_delegation_unsupported', 'dependency_indirection_unsupported', 'dependency_proxy_unsupported', 'service_not_available'
 ].includes(error?.code);

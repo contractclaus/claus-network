@@ -33,3 +33,22 @@ Set `CLAUS_OPERATOR_ID` to the operator’s HTTPS origin, `CLAUS_ARCHIVE_SIGNING
 `CLAUS_SITE_ORIGIN` identifies the isolated project-site host. On that host, `CLAUS_API_ORIGIN` selects its own API and `CLAUS_FRAME_ORIGIN` selects its permitted parent website. Site and API origins must differ. Activating transfers is an operator capability decision, not a permission granted by an imported project.
 
 Run database grants as the database owner. Revoke public database connection rights and explicitly grant each runtime role access only to its own database. Verify both allowed local reads and denied cross-database connection privileges. Separate databases within one hosting account are not separate organizational trust domains.
+
+## Recovery checkpoints
+
+The hosted reference stores an encrypted recovery bundle outside the serving hosts. It contains the released network source, protected operational checkpoints, the network's dedicated signer keystores and passphrases, and snapshots of both operator databases. The decryption key remains in the owner's existing protected recovery configuration; it is not included in the bundle. An encrypted bundle is still sensitive and belongs in private storage.
+
+Each database snapshot is read in a single repeatable-read transaction and includes every document with its revision, every event with its original sequence, and the event sequence generator state. These records include authorization revocations, outstanding jobs, reservations and external-effect identities. The two database snapshots are separate checkpoints, not an atomic transaction spanning both operators. Transfer receipts must be reconciled across that boundary after recovery.
+
+On 12 October 2026, both snapshots were restored into disposable schemas. Their documents, revisions, events and sequence state matched exactly. The source operator still rejected the replaced agent's credential and accepted the successor's authorized read. No restored worker dispatched an external effect. The remote ciphertext was downloaded, checked, decrypted with the existing recovery key and compared with the original bundle. See the [recovery receipt](reference-recovery.json). This proves the recorded recovery exercise, not continuous backup coverage or a zero-data-loss guarantee.
+
+## Restore procedure
+
+1. Fence new mutations and stop workers and signing services. Record the newest available checkpoint and any activity since it was taken. Do not run restored workers while the original operator can still dispatch the same work.
+2. Retrieve the private bundle and verify its recorded ciphertext hash. Decrypt it in the protected operator environment with the separately held recovery key. Keep plaintext files and database credentials out of logs and public artifacts.
+3. Restore each database into a fresh, isolated database or schema using the matching released schema. Preserve document IDs and revisions, event sequences and generator state exactly. Restore operational checkpoints and signer journals without resetting consumed allowances, nonces or pending reservations.
+4. Compare the restored rows and sequence state with the snapshot. Check a known revoked credential and an authorized read. Verify the destination operator's database grants and signing identity independently.
+5. Reconcile every uncertain provider request, payment, chain transaction and transfer using its original ID and existing receipt. Read chain state and pending nonces before enabling signing. A missing result in the older checkpoint is not permission to pay or execute again. Include revocations and completed actions that occurred after the checkpoint.
+6. Confirm current deployment source, capabilities, funding and signer restrictions. Resume read access first, then one class of worker at a time, preserving existing idempotency keys. Verify pending work and health before reopening admission. Take and verify a new encrypted checkpoint after recovery.
+
+Recovery does not transfer an owner's authority to another operator. Lost or compromised credentials require the supported revocation and rotation process; restoring an older database must not revive them.

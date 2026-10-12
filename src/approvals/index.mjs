@@ -10,6 +10,14 @@ export function createApprovals({ store, identity, projects, reviews, deployment
     return deployments.allowed(actor, projectId, reader);
   }
   async function readInput(value, reader = store) { return artifacts.get(value.projectId, value.inputArtifactHash, reader); }
+  async function consumerMatches(value, reader) {
+    const vault = (await reader.read('project-vaults', value.projectId))?.value;
+    const consumer = (await readInput(value, reader)).evidence.chain.consumer;
+    requireThat(!vault && !consumer || vault?.state === 'verified' && consumer &&
+      consumer.vault.address.toLowerCase() === vault.address.toLowerCase() && consumer.vault.codeHash === vault.codeHash &&
+      consumer.policy.toLowerCase() === value.proposal.target.toLowerCase() && consumer.buildHash === vault.artifactHash &&
+      consumer.review.artifactHash === vault.reviewArtifactHash, 'vault_review_context_changed');
+  }
   const api = {
     async onCancel(tx, job) {
       if (!['claus-review', 'protected-execute'].includes(job.kind)) return;
@@ -33,7 +41,12 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       requireThat(report.complete === true && report.jobId === reviewed.providerJobId, 'review_mismatch');
       const files = (await projects.files(actor, projectId, reviewed.input.sourceHash)).map(({ path, content }) => ({ path, content }));
       const build = await artifacts.get(projectId, reviewed.input.buildHash);
-      const snapshot = await chain.captureEvidence({ module, dependencies });
+      const vault = (await store.read('project-vaults', projectId))?.value;
+      requireThat(!vault || vault.state === 'verified' && vault.artifactProjectId === projectId,
+        'vault_review_context_changed');
+      const consumer = vault ? { vault, build: await artifacts.get(projectId, vault.artifactHash),
+        review: await artifacts.get(projectId, vault.reviewArtifactHash) } : undefined;
+      const snapshot = await chain.captureEvidence({ module, dependencies, consumer });
       const source = { snapshotHash: reviewed.input.sourceHash, buildHash: reviewed.input.buildHash,
         repository: reviewed.input.repoUrl, commit: reviewed.input.baseCommit, entry: reviewed.input.contracts[0], files };
       chain.validateBuildEvidence(build, source, snapshot.implementation);
@@ -43,9 +56,11 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         source, evidence: { build, chain: snapshot },
         review: { provider: 'imd-audit-v1', jobId: report.jobId, artifactHash: reviewed.artifactHash,
           report: report.report, repository: reviewed.input.repoUrl, commit: reviewed.input.baseCommit } };
-      requireThat(Buffer.byteLength(canonical(input)) <= 200000, 'review_context_too_large');
+      requireThat(Buffer.byteLength(canonical(input)) <= 900000, 'review_context_too_large');
       return store.transaction(async tx => {
         await allowed(actor, projectId, tx);
+        requireThat(digest((await tx.read('project-vaults', projectId))?.value ?? null) === digest(vault ?? null),
+          'vault_review_context_changed');
         const old = await tx.read('chain-proposals', id);
         if (old) { requireThat(old.value.requestHash === requestHash, 'idempotency_conflict'); return old.value; }
         const active = await tx.read('active-proposals', projectId);
@@ -105,6 +120,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       const value = (await find(store, claim.job.projectId, claim.job.payload.proposalId)).value;
       const authorize = async reader => {
         await jobs.assertCurrent(claim, reader); await allowed(claim.job.authority.actor, value.projectId, reader);
+        await consumerMatches(value, reader);
         const reviewed = (await reader.read('review-cases', value.caseId))?.value;
         requireThat(reviewed?.state === 'reviewed' && reviewed.artifactHash === value.reviewArtifactHash, 'review_mismatch');
         const source = await reader.read('public-sources', digest({ projectId: value.projectId, id: reviewed.input.sourceHash }));
@@ -129,7 +145,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
         const blocked = ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'source_not_published', 'proposal_expiring', 'proposal_stale', 'project_suspended',
-          'dependency_evidence_mismatch', 'evidence_block_changed', 'dependency_code_changed', 'dependency_code_missing',
+          'vault_review_context_changed', 'dependency_evidence_mismatch', 'evidence_block_changed', 'dependency_code_changed', 'dependency_code_missing',
           'dependency_delegation_unsupported', 'dependency_indirection_unsupported', 'dependency_proxy_unsupported'].includes(error.code);
         return jobs.finish(claim, { state: blocked ? 'blocked' : 'waiting', retryAt: blocked ? null : now() + 60000,
           result: { error: error.code ?? 'decision_unavailable' } }, async tx => {
@@ -145,7 +161,8 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       if (claim.idle) return claim;
       const value = (await find(store, claim.job.projectId, claim.job.payload.proposalId)).value;
       const authorize = async reader => {
-        await jobs.assertCurrent(claim, reader); await deployments.allowed(claim.job.authority.actor, value.projectId, reader); return true;
+        await jobs.assertCurrent(claim, reader); await deployments.allowed(claim.job.authority.actor, value.projectId, reader);
+        await consumerMatches(value, reader); return true;
       };
       try {
         if (claim.mode === 'dispatch') await jobs.beginEffect(claim, (_job, tx) => authorize(tx));
@@ -158,7 +175,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         });
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
-        if (claim.mode === 'dispatch' && ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled'].includes(error.code)) {
+        if (claim.mode === 'dispatch' && ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'vault_review_context_changed'].includes(error.code)) {
           return jobs.finish(claim, { state: 'blocked', result: { error: error.code } }, async tx => {
             const old = await find(tx, value.projectId, value.id);
             await tx.write('chain-proposals', value.id, { ...old.value, state: 'blocked', error: error.code }, old.revision);

@@ -9,6 +9,8 @@ import { createVaultExecutor } from '../adapters/vault-executor.mjs';
 import { createSealer } from '../adapters/secrets.mjs';
 import { openStore } from '../src/storage/index.mjs';
 import { digest } from '../src/shared/index.mjs';
+import { compileSnapshot } from '../adapters/compiler.mjs';
+import { createChainEvidence } from '../adapters/chain-evidence.mjs';
 
 test('external API deploys a fixed vault and prepares withdrawals that survive a broken policy and sponsor shutdown',
   { skip: !process.env.CLAUS_TEST_VAULT_CHAIN, timeout: 90000 }, async t => {
@@ -22,6 +24,10 @@ test('external API deploys a fixed vault and prepares withdrawals that survive a
   const contract = async name => JSON.parse(await readFile(new URL('../contracts/out/' + name + '.sol/' + name + '.json', import.meta.url)));
   const policySource = await contract('ClausVaultAdmission'), targetSource = await contract('ClausReadonlyProject');
   const vaultSource = await contract('ClausNativeVault');
+  const vaultArtifact = await compileSnapshot({ files: [{ path: 'src/ClausNativeVault.sol',
+    content: await readFile(new URL('../contracts/src/ClausNativeVault.sol', import.meta.url), 'utf8') }],
+    entry: 'src/ClausNativeVault.sol', contract: 'ClausNativeVault' });
+  const vaultReview = { complete: true, jobId: 'local-vault-fixture', report: 'Local fixture only, not an independent review.' };
   const deploy = async (source, args = []) => (await client.waitForTransactionReceipt({ hash: await wallet.deployContract({
     chain: null, abi: source.abi, bytecode: source.bytecode.object, args }) })).contractAddress;
   const module = await deploy(policySource), projectKey = keccak256('0x5678');
@@ -39,14 +45,15 @@ test('external API deploys a fixed vault and prepares withdrawals that survive a
   const login = await guest.call('auth_session', { challengeId: c.id, signature: await owner.signMessage({ message: c.message }) });
   const api = createClient({ origin, token: login.token });
   const p = await api.call('project_create', { slug: 'vault-adapter', name: 'Vault adapter fixture', idempotencyKey: 'one' });
-  const policy = { chainId: 11155111, profile: 'claus-readonly-v1', target, projectKey, executor: owner.address,
+  const policy = { chainId: 11155111, profile: 'claus-readonly-v1', target, projectKey, executor: owner.address, owner: owner.address,
     codeHash: keccak256(await client.getCode({ address: target })), verification: { state: 'verified', localFixture: true } };
   const admission = { bindingHash: digest(policy), implementation: module,
     implementationCodeHash: keccak256(await client.getCode({ address: module })), configurationBytes: 64 };
   await store.transaction(async tx => {
-    const hash = await app.artifacts.put(tx, p.id, { contract: 'ClausNativeVault', creationBytecode: vaultSource.bytecode.object });
+    const hash = await app.artifacts.put(tx, p.id, vaultArtifact);
+    const reviewHash = await app.artifacts.put(tx, p.id, vaultReview);
     await tx.write('network-capabilities', 'vaults', { enabled: true, chainId: 11155111,
-      artifactProjectId: p.id, artifactHash: hash, reviewArtifactHash: digest('local fixture only'),
+      artifactProjectId: p.id, artifactHash: hash, reviewArtifactHash: reviewHash,
       policies: { [p.id]: admission } }, 0);
     await tx.write('review-pilots', p.id, { enabled: true, expiresAt: time + 86400000 }, 0);
     await tx.write('chain-bindings', p.id, policy, 0);
@@ -93,6 +100,15 @@ test('external API deploys a fixed vault and prepares withdrawals that survive a
   await assert.rejects(api.call('vault_transaction', { projectId: p.id, kind: 'deposit', amountWei: '1', recipient: owner.address }), { code: 'invalid_vault_action' });
   const deposit = await api.call('vault_transaction', { projectId: p.id, kind: 'deposit', amountWei: '1000' });
   assert.equal((await send(deposit)).status, 'success');
+  await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
+  const evidence = await createChainEvidence({ client }).capture({
+    module: { address: module, codeHash: admission.implementationCodeHash },
+    consumer: { vault, build: vaultArtifact, review: vaultReview }
+  });
+  assert.equal(evidence.consumer.policy, target.toLowerCase());
+  assert.equal(evidence.consumer.ownerPrincipalWei, '1000');
+  assert.equal(evidence.consumer.totalPrincipalWei, '1000');
+  assert.equal(evidence.consumer.vault.codeHash, vault.codeHash);
   const policyBreak = await wallet.writeContract({ chain: null, address: target, abi: targetSource.abi,
     functionName: 'applyUpgrade', args: [module, '0x'] });
   await client.waitForTransactionReceipt({ hash: policyBreak });

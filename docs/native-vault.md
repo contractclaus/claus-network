@@ -27,3 +27,11 @@ Disabling sponsored deployment does not disable reading a withdrawal transaction
 The assessed pilot uses exactly `ClausVaultAdmission` with its 64-byte `(bool,uint256)` configuration. The fixed 250,000-gas policy call does not support every 8,192-byte configuration accepted by the general read-only kernel. Large configurations or another admission module require a new profile assessment and measured gas bounds. Failure closes deposits while preserving withdrawals.
 
 Deposits use an explicit `deposit()` call with estimated gas. Solidity `transfer()` and `send()` with the 2,300-gas stipend are not supported deposit paths. The host verifies the policy's project identity, executor and code hash before deploying; the vault constructor alone does not certify timelocked governance.
+
+## Policy-review context
+
+The review-context implementation now includes a registered vault as a consumer of its policy. Evidence contains the complete native-vault compiler artifact, the separate IMD report, deployed runtime, immutable policy address and principal observations from the same finalized block as the policy evidence. The runtime comparison substitutes the actual constructor policy into every compiler-declared immutable position, then compares the entire runtime. A changed consumer blocks both a fresh model request and protected execution of an older proposal.
+
+Claus's additional review scope is limited to the owner-operated Sepolia pilot: the observed total principal must equal the recorded owner's principal and be at most 1,000,000,000,000 wei. The model must assess the downstream withdrawal path as well as the proposed admission change. This snapshot is not a guarantee that no new deposits occur later; permanent withdrawal protection comes from the vault code. Consumers outside the registry are not covered by the review.
+
+Complete source and both compiler artifacts can exceed the original small review envelope. The bounded review input accepts up to 900,000 bytes; it retains the same per-request inference-payment ceiling and response limit. The release status and deployment receipts determine whether this implementation is live. Local compatibility or a valid envelope alone is not a model approval.

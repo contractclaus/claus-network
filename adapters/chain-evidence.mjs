@@ -1,5 +1,6 @@
 import { keccak256, stringToHex, toHex } from 'viem';
 import { digest, requireThat } from '../src/shared/index.mjs';
+import { captureVaultConsumer } from './vault-evidence.mjs';
 
 export const PROXY_SLOTS = Object.freeze([
   toHex(BigInt(keccak256(stringToHex('eip1967.proxy.implementation'))) - 1n, { size: 32 }),
@@ -48,7 +49,7 @@ export function createChainEvidence({ client }) {
     return { address: at, code, codeHash: keccak256(code), proxySlots: storage, inspection };
   }
   return {
-    async capture({ module, dependencies = [] }) {
+    async capture({ module, dependencies = [], consumer }) {
       requireThat(await client.getChainId() === 11155111, 'wrong_chain');
       requireThat(Array.isArray(dependencies) && dependencies.length <= 8 && dependencies.every(x =>
         x && address(x.address) && typeof x.callData === 'string' && /^0x(?:[0-9a-f]{2}){0,4096}$/i.test(x.callData)) &&
@@ -63,10 +64,11 @@ export function createChainEvidence({ client }) {
         requireThat(!call || typeof call.data === 'string' && call.data.length <= 16386, 'dependency_call_invalid');
         return { ...value, call: call ? { data: dep.callData, result: call.data, gasLimit: 250000 } : null };
       }));
+      const usage = consumer ? await captureVaultConsumer({ client, contract, consumer, blockNumber: block.number }) : null;
       requireThat((await client.getBlock({ blockNumber: block.number })).hash === block.hash, 'evidence_block_changed');
       return { version: 'claus-chain-evidence-v1', chainId: 11155111, blockNumber: block.number.toString(),
         blockHash: block.hash, blockTimestamp: Number(block.timestamp), blockTag: 'finalized',
-        implementation, dependencies: captured };
+        implementation, dependencies: captured, ...(usage ? { consumer: usage } : {}) };
     },
     async validate(snapshot, proposal) {
       requireThat(snapshot?.version === 'claus-chain-evidence-v1' && snapshot.chainId === proposal.chainId &&
@@ -76,7 +78,7 @@ export function createChainEvidence({ client }) {
       requireThat((await client.getBlock({ blockNumber: BigInt(snapshot.blockNumber) })).hash === snapshot.blockHash,
         'evidence_block_changed');
       const head = await client.getBlock({ blockTag: 'latest' });
-      for (const saved of [snapshot.implementation, ...snapshot.dependencies]) {
+      for (const saved of [snapshot.implementation, ...snapshot.dependencies, ...(snapshot.consumer ? [snapshot.consumer.vault] : [])]) {
         const current = await contract(saved.address, head.number);
         requireThat(current.codeHash === saved.codeHash && digest(current.proxySlots) === digest(saved.proxySlots),
           'dependency_code_changed');
