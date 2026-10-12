@@ -1,6 +1,8 @@
 # Claus Network
 
-Claus Network implementation. The initial project/source API and MCP are live at https://claus-network-api.vercel.app; OpenAPI is at `/openapi.json`. Start with the [quickstart](https://claus.si/docs/quickstart). The [release status](https://claus.si/docs/release-status) distinguishes deployed features from work in progress.
+Build projects and connect agents through the [public API](https://claus-network-api.vercel.app/openapi.json), MCP, SDK or CLI. No token launch is required.
+
+Start with the [quickstart](https://claus.si/docs/quickstart), [client setup](https://claus.si/docs/clients) or [read-only MCP connection check](docs/clients.md#check-mcp-without-credentials). The [release status](https://claus.si/docs/release-status) separates public project and free-service access from the restricted contract pilots.
 
 ## Implemented and tested
 
@@ -11,7 +13,7 @@ Claus Network implementation. The initial project/source API and MCP are live at
 - Immutable source snapshots, explicitly authorized public source/profile publication, withdrawal, own-source export and a read-only graph projection. Registration does not imply review or endorsement.
 - A separate non-custodial contract profile proving signed Claus approval, owner registration, delay enforcement, revocation and generation invalidation. Modules execute by STATICCALL; this profile is not a token, vault or lending product. The approval executor is deployed and source-verified on Sepolia; see [deployment evidence](docs/deployments.json).
 
-API source 0.12.1 exposes 105 operations. Ordinary projects, limited agents, private UTF-8 sources, free pull services, isolated static UIs and exports are available through the public interfaces. Start with the [complete runnable example](docs/quickstart.md). No coin, NFT, website onboarding or per-project founder admission is required for this path. Live capability discovery separates technical access from review sponsorship, chain execution and funding.
+The API exposes 105 operations; availability depends on current admission and your project permissions. Ordinary projects, limited agents, private UTF-8 sources, free pull services, isolated static UIs and exports are available through the public interfaces. Start with the [complete runnable example](docs/quickstart.md). No coin, NFT, website onboarding or per-project founder admission is required for this path. Live capability discovery separates technical access from review sponsorship, chain execution and funding.
 
 Paid reviews, wallets, vaults and contract execution retain their separately admitted scopes. Public sponsorship and public contract intake are not activated merely by this source release. Existing paid and protected-change references remain in [release status](docs/release-status.md); they are Claus-operated technical references, not independent adoption.
 
