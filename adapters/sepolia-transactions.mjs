@@ -126,7 +126,32 @@ export function createReadonlyTransactions({ store, client, signer, sealer, chai
       const row = await record(id), value = row.value;
       if (['confirmed', 'reverted', 'cancelled', 'prepared'].includes(value.state)) return view(value);
       let receipt;
-      try { receipt = await client.getTransactionReceipt({ hash: value.hash }); } catch { return view(value); }
+      try { receipt = await client.getTransactionReceipt({ hash: value.hash }); }
+      catch {
+        // Resend only the same signed bytes, never a new nonce, fee or payment.
+        // An RPC may have lost the first write. Revocation/expiry still forbid
+        // another send, but cannot release a potentially broadcast reservation.
+        let retry = null;
+        if (value.sealedRaw && value.intent.expiresAt > now() && now() - (value.lastBroadcastAt ?? value.submittedAt ?? value.createdAt) >= 60000) {
+          retry = await store.transaction(async tx => {
+            const current = await tx.read('chain-transactions', id), v = current.value;
+            if (!['unknown', 'submitted', 'broadcasting'].includes(v.state) || !v.sealedRaw ||
+              v.intent.expiresAt <= now() || now() - (v.lastBroadcastAt ?? v.submittedAt ?? v.createdAt) < 60000) return null;
+            let permitted;
+            try { permitted = await authorize(v.intent, tx); }
+            catch (error) { if (!authorityDenied(error)) throw error; return null; }
+            if (permitted !== true) return null;
+            await tx.write('chain-transactions', id, { ...v, lastBroadcastAt: now(), rebroadcasts: (v.rebroadcasts ?? 0) + 1 }, current.revision);
+            return v;
+          });
+        }
+        if (retry) {
+          const { raw } = sealer.open(id, retry.sealedRaw);
+          requireThat(keccak256(raw) === retry.hash, 'transaction_corrupt');
+          try { await client.sendRawTransaction({ serializedTransaction: raw }); } catch { /* Same unresolved transaction. */ }
+        }
+        return view((await record(id)).value);
+      }
       const [head, block, sent] = await Promise.all([client.getBlockNumber(),
         client.getBlock({ blockNumber: receipt.blockNumber }), client.getTransaction({ hash: value.hash })]);
       if (head - receipt.blockNumber + 1n < BigInt(confirmations)) return view(value);

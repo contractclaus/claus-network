@@ -48,6 +48,7 @@ async function fixture(t, callback = false, publicAdmission = false) {
     admitted: async (_reader, projectId) => ['project-a', 'project-b'].includes(projectId) && ++admissionChecks < withdrawAdmissionAt, now: () => now });
   const input = { id: digest({ requestId: request.id, action: 'result-delivery' }), request, allowSubmit: true };
   return { store, budget, make, input, client, chain, broadcasts: () => broadcasts, denyAt: n => { denyAt = n; },
+    externalCallback: () => { callbackDelivered = true; },
     withdrawAdmissionAt: n => { withdrawAdmissionAt = n; },
     ledger: async () => (await store.read('contract-dispatch-budgets', budget.id)).value,
     confirm: (deliverCallback = true, final = true) => {
@@ -130,6 +131,19 @@ test('failed callback consumes one bounded attempt without repeating completed w
   assert.equal((await f.make().step(f.input)).state, 'failed');
   assert.equal((await f.make().step(f.input)).state, 'failed');
   assert.equal(f.broadcasts(), 2); assert.equal((await f.ledger()).spent, '180000000000');
+  assert.equal((await f.ledger()).reserved, '0');
+});
+
+test('a finalized external callback completes the original result without spending or inventing a receipt', async t => {
+  const f = await fixture(t, true);
+  await f.make().step(f.input); f.confirm(); f.externalCallback();
+  const rows = await f.store.list('chain-transactions');
+  assert.equal(rows.length, 1);
+  const result = await f.make().step({ ...f.input, allowSubmit: false });
+  assert.equal(result.state, 'delivered');
+  assert.equal(result.transactionHash, rows[0].value.hash);
+  assert.equal(f.broadcasts(), 1);
+  assert.equal((await f.ledger()).spent, '90000000000');
   assert.equal((await f.ledger()).reserved, '0');
 });
 

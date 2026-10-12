@@ -98,6 +98,10 @@ test('review admission atomically reserves sponsor funds and enqueues one cancel
   const cancelled = await f.flow.get(f.actor, f.projectId, item.id);
   assert.equal(cancelled.job.work, 'cancelled'); assert.equal(cancelled.job.billing, 'void');
   assert.equal((await f.network.billing.balance(account)).available, '50');
+  const retry = await f.flow.request(f.actor, f.projectId, { ...f.input, idempotencyKey: 'after-proven-cancellation' });
+  assert.notEqual(retry.id, item.id);
+  assert.equal((await f.flow.request(f.actor, f.projectId, f.input)).id, item.id);
+  assert.equal((await f.flow.get(f.actor, f.projectId, item.id)).job.billing, 'void');
 });
 
 test('source mismatch and withdrawn publication cannot reach paid admission', async t => {

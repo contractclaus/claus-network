@@ -1,17 +1,17 @@
-# Prepared mainnet extension, API 0.12.0
+# Prepared consolidated release, API 0.12.1
 
 This branch is an unactivated release candidate. Its Ethereum read-only routing, separate signing roles and gas policy require the concrete release approval and independent assessment described in [Mainnet](mainnet.md). Existing public services remain on their separately deployed release. This source does not turn on Mainnet, custody, inference or token launches.
 
 # Release status
 
-Status checked on 12 October 2026. The [live health response](https://claus-network-api.vercel.app/health) reports enabled capabilities separately from the [API schema](https://claus-network-api.vercel.app/openapi.json). Most paid and onchain workflows require an admitted pilot project.
+Status checked on 12 October 2026. The [live health response](https://claus-network-api.vercel.app/health) reports enabled capabilities separately from the [API schema](https://claus-network-api.vercel.app/openapi.json). Paid and onchain workflows have separate admission; public sponsorship remains off at this checkpoint.
 
 The owner has deferred new token launches to a later phase. They are not prerequisites for the current delivery of projects, agents, services, programmatic interfaces, explorer, portability and the restricted Sepolia contract workflow. Public inference remains a separate, inactive service.
 
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
-| Programmatic interfaces | API 0.11.2; 105 operations |
+| Programmatic interfaces | Live API 0.11.3; this branch prepares 0.12.1 |
 | Source snapshots and compilation | Live; explicit publication and bounded Solidity 0.8.27 or 0.8.26 compilation |
 | Network explorer | [Home](https://claus.si/Home) and project pages update from explicitly published registry records |
 | IMD reviews | Paid reference reviews completed; published reports remain readable from stored artifacts during provider outages; new work needs project admission and available sponsor funds |
@@ -31,7 +31,7 @@ The owner has deferred new token launches to a later phase. They are not prerequ
 
 The API and compatible hosted workers now implement separate technical, review-sponsorship and chain admission. Public technical access is active through `project-access` policy `public-projects-2026-10-12-v1`, generation 1. Project users receive no authority over operator keys, budgets or another project. The public API exposes effective rights and bounded metadata recovery; static UI and agent publication remain explicit choices.
 
-The release gate passed 382 checks with nine optional environment-specific skips. A separate real PostgreSQL run verified atomic accounting, project-filtered pagination and bounded cleanup using the runtime role. The shipped three-project example also completed against the public deployment with fresh owner accounts and no pilot grants: a provider delivered a real free service result, a separate publisher hosted it, old agent access was revoked and a new process recovered the metadata and result. The [live receipt](reference-public-project.json) records the exact resources; this is a Claus-operated example, not independent adoption. The bounded-result core snapshot at `af8cf6370d5b3893fa5b38df251d4b27b5db5f8d` contains 48 passing Solidity tests. The full local repository also ran 12 separate Inbox/client tests. The replacement executor is source-verified on Sepolia but remains inactive pending final review and finality checks. Existing contract addresses below remain authoritative.
+The release gate passed 382 checks with nine optional environment-specific skips. A separate real PostgreSQL run verified atomic accounting, project-filtered pagination and bounded cleanup using the runtime role. The shipped three-project example also completed against the public deployment with fresh owner accounts and no pilot grants: a provider delivered a real free service result, a separate publisher hosted it, old agent access was revoked and a new process recovered the metadata and result. The [live receipt](reference-public-project.json) records the exact resources; this is a Claus-operated example, not independent adoption. The bounded-result core snapshot at `af8cf6370d5b3893fa5b38df251d4b27b5db5f8d` contains 48 passing Solidity tests. The full local repository also ran 12 separate Inbox/client tests. The bounded replacement executor is source-verified and active for new admitted Sepolia registrations, as recorded in [kernel adoption](reference-public-kernel.json). Existing project bindings remain on their original executors. Public contract admission remains separately disabled.
 
 The owner authorized a finite seven-day public review and Sepolia start allocation. The public 4-IMD funding is recorded; independent public contract and admission assessments are still being completed; public review sponsorship, public readonly contract admission and mainnet remain disabled at this checkpoint. This is not a claim that the entire target network is finished.
 
@@ -84,3 +84,8 @@ The mandatory one-hour upgrade rule is removed for new admitted Sepolia registra
 ## 0.11.3 candidate: public admission review repairs
 
 The independent review of 0.11.2 identified intake-scan starvation, unreleased unsent review exposure, expired-pilot gas-accounting bypasses, missing project dispatcher limits and local-signing recovery gaps. The candidate adds bounded scan progress, cancellation accounting, public gas enrollment, decision/intake admission limits, durable delegated credentials and per-project dispatcher accounting. The full candidate gate passed 390 tests with ten optional environment skips; this paragraph does not activate public sponsorship or contracts. Existing 0.11.2 live references above remain authoritative until deployment and public-scope review complete. Mainnet remains disabled.
+
+
+## Prepared consolidated recovery corrections (0.12.1)
+
+One active registration per project, exact relayer-receipt recovery, same-byte rebroadcast and expiry handling close the remaining concrete admission findings. A finalized externally delivered callback completes against the original resolution receipt. A proven void review can be requested again without discarding its old identity. This candidate and its Mainnet preparation are not yet activated; independent reports and the final public reference are still being completed.

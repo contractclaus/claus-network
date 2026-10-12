@@ -69,7 +69,13 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
           const prior = row.value;
           if (prior.inputHash !== inputHash) continue;
           // A paid or uncertain attempt is never replaced by a new key.
-          if (['admitted', 'reviewed'].includes(prior.state)) return prior;
+          if (prior.state === 'reviewed') return prior;
+          if (prior.state === 'admitted') {
+            const job = prior.reviewJobId && (await tx.read('review-jobs', prior.reviewJobId))?.value;
+            // Only the atomic, proven-unsent cancellation path releases this
+            // source. Paid, unknown and missing records retain their identity.
+            if (job?.work !== 'cancelled' || job.billing !== 'void') return prior;
+          }
           const workflow = (await tx.read('workflow-jobs', prior.quoteJobId))?.value;
           if (prior.state === 'preparing' && workflow &&
             !['failed', 'blocked', 'cancelled'].includes(workflow.state)) return prior;

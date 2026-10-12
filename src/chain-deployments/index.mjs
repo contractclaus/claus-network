@@ -96,10 +96,22 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
       return store.transaction(async tx => {
         await allowed(actor, projectId, tx);
         requireThat(!await tx.read('chain-bindings', projectId), 'project_already_registered');
-        const value = { id, projectId, moduleId, mandateId, ...prepared, state: 'awaiting_signature', createdAt: now() };
         const old = await tx.read('chain-registrations', id);
-        if (!old) await tx.write('chain-registrations', id, value, 0);
-        return old?.value ?? value;
+        if (old) return old.value;
+        const registrations = await tx.list('chain-registrations', { projectId, limit: 17 });
+        const active = registrations.find(({ value }) =>
+          ['queued', 'registering', 'verifying'].includes(value.state) ||
+          value.state === 'awaiting_signature' && value.message.expiresAt * 1000 > now());
+        if (active) {
+          requireThat(active.value.moduleId === moduleId && active.value.mandateId === mandateId &&
+            active.value.configuration === configuration && active.value.message.minDelaySeconds === minDelaySeconds,
+            'registration_in_progress');
+          return active.value;
+        }
+        requireThat(registrations.length < 16, 'registration_limit');
+        const value = { id, projectId, moduleId, mandateId, ...prepared, state: 'awaiting_signature', createdAt: now() };
+        await tx.write('chain-registrations', id, value, 0);
+        return value;
       });
     },
     async submitRegistration(actor, projectId, { registrationId, signature }) {
@@ -110,6 +122,10 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
         await allowed(actor, projectId, tx);
         const old = await find(tx, 'chain-registrations', projectId, registrationId);
         if (old.value.state !== 'awaiting_signature') return old.value;
+        requireThat(!await tx.read('chain-bindings', projectId), 'project_already_registered');
+        const registrations = await tx.list('chain-registrations', { projectId, limit: 17 });
+        requireThat(!registrations.some(row => row.id !== registrationId &&
+          ['queued', 'registering', 'verifying'].includes(row.value.state)), 'registration_in_progress');
         requireThat(prepared.message.expiresAt * 1000 > now(), 'registration_expired');
         if (await tx.read('public-chain-projects', projectId))
           requireThat((await identity.credential(actor, tx)).kind === 'agent', 'durable_agent_required');

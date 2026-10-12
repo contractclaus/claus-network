@@ -73,9 +73,9 @@ Before deploying the new compiler, run `node scripts/migrate-maintenance.mjs /ab
 
 Publish compatible workers before enabling a new admission policy. Verify each uploaded source manifest and observed worker release; preserve active jobs, original payment IDs and leases. Public review and public chain policies stay disabled during this rollout.
 
-`review_admission_*` manages a separate finite, expiring sponsorship policy. It requires both available deposited IMD and per-owner/project/global admission. Its lifetime exposure conservatively counts maximum admitted cost and is not reset by cancellation or a new policy version. No policy call deposits money or increases a wallet allowance.
+`review_admission_*` manages a separate finite, expiring sponsorship policy. It requires both available deposited IMD and per-owner/project/global admission. Its lifetime exposure counts reserved or settled maximum cost; only provably unsent cancellations return their share. A new policy version never resets historical use. No policy call deposits money or increases a wallet allowance.
 
-`chain_admission_*` manages a separate finite, expiring Sepolia-only readonly profile. It pins executor code, target build and independently reviewed evidence plus the operator’s explicit public-scope assessment. Global/project gas reservations and receipts survive expiry and policy changes. Expiry blocks new spending, while already submitted transactions remain reconcilable. All signing workers must run the compatible code before this policy is enabled. Mainnet, customer custody, inference and token launches remain separate gates.
+`chain_admission_*` manages a separate finite, expiring readonly profile. The default is Sepolia; the prepared Mainnet profile uses chainId 1 and a separate policy and ledger. It pins executor code, target build and independently reviewed evidence plus the operator’s explicit public-scope assessment. Global/project gas reservations and receipts survive expiry and policy changes. Expiry blocks new spending, while already submitted transactions remain reconcilable. All signing workers must run the compatible code before this policy is enabled. Mainnet, customer custody, inference and token launches remain separate gates.
 
 Pilot `review_pilot_set` accepts optional `perProjectDay` and `globalDay` limits (defaults 2 and 8). Only the network owner may set them; quota changes never clear historical counts or create credit. Public sponsorship uses separate admission counters, so earlier internal pilots do not consume a newly authorized public allocation. Public daily, active-work and lifetime bounds remain independently enforced.
 
@@ -91,3 +91,18 @@ Only provably unsent review payments release their sponsor reservation and publi
 Public dispatcher allocations include a per-project ceiling in addition to the transaction and total ceilings. The proposed seven-day allocation is 0.0004 test ETH total and 0.00005 per project. Gas/cost deferrals expose a reason and a 15-minute backoff; a busy wallet uses one minute. Pending transactions keep their original budget after a budget rotation. Revoking that budget can stop its unsent callback; read the canonical Inbox result or explicitly reconcile the original authority. A new budget never silently authorizes an old callback.
 
 A broadcast with no final receipt retains its wallet slot and reservation, even after expiry. Operators must reconcile its original hash and nonce onchain; neither an RPC error nor a missing mempool entry proves that the signed transaction cannot execute. There is no automatic fee bump or replacement spending authority. Public admission may pause at these finite limits. EOA-based limits are per address, not proof of one human; global ceilings remain the hard spend bound.
+
+
+## Final admission recovery corrections (prepared)
+
+A project can hold one active registration intent. Repeating the same preparation returns that intent, while a different input is refused until it expires or terminates. No more than 16 registration preparations are retained per project. Submission rejects an already-bound project and concurrent alternative registrations; existing original IDs remain readable.
+
+Registration and execution already performed by a relayer are recognized from the exact onchain event, state and canonical receipt. A reverted local attempt retains its gas charge. It is never relabelled a successful transaction; the actual successful transaction is the reported result.
+
+After a lost broadcast, the same encrypted signed bytes may be sent again at most once per minute while the original authority and expiry remain valid. This uses the same hash, nonce, fee and reservation. Revocation/expiry forbid further sends but preserve unresolved exposure. This does not add fee-bump, cancellation or replacement authority.
+
+An unsent chain action becomes blocked once its original transaction window expires. Gas-price and available-budget deferrals may wait within that window; they cannot extend it. An expired unsent callback closes without spending. If someone else delivers a callback first, the worker checks the exact finalized Inbox result and records completion with its original resolution receipt.
+
+A cancelled review whose billing is provably void may be requested again with a new idempotency key for the same source. Its old ID, receipt history and daily attempt count remain unchanged. Paid or uncertain reviews cannot be replaced this way.
+
+The eight active review slots are shared by public and operator-pilot work to bound overall provider concurrency. Public and operator funding and daily quotas are separate, but neither has reserved concurrency. Per-project gas ceilings are upper bounds, not reserved shares or a guarantee that eight complete lifecycles fit the total allocation. A transaction mined after a requester cancels can still consume gas; actual reverted gas stays charged to the project's finite allocation.

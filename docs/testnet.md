@@ -36,7 +36,7 @@ Source verification, independent review, Claus approval and confirmed execution 
 
 ## Retained trust boundaries
 
-The module call forwards at most 200,000 gas. This is not a bound on the caller's total gas: the current kernel copies return data after the call. The initial balance lens returns a fixed 224 bytes. A broader module profile must account for output size as well as computation.
+New registrations use the bounded kernel: the module call forwards at most 200,000 gas, checks total return-data size before copying it, validates the ABI envelope, and accepts at most 8,192 result bytes. Existing project contracts retain their original code and limits. The initial balance lens returns a fixed 224 bytes.
 
 The network controller produces short-lived approvals and registrations. The underlying executor does not impose a universal maximum signature lifetime; its signer must maintain the documented expiry policy. Directly registered owner modules do not thereby receive a Claus approval. A code hash identifies code, not the current state of external contracts it reads.
 

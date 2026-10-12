@@ -19,6 +19,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         return currentChainState && authorize(reader);
       } });
     let status = await transactions.status(id);
+    if (!status && expiresAt <= now()) return { state: 'cancelled' };
     if (!status || status.state === 'prepared') {
       try { await validate(); }
       catch (error) {
@@ -57,6 +58,22 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     requireThat(value.enabled && digest(value) === digest({ ...cap, enabled: true }) &&
       value.executorPayer?.toLowerCase() === signer.address.toLowerCase(), 'executor_not_enabled');
   }
+  async function relayedRegistration(value) {
+    const project = await read(value.executor, 'projects', [value.message.projectId]);
+    if (/^0x0{40}$/i.test(project[1])) return null;
+    const event = executorAbi.find(x => x.type === 'event' && x.name === 'ProjectRegistered');
+    const logs = await client.getLogs({ address: value.executor, event,
+      args: { projectId: value.message.projectId }, fromBlock: 0n, toBlock: 'latest' });
+    requireThat(logs.length === 1 && logs[0].args.owner.toLowerCase() === value.message.owner.toLowerCase() &&
+      logs[0].args.mandateHash === value.message.mandateHash, 'registered_project_mismatch');
+    const receipt = await client.getTransactionReceipt({ hash: logs[0].transactionHash });
+    requireThat(receipt.status === 'success' && receipt.blockHash === logs[0].blockHash &&
+      (await client.getBlock({ blockNumber: receipt.blockNumber })).hash === receipt.blockHash, 'registration_receipt_mismatch');
+    const final = (await client.getBlockNumber()) - receipt.blockNumber >= 2n &&
+      (chainId !== 1 || (await client.getBlock({ blockTag: 'finalized' })).number >= receipt.blockNumber);
+    return { state: final ? 'confirmed' : 'submitted', hash: receipt.transactionHash,
+      receipt: { blockNumber: receipt.blockNumber.toString(), blockHash: receipt.blockHash }, relayed: true };
+  }
   const terminal = tx => tx.state === 'cancelled' ? { state: 'blocked', error: 'authority_or_window_closed' } :
     tx.state === 'reverted' ? { state: 'failed', error: 'transaction_reverted', transactionHash: tx.hash } : null;
   const deployment = {
@@ -80,7 +97,9 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       requireThat(kind === 'project-register' && value.executor === cap.executor, 'unsupported_execution');
       requireThat(await chain.verifyRegistration(value, signature), 'invalid_signature');
       const data = encodeFunctionData({ abi: executorAbi, functionName: 'registerProject', args: [value.message, value.configuration, signature] });
-      const tx = await transact({ id: 'register:' + value.id, to: value.executor, data,
+      const pending = await store.read('chain-transactions', 'register:' + value.id);
+      let tx = !pending ? await relayedRegistration(value) : null;
+      tx ??= await transact({ id: 'register:' + value.id, to: value.executor, data,
         authority: { kind, projectId: value.projectId, registrationId: value.id }, expiresAt: value.message.expiresAt * 1000,
         authorize: async reader => {
           await currentCapability(cap, reader);
@@ -90,10 +109,12 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
           const module = (await reader.read('chain-modules', value.moduleId))?.value;
           await published(module, reader); return authorize(reader);
         } });
+      if (terminal(tx)) tx = await relayedRegistration(value) ?? tx;
       if (terminal(tx)) return terminal(tx);
       if (tx.state !== 'confirmed') return { state: 'registering', transactionHash: tx.hash };
       const project = await read(value.executor, 'projects', [value.message.projectId]);
-      requireThat(project[0].toLowerCase() === value.message.owner.toLowerCase() && project[2] === value.message.mandateHash,
+      requireThat(project[0].toLowerCase() === value.message.owner.toLowerCase() && project[2] === value.message.mandateHash && project[3] === value.message.policyVersion &&
+        Number(project[4]) === value.message.minDelaySeconds,
         'registered_project_mismatch');
       const target = project[1];
       requireThat((await read(target, 'executor', [], targetAbi)).toLowerCase() === value.executor.toLowerCase() &&
@@ -143,17 +164,23 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         const tx = await transact({ id: executionId, to: p.executor, data: executeData,
           authority: { kind: 'execute', proposalId: value.id }, expiresAt: p.expiresAt * 1000, authorize: fresh,
           validate });
-        if (terminal(tx)) return terminal(tx);
-        if (tx.state !== 'confirmed') return { state: 'executing', executionTransaction: tx.hash };
-        executed = tx;
+        if (terminal(tx)) {
+          if (!await read(p.executor, 'executionNonces', [p.projectKey, BigInt(p.nonce)])) return terminal(tx);
+          // A relayer may have executed the exact signed approval first. The
+          // reverted local attempt remains charged; reconcile the actual event below.
+        } else {
+          if (tx.state !== 'confirmed') return { state: 'executing', executionTransaction: tx.hash };
+          executed = tx;
+        }
       }
       let queued = null;
       if (!executed && await store.read('chain-transactions', 'queue:' + value.id)) {
         queued = await transact({ id: 'queue:' + value.id, to: p.executor, data: queueData,
           authority: { kind: 'queue', proposalId: value.id }, expiresAt: p.expiresAt * 1000, authorize: fresh,
           validate });
-        if (terminal(queued)) return terminal(queued);
-        if (queued.state !== 'confirmed') return { state: 'queueing', queueTransaction: queued.hash };
+        if (terminal(queued)) {
+          if (!await read(p.executor, 'executionNonces', [p.projectKey, BigInt(p.nonce)])) return terminal(queued);
+        } else if (queued.state !== 'confirmed') return { state: 'queueing', queueTransaction: queued.hash };
       }
       if (!executed && await read(p.executor, 'executionNonces', [p.projectKey, BigInt(p.nonce)])) {
         // A valid signature can be submitted by any relayer. Find the actual

@@ -174,17 +174,28 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
       if (!transaction) {
         const observed = await chain.deliveryState(request);
         if (action === 'resolve' && observed.closed) return answer('closed');
-        // A result or callback sent outside this bounded worker is left for
-        // operator reconciliation; do not invent a transaction receipt.
-        if ((action === 'resolve' && observed.resolved) ||
-          (action === 'callback' && observed.callbackDelivered)) return answer('pending');
-        if (!allowSubmit || expiresAt <= now() || !await active(store, request)) return answer('pending');
+        // Anyone may deliver the callback. Verify its final state and retain
+        // our original resolution receipt, without claiming the external tx.
+        if (action === 'callback' && observed.callbackDelivered) {
+          const final = await chain.deliveryState(request, 'finalized');
+          if (!final.resolved || !final.callbackDelivered) return answer('pending');
+          continue;
+        }
+        // An externally resolved request has no local resolution receipt.
+        if (action === 'resolve' && observed.resolved) return answer('pending');
+        if (expiresAt <= now()) return answer('closed');
+        if (!allowSubmit || !await active(store, request)) return answer('pending');
         transaction = await transactions.prepare({ id: transactionId, to: intent.to, data: intent.data, authority, expiresAt });
       }
       transaction = await transactions.submit(transactionId);
       if (!['confirmed', 'reverted', 'cancelled'].includes(transaction.state)) transaction = await transactions.reconcile(transactionId);
-      if (transaction.state === 'cancelled') return answer('closed');
-      if (transaction.state === 'reverted') return answer('failed');
+      if (['cancelled', 'reverted'].includes(transaction.state)) {
+        if (action === 'callback') {
+          const final = await chain.deliveryState(request, 'finalized');
+          if (final.resolved && final.callbackDelivered) continue;
+        }
+        return answer(transaction.state === 'cancelled' ? 'closed' : 'failed');
+      }
       if (transaction.state !== 'confirmed') return answer('pending');
       const observed = await chain.deliveryState(request, 'finalized');
       if (observed.blockNumber < Number(transaction.receipt.blockNumber)) return answer('pending');

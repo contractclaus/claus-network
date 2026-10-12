@@ -59,3 +59,36 @@ test('legacy delay conflicts reach the client as non-retryable, not a provider o
   assert.equal(response.status, 409);
   assert.deepEqual(await response.json(), { error: 'executor_delay_required', category: 'state', retryable: false });
 });
+
+import { openStore } from '../src/storage/index.mjs';
+import { createChainDeployments } from '../src/chain-deployments/index.mjs';
+import { digest } from '../src/shared/index.mjs';
+
+test('concurrent registration preparation reuses one bounded intent and legacy alternatives cannot flood dispatch', async t => {
+  const store=openStore(':memory:'); t.after(()=>store.close()); let clock=1800000000000, enqueued=0;
+  const projectId='registration-bound', moduleId='module', mandateId='mandate';
+  await store.transaction(async tx=>{
+    await tx.write('network-capabilities','chain',{enabled:true,chainId:11155111},0);
+    await tx.write('review-pilots',projectId,{enabled:true,expiresAt:clock+86400000},0);
+    await tx.write('chain-modules',moduleId,{projectId,state:'verified',chainId:11155111},0);
+    await tx.write('principals','owner',{address:'0x'+'11'.repeat(20)},0);
+    await tx.write('mandates',mandateId,{projectId,expiresAt:clock+86400000,scopes:['proposal.execute']},0);
+  });
+  const deployments=createChainDeployments({store,now:()=>clock,
+    identity:{authorize:async()=>{},credential:async()=>({kind:'owner',principalId:'owner'}),project:async()=>({ownerId:'owner'})},
+    chain:{registration:async input=>({chainId:11155111,configuration:input.configuration,message:{expiresAt:input.expiresAt,minDelaySeconds:input.minDelaySeconds}}),verifyRegistration:async()=>true},
+    jobs:{enqueue:async()=>({id:'job-'+(++enqueued)})}});
+  const input={moduleId,mandateId,configuration:'0x01',minDelaySeconds:0};
+  const calls=await Promise.all(Array.from({length:8},()=>deployments.prepareRegistration('owner',projectId,input)));
+  assert.equal(new Set(calls.map(x=>x.id)).size,1);clock+=1000;
+  assert.equal((await deployments.prepareRegistration('owner',projectId,input)).id,calls[0].id);
+  await assert.rejects(deployments.prepareRegistration('owner',projectId,{...input,configuration:'0x02'}),{code:'registration_in_progress'});
+  const legacy={...calls[0],id:digest('legacy'),configuration:'0x03'};
+  await store.transaction(tx=>tx.write('chain-registrations',legacy.id,legacy,0));
+  await deployments.submitRegistration('owner',projectId,{registrationId:calls[0].id,signature:'fixture'});
+  await assert.rejects(deployments.submitRegistration('owner',projectId,{registrationId:legacy.id,signature:'fixture'}),{code:'registration_in_progress'});
+  assert.equal(enqueued,1);
+  await store.transaction(tx=>tx.write('chain-bindings',projectId,{chainId:11155111},0));
+  await assert.rejects(deployments.submitRegistration('owner',projectId,{registrationId:legacy.id,signature:'fixture'}),{code:'project_already_registered'});
+  assert.equal(enqueued,1);
+});

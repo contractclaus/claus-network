@@ -24,6 +24,7 @@ test('API project, real signatures and zero-delay execution work across isolated
   await client.request({ method: 'anvil_reset', params: [] });
   const owner = privateKeyToAccount(generatePrivateKey()), payer = privateKeyToAccount(generatePrivateKey()), approval = privateKeyToAccount(generatePrivateKey());
   for (const account of [owner, payer]) await client.request({ method: 'anvil_setBalance', params: [account.address, '0x56bc75e2d63100000'] });
+  let relayedRegistrationHash, relayedExecutionHash;
   const wallet = createWalletClient({ account: owner, transport: http(url.href) });
   const contract = async name => JSON.parse(await readFile(new URL('../contracts/out/' + name + '.sol/' + name + '.json', import.meta.url)));
   const executorSource = await contract('ClausApprovalExecutor');
@@ -101,6 +102,11 @@ test('API project, real signatures and zero-delay execution work across isolated
   const module = await app.deployments.deployModule(actor, project.id, { caseId, chainId });
   const deployed = await until(() => app.deployments.runOne(executor.deployment),
     () => app.deployments.module(actor, project.id, module.id), 'verified');
+  const expired = await executor.deployment.step({ kind: 'module-deploy',
+    value: { ...module, id: 'expired-local-fixture', expiresAt: clock - 1 },
+    artifact: await app.artifacts.get(project.id, compiled.artifactHash), authorize: async () => true });
+  assert.equal(expired.state, 'blocked');
+  assert.equal(await store.read('chain-transactions', 'deploy:expired-local-fixture'), null);
   assert.equal((await app.deployments.deployModule(actor, project.id, { caseId })).id, module.id);
   const balanceArtifact = await compileSnapshot({ files: [{ path: 'Balance.sol', content: 'pragma solidity 0.8.27; contract Balance { function balanceOf(address) external pure returns(uint256) { return 23; } }' }], entry: 'Balance.sol', contract: 'Balance' });
   const balanceHash = await wallet.deployContract({ chain: null, abi: balanceArtifact.abi, bytecode: balanceArtifact.creationBytecode });
@@ -111,6 +117,11 @@ test('API project, real signatures and zero-delay execution work across isolated
   assert.equal(registration.message.minDelaySeconds, 0);
   const signature = await owner.signTypedData({ domain: registration.domain, types: registration.types,
     primaryType: registration.primaryType, message: registration.message });
+  if (process.env.CLAUS_TEST_RELAY === '1') {
+    relayedRegistrationHash = await wallet.writeContract({ chain: null, address: executorAddress, abi: executorSource.abi,
+      functionName: 'registerProject', args: [registration.message, registration.configuration, signature] });
+    await advance();
+  }
   await app.deployments.submitRegistration(actor, project.id, { registrationId: registration.id, signature });
   await until(() => app.deployments.runOne(executor.deployment),
     () => app.deployments.registration(actor, project.id, registration.id), 'verified');
@@ -152,11 +163,25 @@ test('API project, real signatures and zero-delay execution work across isolated
   assert.equal(proposal.proposal.dependencySnapshotHash, '0x' + digest(input.evidence.chain).slice(7));
   assert.equal(proposal.proposal.executor, executorAddress, 'the default replacement does not move an existing project');
   await assert.rejects(controller.step({ value: approved, input: { ...input, proposal: { ...input.proposal, nonce: '0' } }, authorize: async () => true }), { code: 'decision_input_mismatch' });
+  if (process.env.CLAUS_TEST_RELAY === '1') {
+    const signed = (await store.read('claus-signed-approvals', proposal.id)).value;
+    await wallet.writeContract({ chain: null, address: executorAddress, abi: executorSource.abi,
+      functionName: 'queue', args: [signed.message, signed.signature] });
+    relayedExecutionHash = await wallet.writeContract({ chain: null, address: executorAddress, abi: executorSource.abi,
+      functionName: 'execute', args: [signed.message, approved.proposal.configuration, signed.signature] });
+    await advance();
+  }
   const completed = await until(() => app.approvals.runExecution(executor.execution),
     () => app.approvals.get(actor, project.id, proposal.id), 'executed');
-  const queueReceipt = await client.getTransactionReceipt({ hash: completed.queueTransaction });
-  const queueBlock = await client.getBlock({ blockNumber: queueReceipt.blockNumber });
-  assert.equal(completed.readyAt, Number(queueBlock.timestamp), 'no artificial delay after approval');
+  if (process.env.CLAUS_TEST_RELAY === '1') {
+    assert.equal(completed.execution.transactionHash, relayedExecutionHash);
+    assert.equal((await app.deployments.binding(actor, project.id)).registrationTransaction, relayedRegistrationHash);
+    assert.equal(await store.read('chain-transactions', 'register:' + registration.id), null);
+  } else {
+    const queueReceipt = await client.getTransactionReceipt({ hash: completed.queueTransaction });
+    const queueBlock = await client.getBlock({ blockNumber: queueReceipt.blockNumber });
+    assert.equal(completed.readyAt, Number(queueBlock.timestamp), 'no artificial delay after approval');
+  }
   const target = completed.execution.address;
   const targetAbi = (await contract('ClausReadonlyProject')).abi;
   const encoded = await client.readContract({ address: target, abi: targetAbi, functionName: 'evaluate',

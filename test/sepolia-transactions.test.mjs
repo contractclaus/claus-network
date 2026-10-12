@@ -9,6 +9,7 @@ import { createSepoliaTransactions } from '../adapters/sepolia-transactions.mjs'
 function fixture(t) {
   const store = openStore(':memory:'); t.after(() => store.close());
   const signer = privateKeyToAccount(generatePrivateKey());
+  let clock = Date.now();
   let allowed = true, authorityError = null, broadcasts = 0, raw, receipt, wrongChain = false, mismatched = false;
   const client = { getChainId: async () => wrongChain ? 1 : 11155111,
     estimateGas: async () => 100000n, estimateFeesPerGas: async () => ({ maxFeePerGas: 1000000n, maxPriorityFeePerGas: 0n }),
@@ -20,12 +21,12 @@ function fixture(t) {
       input: mismatched ? '0x00' : parsed.data, value: parsed.value ?? 0n }; }
   };
   const sealer = createSealer('11'.repeat(32));
-  const make = () => createSepoliaTransactions({ store, signer, client, sealer, authorize: async () => {
+  const make = () => createSepoliaTransactions({ store, signer, client, sealer, now: () => clock, authorize: async () => {
     if (authorityError) throw Object.assign(Error(authorityError), { code: authorityError });
     return allowed;
   } });
-  const input = id => ({ id, data: '0x60006000', authority: { profile: 'local-test' }, expiresAt: Date.now() + 60000 });
-  return { tx: make(), make, client, input, deny: () => { allowed = false; }, wrong: () => { wrongChain = true; },
+  const input = id => ({ id, data: '0x60006000', authority: { profile: 'local-test' }, expiresAt: clock + 300000 });
+  return { tx: make(), make, client, input, advance: ms => { clock += ms; }, deny: () => { allowed = false; }, allow: () => { allowed = true; }, wrong: () => { wrongChain = true; },
     authorityError: code => { authorityError = code; },
     mismatch: value => { mismatched = value; }, broadcasts: () => broadcasts,
     confirm: () => { receipt = { transactionHash: keccak256(raw), blockNumber: 100n, blockHash: '0x' + '11'.repeat(32),
@@ -82,3 +83,13 @@ test('state-creation gas can increase without increasing the monetary ceiling', 
   f.client.estimateGas=async()=>30000000n;
   await assert.rejects(f.tx.prepare(f.input('too-large')),{code:'transaction_cost_limit'});
 });
+
+ test('a lost write resends identical bytes with fresh authority and keeps one reservation', async t => {
+  const f=fixture(t), first=await f.tx.prepare(f.input('retry-original'));
+  await f.tx.submit('retry-original'); f.advance(60001);
+  const retry=await f.make().reconcile('retry-original');
+  assert.equal(f.broadcasts(),2);assert.equal(retry.hash,first.hash);assert.equal(retry.nonce,first.nonce);
+  f.deny();f.advance(60001);await f.make().reconcile('retry-original');assert.equal(f.broadcasts(),2);
+  f.allow(); await assert.rejects(f.tx.prepare(f.input('other')),{code:'wallet_busy'});
+  f.confirm();assert.equal((await f.tx.reconcile('retry-original')).state,'confirmed');
+ });

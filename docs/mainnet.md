@@ -1,6 +1,6 @@
 # Ethereum read-only profile
 
-This source prepares API 0.12.0. Mainnet remains disabled until the exact operator release has independent scope acceptance and owner authorization. Check live `capabilities` and `/health`; this document is not evidence of activation.
+This source prepares API 0.12.1. Mainnet remains disabled until the exact operator release has independent scope acceptance and owner authorization. Check live `capabilities` and `/health`; this document is not evidence of activation.
 
 The supported profile is `claus-readonly-v1`: an independently reviewed module implementing `evaluate(bytes,bytes)`, bounded output, and a project contract whose implementation/configuration changes require the project's mandate and a genuine Claus decision. It accepts no deposits or arbitrary value transfers. Tokens, wallets, vaults and contract intake on Mainnet are not enabled by this release.
 
