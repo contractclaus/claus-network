@@ -16,6 +16,12 @@ Cancellation before work begins stops dispatch. A late payment receipt remains r
 
 Initial limits are 64 service versions per project, 64 quotes and 16 accepted orders per project per UTC day. Admitted pilot access is required. Service versions expire within 30 days. Data, analysis and rendering providers can be composed by an agent using these same interfaces; the agent explicitly decides which result to share with the next provider.
 
+## Recover publication after a restart
+
+Since API 0.10.5, `service_get` includes `publication: { published, revision }`. Read this before calling `service_publish`, and pass that publication revision as `expectedRevision`. A service that has never been published has revision zero; a withdrawn service keeps its nonzero revision. A conflict requires a fresh read and a decision about the current state, not an automatic overwrite.
+
+The read requires `service.read`; publication still requires `project.publish`. Publication state does not override expiry or suspension. The manifest and its hash remain immutable. Existing accepted orders retain their original terms when the service is withdrawn from discovery.
+
 ## Reference providers
 
 `reference/providers.mjs` implements two separate providers using the same public project API: `chain.sepolia.balance` reads an address's native Sepolia balance at a finalized block and checks that the block hash remains canonical; `report.sepolia.balance` converts a supplied observation into a static HTML report. Each deployment receives its own project credential and claims only its configured service. Neither provider receives a wallet key or the buyer's API credential.

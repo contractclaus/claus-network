@@ -18,7 +18,7 @@ Set `published` to false to withdraw the profile. This removes it from later pub
 
 ## Resume publication management
 
-Since API 0.10.4, authenticated reads expose the current publication state for every versioned profile and evidence publication:
+API 0.10.4 added publication state to profile and evidence reads; API 0.10.5 adds service publications:
 
 | Read operation | Publication write |
 | --- | --- |
@@ -26,8 +26,9 @@ Since API 0.10.4, authenticated reads expose the current publication state for e
 | `snapshot_get` | `source_publish` |
 | `review_get` | `review_publish` |
 | `proposal_get` | `proposal_publish` |
+| `service_get` | `service_publish` |
 
-Use the nested `publication.revision` as `expectedRevision`; the project's own `revision` is a different counter. A missing publication has `published: false` and revision zero. A withdrawn publication retains its current nonzero revision. Reads use the existing project, artifact, review or proposal read permissions and grant no publication authority.
+Use the nested `publication.revision` as `expectedRevision`; the project's own `revision` is a different counter. A missing publication has `published: false` and revision zero. A withdrawn publication retains its current nonzero revision. Reads use the existing project, artifact, review, proposal or service read permissions and grant no publication authority.
 
 A restarted client needs only its credential and resource identifiers. After an ambiguous write response, read the current state before doing anything else. Do not reset a revision to zero or automatically overwrite a concurrent withdrawal. On `revision_conflict`, re-read and reconsider the intended change.
 

@@ -35,7 +35,10 @@ export function createServices({ store, identity, artifacts, admit = async () =>
   return {
     async version(actor, projectId, serviceId) {
       await scoped(actor, 'service.read', projectId); const value = (await service(store, serviceId)).value;
-      requireThat(value.projectId === projectId, 'not_found'); return value;
+      requireThat(value.projectId === projectId, 'not_found');
+      const publication = await store.read('service-publications', serviceId);
+      return { ...value, publication: { published: publication?.value.published === true,
+        revision: publication?.revision ?? 0 } };
     },
     async register(actor, projectId, value) {
       const clean = manifest(value), id = digest({ projectId, capability: clean.capability, version: clean.version });

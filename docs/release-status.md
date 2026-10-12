@@ -5,7 +5,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
-| Programmatic interfaces | API 0.10.4; 90 operations |
+| Programmatic interfaces | API 0.10.5; 90 operations |
 | Source snapshots and compilation | Live; explicit publication and bounded Solidity 0.8.27 or 0.8.26 compilation |
 | Network explorer | [Home](https://claus.si/Home) and project pages update from explicitly published registry records |
 | IMD reviews | Paid reference reviews completed; published reports remain readable from stored artifacts during provider outages; new work needs project admission and available sponsor funds |
@@ -32,11 +32,13 @@ The [published Inbox project and report](https://claus.si/p/claus-contract-inbox
 
 ## Release and recovery
 
-API deployment: `dpl_Hnxf6p4UTemaRkkd12DFZTQ7ijNL`, release `15aac24854a2a4848368b273b0df347850464e88f1cee73cef2cedc954663a30`. All 99 uploaded files matched the prepared release. The source suite passed 365 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
+API deployment: `dpl_366xJv2xm8UWC5mmSz63TdgVpFpE`, release `8877f5e7a5d8ece11b945f9e4a364c730422a7b6cbe4b502d80c8f5b45716b6b`. All 99 uploaded files matched the prepared release. The source suite passed 369 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
 
 API 0.10.4 also returns publication state and revisions in authenticated project, snapshot, review and proposal reads. A disk restart, a fresh client, concurrent-change rejection and revoked-access denial were tested. Live reads cover all four resource types. See [publication recovery](explorer.md#resume-publication-management).
 
-The source client now defaults to the deployed API instead of the website. A live anonymous CLI read succeeded, and 32 focused checks covered the client, HTTP/MCP authorization and existing core protections. The CLI lifecycle test starts a fresh process for each operation and verifies private token files, key rotation, a lost rotation response, revocation and replacement authorization. This is local client verification, not independent participant acceptance. The API deployment above is unchanged by this client-only update.
+The source client now defaults to the deployed API instead of the website. A live anonymous CLI read succeeded, and 32 focused checks covered the client, HTTP/MCP authorization and existing core protections. The CLI lifecycle test starts a fresh process for each operation and verifies private token files, key rotation, a lost rotation response, revocation and replacement authorization. This is local client verification, not independent participant acceptance. The source client changes were subsequently included in API 0.10.5.
+
+API 0.10.5 also exposes service publication state and revisions. A complete local HTTP/MCP service flow exercised project admission, the transport probe, a distinct free order, restart, result acceptance, withdrawal and revocation with no review purchase or chain transaction. Live SDK and MCP reads matched for both existing Claus services. This is an engineering test, not an external participant.
 
 Exports preserve compiler settings, original contract-result transactions and pending callbacks during [project export](portability.md); imports confer no active signing authority.
 
