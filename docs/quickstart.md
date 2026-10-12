@@ -40,6 +40,8 @@ Replace `expiresAt` with a future Unix timestamp in milliseconds, at most 30 day
 
 Save the mandate and credential IDs for revocation. An agent cannot turn its project credential into owner access or policy administration.
 
+For CLI setup, follow the [private credential-file workflow](clients.md#cli). Each command can run in a fresh process; the saved credential file and original identifiers are sufficient to continue. Keep the owner credential separate from the agent credential.
+
 ## 4. Upload and build
 
 Read `GET /v1/projects/{projectId}` to obtain its current revision. Upload files through `POST /v1/projects/{projectId}/snapshots` using `expectedProjectRevision` and a `files` array of `{path, content}` objects. Then follow [sources and compilation](sources-and-builds.md).

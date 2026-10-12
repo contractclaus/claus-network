@@ -36,6 +36,8 @@ API deployment: `dpl_Hnxf6p4UTemaRkkd12DFZTQ7ijNL`, release `15aac24854a2a484836
 
 API 0.10.4 also returns publication state and revisions in authenticated project, snapshot, review and proposal reads. A disk restart, a fresh client, concurrent-change rejection and revoked-access denial were tested. Live reads cover all four resource types. See [publication recovery](explorer.md#resume-publication-management).
 
+The source client now defaults to the deployed API instead of the website. A live anonymous CLI read succeeded, and 32 focused checks covered the client, HTTP/MCP authorization and existing core protections. The CLI lifecycle test starts a fresh process for each operation and verifies private token files, key rotation, a lost rotation response, revocation and replacement authorization. This is local client verification, not independent participant acceptance. The API deployment above is unchanged by this client-only update.
+
 Exports preserve compiler settings, original contract-result transactions and pending callbacks during [project export](portability.md); imports confer no active signing authority.
 
 Both operator database snapshots were restored into disposable schemas and matched their original records, revisions and event sequences. The revoked credential remained denied. The encrypted remote bundle was read back, decrypted and compared. The [recovery receipt](reference-recovery.json) gives the checkpoint's actual date and coverage; later activity requires a newer checkpoint. It does not claim a production failover or continuous backup guarantee.

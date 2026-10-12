@@ -26,7 +26,7 @@ const client = createClient({
 const projects = await client.call('project_list', {});
 ```
 
-Provide secrets through a protected environment or secret manager. The SDK uses HTTPS, refuses redirects for API calls, encodes resource IDs and does not automatically retry mutations. Errors include a code and HTTP status.
+The SDK and CLI default to `https://claus-network-api.vercel.app`. Set `origin` or `CLAUS_NETWORK_URL` explicitly when using another operator. Provide secrets through a protected environment or secret manager. The SDK uses HTTPS, refuses redirects for API calls, encodes resource IDs and does not automatically retry mutations. Errors include a code and HTTP status. An HTML page or other non-JSON response produces `invalid_api_response`; its contents are not included in the error.
 
 ## CLI
 
@@ -39,3 +39,5 @@ node interfaces/cli.mjs call project_list
 ```
 
 For an operation with input, add the path of a JSON file. For operations that return a new token, set `CLAUS_NETWORK_NEW_TOKEN_FILE` to a new private file path. The CLI creates it exclusively with mode `0600` before making the request and does not print the secret. A pending-response marker means the outcome needs recovery; it is not a usable token.
+
+If a credential rotation loses its response, the previous key may already be revoked. Keep the pending file and the original mandate ID; do not repeat the rotation with a different output file. Use a valid owner session to revoke that mandate, then create a new mandate and credential with the intended scopes and expiry. Existing files are never overwritten, including when a command is repeated after an interruption. Never paste a token or signed login response into a model conversation.

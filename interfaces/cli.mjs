@@ -10,7 +10,7 @@ if(command!=='call'||!operation){
  try{
   const tokenPath=process.env.CLAUS_NETWORK_TOKEN_FILE;
   const token=tokenPath?(await readFile(tokenPath,'utf8')).trim():undefined;
-  const client=createClient({origin:process.env.CLAUS_NETWORK_URL??'https://claus.si',token});
+  const client=createClient({origin:process.env.CLAUS_NETWORK_URL,token});
   const input=inputPath?JSON.parse(await readFile(inputPath,'utf8')):{};
   if(['auth_session','credential_create','credential_rotate'].includes(operation)){
    if(!process.env.CLAUS_NETWORK_NEW_TOKEN_FILE)throw Error('Set CLAUS_NETWORK_NEW_TOKEN_FILE before issuing a credential');

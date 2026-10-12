@@ -32,7 +32,7 @@ The PostgreSQL acceptance test is skipped unless `NETWORK_TEST_CREDENTIAL_FILE` 
 
 For a local server, set `CLAUS_NETWORK_LOCAL=1`, a private `CLAUS_NETWORK_RATE_SALT` of at least 32 characters, and optionally `CLAUS_NETWORK_LOCAL_FILE`. The server binds to 127.0.0.1:8787. Production requires `CLAUS_NETWORK_DATABASE_URL`; it never falls back to a local temporary ledger. Schema creation and role grants use a separate migration credential.
 
-`interfaces/cli.mjs` uses `CLAUS_NETWORK_URL` and an optional `CLAUS_NETWORK_TOKEN_FILE`. Credential-producing operations require `CLAUS_NETWORK_NEW_TOKEN_FILE` and write the token privately rather than printing it. The MCP adapter does not expose credential-producing operations to model tool output; use the API/CLI for that setup.
+`interfaces/cli.mjs` defaults to `https://claus-network-api.vercel.app`; set `CLAUS_NETWORK_URL` for another operator and `CLAUS_NETWORK_TOKEN_FILE` for authenticated calls. Credential-producing operations require `CLAUS_NETWORK_NEW_TOKEN_FILE` and write the token privately rather than printing it. The MCP adapter does not expose credential-producing operations to model tool output; use the API/CLI for that setup. See [client setup and interrupted rotation](docs/clients.md).
 
 ## Integration boundaries
 
