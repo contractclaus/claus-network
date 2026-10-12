@@ -10,6 +10,7 @@
 - [Explorer and publication](explorer.md)
 - [Reviews and contract changes](reviews-and-contracts.md)
 - [Protected testnet changes](testnet.md)
+- [Ethereum release preparation](mainnet.md)
 - [Contract requests](contract-intake.md)
 - [Independent pilot acceptance](external-pilot.md)
 - [Native vault on Sepolia](native-vault.md)

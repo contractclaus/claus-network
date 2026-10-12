@@ -5,12 +5,14 @@ import { ClausApprovalExecutorAbi } from './chain-abi.mjs';
 import { boundedResponse } from './imd.mjs';
 import { authorityDenied } from './authorization.mjs';
 
-// This host owns the dedicated testnet approval key, never the transaction
+// This host owns the dedicated chain-specific approval key, never the transaction
 // payer or the network owner's key. Source and model prose are not commands.
-export function createClausController({ store, chain, client, signer, secret, fetcher = fetch, now = () => Date.now() }) {
+export function createClausController({ store, chain, client, signer, secret, chainId = 11155111, fetcher = fetch, now = () => Date.now() }) {
+  requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
+  const capKey = chainId === 1 ? 'chain:1' : 'chain';
   async function executorAllowed(executor, reader) {
-    const cap = selectExecutorCapability((await reader.read('network-capabilities', 'chain'))?.value, executor);
-    requireThat(cap.enabled && cap.chainId === 11155111 && cap.profile === 'claus-readonly-v1' &&
+    const cap = selectExecutorCapability((await reader.read('network-capabilities', capKey))?.value, executor);
+    requireThat(cap.enabled && cap.chainId === chainId && cap.profile === 'claus-readonly-v1' &&
       cap.approvalSigner?.toLowerCase() === signer.address.toLowerCase(), 'executor_not_enabled');
     return cap;
   }
@@ -24,7 +26,7 @@ export function createClausController({ store, chain, client, signer, secret, fe
   }
   return {
     async step({ value, input, authorize }) {
-      requireThat(secret && digest(input.proposal) === value.proposalHash && input.proposalHash === value.proposalHash &&
+      requireThat(secret && value.proposal.chainId === chainId && digest(input.proposal) === value.proposalHash && input.proposalHash === value.proposalHash &&
         input.review.artifactHash === value.reviewArtifactHash && input.projectId === value.projectId, 'decision_input_mismatch');
       const expectedId = 'nr_' + digest(input).slice(7);
       let status = await call('/reviews/' + expectedId);
@@ -70,7 +72,7 @@ export function createClausController({ store, chain, client, signer, secret, fe
       const evidenceHash = '0x' + digest({ proposalHash: value.proposalHash,
         reviewArtifactHash: value.reviewArtifactHash, decisionHash }).slice(7);
       const message = approvalMessage(value.proposal, evidenceHash);
-      const typed = { domain: domain(value.proposal.executor), types: approvalTypes, primaryType: 'Approval', message };
+      const typed = { domain: domain(value.proposal.executor, chainId), types: approvalTypes, primaryType: 'Approval', message };
       const approvalHash = hashTypedData(typed);
       await store.transaction(async tx => {
         await executorAllowed(value.proposal.executor, tx);

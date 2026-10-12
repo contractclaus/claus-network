@@ -1,7 +1,8 @@
-export const API_VERSION='0.11.3';
+export const API_VERSION='0.12.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
+const readonlyChain={type:'integer',enum:[1,11155111]};
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:48000}});
 const descriptions = {
@@ -73,10 +74,10 @@ export const ROUTES=Object.freeze([
  route('review_accept','POST','/v1/projects/{projectId}/reviews/{caseId}/accept',{projectId:string(),caseId:string(),quoteId:string(),idempotencyKey:string()}),
  route('review_artifact','GET','/v1/projects/{projectId}/reviews/{caseId}/artifact',{projectId:string(),caseId:string()}),
  route('review_publish','PUT','/v1/projects/{projectId}/reviews/{caseId}/publication',{projectId:string(),caseId:string(),published:boolean,expectedRevision:integer}),
- route('chain_admission_get','GET','/v1/admin/chain-admission'),
- route('chain_admission_publish','POST','/v1/admin/chain-admission/versions',{version:string(64),config:object({enabled:boolean,expiresAt:integer,executor:string(42),executorCodeHash:string(66),targetArtifactHash:string(71),reviewProjectId:string(),reviewCaseId:string(),reviewArtifactHash:string(71),maximumProjects:integer,maximumTransactionGasWei:string(30),maximumProjectGasWei:string(30),maximumTotalGasWei:string(30)})}),
- route('chain_admission_activate','PUT','/v1/admin/chain-admission/active',{version:string(64),expectedGeneration:integer}),
- route('module_deploy','POST','/v1/projects/{projectId}/modules',{projectId:string(),caseId:string()}),
+ route('chain_admission_get','GET','/v1/admin/chain-admission',{chainId:readonlyChain},[]),
+ route('chain_admission_publish','POST','/v1/admin/chain-admission/versions',{chainId:readonlyChain,version:string(64),config:object({enabled:boolean,expiresAt:integer,executor:string(42),executorCodeHash:string(66),targetArtifactHash:string(71),reviewProjectId:string(),reviewCaseId:string(),reviewArtifactHash:string(71),maximumProjects:integer,maximumTransactionGasWei:string(30),maximumProjectGasWei:string(30),maximumTotalGasWei:string(30)})},['version','config']),
+ route('chain_admission_activate','PUT','/v1/admin/chain-admission/active',{chainId:readonlyChain,version:string(64),expectedGeneration:integer},['version','expectedGeneration']),
+ route('module_deploy','POST','/v1/projects/{projectId}/modules',{projectId:string(),caseId:string(),chainId:readonlyChain},['projectId','caseId']),
  route('module_get','GET','/v1/projects/{projectId}/modules/{moduleId}',{projectId:string(),moduleId:string()}),
  route('registration_prepare','POST','/v1/projects/{projectId}/chain/registrations/prepare',{projectId:string(),moduleId:string(),configuration:string(16386),mandateId:string(),minDelaySeconds:{type:'integer',minimum:0,maximum:432000}}),
  route('registration_submit','POST','/v1/projects/{projectId}/chain/registrations/{registrationId}/submit',{projectId:string(),registrationId:string(),signature:string(132)}),

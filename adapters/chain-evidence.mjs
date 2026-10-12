@@ -38,7 +38,8 @@ export function validateBuildEvidence(build, source, implementation) {
     build.runtimeTemplateHash === implementation.codeHash, 'build_evidence_mismatch');
 }
 
-export function createChainEvidence({ client }) {
+export function createChainEvidence({ client, chainId = 11155111 }) {
+  requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
   const slots = async (at, blockNumber) => Promise.all(PROXY_SLOTS.map(async slot => ({ slot,
     value: (await client.getStorageAt({ address: at, slot, blockNumber })) ?? ZERO })));
   async function contract(at, blockNumber) {
@@ -50,7 +51,7 @@ export function createChainEvidence({ client }) {
   }
   return {
     async capture({ module, dependencies = [], consumer }) {
-      requireThat(await client.getChainId() === 11155111, 'wrong_chain');
+      requireThat(await client.getChainId() === chainId, 'wrong_chain');
       requireThat(Array.isArray(dependencies) && dependencies.length <= 8 && dependencies.every(x =>
         x && address(x.address) && typeof x.callData === 'string' && /^0x(?:[0-9a-f]{2}){0,4096}$/i.test(x.callData)) &&
         new Set(dependencies.map(x => x.address.toLowerCase())).size === dependencies.length, 'invalid_dependencies');
@@ -64,9 +65,10 @@ export function createChainEvidence({ client }) {
         requireThat(!call || typeof call.data === 'string' && call.data.length <= 16386, 'dependency_call_invalid');
         return { ...value, call: call ? { data: dep.callData, result: call.data, gasLimit: 250000 } : null };
       }));
+      requireThat(!consumer || chainId === 11155111, 'unsupported_profile');
       const usage = consumer ? await captureVaultConsumer({ client, contract, consumer, blockNumber: block.number }) : null;
       requireThat((await client.getBlock({ blockNumber: block.number })).hash === block.hash, 'evidence_block_changed');
-      return { version: 'claus-chain-evidence-v1', chainId: 11155111, blockNumber: block.number.toString(),
+      return { version: 'claus-chain-evidence-v1', chainId, blockNumber: block.number.toString(),
         blockHash: block.hash, blockTimestamp: Number(block.timestamp), blockTag: 'finalized',
         implementation, dependencies: captured, ...(usage ? { consumer: usage } : {}) };
     },

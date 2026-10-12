@@ -15,7 +15,7 @@ export const ACCESS_DEFAULTS = Object.freeze({
 export const ACCESS_MAXIMA = Object.freeze(Object.fromEntries(Object.entries(ACCESS_DEFAULTS)
   .filter(([, value]) => typeof value === 'number').map(([key, value]) => [key, value * 4])));
 
-export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, now = () => Date.now() }) {
+export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, mainnetAdmission, now = () => Date.now() }) {
   async function owner(actor, reader = store) {
     const who = await identity.credential(actor, reader);
     const principal = (await reader.read('principals', who.principalId))?.value;
@@ -71,6 +71,11 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       try { await chainAdmission(store); chainState = 'public_readonly'; }
       catch (error) { if (!['chain_public_not_enabled','chain_admission_changed','chain_scope_not_reviewed'].includes(error.code)) throw error; }
     }
+    let mainnetState = 'not_enabled';
+    if ((await cap('chain:1'))?.enabled && mainnetAdmission) {
+      try { await mainnetAdmission(store); mainnetState = 'public_readonly'; }
+      catch (error) { if (!['chain_public_not_enabled','chain_admission_changed','chain_scope_not_reviewed'].includes(error.code)) throw error; }
+    }
     const reviewEnabled = (await cap('review'))?.enabled === true;
     return { schemaVersion: '1.0', observedAt: now(), policyVersion: active.version, policyGeneration: active.generation,
       authentication: { kind: 'ethereum-eoa', chainId: 1, contractWallets: false },
@@ -80,8 +85,9 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       staticHosting: { isolated: true, backendExecution: false },
       transfers: { enabled: (await cap('portability'))?.enabled === true, trustedDestinationRequired: true },
       reviews: { admission: !reviewEnabled ? 'not_enabled' : reviews?.config.enabled && reviews.config.expiresAt > now() ? 'public_sponsored' : 'restricted_pilot', reservationRequired: true, projectPrice: '0', asset: 'IMD', chainId: 1 },
-      chainProfiles: [{ chainId: 11155111, profile: 'claus-readonly-v1', admission: chainState }],
-      mainnet: 'not_enabled', publicInference: 'not_enabled', limits: copy(active.config) };
+      chainProfiles: [{ chainId: 11155111, profile: 'claus-readonly-v1', admission: chainState },
+        { chainId: 1, profile: 'claus-readonly-v1', admission: mainnetState }],
+      mainnet: mainnetState, publicInference: 'not_enabled', limits: copy(active.config) };
   }
   return { policy, limit, collaboration, discovery,
     consumeProjects: reader => consume(reader, 'projects', 1, 'newProjectsPerDay', 'newProjectsTotal'),

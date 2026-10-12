@@ -1,0 +1,7 @@
+{
+  "path": "agent/src/network-review-schema.ts",
+  "beforeSha256": "bf43ddad71b91d628474dbf473b3efcd3c6609453cab6d17a9885c43e96369dc",
+  "afterSha256": "78974e4807ac0341f5b245e58d1ead2e944ce91de0fba48c6f419247c03a8852",
+  "status": "prepared-not-applied",
+  "effect": "Accept structurally valid chain 1 readonly review inputs; exact evidence, authorization and signing remain separately enforced."
+}

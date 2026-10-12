@@ -17,7 +17,10 @@ test('API project, real signatures and zero-delay execution work across isolated
   const url = new URL(process.env.CLAUS_TEST_CHAIN);
   assert.equal(url.hostname, '127.0.0.1', 'This fixture must never use a public chain');
   const client = createPublicClient({ transport: http(url.href, { retryCount: 0 }), cacheTime: 0 });
-  assert.equal(await client.getChainId(), 11155111);
+  const chainId = Number(process.env.CLAUS_TEST_CHAIN_ID ?? 11155111);
+  assert([1, 11155111].includes(chainId));
+  const capKey = chainId === 1 ? 'chain:1' : 'chain';
+  assert.equal(await client.getChainId(), chainId);
   await client.request({ method: 'anvil_reset', params: [] });
   const owner = privateKeyToAccount(generatePrivateKey()), payer = privateKeyToAccount(generatePrivateKey()), approval = privateKeyToAccount(generatePrivateKey());
   for (const account of [owner, payer]) await client.request({ method: 'anvil_setBalance', params: [account.address, '0x56bc75e2d63100000'] });
@@ -29,7 +32,7 @@ test('API project, real signatures and zero-delay execution work across isolated
   const executorAddress = (await client.waitForTransactionReceipt({ hash: deployHash })).contractAddress;
   const store = openStore(':memory:'); t.after(() => store.close());
   let clock = Number((await client.getBlock({blockTag: 'latest'})).timestamp) * 1000;
-  const chain = createChainRead({ client });
+  const chain = createChainRead({ client, chainId });
   const app = createApplication({ store, now: () => clock, rateSalt: 'test-only'.repeat(8), chainPorts: { chain } });
   const challenge = await app.identity.challenge({ address: owner.address });
   const session = await app.identity.session({ challengeId: challenge.id, signature: await owner.signMessage({ message: challenge.message }) });
@@ -56,15 +59,35 @@ test('API project, real signatures and zero-delay execution work across isolated
       input: { repoUrl: 'https://github.com/example/local-fixture', baseCommit: 'a'.repeat(40), contracts: [path],
         sourceHash: snapshot.id, buildHash: compiled.artifactHash } }, 0);
     await tx.write('review-pilots', project.id, { enabled: true, expiresAt: clock + 7 * 86400000 }, 0);
-    await tx.write('network-capabilities', 'chain', { enabled: true, profile: 'claus-readonly-v1', chainId: 11155111,
+    await tx.write('network-capabilities', capKey, { enabled: true, profile: 'claus-readonly-v1', chainId,
       executor: executorAddress, executorCodeHash: keccak256(await client.getCode({ address: executorAddress })),
       approvalSigner: approval.address, executorPayer: payer.address, artifactProjectId: project.id, targetArtifactHash }, 0);
   });
-  const executor = createChainExecutor({ store, client, signer: payer, chain, artifacts: app.artifacts, now: () => clock,
+  if (chainId === 1) {
+    const cap = (await store.read('network-capabilities', capKey)).value;
+    const reviewed = (await store.read('review-cases', caseId)).value;
+    const config = { enabled: true, expiresAt: clock + 7 * 86400000, executor: cap.executor,
+      executorCodeHash: cap.executorCodeHash, targetArtifactHash: cap.targetArtifactHash,
+      reviewProjectId: project.id, reviewCaseId: caseId, reviewArtifactHash: reviewed.artifactHash,
+      maximumProjects: 8, maximumTransactionGasWei: '10000000000000000',
+      maximumProjectGasWei: '100000000000000000', maximumTotalGasWei: '100000000000000000' };
+    await store.transaction(async tx => {
+      await tx.write('network', 'authority', { ownerAddress: owner.address.toLowerCase() }, 0);
+      await tx.write('chain-admission-assessments', digest({ executor: cap.executor.toLowerCase(),
+        targetArtifactHash: cap.targetArtifactHash, reviewCaseId: caseId, chainId }), {
+        accepted: true, publicAdmission: true, chainId, executorCodeHash: cap.executorCodeHash,
+        reviewArtifactHash: reviewed.artifactHash, reviewedBuildHash: compiled.artifactHash
+      }, 0);
+    });
+    await app.deployments.admission.publish(ownerActor, { chainId, version: 'local-fixture-only', config });
+    await app.deployments.admission.activate(ownerActor, { chainId, version: 'local-fixture-only', expectedGeneration: 0 });
+  }
+  const executor = createChainExecutor({ store, client, signer: payer, chain, chainId, artifacts: app.artifacts, now: () => clock,
+    admission: chainId === 1 ? app.deployments.admission.forChain(1) : undefined,
     sealer: createSealer('22'.repeat(32)), verification: { step: async input => ({ state: 'verified', localFixture: true, address: input.address }) } });
   async function advance(seconds = 31) {
     await client.request({ method: 'evm_increaseTime', params: [seconds] });
-    await client.request({ method: 'anvil_mine', params: ['0x3', '0x1'] });
+    await client.request({ method: 'anvil_mine', params: [chainId === 1 ? '0x60' : '0x3', '0x1'] });
     clock = Number((await client.getBlock({blockTag: 'latest'})).timestamp) * 1000;
   }
   async function until(step, read, state, rounds = 10) {
@@ -75,7 +98,7 @@ test('API project, real signatures and zero-delay execution work across isolated
     }
     assert.fail(JSON.stringify({ value: await read(), jobs: (await store.list('workflow-jobs', {limit: 100})).map(x => ({kind:x.value.kind, state:x.value.state, result:x.value.result})) }));
   }
-  const module = await app.deployments.deployModule(actor, project.id, { caseId });
+  const module = await app.deployments.deployModule(actor, project.id, { caseId, chainId });
   const deployed = await until(() => app.deployments.runOne(executor.deployment),
     () => app.deployments.module(actor, project.id, module.id), 'verified');
   assert.equal((await app.deployments.deployModule(actor, project.id, { caseId })).id, module.id);
@@ -91,22 +114,24 @@ test('API project, real signatures and zero-delay execution work across isolated
   await app.deployments.submitRegistration(actor, project.id, { registrationId: registration.id, signature });
   await until(() => app.deployments.runOne(executor.deployment),
     () => app.deployments.registration(actor, project.id, registration.id), 'verified');
+  if (chainId === 11155111) {
   const replacementHash = await wallet.deployContract({ chain: null, abi: executorSource.abi,
     bytecode: executorSource.bytecode.object, args: [approval.address, owner.address, 86400n] });
   const replacementAddress = (await client.waitForTransactionReceipt({ hash: replacementHash })).contractAddress;
   await store.transaction(async tx => {
-    const previous = await tx.read('network-capabilities', 'chain');
-    await tx.write('network-capabilities', 'chain', { ...previous.value, executor: replacementAddress,
+    const previous = await tx.read('network-capabilities', capKey);
+    await tx.write('network-capabilities', capKey, { ...previous.value, executor: replacementAddress,
       executorCodeHash: keccak256(await client.getCode({ address: replacementAddress })),
       retainedExecutors: [previous.value] }, previous.revision);
   });
+  }
   // Anvil finalizes with a block lag too: evidence must observe finalized code.
   await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
   await advance();
   const dependencies = [{address: balanceAddress, callData: encodeFunctionData({abi: balanceArtifact.abi, functionName: 'balanceOf', args: [owner.address]})}];
   const proposal = await app.approvals.create(actor, project.id, { moduleId: deployed.id, configuration, dependencies, idempotencyKey: 'upgrade' });
   let calls = 0;
-  const controller = createClausController({ store, chain, client, signer: approval, secret: 'local-test', now: () => clock,
+  const controller = createClausController({ store, chain, client, chainId, signer: approval, secret: 'local-test', now: () => clock,
     fetcher: async (url, options) => {
       if (options.method === 'GET') return Response.json({ error: 'not_found' }, { status: 404 });
       if (options.method === 'DELETE') return Response.json({ state: 'blocked' });
@@ -138,7 +163,7 @@ test('API project, real signatures and zero-delay execution work across isolated
     args: [encodeAbiParameters([{ type: 'address' }], [owner.address])] });
   const result = decodeAbiParameters([{ type: 'uint256' }, { type: 'uint256' }, { type: 'address' }, { type: 'address' },
     { type: 'uint256' }, { type: 'address' }, { type: 'uint256' }], encoded);
-  assert.equal(result[0], 11155111n); assert.equal(result[4], 23n); assert.equal(result[6], 23n);
+  assert.equal(result[0], BigInt(chainId)); assert.equal(result[4], 23n); assert.equal(result[6], 23n);
   assert.equal(completed.execution.version, 2);
   const publicProject = await app.projects.publicProject(project.slug);
   assert.equal(publicProject.evidence.deployments[0].transactionHash, completed.execution.transactionHash);
@@ -148,6 +173,15 @@ test('API project, real signatures and zero-delay execution work across isolated
   await assert.rejects(executor.execution.step({value: {...approved, decision: {...approved.decision, decisionHash: digest('tampered')}},
     authorize: async () => true}), {code: 'approval_missing'});
   assert.equal((await store.list('chain-transactions', {limit: 100})).length, count);
+  if (chainId === 1) {
+    const mainnetUsage = (await app.deployments.admission.get(ownerActor, { chainId })).usage;
+    assert(BigInt(mainnetUsage.spent) > 0n); assert.equal(mainnetUsage.reserved, '0');
+    assert.equal((await app.deployments.admission.get(ownerActor)).usage, null, 'mainnet cannot consume testnet budget');
+    await assert.rejects(app.deployments.deployModule(actor, project.id, { caseId, chainId: 11155111 }), { code: 'project_chain_mismatch' });
+    await app.identity.revoke(ownerActor, 'mandate', mandate.id);
+    await assert.rejects(app.approvals.create(actor, project.id, { moduleId: deployed.id, configuration, idempotencyKey: 'revoked' }), { code: 'scope_denied' });
+    return;
+  }
   // Already broadcast execution keeps its original receipt even if the old
   // executor is withdrawn while confirmations are still outstanding.
   const inFlight = await app.approvals.create(actor, project.id, { moduleId: deployed.id, configuration,
@@ -162,8 +196,8 @@ test('API project, real signatures and zero-delay execution work across isolated
   assert(['submitted', 'broadcasting', 'unknown'].includes(sent.state));
   async function retainEnabled(enabled) {
     await store.transaction(async tx => {
-      const old = await tx.read('network-capabilities', 'chain');
-      await tx.write('network-capabilities', 'chain', { ...old.value,
+      const old = await tx.read('network-capabilities', capKey);
+      await tx.write('network-capabilities', capKey, { ...old.value,
         retainedExecutors: old.value.retainedExecutors.map(cap => ({ ...cap, enabled })) }, old.revision);
     });
   }

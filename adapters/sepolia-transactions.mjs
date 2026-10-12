@@ -2,7 +2,7 @@ import { keccak256, parseTransaction, recoverTransactionAddress } from 'viem';
 import { digest, requireThat, text } from '../src/shared/index.mjs';
 import { authorityDenied } from './authorization.mjs';
 
-const CHAIN = 11155111;
+
 // Sepolia's Glamsterdam state-creation repricing makes the reviewed executor
 // deployment ~19.5M gas. The monetary ceiling remains independent and fixed.
 const MAX_GAS = 30000000n;
@@ -16,9 +16,15 @@ const view = value => {
 
 // Only the isolated Sepolia executor receives this key. One unresolved
 // transaction retains the wallet slot, including across worker restarts.
-export function createSepoliaTransactions({ store, client, signer, sealer,
+export function createSepoliaTransactions(options) {
+  return createReadonlyTransactions({ ...options, chainId: 11155111 });
+}
+
+export function createReadonlyTransactions({ store, client, signer, sealer, chainId = 11155111,
   authorize = async () => false, confirmations = 3, now = () => Date.now(),
   limits = {}, finalized = false, onReserve = async () => {}, onFinalize = async () => {} }) {
+  requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
+  const CHAIN = chainId;
   // A caller can only narrow these host limits. Accounting callbacks run in
   // the same transaction as the wallet slot and signed intent.
   const maxGas = BigInt(limits.gas ?? MAX_GAS);
@@ -30,7 +36,7 @@ export function createSepoliaTransactions({ store, client, signer, sealer,
   async function chain() { requireThat(await client.getChainId() === CHAIN, 'wrong_chain'); }
   async function record(id) {
     const row = await store.read('chain-transactions', text(id));
-    requireThat(row && row.value.sender.toLowerCase() === signer.address.toLowerCase(), 'transaction_not_found');
+    requireThat(row && row.value.sender.toLowerCase() === signer.address.toLowerCase() && row.value.intent.chainId === CHAIN, 'transaction_not_found');
     return row;
   }
   async function release(tx, id, consumedNonce = null) {
@@ -87,7 +93,7 @@ export function createSepoliaTransactions({ store, client, signer, sealer,
       await chain();
       const value = await store.transaction(async tx => {
         const row = await tx.read('chain-transactions', text(id));
-        requireThat(row?.value.sender.toLowerCase() === signer.address.toLowerCase(), 'transaction_not_found');
+        requireThat(row?.value.sender.toLowerCase() === signer.address.toLowerCase() && row.value.intent.chainId === CHAIN, 'transaction_not_found');
         if (row.value.state !== 'prepared') return null;
         let allowed = false;
         if (row.value.intent.expiresAt > now()) {
@@ -145,6 +151,10 @@ export function createSepoliaTransactions({ store, client, signer, sealer,
         return view(next);
       });
     },
-    async status(id) { const row = await store.read('chain-transactions', text(id)); return row ? view(row.value) : null; }
+    async status(id) {
+      const row = await store.read('chain-transactions', text(id));
+      if (row) requireThat(row.value.intent.chainId === CHAIN && row.value.sender.toLowerCase() === signer.address.toLowerCase(), 'transaction_not_found');
+      return row ? view(row.value) : null;
+    }
   };
 }

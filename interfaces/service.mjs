@@ -39,7 +39,7 @@ export function createService({access,identity,projects,builds,jobs,reviews,depl
   review_accept:(actor,input)=>reviews.accept(actor,input.projectId,input),
   review_artifact:(actor,input)=>reviews.artifact(actor,input.projectId,input.caseId),
   review_publish:(actor,input)=>reviews.publish(actor,input.projectId,input),
-  chain_admission_get:actor=>deployments.admission.get(actor),
+  chain_admission_get:(actor,input)=>deployments.admission.get(actor,input),
   chain_admission_publish:(actor,input)=>deployments.admission.publish(actor,input),
   chain_admission_activate:(actor,input)=>deployments.admission.activate(actor,input),
   module_deploy:(actor,input)=>deployments.deployModule(actor,input.projectId,input),

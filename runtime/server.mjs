@@ -17,6 +17,7 @@ import {createMcp} from '../interfaces/mcp.mjs';
 import {digest,requireThat} from '../src/shared/index.mjs';
 import {createReviewSystem} from './reviews.mjs';
 import {createChainRead} from '../adapters/chain-read.mjs';
+import {createReadonlyChainRouter} from '../adapters/readonly-chain-router.mjs';
 import {createChainDeployments} from '../src/chain-deployments/index.mjs';
 import {createApprovals} from '../src/approvals/index.mjs';
 import {createServices} from '../src/services/index.mjs';
@@ -29,6 +30,7 @@ import {createInference} from '../src/inference/index.mjs';
 import {createContractIntake} from '../src/contract-intake/index.mjs';
 import {createProjectArchives} from '../src/portability/index.mjs';
 import {createProjectTransfers} from '../src/transfers/index.mjs';
+import {readonlyPorts} from './readonly-ports.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
 export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={}}){
@@ -37,7 +39,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
   writesEnabled:async reader=>!(await access.policy(reader)).config.paused,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
  access=createAccess({store,identity,now,reviewAdmission:reader=>reviewSystem.flow.admission.active(reader),
-  chainAdmission:reader=>deployments.admission.admitted(reader),reviewEligibility:(reader,projectId)=>reviewSystem.flow.admission.eligible(reader,projectId)});
+  chainAdmission:reader=>deployments.admission.admitted(reader),mainnetAdmission:reader=>deployments.admission.forChain(1).admitted(reader),reviewEligibility:(reader,projectId)=>reviewSystem.flow.admission.eligible(reader,projectId)});
  let services,releases;
  const projects=createProjects({store,identity,now,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicDetails:async projectId=>({
   services:await services.publicForProject(projectId),releases:await releases.publicForProject(projectId)
@@ -52,7 +54,10 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const artifacts=createArtifactStore({store});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
  reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,validatePublicBuild:artifact=>chain.validateModule(artifact),...reviewPorts});
- const chain=chainPorts.chain??createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})});
+ const chain=chainPorts.chain??createReadonlyChainRouter({
+  sepolia:createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})}),
+  mainnet:chainPorts.mainnetClient?createChainRead({client:chainPorts.mainnetClient,chainId:1}):null
+ });
  deployments=createChainDeployments({store,identity,builds,reviews:reviewSystem.flow,jobs,artifacts,chain,now});
  approvals=createApprovals({store,identity,projects,reviews:reviewSystem.flow,deployments,jobs,artifacts,chain,now});
  const collaborationAdmission=access.collaboration;
@@ -118,7 +123,7 @@ async function main(){
   requireThat(process.env.CLAUS_NETWORK_LOCAL==='1','database_required');
   store=openStore(process.env.CLAUS_NETWORK_LOCAL_FILE??'network-local.sqlite');
  }
- const application=createApplication({store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig()});
+ const application=createApplication({store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig(),chainPorts:readonlyPorts()});
  const server=await listen(application,{port:Number(process.env.PORT??8787)});
  console.log('Claus Network listening on '+server.address().address+':'+server.address().port);
  for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(async()=>{await store.close();process.exit(0);}));

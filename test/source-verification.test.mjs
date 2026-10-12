@@ -7,16 +7,17 @@ const input = { address: '0x' + '11'.repeat(20), creationTransaction: '0x' + '22
   constructorArguments: '0x1234', artifact: { entry: 'src/Example.sol', contract: 'Example',
     profile: { compiler: '0.8.27+commit.40a35a09.Emscripten.clang' }, standardInput: { language: 'Solidity', sources: {} } } };
 
-test('explorer routing stays in the query while source and constructor arguments use the POST body', async t => {
+for (const chainId of [1, 11155111]) test('chain ' + chainId + ': explorer routing stays in the query while source and constructor arguments use the POST body', async t => {
   const store = openStore(':memory:'); t.after(() => store.close());
   let submitted = 0, indexed = false, sourceSubmissions = 0;
   const fetcher = async (url, options = {}) => {
     const parsed = new URL(url);
     if (parsed.hostname === 'sourcify.dev') {
+      assert(parsed.pathname.includes('/' + chainId + '/'));
       if (options.method === 'POST') { sourceSubmissions++; return Response.json({ verificationId: 'verification-one' }); }
       return Response.json({ runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
     }
-    assert.equal(parsed.searchParams.get('chainid'), '11155111');
+    assert.equal(parsed.searchParams.get('chainid'), String(chainId));
     assert.equal(parsed.searchParams.get('module'), 'contract');
     assert.equal(parsed.searchParams.get('apikey'), 'local-test-key');
     const action = parsed.searchParams.get('action');
@@ -35,7 +36,7 @@ test('explorer routing stays in the query while source and constructor arguments
     assert.equal(action, 'checkverifystatus'); assert.equal(parsed.searchParams.get('guid'), 'verification-guid');
     return Response.json({ status: '0', result: 'Pending in queue' });
   };
-  const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key', fetcher });
+  const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key', fetcher, chainId });
   assert.equal((await verifier.step(input)).state, 'pending');
   await verifier.step(input); assert.equal(submitted, 1); assert.equal(sourceSubmissions, 1);
   indexed = true; const result = await verifier.step(input);

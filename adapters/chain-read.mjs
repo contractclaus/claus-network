@@ -2,6 +2,7 @@ import { encodeAbiParameters, keccak256, stringToHex, verifyTypedData } from 'vi
 import { ClausApprovalExecutorAbi as executorAbi, ClausReadonlyProjectAbi as targetAbi } from './chain-abi.mjs';
 import { digest, requireThat } from '../src/shared/index.mjs';
 import { createChainEvidence, validateBuildEvidence } from './chain-evidence.mjs';
+export { validateBuildEvidence } from './chain-evidence.mjs';
 
 export const CHAIN_ID = 11155111;
 export const PROFILE = 'claus-readonly-v1';
@@ -29,10 +30,13 @@ export const approvalTypes = { Approval: fields([
   ['dependencySnapshotHash', 'bytes32'], ['evidenceHash', 'bytes32'], ['policyVersion', 'bytes32'], ['policyGeneration', 'uint64'],
   ['authorityGeneration', 'uint64'], ['clausGeneration', 'uint64'], ['mandateHash', 'bytes32'], ['nonce', 'uint256'], ['notBefore', 'uint64'], ['expiresAt', 'uint64']
 ]) };
-export const domain = executor => ({ name: 'Claus Network', version: '1', chainId: CHAIN_ID, verifyingContract: executor });
+export const domain = (executor, chainId = CHAIN_ID) => {
+  requireThat([1, CHAIN_ID].includes(chainId), 'unsupported_chain');
+  return { name: 'Claus Network', version: '1', chainId, verifyingContract: executor };
+};
 export function approvalMessage(p, evidenceHash) {
   const { profile, configuration, projectKey, ...rest } = p;
-  requireThat(profile === PROFILE && p.chainId === CHAIN_ID, 'unsupported_profile');
+  requireThat(profile === PROFILE && [1, CHAIN_ID].includes(p.chainId), 'unsupported_profile');
   return { ...rest, projectId: projectKey, initCallHash: keccak256(configuration), evidenceHash };
 }
 export function validateModule(artifact) {
@@ -46,12 +50,13 @@ export function validateModule(artifact) {
   requireThat(keccak256(artifact.runtimeTemplate) === artifact.runtimeTemplateHash, 'artifact_corrupt');
 }
 
-export function createChainRead({ client }) {
-  const evidence = createChainEvidence({ client });
-  async function correctChain() { requireThat(await client.getChainId() === CHAIN_ID, 'wrong_chain'); }
+export function createChainRead({ client, chainId = CHAIN_ID }) {
+  requireThat([1, CHAIN_ID].includes(chainId), 'unsupported_chain');
+  const evidence = createChainEvidence({ client, chainId });
+  async function correctChain() { requireThat(await client.getChainId() === chainId, 'wrong_chain'); }
   async function capabilityMatches(capability) {
     await correctChain();
-    requireThat(capability.enabled === true && capability.chainId === CHAIN_ID && capability.profile === PROFILE,
+    requireThat(capability.enabled === true && capability.chainId === chainId && capability.profile === PROFILE,
       'unsupported_profile');
     requireThat(keccak256(await client.getCode({ address: capability.executor })) === capability.executorCodeHash,
       'executor_code_changed');
@@ -72,7 +77,7 @@ export function createChainRead({ client }) {
       implementation, codeHash, clausGeneration: Number(clausGeneration) };
   }
   async function moduleMatches(module) {
-    requireThat(module.state === 'verified' && module.chainId === CHAIN_ID &&
+    requireThat(module.state === 'verified' && module.chainId === chainId &&
       keccak256(await client.getCode({ address: module.address })) === module.codeHash, 'module_code_changed');
   }
   return {
@@ -91,8 +96,8 @@ export function createChainRead({ client }) {
       const message = { projectId: projectKey, owner, salt, implementation: module.address, codeHash: module.codeHash,
         initCallHash: keccak256(configuration), mandateHash, policyVersion: '0x' + digest({ profile: PROFILE, version: 1 }).slice(7),
         minDelaySeconds, nonce: BigInt('0x' + digest({ projectId, module: module.id, configuration, expiresAt }).slice(7)).toString(), expiresAt };
-      return { profile: PROFILE, chainId: CHAIN_ID, executor: capability.executor, configuration,
-        domain: domain(capability.executor), types: registrationTypes, primaryType: 'Registration', message };
+      return { profile: PROFILE, chainId: chainId, executor: capability.executor, configuration,
+        domain: domain(capability.executor, chainId), types: registrationTypes, primaryType: 'Registration', message };
     },
     async verifyRegistration(prepared, signature) {
       return verifyTypedData({ address: prepared.message.owner, domain: prepared.domain,
@@ -103,7 +108,7 @@ export function createChainRead({ client }) {
       requireThat(dependencySnapshot?.implementation?.codeHash === module.codeHash, 'dependency_evidence_mismatch');
       requireThat(s.minDelaySeconds <= 5 * 86400, 'unsupported_delay');
       requireThat(/^0x(?:[a-f0-9]{2}){0,8192}$/i.test(configuration), 'invalid_configuration');
-      return { profile: PROFILE, chainId: CHAIN_ID, executor: binding.executor, projectKey: binding.projectKey,
+      return { profile: PROFILE, chainId: chainId, executor: binding.executor, projectKey: binding.projectKey,
         target: binding.target, fromVersion: s.version, fromCodeHash: s.codeHash, implementation: module.address,
         toCodeHash: module.codeHash, configuration, dependencySnapshotHash: '0x' + digest(dependencySnapshot).slice(7),
         policyVersion: s.policyVersion, policyGeneration: s.policyGeneration, authorityGeneration: s.authorityGeneration,
@@ -111,7 +116,7 @@ export function createChainRead({ client }) {
         notBefore: now, expiresAt: now + Math.max(86400, s.minDelaySeconds + 7200) };
     },
     async validateProposal(proposal, binding, snapshot) {
-      requireThat(proposal.profile === PROFILE && proposal.chainId === CHAIN_ID &&
+      requireThat(proposal.profile === PROFILE && proposal.chainId === chainId &&
         proposal.executor.toLowerCase() === binding.executor.toLowerCase() && proposal.projectKey === binding.projectKey, 'proposal_mismatch');
       const s = await state(binding);
       requireThat(proposal.fromVersion === s.version && proposal.fromCodeHash === s.codeHash && proposal.mandateHash === s.mandateHash &&

@@ -1,6 +1,7 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
 import { openPostgresStore } from '../src/postgres/index.mjs';
+import { readonlyPorts } from '../runtime/readonly-ports.mjs';
 import { createApplication } from '../runtime/server.mjs';
 import { requestUrl } from '../runtime/request-url.mjs';
 import { operatorConfig } from '../runtime/operator-config.mjs';
@@ -15,7 +16,7 @@ function application() {
     const store = await openPostgresStore({ pool });
     const intakePorts = contractIntakePorts();
     return { store, intakePorts, app: createApplication({ store, origin: process.env.CLAUS_NETWORK_ORIGIN,
-      rateSalt: process.env.CLAUS_NETWORK_RATE_SALT, operatorPorts: operatorConfig(), intakePorts }) };
+      rateSalt: process.env.CLAUS_NETWORK_RATE_SALT, operatorPorts: operatorConfig(), chainPorts: readonlyPorts(), intakePorts }) };
   })().catch(error => { loaded = null; throw error; });
   return loaded;
 }
@@ -55,7 +56,9 @@ export default async function handler(req, res) {
         portabilityExecution: portability?.enabled === true ? publicAccess.collaboration.admission : 'not_enabled',
         inferenceExecution: 'not_enabled',
         contractIntakeExecution: intakeState,
-        mainnetExecution: 'not_enabled' });
+        mainnetExecution: publicAccess.mainnet === 'public_readonly' ?
+          controller?.chains?.includes(1) && executor?.chains?.includes(1) &&
+          controller.observedAt > Date.now() - 300000 && executor.observedAt > Date.now() - 300000 ? 'public_readonly' : 'worker_unavailable' : 'not_enabled' });
     } else {
       const headers = new Headers();
       for (const [key, value] of Object.entries(req.headers)) if (typeof value === 'string') headers.set(key, value);

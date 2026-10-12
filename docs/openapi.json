@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.11.3"
+    "version": "0.12.0"
   },
   "servers": [
     {
@@ -2328,7 +2328,20 @@
             "bearerAuth": []
           }
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "chainId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                11155111
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Operation result"
@@ -2394,6 +2407,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "chainId": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      11155111
+                    ]
+                  },
                   "version": {
                     "type": "string",
                     "minLength": 1,
@@ -2529,6 +2549,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "chainId": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      11155111
+                    ]
+                  },
                   "version": {
                     "type": "string",
                     "minLength": 1,
@@ -2606,6 +2633,13 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256
+                  },
+                  "chainId": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      11155111
+                    ]
                   }
                 },
                 "required": [

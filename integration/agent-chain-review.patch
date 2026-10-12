@@ -1,0 +1,11 @@
+--- a/agent/src/network-review-schema.ts
++++ b/agent/src/network-review-schema.ts
+@@ -87,7 +87,7 @@
+  if(typeof input.projectId!=='string'||!/^prj_[a-z0-9-]{1,80}$/.test(input.projectId)||!hash(input.caseId)||!hash(input.proposalHash))fail();
+  const p=input.proposal;
+  keys(p,['profile','chainId','executor','projectKey','target','fromVersion','fromCodeHash','implementation','toCodeHash','configuration','dependencySnapshotHash','policyVersion','policyGeneration','authorityGeneration','clausGeneration','mandateHash','nonce','notBefore','expiresAt']);
+- if(p.profile!=='claus-readonly-v1'||p.chainId!==11155111||![p.executor,p.target,p.implementation].every(address)||
++ if(p.profile!=='claus-readonly-v1'||![1,11155111].includes(p.chainId)||![p.executor,p.target,p.implementation].every(address)||
+   ![p.projectKey,p.fromCodeHash,p.toCodeHash,p.dependencySnapshotHash,p.policyVersion,p.mandateHash].every(word)||
+   ![p.fromVersion,p.policyGeneration,p.authorityGeneration,p.clausGeneration,p.notBefore,p.expiresAt].every(v=>Number.isSafeInteger(v)&&v>0)||
+   typeof p.nonce!=='string'||!/^(0|[1-9][0-9]{0,77})$/.test(p.nonce)||BigInt(p.nonce)>2n**256n-1n||

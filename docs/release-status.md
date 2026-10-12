@@ -1,3 +1,7 @@
+# Prepared mainnet extension, API 0.12.0
+
+This branch is an unactivated release candidate. Its Ethereum read-only routing, separate signing roles and gas policy require the concrete release approval and independent assessment described in [Mainnet](mainnet.md). Existing public services remain on their separately deployed release. This source does not turn on Mainnet, custody, inference or token launches.
+
 # Release status
 
 Status checked on 12 October 2026. The [live health response](https://claus-network-api.vercel.app/health) reports enabled capabilities separately from the [API schema](https://claus-network-api.vercel.app/openapi.json). Most paid and onchain workflows require an admitted pilot project.

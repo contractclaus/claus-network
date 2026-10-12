@@ -1,15 +1,17 @@
 import { encodeAbiParameters, encodeFunctionData, hashTypedData, keccak256, recoverTypedDataAddress } from 'viem';
 import { digest, requireThat } from '../src/shared/index.mjs';
-import { createSepoliaTransactions } from './sepolia-transactions.mjs';
+import { createReadonlyTransactions } from './sepolia-transactions.mjs';
 import { approvalMessage, approvalTypes, domain, validateModule, selectExecutorCapability } from './chain-read.mjs';
 import { ClausApprovalExecutorAbi as executorAbi, ClausReadonlyProjectAbi as targetAbi } from './chain-abi.mjs';
 import { authorityDenied } from './authorization.mjs';
 
-export function createChainExecutor({ store, client, signer, sealer, chain, verification, artifacts, admission, now = () => Date.now() }) {
+export function createChainExecutor({ store, client, signer, sealer, chain, verification, artifacts, admission, chainId = 11155111, now = () => Date.now() }) {
+  requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
+  const capKey = chainId === 1 ? 'chain:1' : 'chain';
   const read = (address, functionName, args = [], abi = executorAbi) => client.readContract({ address, abi, functionName, args });
   async function transact({ id, to = null, data, authority, expiresAt, authorize, validate = async () => {} }) {
     let currentChainState = true;
-    const transactions = createSepoliaTransactions({ store, client, signer, sealer, now,
+    const transactions = createReadonlyTransactions({ store, client, signer, sealer, now, chainId, finalized: chainId === 1,
       onReserve: admission?.reserveGas, onFinalize: admission?.finalizeGas,
       authorize: async (intent, reader) => {
         requireThat(intent.to === to && intent.data === data && intent.value === '0' &&
@@ -45,13 +47,13 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     requireThat(source?.value.published === true, 'source_not_published');
   }
   async function capability(executor) {
-    const value = selectExecutorCapability((await store.read('network-capabilities', 'chain'))?.value, executor);
+    const value = selectExecutorCapability((await store.read('network-capabilities', capKey))?.value, executor);
     // A withdrawn profile may still have a broadcast transaction to reconcile.
     // Fresh signatures/broadcasts check the current enabled profile below.
     await chain.capabilityMatches({ ...value, enabled: true }); return value;
   }
   async function currentCapability(cap, reader) {
-    const value = selectExecutorCapability((await reader.read('network-capabilities', 'chain'))?.value, cap.executor);
+    const value = selectExecutorCapability((await reader.read('network-capabilities', capKey))?.value, cap.executor);
     requireThat(value.enabled && digest(value) === digest({ ...cap, enabled: true }) &&
       value.executorPayer?.toLowerCase() === signer.address.toLowerCase(), 'executor_not_enabled');
   }
@@ -59,6 +61,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     tx.state === 'reverted' ? { state: 'failed', error: 'transaction_reverted', transactionHash: tx.hash } : null;
   const deployment = {
     async step({ kind, value, artifact, signature, authorize }) {
+      requireThat(value.chainId === chainId, 'wrong_chain');
       const cap = await capability(kind === 'project-register' ? value.executor : undefined);
       if (kind === 'module-deploy') {
         validateModule(artifact);
@@ -101,7 +104,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       const proof = await verification.step({ address: target, artifact: targetArtifact,
         constructorArguments, creationTransaction: tx.hash });
       return { state: proof.state === 'verified' ? 'verified' : 'verifying', transactionHash: tx.hash,
-        binding: { profile: cap.profile, chainId: 11155111, executor: value.executor, projectKey: value.message.projectId,
+        binding: { profile: cap.profile, chainId, executor: value.executor, projectKey: value.message.projectId,
           owner: value.message.owner, target, codeHash: keccak256(await client.getCode({ address: target })),
           registrationTransaction: tx.hash, verification: proof } };
     }
@@ -110,13 +113,13 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     async step({ value, authorize }) {
       const p = value.proposal;
       const cap = await capability(p.executor);
-      requireThat(p.chainId === 11155111 && p.executor === cap.executor && digest(p) === value.proposalHash, 'proposal_mismatch');
+      requireThat(p.chainId === chainId && p.executor === cap.executor && digest(p) === value.proposalHash, 'proposal_mismatch');
       const signed = (await store.read('claus-signed-approvals', value.id))?.value;
       requireThat(signed && value.decision?.decision === 'approve' && signed.decisionHash === value.decision.decisionHash &&
         signed.proposalHash === value.proposalHash, 'approval_missing');
       const evidenceHash = '0x' + digest({ proposalHash: value.proposalHash, reviewArtifactHash: value.reviewArtifactHash,
         decisionHash: signed.decisionHash }).slice(7);
-      const message = approvalMessage(p, evidenceHash), typed = { domain: domain(p.executor), types: approvalTypes, primaryType: 'Approval', message };
+      const message = approvalMessage(p, evidenceHash), typed = { domain: domain(p.executor, chainId), types: approvalTypes, primaryType: 'Approval', message };
       requireThat(digest(message) === digest(signed.message) && hashTypedData(typed) === signed.approvalHash &&
         (await recoverTypedDataAddress({ ...typed, signature: signed.signature })).toLowerCase() === signed.signer.toLowerCase() &&
         signed.signer.toLowerCase() === cap.approvalSigner.toLowerCase(), 'approval_mismatch');
@@ -163,17 +166,18 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         const receipt = await client.getTransactionReceipt({ hash: logs.at(-1).transactionHash });
         const block = await client.getBlock({ blockNumber: receipt.blockNumber }), head = await client.getBlockNumber();
         requireThat(receipt.status === 'success' && receipt.blockHash === block.hash, 'execution_receipt_mismatch');
-        if (head - receipt.blockNumber < 2n) return { state: 'executing' };
+        if (head - receipt.blockNumber < 2n || chainId === 1 &&
+          (await client.getBlock({ blockTag: 'finalized' })).number < receipt.blockNumber) return { state: 'executing' };
         executed = { hash: receipt.transactionHash, receipt: { blockNumber: receipt.blockNumber.toString(), blockHash: receipt.blockHash } };
       }
       if (executed) {
         requireThat(Number(await read(p.target, 'version', [], targetAbi)) === p.fromVersion + 1 &&
           (await read(p.target, 'implementation', [], targetAbi)).toLowerCase() === p.implementation.toLowerCase() &&
           await read(p.target, 'configuration', [], targetAbi) === p.configuration, 'execution_state_mismatch');
-        return { state: 'executed', execution: { chainId: 11155111, address: p.target, implementation: p.implementation,
+        return { state: 'executed', execution: { chainId, address: p.target, implementation: p.implementation,
           version: p.fromVersion + 1, codeHash: p.toCodeHash, approvalHash: signed.approvalHash,
           transactionHash: executed.hash, blockNumber: executed.receipt.blockNumber, blockHash: executed.receipt.blockHash,
-          explorerUrl: 'https://sepolia.etherscan.io/tx/' + executed.hash, verification: binding.verification } };
+          explorerUrl: (chainId === 1 ? 'https://etherscan.io/tx/' : 'https://sepolia.etherscan.io/tx/') + executed.hash, verification: binding.verification } };
       }
       const latest = await client.getBlock({ blockTag: 'latest' });
       if (Number(latest.timestamp) >= p.expiresAt) return { state: 'failed', error: 'approval_expired' };
