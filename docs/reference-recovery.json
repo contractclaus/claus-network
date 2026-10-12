@@ -1,6 +1,6 @@
 {
   "ownerJournal": {
-    "at": "2026-10-12T09:10:10.085Z",
+    "at": "2026-10-12T09:18:24.767Z",
     "actions": 10,
     "files": 20,
     "signedActions": 10,
@@ -8,7 +8,7 @@
       1,
       11155111
     ],
-    "sha256": "e72399000ba7aedab010f554e0eed6fd660cd329ba3329727cf560bc39988a83",
+    "sha256": "3f965f9361b3cbb4bea3a5448e5d94a235d334402bd2a2e8cccf70588f9907c5",
     "readOnly": true,
     "signaturesVerified": true,
     "ownerKeyExported": false,
@@ -17,10 +17,10 @@
   "databaseRecovery": [
     {
       "operator": "https://claus-network-api.vercel.app",
-      "capturedAt": "2026-10-12T09:10:12.554Z",
+      "capturedAt": "2026-10-12T09:18:27.205Z",
       "documents": 822,
       "events": 426,
-      "sha256": "01ca6fe0cc7da2e384d0011e2fb5ddc400392cade67dbf3442ddce17d865ccea",
+      "sha256": "f25daade2b2bca1e505e8c9561777a2258ce46dabfd68cd95290e69fad0abea2",
       "isolatedSchemaRestore": true,
       "exactValuesRevisionsEventsAndSequence": true,
       "oldCredentialDenied": true,
@@ -29,10 +29,10 @@
     },
     {
       "operator": "https://claus-network-portable.vercel.app",
-      "capturedAt": "2026-10-12T09:10:20.214Z",
+      "capturedAt": "2026-10-12T09:18:34.682Z",
       "documents": 47,
       "events": 11,
-      "sha256": "c75696f99dd712f301841fc6cb50c6b2846b77d7f2a7b188a452fb03983b1d30",
+      "sha256": "69ee66b670bb5b817591ae59785b812ee0074c19a950a598d1c33f813228f9a7",
       "isolatedSchemaRestore": true,
       "exactValuesRevisionsEventsAndSequence": true,
       "oldCredentialDenied": null,
@@ -40,11 +40,11 @@
       "externalEffectsDispatched": false
     }
   ],
-  "createdAt": "2026-10-12T09:10:26.252Z",
-  "sha256": "19f3a2f7c048ad87e318f1d2cf4b6f27fdfa7ae30f6f9befd5938b1de850ed83",
-  "bytes": 6191831,
-  "sourceFiles": 296,
-  "operationalFiles": 136,
+  "createdAt": "2026-10-12T09:18:40.572Z",
+  "sha256": "67c7778a7de1bafdabce4d7057c55bcd836adc1a9188c45e1072b2bcbbbaa745",
+  "bytes": 6321032,
+  "sourceFiles": 298,
+  "operationalFiles": 139,
   "encryptedReadback": true,
   "decryptedReadback": true
 }
