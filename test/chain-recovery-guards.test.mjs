@@ -1,8 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {openStore} from '../src/storage/index.mjs';
-import {checkChainWorkerRoles} from '../runtime/chain-worker.mjs';
+import {checkChainWorkerRoles, createChainWorker} from '../runtime/chain-worker.mjs';
 import {recoverChainEvent} from '../adapters/chain-event-recovery.mjs';
+
+test('chain hosts require an explicit secure historical endpoint before connecting to storage', async () => {
+  await assert.rejects(createChainWorker('executor', {}), { code: 'historical_rpc_required' });
+  await assert.rejects(createChainWorker('controller', { CLAUS_SEPOLIA_RPC_URL: 'http://example.invalid' }),
+    { code: 'historical_rpc_required' });
+});
 
 test('worker role mismatch is rejected even while admission is disabled',async t=>{
  const store=openStore(':memory:');t.after(()=>store.close());

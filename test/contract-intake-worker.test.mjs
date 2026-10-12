@@ -23,7 +23,7 @@ async function fixture(t) {
   f.deliveryFailures = {};
   const delivery = { step: async input => { f.sends.push(input);
     const code = f.deliveryFailures[input.request.id]; if (code) throw Object.assign(Error(code), { code });
-    return { state: f.deliveryState, reason: f.deliveryReason,
+    return { state: f.deliveryState, reason: f.deliveryReason, phase: f.phase, resolutionFinalized: f.resolutionFinalized,
     resultHash: f.badHash ? digest('wrong') : digest(input.request.result), finalized: f.finalized ?? true,
     transactionHash: '0x' + '11'.repeat(32), privateCredential: 'must-not-be-stored' }; } };
   f.create = () => createContractIntakeWorker({ store, chain, intake, delivery, startBlock: 100, enabled: () => {
@@ -164,4 +164,15 @@ test('a stopped subsidy preserves the delivery failure reason and is not polled 
   assert.equal(row.value.delivery.reason, 'dispatch_subsidy_expired');
   await f.create().tick();
   assert.equal(f.sends.length, 1);
+});
+
+test('failed callback reporting retains the finalized resolution without claiming delivery', async t => {
+  const f = await fixture(t); await f.result();
+  f.deliveryState = 'failed'; f.deliveryReason = 'dispatch_subsidy_expired';
+  f.phase = 'callback'; f.resolutionFinalized = true;
+  await f.worker.tick();
+  const result = (await f.store.read('contract-requests', 'request')).value.delivery;
+  assert.equal(result.state, 'failed'); assert.equal(result.phase, 'callback');
+  assert.equal(result.resolutionFinalized, true); assert.equal(result.transactionHash, '0x' + '11'.repeat(32));
+  assert.equal(result.finalized, undefined); assert.equal(result.privateCredential, undefined);
 });

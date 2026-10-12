@@ -83,7 +83,10 @@ test('API project, real signatures and zero-delay execution work across isolated
     await app.deployments.admission.publish(ownerActor, { chainId, version: 'local-fixture-only', config });
     await app.deployments.admission.activate(ownerActor, { chainId, version: 'local-fixture-only', expectedGeneration: 0 });
   }
-  const executor = createChainExecutor({ store, client, signer: payer, chain, chainId, artifacts: app.artifacts, now: () => clock,
+  let omitExecutionEvent = false;
+  const executorClient = { ...client, getLogs: async args =>
+    omitExecutionEvent && args.event?.name === 'UpgradeExecuted' ? [] : client.getLogs(args) };
+  const executor = createChainExecutor({ store, client: executorClient, signer: payer, chain, chainId, artifacts: app.artifacts, now: () => clock,
     admission: chainId === 1 ? app.deployments.admission.forChain(1) : undefined,
     sealer: createSealer('22'.repeat(32)), verification: { step: async input => ({ state: 'verified', localFixture: true, address: input.address }) } });
   async function advance(seconds = 31) {
@@ -185,6 +188,18 @@ test('API project, real signatures and zero-delay execution work across isolated
       functionName: 'execute', args: [signed.message, approved.proposal.configuration, signed.signature] });
     if (chainId === 11155111) await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
     await advance();
+    const event = executorSource.abi.find(x => x.type === 'event' && x.name === 'UpgradeExecuted');
+    const legacyId = digest({ chainId, key: 'execution:' + approved.id,
+      query: { address: executorAddress, event, args: { projectId: approved.proposal.projectKey, approvalHash: signed.approvalHash } } });
+    const final = await client.getBlock({ blockTag: 'finalized' });
+    await store.transaction(tx => tx.write('chain-event-recovery', legacyId,
+      { nextBlock: String(final.number + 1n), blockNumber: String(final.number), blockHash: final.hash }, 0));
+    const before = await store.list('chain-event-recovery');
+    omitExecutionEvent = true;
+    await assert.rejects(executor.execution.step({ value: approved, authorize: async () => true }),
+      { code: 'recovery_logs_inconsistent' });
+    assert.deepEqual(await store.list('chain-event-recovery'), before, 'missing logs cannot advance a cursor');
+    omitExecutionEvent = false;
   }
   const completed = await until(() => app.approvals.runExecution(executor.execution),
     () => app.approvals.get(actor, project.id, proposal.id), 'executed');

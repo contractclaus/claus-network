@@ -11,7 +11,9 @@ export function contractIntakePorts(env = process.env, suppliedClient) {
   shape(pin, ['chainId', 'inbox', 'codeHash', 'dispatcher', 'startBlock', 'reviewProjectId', 'reviewCaseId', 'reviewArtifactHash']);
   requireThat(pin.chainId === 11155111, 'unsupported_chain');
   integer(pin.startBlock, 1); contentHash(pin.reviewArtifactHash);
-  const client = suppliedClient ?? createPublicClient({ transport: http('https://ethereum-sepolia-rpc.publicnode.com',
+  const rpcUrl = env.CLAUS_SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com';
+  requireThat(new URL(rpcUrl).protocol === 'https:', 'invalid_sepolia_rpc');
+  const client = suppliedClient ?? createPublicClient({ transport: http(rpcUrl,
     { retryCount: 0, timeout: 15000 }), cacheTime: 0 });
   const chain = createContractInboxRead({ client, ...pin });
   async function admitted(reader, projectId) {

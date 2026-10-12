@@ -11,7 +11,7 @@ State transitions are short database transactions. Provider calls and compilatio
 - Cancel queued work through the job endpoint. A marked external effect requires reconciliation instead of deleting its record.
 - If a token is lost or its response was interrupted, recover with owner authentication and revoke the affected mandate or credential.
 - A temporary graph failure does not withdraw a project. Publication state comes from the registry.
-- In the 0.12.3 source candidate (not yet deployed), a changed block hash in finalized event recovery blocks the affected registration or execution with `recovery_block_changed`. Its cursor, signed transaction and accounting remain intact for operator investigation. This is an explicit stop, not a refund or permission to resend under a new identity.
+- In the 0.12.4 source candidate (not yet deployed), a changed block hash in finalized event recovery blocks the affected registration or execution with `recovery_block_changed`. Its cursor, signed transaction and accounting remain intact for operator investigation. This is an explicit stop, not a refund or permission to resend under a new identity.
 
 Initial rate limits are separate from any future financial allowance. Authentication accepts at most 30 requests per peer per five minutes and 200 globally. Other admitted API requests accept at most 300 per peer and 3,000 globally per five minutes. MCP transport and tool admission both count. Errors are explicit; clients should back off.
 
@@ -102,7 +102,7 @@ Registration and execution already performed by a relayer are recognized from th
 
 After a lost broadcast, the same encrypted signed bytes may be sent again at most once per minute while the original authority and expiry remain valid. This uses the same hash, nonce, fee and reservation. Revocation/expiry forbid further sends but preserve unresolved exposure. This does not add fee-bump, cancellation or replacement authority.
 
-An unsent chain action becomes blocked once its original transaction window expires. Gas-price and available-budget deferrals may wait within that window; they cannot extend it. An expired unsent callback closes without spending. If someone else delivers a callback first, the worker checks the exact finalized Inbox result and records completion with its original resolution receipt.
+An unsent chain action becomes blocked once its original transaction window expires. Gas-price and available-budget deferrals may wait within that window; they cannot extend it. An expired unsent callback becomes a failed sponsored delivery without spending; it does not close the onchain request. If someone else delivers a callback first, the worker checks the exact finalized Inbox result and records completion with its original resolution receipt.
 
 A cancelled review whose billing is provably void may be requested again with a new idempotency key for the same source. Its old ID, receipt history and daily attempt count remain unchanged. Paid or uncertain reviews cannot be replaced this way.
 
@@ -110,3 +110,9 @@ The eight active review slots are shared by public and operator-pilot work to bo
 
 
 Chain workers check their configured signing role against the current capability before claiming jobs, even when admission is disabled. Missing chain ports defer before marking an external effect. Existing effects retain their original reconciliation path. Registration and execution recovery use bounded, resumable finalized event ranges; no request scans all chain history in one RPC call. One cursor per original recovery identity is retained as operational history.
+
+## Historical RPC requirement for candidate 0.12.4
+
+Controller and executor hosts require `CLAUS_SEPOLIA_RPC_URL`; Mainnet uses its separate `CLAUS_MAINNET_RPC_URL`. The chosen endpoint must serve historical `eth_getLogs`, `eth_call`, `eth_getCode`, block headers, transactions and receipts back to the oldest retained module, registration and proposal. The intake host uses the same Sepolia setting for its original event cursor. Before release, verify real contract state and logs well beyond the provider's recent-state window. A reachable latest block does not establish archive support. Never substitute current state for a missing historical read or discard an old cursor to get past pruning. Preserve original IDs and resume through a working archive endpoint.
+
+The registration scan intentionally retains its module-based lower bound, including registrations mined before a repeated preparation. Empty pages before the selected executor existed are valid. Execution recovery uses a new `execution:v2` cursor without deleting earlier journals; an advanced target version without its execution event keeps recovery pending. Missing provider data does not prove cancellation. These changes do not automatically reopen previously terminal jobs.
