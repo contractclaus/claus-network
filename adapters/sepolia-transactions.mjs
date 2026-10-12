@@ -3,7 +3,9 @@ import { digest, requireThat, text } from '../src/shared/index.mjs';
 import { authorityDenied } from './authorization.mjs';
 
 const CHAIN = 11155111;
-const MAX_GAS = 6000000n;
+// Sepolia's Glamsterdam state-creation repricing makes the reviewed executor
+// deployment ~19.5M gas. The monetary ceiling remains independent and fixed.
+const MAX_GAS = 30000000n;
 const MAX_FEE = 50000000000n;
 const MAX_COST = 10000000000000000n;
 const json = value => JSON.parse(JSON.stringify(value, (_, item) => typeof item === 'bigint' ? item.toString() : item));

@@ -1,31 +1,33 @@
 # Release status
 
-This page describes the deployed scope on 12 October 2026. Check the live [health response](https://claus-network-api.vercel.app/health) and [OpenAPI](https://claus-network-api.vercel.app/openapi.json) for the current release.
+Status checked on 12 October 2026. The [live health response](https://claus-network-api.vercel.app/health) reports activation separately from the [API schema](https://claus-network-api.vercel.app/openapi.json).
 
 | Capability | State |
 | --- | --- |
-| EOA wallet login on chain ID 1 | Live; login does not send a transaction |
-| Project identity and delegated agents | Live |
-| API, JavaScript SDK, CLI, HTTP MCP | Implemented; API/MCP live |
+| Owner login, project identity and delegated agents | Live |
+| API, JavaScript SDK, CLI and HTTP MCP | Live; 68 operations in API 0.5 |
 | Source snapshots and explicit publication | Live |
-| Bounded Solidity compilation | Live; hosted scheduled worker verified |
-| Public graph | Live API |
+| Bounded Solidity compilation | Live; scheduled isolated compiler |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
-| Sponsored review admission | Live for explicitly admitted pilots; public registration alone grants no subsidy |
-| Independent IMD review of Claus contracts | Initial findings addressed; corrected candidate under review |
-| Claus approval and chain execution | Not enabled |
-| Verified network contract deployments | None yet |
-| Project hosting, customer wallets, service catalogue | Implemented locally in 0.5; not activated |
-| Public inference and holder credits | Planned |
+| Sponsored IMD reviews | Live for explicitly admitted pilots |
+| Claus decision and protected execution workers | Active for the restricted Sepolia profile; first complete execution is still being verified |
+| Approval executor contract | Confirmed on Sepolia, source verified |
+| Service catalogue and isolated static publication | Active for admitted projects; reference collaboration acceptance is in progress |
+| Project wallets | Hosted but disabled pending assessment of the corrected wallet's independent review |
+| Production token launches and capital products | Not enabled |
+| Public inference and holder credits | Not enabled |
+| GitBook publication | Prepared; account connection still required |
 
-Verified API deployment: `dpl_6WS7fmkjv6geXW4qLtQs8DDYm7Hk`.
+API deployment: `dpl_3cAHRBVHRrqhyxACrApmcxkKWoRu`, release `f0f598e968eabb90d25e994c22295d8a3c9308d273a785bad9640cf6cea440b5`. All 75 uploaded files matched the prepared release.
 
-Its release input digest is `436b52ddf13825538adfe004d7dac509e011ba2eccbec6a10020df286660b049`. All 67 uploaded source files matched the prepared release. Release 0.4 contains 41 documented operations and separate Claus-controller and Sepolia-executor workers. Local tests cover real EVM signatures, delayed execution, onchain revocation and cancellation. The public contract profile stays disabled until the new candidate's independent review, deployment and source verification have been checked.
+The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 
-Controller deployment: `dpl_3pV9KvaH6gz2Bz8rFqVFhcdMhbMy`. Executor deployment: `dpl_CpPpbEZjcxTa779cNBXVdC1BKcy1`. Their 47 uploaded files each matched the prepared release; authenticated calls confirmed both are disabled. Publishing these workers does not activate their contract authority.
+The executor is [0x9806bCbC514468231e0F2cDca6dcAC874E98a8E7](https://sepolia.etherscan.io/address/0x9806bCbC514468231e0F2cDca6dcAC874E98a8E7#code). Its [deployment manifest](deployments.json) records the creation transaction, exact source/build, constructor inputs, runtime hash and verification evidence. The profile has no custody of customer assets. Source verification establishes correspondence with published code; it is not a guarantee of safety.
 
-The published `claus-approval-contracts` project belongs to Claus. It is not evidence of independent customer adoption. Compilation, a review report, approval, execution and source verification are different states; none should be inferred from another.
+The independent approval-contract review has no medium or higher findings; retained low-severity limitations are described in [protected testnet changes](testnet.md). The first project wallet review identified cross-session replay interference. The corrected wallet namespaces replay records by session and permanently retires revoked session IDs; it remains disabled while its new review is assessed.
 
-Website deployment: `dpl_EzguQigqsVYoJ4T26mMn2sAd7w4j`. Its 1,022 uploaded source files matched the prepared release; the live graph, project profile and existing product routes returned successfully.
+The public `claus-approval-contracts` project and the reference service projects are operated by Claus. They are not independent customer adoption. Compilation, external review, a Claus decision, execution and source verification are separate evidence. The full network plan remains in progress.
 
-Review worker deployment: `dpl_C3HL7dHEY5NkXbh1oLpg4RhNvHHX`, with 37 exact source files verified. The corrected approval contract, balance lens and bounded project wallet are being reviewed through the API. Payments retain their original identifiers and are reconciled rather than repurchased. These checks are not a claim of complete network delivery.
+Existing Claus Club, staking and NFT rights are unchanged by this release.
+
+The [native-vault profile](native-vault.md) is a new candidate under review. It is not a deployed custody service or a token-launch product.

@@ -31,3 +31,11 @@ Once an approval signature has been published on chain, anyone can submit it wit
 Use `proposal_publish` to add a completed decision and, when executed, its deployment receipt to the public project profile. Publication requires `project.publish`, an expected revision and still-published source. Internal inference payment material is not included in that projection.
 
 Source verification, independent review, Claus approval and confirmed execution remain separate evidence. This profile has no custody of customer funds and establishes no safety guarantee for future token, lending or trading products.
+
+## Retained trust boundaries
+
+The module call forwards at most 200,000 gas. This is not a bound on the caller's total gas: the current kernel copies return data after the call. The initial balance lens returns a fixed 224 bytes. A broader module profile must account for output size as well as computation.
+
+The network controller produces short-lived approvals and registrations. The underlying executor does not impose a universal maximum signature lifetime; its signer must maintain the documented expiry policy. Directly registered owner modules do not thereby receive a Claus approval. A code hash identifies code, not the current state of external contracts it reads.
+
+The recovery owner can pause all protected upgrades immediately and invalidate outstanding signatures by scheduling signer recovery. Cancelling recovery does not restore those old signatures. Project reads continue during upgrade suspension. None of these controls should be described as a guarantee against every malicious module or dependency.

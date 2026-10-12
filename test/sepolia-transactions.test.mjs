@@ -25,7 +25,7 @@ function fixture(t) {
     return allowed;
   } });
   const input = id => ({ id, data: '0x60006000', authority: { profile: 'local-test' }, expiresAt: Date.now() + 60000 });
-  return { tx: make(), make, input, deny: () => { allowed = false; }, wrong: () => { wrongChain = true; },
+  return { tx: make(), make, client, input, deny: () => { allowed = false; }, wrong: () => { wrongChain = true; },
     authorityError: code => { authorityError = code; },
     mismatch: value => { mismatched = value; }, broadcasts: () => broadcasts,
     confirm: () => { receipt = { transactionHash: keccak256(raw), blockNumber: 100n, blockHash: '0x' + '11'.repeat(32),
@@ -70,4 +70,15 @@ test('mainnet and changed intent cannot reuse this executor', async t => {
   const f = fixture(t), input = f.input('first'); await f.tx.prepare(input);
   await assert.rejects(f.tx.prepare({ ...input, data: '0x60016000' }), { code: 'idempotency_conflict' });
   f.wrong(); await assert.rejects(f.tx.submit('first'), { code: 'wrong_chain' }); assert.equal(f.broadcasts(), 0);
+});
+test('state-creation gas can increase without increasing the monetary ceiling', async t => {
+  const f=fixture(t);f.client.estimateGas=async()=>19458943n;
+  const prepared=await f.tx.prepare(f.input('large-deployment'));
+  assert.equal(prepared.gas,'24333678');assert.equal(prepared.maxFeePerGas,'1000000');
+  f.deny();await f.tx.submit('large-deployment');
+  f.client.estimateFeesPerGas=async()=>({maxFeePerGas:1000000000n,maxPriorityFeePerGas:0n});
+  await assert.rejects(f.tx.prepare(f.input('too-expensive')),{code:'transaction_cost_limit'});
+  f.client.estimateFeesPerGas=async()=>({maxFeePerGas:1000000n,maxPriorityFeePerGas:0n});
+  f.client.estimateGas=async()=>30000000n;
+  await assert.rejects(f.tx.prepare(f.input('too-large')),{code:'transaction_cost_limit'});
 });

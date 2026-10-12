@@ -10,4 +10,8 @@
 - [Explorer and publication](explorer.md)
 - [Reviews and contract changes](reviews-and-contracts.md)
 - [Protected testnet changes](testnet.md)
+- [Native vault candidate](native-vault.md)
+- [Services](services.md)
+- [Project wallets](wallets.md)
+- [Project UIs](project-uis.md)
 - [Operation and recovery](operations.md)

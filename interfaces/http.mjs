@@ -2,7 +2,12 @@ import {openapi} from './contract.mjs';
 const errors={unauthenticated:401,invalid_signature:401,challenge_expired:401,scope_denied:403,access_denied:403,not_found:404,revision_conflict:409,idempotency_conflict:409,slug_taken:409,rate_limited:429,capacity_reached:429,build_in_progress:409,build_not_complete:409,entry_missing:400,effect_requires_reconciliation:409,job_terminal:409,capability_not_available:503,
  sponsor_not_enabled:403,sponsor_limit:403,review_in_progress:409,source_not_published:409,unsupported_source_host:400,quote_not_ready:409,review_not_complete:409,quote_expired:409,quote_input_mismatch:409,quote_already_admitted:409,provider_offer_already_admitted:409,funding_insufficient:409,
  unsupported_module:400,unsupported_delay:400,unsupported_profile:400,module_not_verified:409,project_not_registered:409,
- project_already_registered:409,registration_expired:409,proposal_in_progress:409,decision_not_complete:409,review_context_too_large:413,chain_not_enabled:409};
+ project_already_registered:409,registration_expired:409,proposal_in_progress:409,decision_not_complete:409,review_context_too_large:413,chain_not_enabled:409,
+ service_not_found:404,service_version_conflict:409,service_not_available:409,service_schema_mismatch:400,service_payload_too_large:413,
+ service_order_busy:409,payment_mismatch:409,receipt_already_used:409,result_not_ready:409,result_mismatch:409,acceptance_conflict:409,lease_lost:409,
+ wallets_not_enabled:409,collaboration_not_enabled:409,wallet_not_verified:409,wallet_profile_changed:409,session_payment_denied:403,
+ session_stale:409,session_retired:409,session_expired:409,payment_expired:409,payment_not_pending:409,payment_already_pending:409,
+ payment_already_complete:409,unsupported_payment_asset:400};
 export const errorStatus=error=>errors[error.code]??(/^(invalid_|unknown_|missing_|duplicate_|value_|file_|snapshot_|document_)/.test(error.code??'')?400:503);
 export const errorBody=error=>({error:error.code&&errorStatus(error)!==503?error.code:'service_unavailable',retryable:errorStatus(error)>=500,
  ...(errorStatus(error)===400&&typeof error.field==='string'&&error.field.length<200?{field:error.field}:{})});

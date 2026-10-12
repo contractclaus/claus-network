@@ -10,8 +10,12 @@ export function createSourceVerification({ store, etherscanKey, fetcher = fetch,
   }
   async function etherscan(values) {
     requireThat(etherscanKey, 'verification_not_configured');
-    return request('https://api.etherscan.io/v2/api', { method: 'POST',
-      body: new URLSearchParams({ chainid: '11155111', module: 'contract', apikey: etherscanKey, ...values }) });
+    const { action, ...parameters } = values;
+    const query = new URLSearchParams({ chainid: '11155111', module: 'contract', action, apikey: etherscanKey });
+    if (action === 'verifysourcecode') return request('https://api.etherscan.io/v2/api?' + query, {
+      method: 'POST', body: new URLSearchParams(parameters) });
+    for (const [key, value] of Object.entries(parameters)) query.set(key, value);
+    return request('https://api.etherscan.io/v2/api?' + query);
   }
   return {
     async step({ address, artifact, constructorArguments = '0x', creationTransaction }) {
@@ -52,7 +56,7 @@ export function createSourceVerification({ store, etherscanKey, fetcher = fetch,
         const submission = await etherscan({ action: 'verifysourcecode', contractaddress: address,
           sourceCode: JSON.stringify(artifact.standardInput), codeformat: 'solidity-standard-json-input',
           contractname: artifact.entry + ':' + artifact.contract, compilerversion: 'v' + artifact.profile.compiler.replace('.Emscripten.clang', ''),
-          constructorArguements: constructorArguments.slice(2) });
+          constructorArguments: constructorArguments.slice(2) });
         value.etherscanAttemptAt = now();
         if (submission.status === '1') value.etherscanGuid = submission.result;
         else value.etherscanError = String(submission.result).slice(0, 500);
@@ -63,6 +67,7 @@ export function createSourceVerification({ store, etherscanKey, fetcher = fetch,
       }
       value = { ...value, checkedAt: now(), explorerUrl: 'https://sepolia.etherscan.io/address/' + address + '#code',
         sourcifyUrl: 'https://repo.sourcify.dev/11155111/' + address };
+      if (value.etherscanVerified) delete value.etherscanError;
       if (value.runtimeMatch === 'exact_match' && value.creationMatch === 'exact_match' && value.etherscanVerified) value.state = 'verified';
       await save(); return value;
     }

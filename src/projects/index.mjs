@@ -2,7 +2,7 @@ import { canonical, copy, digest, integer, requireThat, text } from '../shared/i
 
 const filePath = value => {
   requireThat(typeof value === 'string' && value.length <= 180 &&
-    /^[a-zA-Z0-9_/-]+\.(sol|json|md|txt)$/.test(value) &&
+    /^[a-zA-Z0-9_/-]+\.(sol|json|md|txt|html|css|js|svg)$/.test(value) &&
     !value.startsWith('/') && !value.includes('//') && !value.split('/').includes('..'), 'invalid_file_path');
   return value;
 };
@@ -12,7 +12,7 @@ const prose = (value, maximum) => {
   return value;
 };
 
-export function createProjects({ store, identity, now = () => Date.now() }) {
+export function createProjects({ store, identity, publicDetails = async () => ({}), now = () => Date.now() }) {
   async function snapshot(reader, projectId, id) {
     const value = (await reader.read('snapshots', projectRef(projectId, id)))?.value;
     requireThat(value && value.projectId === projectId, 'not_found');
@@ -103,7 +103,7 @@ export function createProjects({ store, identity, now = () => Date.now() }) {
       requireThat(record?.value.published === true, 'not_found');
       // Evidence is written only by the trusted workflow, not profile input.
       const evidence = (await store.read('public-evidence', record.value.projectId))?.value ?? { reviews: [], decisions: [], deployments: [] };
-      return { ...record.value, revision: record.revision, evidence };
+      return { ...record.value, revision: record.revision, evidence, ...await publicDetails(record.value.projectId) };
     },
     async graph({ after = '', limit = 100 } = {}) {
       const records = await store.list('public-projects', { after, limit });

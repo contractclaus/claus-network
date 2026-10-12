@@ -140,16 +140,38 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "services",
+      "path": "src/services/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": [
+        "node:crypto"
+      ]
+    },
+    {
+      "id": "wallets",
+      "path": "src/wallets/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "releases",
+      "path": "src/releases/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [
-    "wallets",
     "providers",
     "holder-benefits",
-    "liquidity",
-    "explorer",
-    "http",
-    "mcp"
+    "liquidity"
   ],
   "rule": "Cross-module imports use index.mjs only. Storage and policy access are injected ports. Planned modules are not implemented or enabled."
 }

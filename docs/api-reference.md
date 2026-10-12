@@ -39,6 +39,33 @@ The [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) i
 | `proposal_create` | POST | `/v1/projects/{projectId}/proposals` | Bearer credential |
 | `proposal_get` | GET | `/v1/projects/{projectId}/proposals/{proposalId}` | Bearer credential |
 | `proposal_publish` | PUT | `/v1/projects/{projectId}/proposals/{proposalId}/publication` | Bearer credential |
+| `service_register` | POST | `/v1/projects/{projectId}/services` | Bearer credential |
+| `service_get` | GET | `/v1/projects/{projectId}/services/{serviceId}` | Bearer credential |
+| `service_publish` | PUT | `/v1/projects/{projectId}/services/{serviceId}/publication` | Bearer credential |
+| `service_suspend` | POST | `/v1/projects/{projectId}/services/{serviceId}/suspend` | Bearer credential |
+| `service_catalog` | GET | `/v1/public/services` | Public |
+| `service_quote` | POST | `/v1/projects/{projectId}/service-quotes` | Bearer credential |
+| `service_accept` | POST | `/v1/projects/{projectId}/service-orders` | Bearer credential |
+| `service_order` | GET | `/v1/projects/{projectId}/service-orders/{orderId}` | Bearer credential |
+| `service_authorize` | POST | `/v1/projects/{projectId}/service-orders/{orderId}/authorization` | Bearer credential |
+| `service_cancel` | DELETE | `/v1/projects/{projectId}/service-orders/{orderId}` | Bearer credential |
+| `service_result` | GET | `/v1/projects/{projectId}/service-orders/{orderId}/result` | Bearer credential |
+| `service_accept_result` | POST | `/v1/projects/{projectId}/service-orders/{orderId}/acceptance` | Bearer credential |
+| `provider_orders` | GET | `/v1/projects/{projectId}/service-assignments` | Bearer credential |
+| `provider_claim` | POST | `/v1/projects/{projectId}/service-assignments/{orderId}/claim` | Bearer credential |
+| `provider_deliver` | PUT | `/v1/projects/{projectId}/service-assignments/{orderId}/delivery` | Bearer credential |
+| `wallet_create` | POST | `/v1/projects/{projectId}/wallet` | Bearer credential |
+| `wallet_get` | GET | `/v1/projects/{projectId}/wallet` | Bearer credential |
+| `wallet_action` | GET | `/v1/projects/{projectId}/wallet/actions/{actionId}` | Bearer credential |
+| `wallet_session_prepare` | POST | `/v1/projects/{projectId}/wallet/sessions/prepare` | Bearer credential |
+| `wallet_session_submit` | POST | `/v1/projects/{projectId}/wallet/sessions/{sessionId}/submit` | Bearer credential |
+| `wallet_session_revoke` | POST | `/v1/projects/{projectId}/wallet/sessions/{sessionId}/revoke-transaction` | Bearer credential |
+| `wallet_payment_prepare` | POST | `/v1/projects/{projectId}/wallet/payments/prepare` | Bearer credential |
+| `wallet_payment_submit` | POST | `/v1/projects/{projectId}/wallet/payments/{paymentId}/submit` | Bearer credential |
+| `release_create` | POST | `/v1/projects/{projectId}/releases` | Bearer credential |
+| `release_get` | GET | `/v1/projects/{projectId}/releases/{releaseId}` | Bearer credential |
+| `release_publish` | PUT | `/v1/projects/{projectId}/releases/{releaseId}/publication` | Bearer credential |
+| `public_release` | GET | `/v1/public/releases/{releaseId}` | Public |
 | `source_publish` | PUT | `/v1/projects/{projectId}/sources/{snapshotId}/publication` | Bearer credential |
 | `project_publish` | PUT | `/v1/projects/{projectId}/publication` | Bearer credential |
 | `project_export` | POST | `/v1/projects/{projectId}/exports` | Bearer credential |

@@ -5,7 +5,9 @@ export const PROJECT_SCOPES = Object.freeze([
   'project.read', 'project.update', 'artifact.read', 'artifact.write',
   'snapshot.create', 'build.compile', 'review.quote', 'review.admit', 'review.read',
   'proposal.create', 'proposal.read', 'proposal.execute', 'project.publish',
-  'project.export', 'source.publish', 'budget.read', 'events.read', 'job.cancel'
+  'project.export', 'source.publish', 'budget.read', 'events.read', 'job.cancel',
+  'service.manage', 'service.read', 'service.call', 'service.provide',
+  'wallet.read', 'wallet.manage', 'wallet.pay', 'release.publish', 'resource.read'
 ]);
 const OWNER_TTL = 60 * 60 * 1000;
 const MAX_MANDATE_TTL = 30 * 24 * OWNER_TTL;

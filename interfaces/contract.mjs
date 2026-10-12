@@ -12,7 +12,7 @@ export const ROUTES=Object.freeze([
  route('project_create','POST','/v1/projects',{slug:string(63),name:string(80),idempotencyKey:string()}),
  route('project_get','GET','/v1/projects/{projectId}',{projectId:string()}),
  route('agent_create','POST','/v1/projects/{projectId}/agents',{projectId:string(),name:string(80)}),
- route('mandate_create','POST','/v1/projects/{projectId}/mandates',{projectId:string(),principalId:string(),scopes:{type:'array',items:string(),minItems:1,maxItems:24},expiresAt:integer}),
+ route('mandate_create','POST','/v1/projects/{projectId}/mandates',{projectId:string(),principalId:string(),scopes:{type:'array',items:string(),minItems:1,maxItems:32},expiresAt:integer}),
  route('mandate_revoke','DELETE','/v1/mandates/{mandateId}',{mandateId:string()}),
  route('credential_create','POST','/v1/credentials',{mandateId:string()}),
  route('credential_rotate','POST','/v1/credentials/{credentialId}/rotate',{credentialId:string()}),
@@ -40,6 +40,33 @@ export const ROUTES=Object.freeze([
  route('proposal_create','POST','/v1/projects/{projectId}/proposals',{projectId:string(),moduleId:string(),configuration:string(16386),idempotencyKey:string()}),
  route('proposal_get','GET','/v1/projects/{projectId}/proposals/{proposalId}',{projectId:string(),proposalId:string()}),
  route('proposal_publish','PUT','/v1/projects/{projectId}/proposals/{proposalId}/publication',{projectId:string(),proposalId:string(),published:boolean,expectedRevision:integer}),
+ route('service_register','POST','/v1/projects/{projectId}/services',{projectId:string(),manifest:object({name:string(80),capability:string(64),version:string(20),inputSchema:true,outputSchema:true,priceWei:string(30),recipient:string(42),maxDurationSeconds:{type:'integer',minimum:30,maximum:3600},validUntil:integer,dataPolicy:string(32)})}),
+ route('service_get','GET','/v1/projects/{projectId}/services/{serviceId}',{projectId:string(),serviceId:string()}),
+ route('service_publish','PUT','/v1/projects/{projectId}/services/{serviceId}/publication',{projectId:string(),serviceId:string(),published:boolean,expectedRevision:integer}),
+ route('service_suspend','POST','/v1/projects/{projectId}/services/{serviceId}/suspend',{projectId:string(),serviceId:string()}),
+ route('service_catalog','GET','/v1/public/services',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true),
+ route('service_quote','POST','/v1/projects/{projectId}/service-quotes',{projectId:string(),serviceId:string(),input:true,idempotencyKey:string()}),
+ route('service_accept','POST','/v1/projects/{projectId}/service-orders',{projectId:string(),quoteId:string()}),
+ route('service_order','GET','/v1/projects/{projectId}/service-orders/{orderId}',{projectId:string(),orderId:string()}),
+ route('service_authorize','POST','/v1/projects/{projectId}/service-orders/{orderId}/authorization',{projectId:string(),orderId:string(),quoteHash:string()}),
+ route('service_cancel','DELETE','/v1/projects/{projectId}/service-orders/{orderId}',{projectId:string(),orderId:string()}),
+ route('service_result','GET','/v1/projects/{projectId}/service-orders/{orderId}/result',{projectId:string(),orderId:string()}),
+ route('service_accept_result','POST','/v1/projects/{projectId}/service-orders/{orderId}/acceptance',{projectId:string(),orderId:string(),outputHash:string(),accepted:boolean}),
+ route('provider_orders','GET','/v1/projects/{projectId}/service-assignments',{projectId:string(),after:string(),limit:{type:'integer',minimum:1,maximum:100}},['projectId']),
+ route('provider_claim','POST','/v1/projects/{projectId}/service-assignments/{orderId}/claim',{projectId:string(),orderId:string()}),
+ route('provider_deliver','PUT','/v1/projects/{projectId}/service-assignments/{orderId}/delivery',{projectId:string(),orderId:string(),lease:string(64),output:true}),
+ route('wallet_create','POST','/v1/projects/{projectId}/wallet',{projectId:string()}),
+ route('wallet_get','GET','/v1/projects/{projectId}/wallet',{projectId:string()}),
+ route('wallet_action','GET','/v1/projects/{projectId}/wallet/actions/{actionId}',{projectId:string(),actionId:string()}),
+ route('wallet_session_prepare','POST','/v1/projects/{projectId}/wallet/sessions/prepare',{projectId:string(),session:object({sessionId:string(66),signer:string(42),recipient:string(42),perPayment:string(30),total:string(30),validUntil:integer})}),
+ route('wallet_session_submit','POST','/v1/projects/{projectId}/wallet/sessions/{sessionId}/submit',{projectId:string(),sessionId:string(),signature:string(132)}),
+ route('wallet_session_revoke','POST','/v1/projects/{projectId}/wallet/sessions/{sessionId}/revoke-transaction',{projectId:string(),sessionId:string(66)}),
+ route('wallet_payment_prepare','POST','/v1/projects/{projectId}/wallet/payments/prepare',{projectId:string(),orderId:string(),sessionId:string(66)}),
+ route('wallet_payment_submit','POST','/v1/projects/{projectId}/wallet/payments/{paymentId}/submit',{projectId:string(),paymentId:string(),signature:string(132)}),
+ route('release_create','POST','/v1/projects/{projectId}/releases',{projectId:string(),snapshotId:string(),paths:{type:'array',items:string(180),minItems:1,maxItems:32}}),
+ route('release_get','GET','/v1/projects/{projectId}/releases/{releaseId}',{projectId:string(),releaseId:string()}),
+ route('release_publish','PUT','/v1/projects/{projectId}/releases/{releaseId}/publication',{projectId:string(),releaseId:string(),published:boolean,expiresAt:integer,expectedRevision:integer}),
+ route('public_release','GET','/v1/public/releases/{releaseId}',{releaseId:string()},undefined,true),
  route('source_publish','PUT','/v1/projects/{projectId}/sources/{snapshotId}/publication',{projectId:string(),snapshotId:string(),published:boolean,expectedRevision:integer}),
  route('project_publish','PUT','/v1/projects/{projectId}/publication',{projectId:string(),published:boolean,expectedRevision:integer,description:{type:'string',maxLength:500}},['projectId','published','expectedRevision']),
  route('project_export','POST','/v1/projects/{projectId}/exports',{projectId:string(),snapshotId:string()}),
@@ -48,6 +75,7 @@ export const ROUTES=Object.freeze([
  route('network_graph','GET','/v1/public/graph',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true)
 ]);
 export function validate(schema,value,path='input'){
+ if(schema===true)return;
  if(schema.type==='object'){
   if(!value||typeof value!=='object'||Array.isArray(value))throw Object.assign(Error('invalid_input'),{code:'invalid_input',field:path});
   for(const key of Object.keys(value))if(!Object.hasOwn(schema.properties,key))throw Object.assign(Error('unknown_field'),{code:'invalid_input',field:path+'.'+key});
@@ -62,7 +90,7 @@ export function validate(schema,value,path='input'){
   if(!Number.isSafeInteger(value)||value<(schema.minimum??0)||value>(schema.maximum??Number.MAX_SAFE_INTEGER))throw Object.assign(Error('invalid_integer'),{code:'invalid_input',field:path});
  }else if(schema.type==='boolean'&&typeof value!=='boolean')throw Object.assign(Error('invalid_boolean'),{code:'invalid_input',field:path});
 }
-export function openapi({origin,version='0.4.0'}){
+export function openapi({origin,version='0.5.0'}){
  const paths={};
  for(const r of ROUTES){
   const pathNames=[...r.path.matchAll(/\{(\w+)\}/g)].map(x=>x[1]);
