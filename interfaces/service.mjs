@@ -1,6 +1,6 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases}){
+export function createService({identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults}){
  const operations={
   auth_challenge:(_,input)=>identity.challenge(input),
   auth_session:(_,input)=>identity.session(input),
@@ -60,6 +60,10 @@ export function createService({identity,projects,builds,jobs,reviews,deployments
   wallet_session_revoke:(actor,input)=>wallets.revokeRequest(actor,input.projectId,input.sessionId),
   wallet_payment_prepare:(actor,input)=>wallets.preparePayment(actor,input.projectId,input),
   wallet_payment_submit:(actor,input)=>wallets.submitPayment(actor,input.projectId,input),
+  vault_create:(actor,input)=>vaults.create(actor,input.projectId),
+  vault_get:(actor,input)=>vaults.get(actor,input.projectId),
+  vault_transaction:(actor,input)=>vaults.transaction(actor,input.projectId,input),
+  vault_balance:(actor,input)=>vaults.balance(actor,input.projectId,input.account),
   release_create:(actor,input)=>releases.create(actor,input.projectId,input),
   release_get:(actor,input)=>releases.get(actor,input.projectId,input.releaseId),
   release_publish:(actor,input)=>releases.publish(actor,input.projectId,input),

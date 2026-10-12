@@ -1,4 +1,5 @@
 import {body,errorBody,errorStatus} from './http.mjs';
+import {API_VERSION} from './contract.mjs';
 const VERSION='2025-06-18';
 // Credential bootstrap/rotation belongs in a secure client or CLI, not a model
 // tool result. The remaining tools call the exact same authorization service.
@@ -19,7 +20,7 @@ export function createMcp({service,origin='https://claus.si',admit=async()=>{}})
   if(id!==undefined&&typeof id!=='string'&&!(typeof id==='number'&&Number.isSafeInteger(id)))return failure(null,-32600,'Invalid Request',400);
   const params=input.params??{};
   if(typeof params!=='object'||params===null||Array.isArray(params))return failure(id??null,-32602,'Invalid params');
-  if(input.method==='initialize')return result({jsonrpc:'2.0',id,result:{protocolVersion:VERSION,capabilities:{tools:{listChanged:false}},serverInfo:{name:'Claus Network',version:'0.2.0'}}});
+  if(input.method==='initialize')return result({jsonrpc:'2.0',id,result:{protocolVersion:VERSION,capabilities:{tools:{listChanged:false}},serverInfo:{name:'Claus Network',version:API_VERSION}}});
   const protocol=request.headers.get('mcp-protocol-version');
   if(protocol&&protocol!==VERSION)return failure(id??null,-32600,'Unsupported protocol',400);
   if(id===undefined)return result(undefined,202);

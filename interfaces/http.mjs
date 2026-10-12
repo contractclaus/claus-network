@@ -7,7 +7,8 @@ const errors={unauthenticated:401,invalid_signature:401,challenge_expired:401,sc
  service_order_busy:409,payment_mismatch:409,receipt_already_used:409,result_not_ready:409,result_mismatch:409,acceptance_conflict:409,lease_lost:409,
  wallets_not_enabled:409,collaboration_not_enabled:409,wallet_not_verified:409,wallet_profile_changed:409,session_payment_denied:403,
  session_stale:409,session_retired:409,session_expired:409,payment_expired:409,payment_not_pending:409,payment_already_pending:409,
- payment_already_complete:409,unsupported_payment_asset:400};
+ payment_already_complete:409,unsupported_payment_asset:400,vaults_not_enabled:409,vault_not_verified:409,
+ vault_profile_changed:409,policy_not_verified:409,vault_deployment_expired:409,vault_code_changed:409,project_binding_changed:409};
 export const errorStatus=error=>errors[error.code]??(/^(invalid_|unknown_|missing_|duplicate_|value_|file_|snapshot_|document_)/.test(error.code??'')?400:503);
 export const errorBody=error=>({error:error.code&&errorStatus(error)!==503?error.code:'service_unavailable',retryable:errorStatus(error)>=500,
  ...(errorStatus(error)===400&&typeof error.field==='string'&&error.field.length<200?{field:error.field}:{})});

@@ -39,3 +39,5 @@ Provider quote and cost-verification ports remain trusted host boundaries. A fun
 The production store serializes short state transitions with a schema-scoped PostgreSQL advisory lock. External provider calls must occur outside these transactions. Runtime roles do not need schema creation or migration privileges. Connection strings, tokens and signing keys never enter project artifacts, model prompts or exports.
 
 `modules.json` and the import lint check domain-module dependencies. They are not a sandbox. Untrusted source builds require a separate bounded execution environment before provider dispatch is enabled.
+
+The source tree also contains the 0.6 native-vault interface candidate. Deployment remains disabled while independent review is assessed; the live API is still 0.5. See [the profile and its limits](docs/native-vault.md).

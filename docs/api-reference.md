@@ -1,6 +1,6 @@
 # API reference
 
-The [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) is generated from the same route definitions used by the API and clients. The [packaged schema](openapi.json) is a release snapshot. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source snapshot includes the 0.6 vault interface candidate. Check the [release status](release-status.md) and [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed version. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -62,6 +62,10 @@ The [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) i
 | `wallet_session_revoke` | POST | `/v1/projects/{projectId}/wallet/sessions/{sessionId}/revoke-transaction` | Bearer credential |
 | `wallet_payment_prepare` | POST | `/v1/projects/{projectId}/wallet/payments/prepare` | Bearer credential |
 | `wallet_payment_submit` | POST | `/v1/projects/{projectId}/wallet/payments/{paymentId}/submit` | Bearer credential |
+| `vault_create` | POST | `/v1/projects/{projectId}/vault` | Bearer credential |
+| `vault_get` | GET | `/v1/projects/{projectId}/vault` | Bearer credential |
+| `vault_transaction` | POST | `/v1/projects/{projectId}/vault/transaction` | Bearer credential |
+| `vault_balance` | GET | `/v1/projects/{projectId}/vault/balance` | Bearer credential |
 | `release_create` | POST | `/v1/projects/{projectId}/releases` | Bearer credential |
 | `release_get` | GET | `/v1/projects/{projectId}/releases/{releaseId}` | Bearer credential |
 | `release_publish` | PUT | `/v1/projects/{projectId}/releases/{releaseId}/publication` | Bearer credential |

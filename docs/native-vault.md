@@ -1,6 +1,6 @@
 # Native vault candidate
 
-This profile is under development and submitted for independent review. It is not deployed or enabled by the API. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
+This profile is under development and submitted for independent review. It is not deployed or enabled by the production API. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
 
 `ClausNativeVault` records each depositor's native-ETH principal. Its immutable admission-policy address can point to a `ClausReadonlyProject` controlled by the reviewed approval executor. Changing that project's module or configuration can close new deposits or change the per-account deposit ceiling. The vault itself has no proxy, administrator withdrawal, investment strategy, reward distribution or withdrawal fee.
 
@@ -8,6 +8,16 @@ Withdrawals never call the admission policy. Each account can withdraw its own r
 
 The policy call is read-only, gas-bounded and accepts only the exact 128-byte ABI encoding of a `bytes` result containing `(bool,uint256)`. A malformed or oversized response rejects the deposit. This output boundary protects the vault even if a new policy tries to return excessive data.
 
-Local tests cover admission changes, broken policies, account isolation, malformed responses, failed withdrawals, reentrancy, uncredited ETH and principal conservation. These tests do not replace independent review or real deployment evidence. A dedicated API deployment path, verified constructor binding, operational limits and a testnet lifecycle proof remain required before activation. Mainnet custody and token launches are separate decisions.
+Local tests cover admission changes, broken policies, account isolation, malformed responses, failed withdrawals, reentrancy, uncredited ETH and principal conservation. These tests do not replace independent review or real deployment evidence. The dedicated API path and constructor checks are implemented and locally tested; independent review assessment, hosted worker activation and a public testnet lifecycle proof remain required. Mainnet custody and token launches are separate decisions.
 
 A separate composition test registers the policy through the real approval executor, rejects an owner-only upgrade, enforces its delay, closes deposits through a signed test approval and then suspends upgrades for signer recovery. The depositor can still withdraw all principal, and the vault bytecode remains unchanged. The signatures in this test are fixtures, not an actual Claus decision.
+
+## Interface candidate
+
+The 0.6 interface adds `vault_create`, `vault_get`, `vault_transaction` and `vault_balance` through the same API, SDK, CLI and MCP. These operations are not active on the currently deployed 0.5 API.
+
+`vault_create` requires `vault.manage`, sponsor admission and a previously verified policy registration belonging to the same project. It deploys only the operator's exact reviewed vault artifact. Concurrent calls share one job, and an uncertain broadcast keeps its original transaction. A changed artifact, review, policy binding or revoked mandate prevents a new broadcast.
+
+`vault_transaction` requires `vault.read` and returns calldata for either `deposit` or `withdraw`; it never signs or sends a depositor's transaction. `amountWei` is an exact integer string. A withdrawal also supplies `recipient`. No recipient is accepted for a deposit. The caller's wallet owns the resulting principal claim. The fixed contract and its immutable policy binding are checked before returning calldata.
+
+Disabling sponsored deployment does not disable reading a withdrawal transaction. Direct contract withdrawals need neither this API nor an active network mandate. `vault_balance` returns principal at a named finalized block; it does not mistake pending deposits for finalized funds.

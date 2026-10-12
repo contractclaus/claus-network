@@ -1,3 +1,4 @@
+export const API_VERSION='0.6.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
@@ -63,6 +64,10 @@ export const ROUTES=Object.freeze([
  route('wallet_session_revoke','POST','/v1/projects/{projectId}/wallet/sessions/{sessionId}/revoke-transaction',{projectId:string(),sessionId:string(66)}),
  route('wallet_payment_prepare','POST','/v1/projects/{projectId}/wallet/payments/prepare',{projectId:string(),orderId:string(),sessionId:string(66)}),
  route('wallet_payment_submit','POST','/v1/projects/{projectId}/wallet/payments/{paymentId}/submit',{projectId:string(),paymentId:string(),signature:string(132)}),
+ route('vault_create','POST','/v1/projects/{projectId}/vault',{projectId:string()}),
+ route('vault_get','GET','/v1/projects/{projectId}/vault',{projectId:string()}),
+ route('vault_transaction','POST','/v1/projects/{projectId}/vault/transaction',{projectId:string(),kind:string(12),amountWei:string(78),recipient:string(42)},['projectId','kind','amountWei']),
+ route('vault_balance','GET','/v1/projects/{projectId}/vault/balance',{projectId:string(),account:string(42)}),
  route('release_create','POST','/v1/projects/{projectId}/releases',{projectId:string(),snapshotId:string(),paths:{type:'array',items:string(180),minItems:1,maxItems:32}}),
  route('release_get','GET','/v1/projects/{projectId}/releases/{releaseId}',{projectId:string(),releaseId:string()}),
  route('release_publish','PUT','/v1/projects/{projectId}/releases/{releaseId}/publication',{projectId:string(),releaseId:string(),published:boolean,expiresAt:integer,expectedRevision:integer}),
@@ -90,7 +95,7 @@ export function validate(schema,value,path='input'){
   if(!Number.isSafeInteger(value)||value<(schema.minimum??0)||value>(schema.maximum??Number.MAX_SAFE_INTEGER))throw Object.assign(Error('invalid_integer'),{code:'invalid_input',field:path});
  }else if(schema.type==='boolean'&&typeof value!=='boolean')throw Object.assign(Error('invalid_boolean'),{code:'invalid_input',field:path});
 }
-export function openapi({origin,version='0.5.0'}){
+export function openapi({origin,version=API_VERSION}){
  const paths={};
  for(const r of ROUTES){
   const pathNames=[...r.path.matchAll(/\{(\w+)\}/g)].map(x=>x[1]);

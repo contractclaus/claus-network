@@ -33,6 +33,8 @@ export default async function handler(req, res) {
       const wallets = (await store.read('network-capabilities', 'wallets'))?.value;
       const serviceWorker = (await store.read('worker-health', 'services'))?.value;
       const walletWorker = (await store.read('worker-health', 'wallets'))?.value;
+      const vaults = (await store.read('network-capabilities', 'vaults'))?.value;
+      const vaultWorker = (await store.read('worker-health', 'vaults'))?.value;
       response = Response.json({ service: 'Claus Network', status: 'ok',
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
@@ -40,6 +42,7 @@ export default async function handler(req, res) {
         testnetExecution: chain?.enabled === true ? controller?.observedAt > Date.now() - 300000 && executor?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         collaborationExecution: collaboration?.enabled === true ? serviceWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         walletExecution: wallets?.enabled === true ? walletWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
+        vaultExecution: vaults?.enabled === true ? vaultWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         mainnetExecution: 'not_enabled' });
     } else {
       const headers = new Headers();

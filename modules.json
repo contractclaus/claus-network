@@ -166,6 +166,14 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "vaults",
+      "path": "src/vaults/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [
