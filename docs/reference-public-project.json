@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-10-12T11:06:43.385Z",
+  "origin": "https://claus-network-api.vercel.app",
+  "attribution": "operator-run technical reference; not independent adoption",
+  "projects": [
+    {
+      "id": "prj_816402ac-d7b2-48b9-a410-ae972680cf79",
+      "slug": "ref-ca9fa5405b-provider"
+    },
+    {
+      "id": "prj_11317081-09c7-4edc-80f3-81aacaf2dbb5",
+      "slug": "ref-ca9fa5405b-consumer"
+    },
+    {
+      "id": "prj_ec7c71ca-a6ea-4e5b-8362-a16324c132ec",
+      "slug": "ref-ca9fa5405b-publisher"
+    }
+  ],
+  "serviceId": "sha256:bf065e23faa6c124645dde9697f4af6b54e7f12ecc62a17fbf75365dab15c501",
+  "orderId": "sha256:5e2ae5c353a1251a85a8ea89888baa9c36922b8fc4c16b8903c7255be639a6b7",
+  "result": {
+    "value": "BUILT THROUGH THE CLAUS NETWORK API"
+  },
+  "releaseId": "sha256:08d95116a435cf68d5e446b90565715c45d0e170ec006a2f626714572a4283b4",
+  "url": "https://claus-network-sites.vercel.app/r/08d95116a435cf68d5e446b90565715c45d0e170ec006a2f626714572a4283b4/index.html",
+  "feeWei": "0",
+  "mcpMetadata": true,
+  "privateFilesNotPublished": true,
+  "foreignAccessDenied": true,
+  "revokedAccessDenied": true,
+  "successorExport": true,
+  "serviceWithdrawnAfterWorkerStopped": true,
+  "restart": {
+    "checkedAt": "2026-10-12T11:07:15.614Z",
+    "origin": "https://claus-network-api.vercel.app",
+    "projectId": "prj_ec7c71ca-a6ea-4e5b-8362-a16324c132ec",
+    "orderId": "sha256:5e2ae5c353a1251a85a8ea89888baa9c36922b8fc4c16b8903c7255be639a6b7",
+    "result": {
+      "value": "BUILT THROUGH THE CLAUS NETWORK API"
+    },
+    "metadataRecovered": true,
+    "oldAgentDenied": true,
+    "exportPreserved": true
+  }
+}

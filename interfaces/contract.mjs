@@ -1,4 +1,4 @@
-export const API_VERSION='0.11.0';
+export const API_VERSION='0.11.1';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
@@ -68,7 +68,7 @@ export const ROUTES=Object.freeze([
  route('review_admission_activate','PUT','/v1/admin/review-admission/active',{version:string(64),expectedGeneration:integer}),
  route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string()}),
  route('review_pilot_get','GET','/v1/admin/review-pilots/{projectId}',{projectId:string()}),
- route('review_pilot_set','PUT','/v1/admin/review-pilots/{projectId}',{projectId:string(),enabled:boolean,expiresAt:integer,maximumPerReview:string(18),expectedRevision:integer}),
+ route('review_pilot_set','PUT','/v1/admin/review-pilots/{projectId}',{projectId:string(),enabled:boolean,expiresAt:integer,maximumPerReview:string(18),expectedRevision:integer,perProjectDay:integer,globalDay:integer},['projectId','enabled','expiresAt','maximumPerReview','expectedRevision']),
  route('review_get','GET','/v1/projects/{projectId}/reviews/{caseId}',{projectId:string(),caseId:string()}),
  route('review_accept','POST','/v1/projects/{projectId}/reviews/{caseId}/accept',{projectId:string(),caseId:string(),quoteId:string(),idempotencyKey:string()}),
  route('review_artifact','GET','/v1/projects/{projectId}/reviews/{caseId}/artifact',{projectId:string(),caseId:string()}),

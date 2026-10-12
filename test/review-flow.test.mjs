@@ -197,10 +197,13 @@ test('public sponsorship is separate, bounded across policy changes and never cr
   assert.equal((await f.flow.request(f.actor, f.projectId, { ...f.input, idempotencyKey: 'different-key-same-source' })).id, item.id);
   await f.flow.runQuote();
   const accept = { caseId: item.id, quoteId: item.id, idempotencyKey: 'paid' };
+  const legacyGlobal = digest({ subject: 'global', day: Math.floor(Date.now() / 86400000), version: 'review-admission-v1' });
+  await f.store.transaction(tx => tx.write('review-admission', legacyGlobal, { count: 8 }, 0));
   await assert.rejects(f.flow.accept(f.actor, f.projectId, accept), { code: 'funding_insufficient' });
   assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '0');
   await f.network.billing.recordFunding({ actor: f.workerActor, account: 'sponsor:' + f.ownerAddress, asset: f.asset, amount: '10', receiptId: 'second-test-funding' });
   await f.flow.accept(f.actor, f.projectId, accept);
+  assert.equal((await f.store.read('review-admission', legacyGlobal)).value.count, 8);
   assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '5');
   const current = await f.flow.get(f.actor, f.projectId, item.id);
   await f.jobs.cancel(f.actor, f.projectId, current.executionJobId);
@@ -211,4 +214,20 @@ test('public sponsorship is separate, bounded across policy changes and never cr
   await assert.rejects(f.flow.accept(f.actor, f.projectId, { caseId: next.id, quoteId: next.id, idempotencyKey: 'over-limit' }), { code: 'sponsor_exhausted' });
   assert.equal((await f.store.list('review-pilots')).length, 0);
   assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '5');
+});
+
+test('an explicit operator pilot quota keeps prior use and does not grant another review after exhaustion', async t => {
+  const f = await fixture(t, { networkOwner: true }); await f.publish();
+  const item = await f.flow.request(f.actor, f.projectId, f.input); await f.flow.runQuote();
+  const keys = [f.projectId, 'global'].map(subject => digest({ subject, day: Math.floor(Date.now()/86400000), version: 'review-admission-v1' }));
+  await f.store.transaction(async tx => { await tx.write('review-admission', keys[0], { count: 2 }, 0); await tx.write('review-admission', keys[1], { count: 8 }, 0); });
+  const input = { caseId: item.id, quoteId: item.id, idempotencyKey: 'one-additional-review' };
+  await assert.rejects(f.flow.accept(f.actor, f.projectId, input), { code: 'capacity_reached' });
+  const pilot = await f.flow.pilot(f.actor, f.projectId);
+  await f.flow.setPilot(f.actor, f.projectId, { enabled: true, expiresAt: pilot.expiresAt, maximumPerReview: pilot.maximumPerReview, expectedRevision: pilot.revision, perProjectDay: 3, globalDay: 9 });
+  await f.flow.accept(f.actor, f.projectId, input);
+  assert.deepEqual(await Promise.all(keys.map(async id => (await f.store.read('review-admission',id)).value.count)), [3,9]);
+  const current = await f.flow.get(f.actor, f.projectId, item.id); await f.jobs.cancel(f.actor, f.projectId, current.executionJobId);
+  const next = await f.flow.request(f.actor, f.projectId, { ...f.input, baseCommit:'b'.repeat(40), idempotencyKey:'another-source' }); await f.flow.runQuote();
+  await assert.rejects(f.flow.accept(f.actor, f.projectId, { caseId:next.id,quoteId:next.id,idempotencyKey:'beyond-allocation' }), { code:'capacity_reached' });
 });

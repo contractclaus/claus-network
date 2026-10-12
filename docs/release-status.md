@@ -7,7 +7,7 @@ The owner has deferred new token launches to a later phase. They are not prerequ
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
-| Programmatic interfaces | API 0.11.0; 105 operations |
+| Programmatic interfaces | API 0.11.1; 105 operations |
 | Source snapshots and compilation | Live; explicit publication and bounded Solidity 0.8.27 or 0.8.26 compilation |
 | Network explorer | [Home](https://claus.si/Home) and project pages update from explicitly published registry records |
 | IMD reviews | Paid reference reviews completed; published reports remain readable from stored artifacts during provider outages; new work needs project admission and available sponsor funds |
@@ -27,9 +27,11 @@ The owner has deferred new token launches to a later phase. They are not prerequ
 
 The API and compatible hosted workers now implement separate technical, review-sponsorship and chain admission. Public technical access is active through `project-access` policy `public-projects-2026-10-12-v1`, generation 1. Project users receive no authority over operator keys, budgets or another project. The public API exposes effective rights and bounded metadata recovery; static UI and agent publication remain explicit choices.
 
-The release gate passed 382 checks with nine optional environment-specific skips. A separate real PostgreSQL run verified atomic accounting, project-filtered pagination and bounded cleanup using the runtime role. The shipped three-project example passed in the isolated environment, including a second process; its live acceptance is being recorded separately. The new bounded-result contract candidate passed 60 Solidity tests and is published at `af8cf6370d5b3893fa5b38df251d4b27b5db5f8d`. It is not deployed. Existing contract addresses below remain authoritative.
+The release gate passed 382 checks with nine optional environment-specific skips. A separate real PostgreSQL run verified atomic accounting, project-filtered pagination and bounded cleanup using the runtime role. The shipped three-project example also completed against the public deployment with fresh owner accounts and no pilot grants: a provider delivered a real free service result, a separate publisher hosted it, old agent access was revoked and a new process recovered the metadata and result. The [live receipt](reference-public-project.json) records the exact resources; this is a Claus-operated example, not independent adoption. The new bounded-result contract candidate passed 60 Solidity tests and is published at `af8cf6370d5b3893fa5b38df251d4b27b5db5f8d`. It is not deployed. Existing contract addresses below remain authoritative.
 
-Public review sponsorship, public readonly contract admission and mainnet remain disabled pending their distinct review, funding and release requirements. This is not a claim that the entire target network is finished.
+The owner authorized a finite seven-day public review and Sepolia start allocation. Funding and the independent public contract assessment are still being completed; public review sponsorship, public readonly contract admission and mainnet remain disabled at this checkpoint. This is not a claim that the entire target network is finished.
+
+API 0.11.1 separates public review admission counters from the historical pilot pool. Owner-only pilot limits can be adjusted with an expected revision; accumulated use, financial reservations and public lifetime limits are retained. The additional 36 core/review checks passed.
 
 ## Verified references
 

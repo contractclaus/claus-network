@@ -34,15 +34,17 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       const record = await store.read('review-pilots', text(projectId));
       return { projectId, ...(record?.value ?? { enabled: false }), revision: record?.revision ?? 0 };
     },
-    async setPilot(actor, projectId, { enabled, expiresAt, maximumPerReview, expectedRevision }) {
+    async setPilot(actor, projectId, { enabled, expiresAt, maximumPerReview, expectedRevision, perProjectDay = 2, globalDay = 8 }) {
       requireThat(typeof enabled === 'boolean' && Number.isSafeInteger(expiresAt) && expiresAt > now() &&
         expiresAt <= now() + 30 * 86400000 && typeof maximumPerReview === 'string' &&
         /^[1-9][0-9]{0,17}$/.test(maximumPerReview) && BigInt(maximumPerReview) <= 500000000000000000n &&
-        Number.isSafeInteger(expectedRevision) && expectedRevision >= 0, 'invalid_pilot');
+        Number.isSafeInteger(expectedRevision) && expectedRevision >= 0 &&
+        Number.isSafeInteger(perProjectDay) && perProjectDay >= 1 && perProjectDay <= 16 &&
+        Number.isSafeInteger(globalDay) && globalDay >= 1 && globalDay <= 32, 'invalid_pilot');
       return store.transaction(async tx => {
         await networkOwner(tx, actor);
         requireThat(await tx.read('projects', text(projectId)), 'not_found');
-        const value = { enabled, expiresAt, maximumPerReview };
+        const value = { enabled, expiresAt, maximumPerReview, perProjectDay, globalDay };
         const record = await tx.write('review-pilots', projectId, value, expectedRevision);
         await tx.event({ type: 'review.pilot_changed', projectId, ...value, revision: record.revision, at: now() });
         return { projectId, ...value, revision: record.revision };
@@ -177,8 +179,11 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         if (job && !(['completed', 'cancelled', 'failed'].includes(job.work) && ['settled', 'void'].includes(job.billing))) live.push(job);
       }
       requireThat(live.length < (pilot.kind === 'public' ? pilot.activeGlobal : 8) && !live.some(job => job.projectId === projectId), 'review_in_progress');
-      for (const [subject, maximum] of [[projectId, pilot.kind === 'public' ? pilot.perProjectDay : 2], ['global', pilot.kind === 'public' ? pilot.globalDay : 8]]) {
-        const key = digest({ subject, day: Math.floor(now() / 86400000), version: 'review-admission-v1' });
+      for (const [subject, maximum] of [[projectId, pilot.perProjectDay ?? 2], ['global', pilot.globalDay ?? 8]]) {
+        // Public sponsorship has its own finite allocation. Keep the original
+        // pilot counters intact; a new public pool does not reset or consume it.
+        const key = digest({ subject, day: Math.floor(now() / 86400000),
+          version: pilot.kind === 'public' ? 'public-review-admission-v1' : 'review-admission-v1' });
         const old = await tx.read('review-admission', key);
         requireThat((old?.value.count ?? 0) < maximum, 'capacity_reached');
         await tx.write('review-admission', key, { count: (old?.value.count ?? 0) + 1 }, old?.revision ?? 0);
