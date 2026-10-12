@@ -1,5 +1,5 @@
 {
-  "status": "configuration prepared; hosted migration not yet accepted",
+  "status": "hosted reference accepted between separately configured Claus-operated instances; not independent organizations",
   "operators": [
     {
       "operatorId": "https://claus-network-api.vercel.app",

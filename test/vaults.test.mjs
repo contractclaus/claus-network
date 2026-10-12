@@ -25,6 +25,8 @@ async function fixture(t) {
     artifactHash: digest('vault fixture'), reviewArtifactHash: digest('review fixture') };
   const policy = { chainId: 11155111, profile: 'claus-readonly-v1', target: '0x' + '11'.repeat(20),
     verification: { state: 'verified', localFixture: true } };
+  cap.policies = { [p.id]: { bindingHash: digest(policy), implementation: '0x' + '22'.repeat(20),
+    implementationCodeHash: '0x' + '33'.repeat(32), configurationBytes: 64 } };
   async function enable() { await store.transaction(async tx => {
     await tx.write('network-capabilities', 'vaults', cap, 0);
     await tx.write('review-pilots', p.id, { enabled: true, expiresAt: time + 86400000 }, 0);
@@ -72,5 +74,19 @@ test('changing the pinned vault review before dispatch prevents deployment', asy
   await f.store.transaction(tx => tx.write('network-capabilities', 'vaults', {
     ...f.cap, reviewArtifactHash: digest('different review') }, 1));
   const result = await f.app.vaults.runOne({ step: async () => assert.fail('changed profile must not reach a signer') });
+  assert.equal(result.state, 'blocked');
+});
+
+test('review sponsorship alone cannot admit an unapproved vault policy', async t => {
+  const f = await fixture(t); await f.enable();
+  await f.store.transaction(tx => tx.write('network-capabilities', 'vaults', { ...f.cap, policies: {} }, 1));
+  await assert.rejects(f.app.vaults.create(f.p.actor, f.p.id), { code: 'policy_not_verified' });
+  assert.equal((await f.store.list('workflow-jobs')).length, 0);
+});
+
+test('withdrawing a policy admission before dispatch prevents deployment', async t => {
+  const f = await fixture(t); await f.enable(); await f.app.vaults.create(f.p.actor, f.p.id);
+  await f.store.transaction(tx => tx.write('network-capabilities', 'vaults', { ...f.cap, policies: {} }, 1));
+  const result = await f.app.vaults.runOne({ step: async () => assert.fail('withdrawn policy must not reach a signer') });
   assert.equal(result.state, 'blocked');
 });

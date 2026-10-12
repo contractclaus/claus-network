@@ -4,6 +4,22 @@ import {generatePrivateKey,privateKeyToAccount} from 'viem/accounts';
 import {createApplication} from '../runtime/server.mjs';
 import {openStore} from '../src/storage/index.mjs';
 import {render} from '../hosting/render.mjs';
+import {siteRequestUrl} from '../hosting/gateway.mjs';
+
+test('the hosted release path removes only its own routing capture',async()=>{
+  const origin='https://claus-network-sites.vercel.app',tail='a'.repeat(64)+'/index.html',path='/r/'+tail;
+  for(const request of [path+'?path='+encodeURIComponent(tail)+'&__claus_route='+encodeURIComponent(tail),
+    '/api/gateway?__claus_route='+encodeURIComponent(tail)+'&path='+encodeURIComponent(tail)]){
+    const url=siteRequestUrl(request,origin);assert.equal(url.pathname,path);assert.equal(url.search,'');
+    const response=await render(new Request(url),{fetcher:async()=>Response.json({id:'sha256:'+'a'.repeat(64),expiresAt:Date.now()+60000,files:[{path:'index.html',content:'published'}]})});
+    assert.equal(response.status,200);assert.equal(await response.text(),'published');
+  }
+  assert.equal(siteRequestUrl(path+'?__claus_route=other/index.html',origin).pathname,path);
+  for(const query of ['path=unrelated','url=https://example.com','path='+encodeURIComponent(tail)+'&private=true']){
+    const response=await render(new Request(siteRequestUrl(path+'?'+query,origin)),{fetcher:()=>{throw Error('must_not_fetch');}});
+    assert.equal(response.status,404);
+  }
+});
 
 test('UI files need separate publication and expire without publishing other snapshot files',async t=>{
   const store=openStore(':memory:');t.after(()=>store.close());let time=Date.now();

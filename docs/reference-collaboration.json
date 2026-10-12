@@ -1,0 +1,82 @@
+{
+  "at": "2026-10-12T06:33:38.422Z",
+  "scope": "Claus-operated Sepolia reference; two separate services, not independent customer adoption",
+  "projectId": "prj_b2deb3cb-9404-425e-9fe2-08a4dc39862e",
+  "wallet": "0x182905eea41b06f63adef50cee6f104255474ecf",
+  "walletSourceVerified": true,
+  "orders": {
+    "data": {
+      "id": "sha256:609bbfc21c24c43cada839e0cd2bd434c267aa110a6b929108b81d30c8fd2813",
+      "providerProjectId": "prj_db2d70a1-244d-4a51-8373-a52ebb3a22b2",
+      "outputHash": "sha256:2530434307f3cf81f9a942a2d8d1b53291e4d7778b52d7f74e00820edf785a1c",
+      "payment": {
+        "chainId": 11155111,
+        "amountWei": "1000000000000",
+        "quoteHash": "sha256:05ceed1bf39e6c0223902b3e1b670048d44cfe256d6abccb90ddccbb2d4a84b4",
+        "recipient": "0xBb145cA83272c3806D4dDc75cA1D5514789cF1C5",
+        "transactionHash": "0x1d61857b85bc6e00a58837e80cda8511e47a2ff3d56a8454646aecbd9146b326"
+      },
+      "retiredSession": {
+        "role": "data",
+        "sessionId": "0xc052411a3db35e6e46974121e437920460230e2307e3342fd5d22cf585dff737",
+        "retired": true,
+        "chainId": 11155111,
+        "hash": "0xec8304fd862231b13a478d10a4c4b3dc31009093ccb46765e4ccd1292348f558",
+        "status": "success",
+        "blockNumber": "11897101",
+        "blockHash": "0x738da7c08c550be149f4677107b68a35fb34acbbf4e00f645d561be99b29dcbc",
+        "to": "0x182905eea41b06f63adef50cee6f104255474ecf",
+        "amountWei": "0",
+        "gasUsed": "140756",
+        "effectiveGasPrice": "1000005"
+      }
+    },
+    "report": {
+      "id": "sha256:cdc1fa695192ad64c6bed81858ae6fefcd41403d9a721e96e2a14b045317ff64",
+      "providerProjectId": "prj_3258ba94-ce81-4024-813b-db7bc714154d",
+      "outputHash": "sha256:7cc20a63c9cfaf274e9d252f8836b50407242013c499df0020138beef31906fc",
+      "payment": {
+        "chainId": 11155111,
+        "amountWei": "1000000000000",
+        "quoteHash": "sha256:73025a544eb3a6b2649a558169a39fbfdf21d2cdb786a32e5c02dc075e7d5822",
+        "recipient": "0xBb145cA83272c3806D4dDc75cA1D5514789cF1C5",
+        "transactionHash": "0x74cc2fa0ecd18a33c579d5462faf457f6e6ad1230ede996bd063b5d571736349"
+      },
+      "retiredSession": {
+        "role": "report",
+        "sessionId": "0x94dd8dd19570964ca6ab28a42146c770037ff1ccf7d066287dc8eb5087d7b1b3",
+        "retired": true,
+        "chainId": 11155111,
+        "hash": "0xba62c6ee779cbafd0eb7fe4f8bd6ad363a2809a8a1506518f81471aae8e5ea96",
+        "status": "success",
+        "blockNumber": "11897109",
+        "blockHash": "0x08b23cf2f8d7a83c2184fb0690a3291c44d67146afecb34e54f0b550c300c54b",
+        "to": "0x182905eea41b06f63adef50cee6f104255474ecf",
+        "amountWei": "0",
+        "gasUsed": "140756",
+        "effectiveGasPrice": "1000005"
+      }
+    }
+  },
+  "handover": {
+    "at": "2026-10-12T06:26:40.433Z",
+    "scope": "API principal handover; the project-operated payment runner keeps its separate session key",
+    "walletSessionKeyRotated": false,
+    "projectId": "prj_b2deb3cb-9404-425e-9fe2-08a4dc39862e",
+    "priorAgent": "agent_6bca4e9a-173f-4312-b48b-76b9d3fa5947",
+    "successorAgent": "agent_51c03eb7-8048-4920-a1cc-29014dd4eb6c",
+    "revokedMandate": "mnd_d07e4a66-c866-47c4-958d-10d989dc082e",
+    "snapshotId": "sha256:99ebc52a7ca68743879e3297ac082ca56ce70f5bceaabfa736b26d5573839181",
+    "wallet": "0x182905eea41b06f63adef50cee6f104255474ecf",
+    "orderId": "sha256:cdc1fa695192ad64c6bed81858ae6fefcd41403d9a721e96e2a14b045317ff64",
+    "quoteHash": "sha256:73025a544eb3a6b2649a558169a39fbfdf21d2cdb786a32e5c02dc075e7d5822",
+    "paymentUnchanged": true,
+    "oldReadDenied": true,
+    "oldWorkDenied": true
+  },
+  "interface": "https://claus-network-sites.vercel.app/r/5598ebce1e251f24d71413cf689abeed2b5588e3b9d8d5396cd22b63603f3958/index.html",
+  "profile": "https://claus.si/p/claus-balance-explorer",
+  "isolatedOrigin": true,
+  "oldAgentDenied": true,
+  "allPaymentSessionsRetired": true
+}

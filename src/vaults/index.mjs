@@ -11,11 +11,15 @@ export function createVaults({ store, identity, jobs, chain, now = () => Date.no
     requireThat(pilot?.enabled === true && pilot.expiresAt > now(), 'sponsor_not_enabled');
     return cap;
   }
-  async function binding(reader, projectId) {
+  async function binding(reader, projectId, cap) {
     const value = (await reader.read('chain-bindings', projectId))?.value;
+    const admission = cap.policies?.[projectId];
     requireThat(value?.chainId === 11155111 && value.profile === 'claus-readonly-v1' &&
       value.verification?.state === 'verified', 'policy_not_verified');
-    return value;
+    requireThat(admission?.bindingHash === digest(value) && admission.configurationBytes === 64 &&
+      /^0x[0-9a-fA-F]{40}$/.test(admission.implementation) && /^0x[0-9a-fA-F]{64}$/.test(admission.implementationCodeHash),
+      'policy_not_verified');
+    return { policy: value, admission };
   }
   async function current(reader, projectId) {
     const value = (await reader.read('project-vaults', projectId))?.value;
@@ -29,7 +33,7 @@ export function createVaults({ store, identity, jobs, chain, now = () => Date.no
     async create(actor, projectId) {
       return store.transaction(async tx => {
         const cap = await allowed(actor, projectId, tx);
-        const policy = await binding(tx, projectId);
+        const { policy, admission } = await binding(tx, projectId, cap);
         const old = await tx.read('project-vaults', projectId);
         if (old && !['cancelled', 'blocked', 'failed'].includes(old.value.state)) return old.value;
         // Terminal pre-broadcast failures can retry; uncertain transactions
@@ -40,7 +44,7 @@ export function createVaults({ store, identity, jobs, chain, now = () => Date.no
         const job = await jobs.enqueue(tx, { projectId, kind: 'vault-deploy',
           authority: { actor }, payload: { vaultId: id }, idempotencyKey: id });
         const value = { id, projectId, attempt, profile: 'claus-native-principal-v1', chainId: 11155111,
-          policy, artifactProjectId: cap.artifactProjectId, artifactHash: cap.artifactHash,
+          policy, admission, artifactProjectId: cap.artifactProjectId, artifactHash: cap.artifactHash,
           reviewArtifactHash: cap.reviewArtifactHash, jobId: job.id, state: 'queued',
           expiresAt: now() + 86400000, createdAt: now() };
         await tx.write('project-vaults', projectId, value, old?.revision ?? 0);
@@ -77,7 +81,8 @@ export function createVaults({ store, identity, jobs, chain, now = () => Date.no
         const cap = await allowed(claim.job.authority.actor, value.projectId, reader);
         requireThat(cap.artifactHash === value.artifactHash && cap.artifactProjectId === value.artifactProjectId &&
           cap.reviewArtifactHash === value.reviewArtifactHash, 'vault_profile_changed');
-        requireThat(digest(await binding(reader, value.projectId)) === digest(value.policy), 'project_binding_changed');
+        requireThat(digest(await binding(reader, value.projectId, cap)) ===
+          digest({ policy: value.policy, admission: value.admission }), 'project_binding_changed');
         return true;
       };
       async function finish(result) {

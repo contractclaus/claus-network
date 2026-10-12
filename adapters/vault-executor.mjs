@@ -27,6 +27,13 @@ export function createVaultExecutor({ store, client, signer, sealer, artifacts, 
         const [projectKey, executor] = await Promise.all(['projectId', 'executor'].map(functionName =>
           client.readContract({ address: value.policy.target, abi: ClausReadonlyProjectAbi, functionName })));
         requireThat(projectKey === value.policy.projectKey && executor.toLowerCase() === value.policy.executor.toLowerCase(), 'project_binding_changed');
+        const [implementation, implementationCodeHash, configuration] = await Promise.all(
+          ['implementation', 'implementationCodeHash', 'configuration'].map(functionName =>
+            client.readContract({ address: value.policy.target, abi: ClausReadonlyProjectAbi, functionName })));
+        requireThat(implementation.toLowerCase() === value.admission.implementation.toLowerCase() &&
+          implementationCodeHash.toLowerCase() === value.admission.implementationCodeHash.toLowerCase() &&
+          keccak256(await client.getCode({ address: implementation })).toLowerCase() === implementationCodeHash.toLowerCase() &&
+          (configuration.length - 2) / 2 === value.admission.configurationBytes, 'policy_not_verified');
         requireThat(await authorize(store) === true, 'transaction_not_authorized');
       } catch (error) { if (!authorityDenied(error)) throw error; fresh = false; if (!tx) return { state: 'blocked', error: error.code }; }
     }

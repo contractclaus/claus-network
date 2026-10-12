@@ -1,6 +1,6 @@
 # Portability
 
-Source 0.7 includes signed, paged operator transfers. Local tests exercise the complete HTTP/SDK path with separate stores, stop the source server, and continue work on the destination. The live hosted transfer is not yet accepted. Check [release status](release-status.md).
+Source 0.7 includes signed, paged operator transfers. Local tests exercise the complete HTTP/SDK path with separate stores, stop the source server, and continue work on the destination. The [hosted reference](reference-portability.json) also completed with separate databases, roles and signing keys. Both instances are operated by Claus. Check [release status](release-status.md).
 
 `project_transfer_prepare` is an explicit one-way move, available only to the project owner for an admitted project. In one transaction it fences new source work and creates an operator-signed archive. Repeating the request returns that exact archive. If capture fails, the transaction rolls back the fence. Source reads, key revocation, exits and completion of already paid services remain possible. Existing onchain signatures and completed transactions cannot be undone by an API fence.
 
@@ -30,6 +30,10 @@ An imported cost record is history, never a new funded balance. Funds remain in 
 
 Claus-controlled upgrade contracts retain their disclosed dependence on Claus. Ordinary source work, service use and interface publication may continue on a compatible operator, but that does not give the destination a Claus approval key.
 
-## Acceptance still required
+## Acceptance evidence
 
-Hosted acceptance still requires a second separately configured operator to import a genuine archive, authenticate its owner and continue permitted work while the first operator's website and coordinator are unavailable. Tests must cover a forged archive, altered owner, reused project ID, revoked authority, interrupted handover, pending paid work and a second import of the same archive. Neither a local file export nor two clients of the same database satisfies this requirement.
+The hosted reference kept its project ID and source snapshot, imported the operator-signed archive, issued fresh destination rights, created a new source version and published its interface. It then revoked the new agent. The continuation client rejected any request outside the destination origin. Source service remained online for other projects; this is not a claim of a global source outage or an independent operating company.
+
+The local HTTP/SDK test separately stops the source server before continuing. Targeted tests cover forged archives, changed owners, occupied project IDs, revoked authority, interrupted handover, pending paid work and repeated commits. Imported history preserves the original operator’s signature during a subsequent export.
+
+The two hosted database runtime roles cannot connect to each other’s databases. Hosting-account control remains shared, so this proves protocol portability rather than organizational independence.

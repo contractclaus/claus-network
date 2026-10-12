@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-12T06:34:32.506Z",
+  "scope": "Claus-operated reference; distinct PostgreSQL databases and credentials on the same hosting account",
+  "projectId": "prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb",
+  "archiveId": "sha256:e8e07e658a82ae03dae0e0b44909109750af99e5390bae7bedb4c30f6fd203a7",
+  "source": "https://claus-network-api.vercel.app",
+  "destination": "https://claus-network-portable.vercel.app",
+  "sourceGlobalShutdown": false,
+  "continuationClientRestrictedToDestination": true,
+  "destinationRequests": [
+    "/v1/imports/sha256%3Ae8e07e658a82ae03dae0e0b44909109750af99e5390bae7bedb4c30f6fd203a7/commit",
+    "/v1/imports/sha256%3Ae8e07e658a82ae03dae0e0b44909109750af99e5390bae7bedb4c30f6fd203a7/commit",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/snapshots/sha256%3A8d9b3ee8d0af4535988a0c09ac9acbaf9afa39b356a7c2da36683a6677e3ec5c",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/agents",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/mandates",
+    "/v1/credentials",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/snapshots",
+    "/v1/admin/review-pilots/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb",
+    "/v1/admin/review-pilots/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/snapshots",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/releases",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/releases/sha256%3A46c25e673cedc7fee4d32a2f2a3202e2123627c031ccb3beeb89c21e1d2e18e4/publication",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/publication",
+    "/v1/mandates/mnd_4deb12ef-45cb-4f52-9d71-d2835d69724f",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb",
+    "/v1/projects/prj_45b80d1b-453d-4ebc-a7bd-e15098e6c5fb/import-history"
+  ],
+  "sourceFenced": true,
+  "sourcePublicationWithdrawn": true,
+  "sourceCredentialRejectedByDestination": true,
+  "sourceSnapshot": "sha256:8d9b3ee8d0af4535988a0c09ac9acbaf9afa39b356a7c2da36683a6677e3ec5c",
+  "continuedSnapshot": "sha256:f7832faa5b0c7a6049c078a789a4c0820309bf94fc3eb27c7571e6a231ead09a",
+  "records": 13,
+  "pages": 1,
+  "priorAuthorityImported": false,
+  "destinationMandateRevoked": true,
+  "site": "https://claus-network-portable-sites.vercel.app/r/46c25e673cedc7fee4d32a2f2a3202e2123627c031ccb3beeb89c21e1d2e18e4/index.html",
+  "publishedInterfaceReadback": {
+    "status": 200,
+    "checkedAt": "2026-10-12T06:34:38.424Z",
+    "isolated": true
+  }
+}

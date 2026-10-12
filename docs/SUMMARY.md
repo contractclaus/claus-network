@@ -15,5 +15,5 @@
 - [Project wallets](wallets.md)
 - [Project UIs](project-uis.md)
 - [Inference integration status](inference.md)
-- [Portability implementation boundary](portability.md)
+- [Operator transfers](portability.md)
 - [Operation and recovery](operations.md)

@@ -41,23 +41,44 @@ test('external API deploys a fixed vault and prepares withdrawals that survive a
   const p = await api.call('project_create', { slug: 'vault-adapter', name: 'Vault adapter fixture', idempotencyKey: 'one' });
   const policy = { chainId: 11155111, profile: 'claus-readonly-v1', target, projectKey, executor: owner.address,
     codeHash: keccak256(await client.getCode({ address: target })), verification: { state: 'verified', localFixture: true } };
+  const admission = { bindingHash: digest(policy), implementation: module,
+    implementationCodeHash: keccak256(await client.getCode({ address: module })), configurationBytes: 64 };
   await store.transaction(async tx => {
     const hash = await app.artifacts.put(tx, p.id, { contract: 'ClausNativeVault', creationBytecode: vaultSource.bytecode.object });
     await tx.write('network-capabilities', 'vaults', { enabled: true, chainId: 11155111,
-      artifactProjectId: p.id, artifactHash: hash, reviewArtifactHash: digest('local fixture only') }, 0);
+      artifactProjectId: p.id, artifactHash: hash, reviewArtifactHash: digest('local fixture only'),
+      policies: { [p.id]: admission } }, 0);
     await tx.write('review-pilots', p.id, { enabled: true, expiresAt: time + 86400000 }, 0);
     await tx.write('chain-bindings', p.id, policy, 0);
   });
   const executor = createVaultExecutor({ store, client, signer: payer, artifacts: app.artifacts,
     sealer: createSealer('fe'.repeat(32)), now: () => time,
     verification: { step: async () => ({ state: 'verified', localFixture: true }) } });
-  await store.transaction(tx => tx.write('chain-bindings', p.id, { ...policy, projectKey: keccak256('0xffff') }, 1));
+  await store.transaction(async tx => {
+    const wrong = { ...policy, projectKey: keccak256('0xffff') };
+    await tx.write('chain-bindings', p.id, wrong, 1);
+    const cap = await tx.read('network-capabilities', 'vaults');
+    await tx.write('network-capabilities', 'vaults', { ...cap.value,
+      policies: { [p.id]: { ...admission, bindingHash: digest(wrong) } } }, cap.revision);
+  });
   await api.call('vault_create', { projectId: p.id });
   assert.equal((await app.vaults.runOne(executor)).state, 'blocked');
   assert.equal((await store.list('chain-transactions')).length, 0, 'a mismatched onchain identity must not be signed');
-  await store.transaction(tx => tx.write('chain-bindings', p.id, policy, 2));
+  await store.transaction(async tx => {
+    await tx.write('chain-bindings', p.id, policy, 2);
+    const cap = await tx.read('network-capabilities', 'vaults');
+    await tx.write('network-capabilities', 'vaults', { ...cap.value, policies: { [p.id]: admission } }, cap.revision);
+  });
+  await client.waitForTransactionReceipt({ hash: await wallet.writeContract({ chain: null, address: target,
+    abi: targetSource.abi, functionName: 'applyUpgrade', args: [module, '0x'] }) });
+  await api.call('vault_create', { projectId: p.id });
+  assert.equal((await app.vaults.runOne(executor)).state, 'blocked');
+  assert.equal((await store.list('chain-transactions')).length, 0, 'an unsupported live policy must not be signed');
+  await client.waitForTransactionReceipt({ hash: await wallet.writeContract({ chain: null, address: target,
+    abi: targetSource.abi, functionName: 'applyUpgrade', args: [module,
+      encodeAbiParameters([{ type: 'bool' }, { type: 'uint256' }], [true, 10000n])] }) });
   const first = await api.call('vault_create', { projectId: p.id }); let vault;
-  assert.equal(first.attempt, 2);
+  assert.equal(first.attempt, 3);
   for (let i = 0; i < 8; i++) {
     await app.vaults.runOne(executor); vault = await api.call('vault_get', { projectId: p.id });
     if (vault.state === 'verified') break;
