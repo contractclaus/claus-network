@@ -5,7 +5,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | State |
 | --- | --- |
 | Owner login, project identity and delegated agents | Live |
-| API, JavaScript SDK, CLI and HTTP MCP | Live; 68 operations in API 0.5 |
+| API, JavaScript SDK, CLI and HTTP MCP | Live; 72 operations in API 0.6 |
 | Source snapshots and explicit publication | Live |
 | Bounded Solidity compilation | Live; scheduled isolated compiler |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
@@ -14,11 +14,12 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Approval executor contract | Confirmed on Sepolia, source verified |
 | Service catalogue and isolated static publication | Active for admitted projects; reference collaboration acceptance is in progress |
 | Project wallets | Hosted but disabled pending assessment of the corrected wallet's independent review |
+| Native-principal vault | API and isolated worker deployed; activation disabled pending review and testnet acceptance |
 | Production token launches and capital products | Not enabled |
 | Public inference and holder credits | Not enabled |
 | GitBook publication | Prepared; account connection still required |
 
-API deployment: `dpl_3cAHRBVHRrqhyxACrApmcxkKWoRu`, release `f0f598e968eabb90d25e994c22295d8a3c9308d273a785bad9640cf6cea440b5`. All 75 uploaded files matched the prepared release.
+API deployment: `dpl_FJQgaHLhtn1CisA7gS5goNQMV4U2`, release `79788ab0650aee7fd108de149cd6b5f1a44edc23c692529a3bd03f82c7f55950`. All 83 uploaded files matched the prepared release. The isolated vault worker is `dpl_FtkKFTAqkjZTDxt9VQ6d4qEXPqre`, with 61 matched files and activation disabled.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 

@@ -8,6 +8,10 @@ An owner authorizes a payment session once by signing the typed data returned by
 
 For an accepted service order, `wallet_payment_prepare` binds the exact quote and amount to the session. The authorized agent signs that typed request with its own session key and submits it through `wallet_payment_submit`. A separate worker pays gas and relays it. The contract enforces the recipient, limits, generation, deadline, nonce and single use of the quote within that session. One session cannot consume another session's nonce or quote. The network additionally admits only one payment action for each service order, across sessions. Confirmation and the exact `PaymentMade` event, not a transaction hash alone, unlock provider work.
 
+Nonce and quote history lasts for the whole session ID, including later generations. Renewal does not clear it. The adapter derives each payment nonce from its order and wallet, so a new generation does not reuse a counter starting at zero.
+
+An owner-signed renewal can replace a still-live generation immediately and reset its spending allowance. It is not a scheduled monthly budget. For the restricted pilot, use a fresh session ID with one concrete allowance and revoke it when finished; do not pre-sign future renewals. This retained limitation is recorded in the independent wallet review.
+
 An API credential is not a universal wallet key. Agents cannot change sessions, grant themselves rights or make arbitrary contract calls through this payment profile. The project owner can use `ownerCall` directly to withdraw funds or perform recovery independently of Claus.
 
 Revoking an API mandate stops new network actions. For an onchain revocation, `wallet_session_revoke` returns the exact owner transaction; sign and broadcast it from the owner wallet with your own RPC client. `revokeSession` permanently retires that session ID and invalidates its payment signatures and any pre-signed future renewals. A later authorization must use a fresh session ID. An API revocation alone cannot retract a valid signature already shared with a third party.

@@ -1,6 +1,6 @@
 # Claus Network
 
-Claus Network implementation. The initial project/source API and MCP are live at https://claus-network-api.vercel.app; OpenAPI is at `/openapi.json`. The [release status](docs/release-status.md) distinguishes deployed features from work in progress. This repository publishes the programmatic interfaces, worker implementations and reference contracts.
+Claus Network implementation. The initial project/source API and MCP are live at https://claus-network-api.vercel.app; OpenAPI is at `/openapi.json`. The [delivery record](DELIVERY.md) distinguishes deployed features from work in progress. The [network plan](../docs/ecosystem/NETWORK_PLAN.md) defines the complete target.
 
 ## Implemented and tested
 
@@ -11,7 +11,7 @@ Claus Network implementation. The initial project/source API and MCP are live at
 - Immutable source snapshots, explicitly authorized public source/profile publication, withdrawal, own-source export and a read-only graph projection. Registration does not imply review or endorsement.
 - A separate non-custodial contract profile proving signed Claus approval, owner registration, delay enforcement, revocation and generation invalidation. Modules execute by STATICCALL; this profile is not a token, vault or lending product. The approval executor is deployed and source-verified on Sepolia; see [deployment evidence](docs/deployments.json).
 
-API 0.5 exposes 68 operations. Sponsored IMD reviews, the automatic Home map, protected Sepolia workers, service registration and isolated static publication are live for admitted pilots. The first complete decision/execution and paid collaboration acceptance are in progress. Project wallets remain disabled pending the corrected contract review. GitBook publication still requires account access. See [release status](docs/release-status.md). Existing Club, staking, NFT and payment services remain separate.
+API 0.6 exposes 72 operations. Sponsored IMD reviews, the automatic Home map, protected Sepolia workers, service registration and isolated static publication are live for admitted pilots. The first complete decision/execution and paid collaboration acceptance are in progress. Project wallets and the new vault profile remain disabled pending their review assessments and acceptance. GitBook publication still requires account access. See [release status](docs/release-status.md). Existing Club, staking, NFT and payment services remain separate.
 
 ## Development
 
@@ -39,5 +39,3 @@ Provider quote and cost-verification ports remain trusted host boundaries. A fun
 The production store serializes short state transitions with a schema-scoped PostgreSQL advisory lock. External provider calls must occur outside these transactions. Runtime roles do not need schema creation or migration privileges. Connection strings, tokens and signing keys never enter project artifacts, model prompts or exports.
 
 `modules.json` and the import lint check domain-module dependencies. They are not a sandbox. Untrusted source builds require a separate bounded execution environment before provider dispatch is enabled.
-
-The source tree also contains the 0.6 native-vault interface candidate. Deployment remains disabled while independent review is assessed; the live API is still 0.5. See [the profile and its limits](docs/native-vault.md).

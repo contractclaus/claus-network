@@ -1,6 +1,6 @@
 # API reference
 
-This source snapshot includes the 0.6 vault interface candidate. Check the [release status](release-status.md) and [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed version. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This reference covers API 0.6. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |

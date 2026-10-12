@@ -1,6 +1,6 @@
 # Native vault candidate
 
-This profile is under development and submitted for independent review. It is not deployed or enabled by the production API. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
+This contract profile is submitted for independent review and is not activated. Its API and isolated worker are deployed, with new vault deployments disabled. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
 
 `ClausNativeVault` records each depositor's native-ETH principal. Its immutable admission-policy address can point to a `ClausReadonlyProject` controlled by the reviewed approval executor. Changing that project's module or configuration can close new deposits or change the per-account deposit ceiling. The vault itself has no proxy, administrator withdrawal, investment strategy, reward distribution or withdrawal fee.
 
@@ -12,9 +12,9 @@ Local tests cover admission changes, broken policies, account isolation, malform
 
 A separate composition test registers the policy through the real approval executor, rejects an owner-only upgrade, enforces its delay, closes deposits through a signed test approval and then suspends upgrades for signer recovery. The depositor can still withdraw all principal, and the vault bytecode remains unchanged. The signatures in this test are fixtures, not an actual Claus decision.
 
-## Interface candidate
+## Interface
 
-The 0.6 interface adds `vault_create`, `vault_get`, `vault_transaction` and `vault_balance` through the same API, SDK, CLI and MCP. These operations are not active on the currently deployed 0.5 API.
+API 0.6 exposes `vault_create`, `vault_get`, `vault_transaction` and `vault_balance` through the same API, SDK, CLI and MCP. Their presence does not activate the contract profile. Deployment requests remain gated by the separately controlled capability.
 
 `vault_create` requires `vault.manage`, sponsor admission and a previously verified policy registration belonging to the same project. It deploys only the operator's exact reviewed vault artifact. Concurrent calls share one job, and an uncertain broadcast keeps its original transaction. A changed artifact, review, policy binding or revoked mandate prevents a new broadcast.
 
