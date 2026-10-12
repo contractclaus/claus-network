@@ -14,7 +14,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Approval executor contract | Confirmed on Sepolia, source verified |
 | Service catalogue and isolated static publication | Active for admitted projects; the complete Claus-operated reference paid two services, changed agents, published its result and retired both payment sessions |
 | Project wallets | Active for admitted Sepolia projects; corrected review assessed and reference wallet source verified |
-| Native-principal vault | One Claus-operated Sepolia vault is deployed and source verified; fixed owner test principal finalized; Claus approved the policy change; its real delay ends at 08:20:24 UTC; execution and withdrawal acceptance pending |
+| Native-principal vault | One Claus-operated Sepolia vault is deployed and source verified; fixed owner test principal finalized; Claus approved the policy change; the approved change executed after its one-hour delay; finality and withdrawal acceptance pending |
 | Production token launches and capital products | Not enabled |
 | Inference API and accounting | Interfaces and disabled implementation deployed; project allowances, durable requests and cost reconciliation tested without a live provider |
 | Public inference and holder credits | Not enabled; provider authorization and actual billing conformance still required |
@@ -46,7 +46,7 @@ Both operator database snapshots were restored exactly into disposable schemas. 
 
 The agent review-context release `dpl_B8t89cuyE1EEMLzWEooEZbYqXrDE` matched all 156 source files, preserved configuration 451 and passed 614 tests. It binds the registered downstream vault to a policy review; neither this code change nor the API 0.8 release grants mainnet authority.
 
-API 0.9.3 adds the gated host configuration and bounded dispatcher implementation. Public intake remains disabled. Its local reference passed with two intentionally lost broadcast responses; cumulative gas accounting, revocation, concurrent workers and callback failure were checked. The original paid Inbox review is complete. Its [assessment](reference-inbox-review.json) retains all repository findings and admits only the exact immutable Inbox for a bounded owner-operated Sepolia reference. Source verification and runtime activation are tracked separately. Claus knowledge configuration 454 records the verified API release, completed M1 reference and updated external integration discovery. Identity, settings and policy were preserved; no X post was triggered.
+API 0.9.3 adds the gated host configuration and bounded dispatcher implementation. Public intake remains disabled. Its local reference passed with two intentionally lost broadcast responses; cumulative gas accounting, revocation, concurrent workers and callback failure were checked. The original paid Inbox review is complete. Its [assessment](reference-inbox-review.json) retains all repository findings and admits only the exact immutable Inbox for a bounded owner-operated Sepolia reference. Source verification and runtime activation are tracked separately. Claus knowledge configuration 455 records the verified API release, completed M1 reference and updated external integration discovery. Identity, settings and policy were preserved; no X post was triggered.
 
 The original balance-lens change is finalized. The [reference receipt](reference-lens.json) binds the genuine Claus decision, exact execution transaction and finalized balance readback. The original public project is available in the network explorer.
 
