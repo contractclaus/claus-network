@@ -3,10 +3,14 @@ import assert from 'node:assert/strict';
 import {openStore} from '../src/storage/index.mjs';
 import {checkChainWorkerRoles, createChainWorker} from '../runtime/chain-worker.mjs';
 import {recoverChainEvent} from '../adapters/chain-event-recovery.mjs';
+import {createHostedContractIntakeWorker} from '../runtime/contract-intake-host.mjs';
 
 test('chain hosts require an explicit secure historical endpoint before connecting to storage', async () => {
   await assert.rejects(createChainWorker('executor', {}), { code: 'historical_rpc_required' });
   await assert.rejects(createChainWorker('controller', { CLAUS_SEPOLIA_RPC_URL: 'http://example.invalid' }),
+    { code: 'historical_rpc_required' });
+  await assert.rejects(createHostedContractIntakeWorker({}), { code: 'historical_rpc_required' });
+  await assert.rejects(createHostedContractIntakeWorker({ CLAUS_SEPOLIA_RPC_URL: 'http://example.invalid' }),
     { code: 'historical_rpc_required' });
 });
 

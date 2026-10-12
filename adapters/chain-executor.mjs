@@ -239,17 +239,18 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         const event = executorAbi.find(x => x.type === 'event' && x.name === 'UpgradeExecuted');
         const versionAt = blockNumber => client.readContract({ address: p.target, abi: targetAbi,
           functionName: 'version', blockNumber });
-        const found = await recoverChainEvent({store,client,chainId,key:'execution:v2:'+value.id,
+        const found = await recoverChainEvent({store,client,chainId,key:'execution:v3:'+value.id,
           fromBlock:input.evidence?.chain?.blockNumber??queued?.receipt?.blockNumber??0,
+          selectLogs: logs => logs.filter(log => log.args.version === BigInt(p.fromVersion) + 1n),
           validateEmpty: async ({ toBlock }) => {
             const code = await client.getCode({ address: p.target, blockNumber: toBlock });
             if (!code || code === '0x') return;
-            // Cancellation consumes a nonce without upgrading the target. A
-            // changed version with no matching event is missing evidence,
-            // never proof that the signed approval was cancelled.
+            // Recover the project's exact version transition, which may belong
+            // to an older approval. An absent transition is missing evidence;
+            // a later version alone cannot identify the executed approval.
             requireThat(await versionAt(toBlock) <= BigInt(p.fromVersion), 'recovery_logs_inconsistent');
           },
-          query:{address:p.executor,event,args:{projectId:p.projectKey,approvalHash:signed.approvalHash}}});
+          query:{address:p.executor,event,args:{projectId:p.projectKey}}});
         if(!found.complete)return {state:'executing',error:'execution_history_pending'};
         const logs=found.logs;
         if (!logs.length) {
@@ -262,6 +263,8 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         requireThat(receipt.status === 'success' && receipt.blockHash === block.hash, 'execution_receipt_mismatch');
         if (head - receipt.blockNumber < 2n || chainId === 1 &&
           (await client.getBlock({ blockTag: 'finalized' })).number < receipt.blockNumber) return { state: 'executing' };
+        if (logs.at(-1).args.approvalHash !== signed.approvalHash)
+          return { state: 'blocked', error: 'approval_superseded' };
         executed = { hash: receipt.transactionHash, receipt: { blockNumber: receipt.blockNumber.toString(), blockHash: receipt.blockHash } };
       }
       if (executed) {

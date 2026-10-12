@@ -12,6 +12,8 @@ import { contractIntakePorts } from './contract-intake-config.mjs';
 // Separate signing host. One explicitly admitted lifetime budget is selected;
 // no API request or worker restart creates, replenishes or changes it.
 export async function createHostedContractIntakeWorker(env = process.env) {
+  requireThat(typeof env.CLAUS_SEPOLIA_RPC_URL === 'string' &&
+    new URL(env.CLAUS_SEPOLIA_RPC_URL).protocol === 'https:', 'historical_rpc_required');
   const ports = contractIntakePorts(env);
   requireThat(ports.pin && env.CLAUS_CONTRACT_DISPATCH_BUDGET, 'intake_host_unconfigured');
   neonConfig.webSocketConstructor = ws;
