@@ -1,4 +1,4 @@
-# Native vault candidate
+# Native vault on Sepolia
 
 The external vault and admission-policy reports are assessed for a restricted Sepolia profile, with no medium or higher findings. The policy report contains one low and four informational findings; the accepted profile and limitations are described below. Deployment is enabled for one Claus-operated Sepolia reference. Its deposit, reviewed policy change and withdrawal acceptance are still in progress; this is not a public custody service. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
 
@@ -8,13 +8,13 @@ Withdrawals never call the admission policy. Each account can withdraw its own r
 
 The policy call is read-only, gas-bounded and accepts only the exact 128-byte ABI encoding of a `bytes` result containing `(bool,uint256)`. A malformed or oversized response rejects the deposit. This output boundary protects the vault even if a new policy tries to return excessive data.
 
-Local tests cover admission changes, broken policies, account isolation, malformed responses, failed withdrawals, reentrancy, uncredited ETH and principal conservation. These tests do not replace independent review or real deployment evidence. The dedicated API path and constructor checks are implemented and locally tested; hosted worker activation and a public testnet lifecycle proof remain required. Mainnet custody and token launches are separate decisions.
+Local tests cover admission changes, broken policies, account isolation, malformed responses, failed withdrawals, reentrancy, uncredited ETH and principal conservation. The dedicated API path, constructor checks and isolated worker are live for the explicitly admitted reference. Its contract is [source verified on Sepolia](https://sepolia.etherscan.io/address/0x66fa2f848a9ea0be9be69f29b91c1d48b9dc95a4#code); the [deployment manifest](deployments.json) binds its source, constructor, admission policy and review. The complete testnet lifecycle proof remains pending. Mainnet custody and token launches are separate decisions.
 
 A separate composition test registers the policy through the real approval executor, rejects an owner-only upgrade, enforces its delay, closes deposits through a signed test approval and then suspends upgrades for signer recovery. The depositor can still withdraw all principal, and the vault bytecode remains unchanged. The signatures in this test are fixtures, not an actual Claus decision.
 
 ## Interface
 
-API 0.7 exposes `vault_create`, `vault_get`, `vault_transaction` and `vault_balance` through the same API, SDK, CLI and MCP. Their presence does not activate the contract profile. Deployment requests remain gated by the separately controlled capability.
+API 0.8 exposes `vault_create`, `vault_get`, `vault_transaction` and `vault_balance` through the same API, SDK, CLI and MCP. Their presence does not activate the contract profile. Deployment requests remain gated by the separately controlled capability.
 
 `vault_create` requires `vault.manage`, sponsor admission and a previously verified policy registration explicitly admitted for that project. It deploys only the operator's exact reviewed vault artifact. Concurrent calls share one job, and an uncertain broadcast keeps its original transaction. Admission pins the complete registration binding, module address and runtime hash, and the reviewed 64-byte configuration profile. A changed artifact, review, policy binding, withdrawn admission or revoked mandate prevents a new broadcast. The worker also checks the live implementation and configuration before signing. These checks do not stop later valid governance updates; the vault’s independent withdrawal path remains the protection for principal.
 

@@ -66,6 +66,13 @@ The live API is 0.8.0 with 85 operations. Endpoint availability and operational 
 | `vault_get` | GET | `/v1/projects/{projectId}/vault` | Bearer credential |
 | `vault_transaction` | POST | `/v1/projects/{projectId}/vault/transaction` | Bearer credential |
 | `vault_balance` | GET | `/v1/projects/{projectId}/vault/balance` | Bearer credential |
+| `inference_profile_set` | PUT | `/v1/admin/inference/profiles` | Network owner session |
+| `inference_allowance_set` | PUT | `/v1/admin/inference/allowances/{projectId}` | Network owner session |
+| `inference_profile` | GET | `/v1/projects/{projectId}/inference/profiles/{profileId}` | Bearer credential |
+| `inference_submit` | POST | `/v1/projects/{projectId}/inference/requests` | Bearer credential |
+| `inference_get` | GET | `/v1/projects/{projectId}/inference/requests/{requestId}` | Bearer credential |
+| `inference_output` | GET | `/v1/projects/{projectId}/inference/requests/{requestId}/output` | Bearer credential |
+| `inference_cancel` | DELETE | `/v1/projects/{projectId}/inference/requests/{requestId}` | Bearer credential |
 | `release_create` | POST | `/v1/projects/{projectId}/releases` | Bearer credential |
 | `release_get` | GET | `/v1/projects/{projectId}/releases/{releaseId}` | Bearer credential |
 | `release_publish` | PUT | `/v1/projects/{projectId}/releases/{releaseId}/publication` | Bearer credential |

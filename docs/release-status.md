@@ -14,7 +14,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Approval executor contract | Confirmed on Sepolia, source verified |
 | Service catalogue and isolated static publication | Active for admitted projects; the complete Claus-operated reference paid two services, changed agents, published its result and retired both payment sessions |
 | Project wallets | Active for admitted Sepolia projects; corrected review assessed and reference wallet source verified |
-| Native-principal vault | API and isolated worker enforce explicit reviewed policy admission; enabled for one Claus-operated Sepolia reference; end-to-end testnet acceptance pending |
+| Native-principal vault | One Claus-operated Sepolia vault is deployed and source verified; fixed owner test principal deposited; reviewed policy-change and withdrawal acceptance pending |
 | Production token launches and capital products | Not enabled |
 | Inference API and accounting | Interfaces and disabled implementation deployed; project allowances, durable requests and cost reconciliation tested without a live provider |
 | Public inference and holder credits | Not enabled; provider authorization and actual billing conformance still required |
@@ -33,7 +33,7 @@ The public `claus-approval-contracts` project and the reference service projects
 
 Existing Claus Club, staking and NFT rights are unchanged by this release.
 
-The [native-vault profile](native-vault.md) has an assessed external report, together with its separate policy report. It is not a deployed custody service or a token-launch product.
+The [native-vault profile](native-vault.md) has an assessed external report, together with its separate policy report. Its one deployed owner-operated testnet vault does not activate public custody or token launches. The [manifest](deployments.json) records seven verified reference contracts, including both policy/project kernels, their modules and the vault.
 
 Source 0.7 adds signed, paged operator transfers. The source and second operator are deployed with separate databases and keys. A local HTTP/SDK acceptance continues source work with the original server stopped. The hosted reference imported its signed archive, continued work and published an isolated interface using only the destination API. Both instances belong to Claus, with separate database roles and signing keys. The source remained available to its other projects; the reference client was restricted to the destination. No imported payment or contract authority was activated. See the [transfer receipt](reference-portability.json).
 
