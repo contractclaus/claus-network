@@ -85,10 +85,11 @@ for (const chainId of [1, 11155111]) test('chain ' + chainId + ': terminal explo
   assert.equal(retry.etherscanError, undefined);
   time += 120000; await verifier.step(input); assert.equal(submitted, 2);
   status = 'Max rate limit reached'; await verifier.step(input); assert.equal(submitted, 2);
-  status = 'Pass - Verified'; const passed = await verifier.step(input); assert.equal(submitted, 2);
+  time += 3600000; status = 'Pass - Verified'; const passed = await verifier.step(input); assert.equal(submitted, 2);
   assert.equal(passed.etherscanError, undefined); assert.equal(passed.state, 'pending');
   indexed = true; assert.equal((await verifier.step(input)).state, 'verified');
-  assert.equal((await store.list('chain-verification-attempts')).length, 1);
+  const history = await store.list('chain-verification-attempts');
+  assert.equal(history.length, 2); assert.equal(history.filter(x => x.value.failedAt).length, 1);
 });
 
 test('Sourcify HTML service failure keeps the retryable provider error', async t => {
@@ -157,7 +158,7 @@ for (const failure of ['terminal', 'http', 'refused']) test('explorer submission
   assert.equal(result.etherscanState, 'operator_action_required');
   assert.equal(result.etherscanRetryExhausted, true); assert.equal(result.state, 'pending');
   assert.equal((await store.list('chain-verification-attempts')).length, failure === 'terminal' ? 3 : 0);
-  indexed = true; result = await verifier.step(input);
+  indexed = true; time += 3600000; result = await verifier.step(input);
   assert.equal(result.state, 'verified'); assert.equal(result.etherscanState, 'verified');
   assert.equal(result.etherscanRetryExhausted, false); assert.equal(posts, 3);
 });
@@ -183,4 +184,96 @@ test('concurrent verifier steps cannot exceed the reserved submission cap', asyn
   }
   assert.equal(posts, 3);
   assert.equal((await store.list('chain-verification-attempts')).length, 3);
+});
+
+for (const message of ['Unable to locate ContractCode at 0x1234', 'Max rate limit reached', 'Invalid API Key'])
+test('explicit refusal recovers after backoff without spending a verification attempt: ' + message, async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let time = 100000, refused = true, posts = 0, accepted = 0;
+  const verifier = createSourceVerification({ store, etherscanKey: 'key', now: () => time,
+    fetcher: async (url, options = {}) => {
+      const u = new URL(url);
+      if (u.hostname === 'sourcify.dev') return Response.json(options.method === 'POST'
+        ? { verificationId: 'source' } : { runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
+      if (u.searchParams.get('action') === 'getsourcecode') return Response.json({ status: '1', result: [{ SourceCode: '' }] });
+      if (u.searchParams.get('action') === 'verifysourcecode') {
+        posts++;
+        if (refused) return Response.json({ status: '0', result: message });
+        accepted++; return Response.json({ status: '1', result: 'recovered-guid' });
+      }
+      return Response.json({ status: '0', result: 'Pending in queue' });
+    } });
+  let result;
+  for (let i = 0; i < 120; i++) { result = await verifier.step(input); time += 30000; }
+  assert(posts <= 6, 'an hour of refusals must not produce a request every tick');
+  assert.equal(result.etherscanSubmissionCount, 0); assert.equal(accepted, 0);
+  refused = false; time += 3600000; result = await verifier.step(input);
+  assert.equal(result.etherscanGuid, 'recovered-guid'); assert.equal(result.etherscanSubmissionCount, 1);
+  assert.equal(accepted, 1); assert.equal(result.etherscanError, undefined);
+});
+
+test('a refused source listing backs off before any submission', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let time = 100000, calls = 0;
+  const verifier = createSourceVerification({ store, etherscanKey: 'key', now: () => time,
+    fetcher: async (url, options = {}) => {
+      calls++; const u = new URL(url);
+      if (u.hostname === 'sourcify.dev') return Response.json(options.method === 'POST'
+        ? { verificationId: 'source' } : { runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
+      assert.equal(u.searchParams.get('action'), 'getsourcecode');
+      return Response.json({ status: '0', result: 'Invalid API Key' });
+    } });
+  const first = await verifier.step(input); assert.equal(first.etherscanSubmissionCount, 0);
+  const before = calls;
+  for (let i = 0; i < 59; i++) { time += 1000; await verifier.step(input); }
+  assert.equal(calls, before);
+});
+
+test('a concurrent read cannot discard an accepted GUID or cause its resubmission', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let time = 100000, posts = 0, release, entered;
+  const gate = new Promise(resolve => { release = resolve; });
+  const posted = new Promise(resolve => { entered = resolve; });
+  const verifier = createSourceVerification({ store, etherscanKey: 'key', now: () => time,
+    fetcher: async (url, options = {}) => {
+      const u = new URL(url);
+      if (u.hostname === 'sourcify.dev') return Response.json(options.method === 'POST'
+        ? { verificationId: 'source' } : { runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
+      if (u.searchParams.get('action') === 'getsourcecode') return Response.json({ status: '1', result: [{ SourceCode: '' }] });
+      if (u.searchParams.get('action') === 'verifysourcecode') {
+        posts++; entered(); await gate; return Response.json({ status: '1', result: 'original-guid' });
+      }
+      assert.equal(u.searchParams.get('guid'), 'original-guid');
+      return Response.json({ status: '0', result: 'Pending in queue' });
+    } });
+  const pending = verifier.step(input); await posted;
+  const reserved = await verifier.step(input);
+  // Also model a separately completed read updating diagnostics while the POST is in flight.
+  const row = await store.read('chain-verifications', reserved.id);
+  await store.transaction(tx => tx.write('chain-verifications', reserved.id, { ...row.value, diagnostic: 'concurrent read' }, row.revision));
+  release(); const result = await pending;
+  assert.equal(result.etherscanGuid, 'original-guid'); assert.equal(result.diagnostic, 'concurrent read');
+  const history = await store.list('chain-verification-attempts');
+  assert.equal(history.length, 1); assert.equal(history[0].value.guid, 'original-guid');
+  time += 61000; await verifier.step(input); assert.equal(posts, 1);
+});
+
+test('exhausted verification polls at most hourly and can still observe exact external completion', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let time = 100000, calls = 0, indexed = false;
+  const verifier = createSourceVerification({ store, etherscanKey: 'key', now: () => time,
+    fetcher: async (url, options = {}) => {
+      calls++; const u = new URL(url);
+      if (u.hostname === 'sourcify.dev') return Response.json(options.method === 'POST'
+        ? { verificationId: 'source' } : { runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
+      if (u.searchParams.get('action') === 'getsourcecode') return Response.json({ status: '1', result: [{ SourceCode: indexed ? '{}' : '', ContractName: 'Example' }] });
+      return Response.json({ status: '0', result: 'Unable to verify' });
+    } });
+  let result;
+  for (let i = 0; i < 3; i++) { result = await verifier.step(input); time += 90000; }
+  assert.equal(result.etherscanState, 'operator_action_required');
+  const before = calls;
+  for (let i = 0; i < 100; i++) { await verifier.step(input); time += 30000; }
+  assert.equal(calls, before);
+  indexed = true; time += 3600000; assert.equal((await verifier.step(input)).state, 'verified');
 });
