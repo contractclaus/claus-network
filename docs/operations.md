@@ -80,7 +80,7 @@ Publish compatible workers before enabling a new admission policy. Verify each u
 Pilot `review_pilot_set` accepts optional `perProjectDay` and `globalDay` limits (defaults 2 and 8). Only the network owner may set them; quota changes never clear historical counts or create credit. Public sponsorship uses separate admission counters, so earlier internal pilots do not consume a newly authorized public allocation. Public daily, active-work and lifetime bounds remain independently enforced.
 
 
-## Public admission failure boundaries (0.12.1 candidate)
+## Public admission failure boundaries
 
 The intake scanner filters the indexed binding and requester topics from live registered bindings before paging. Exact requester/binding pairs are checked before the 32-event work limit. It narrows dense RPC ranges and retains a block/log cursor. A transient scan or observation failure retains the cursor while existing result delivery continues. Rejection diagnostics retain the latest rejection per admitted binding, rather than an unbounded row per hostile event. Public projects have one queued/waiting intake request at a time; existing pilot binding quotas are unchanged.
 
@@ -93,7 +93,7 @@ Public dispatcher allocations include a per-project ceiling in addition to the t
 A broadcast with no final receipt retains its wallet slot and reservation, even after expiry. Operators must reconcile its original hash and nonce onchain; neither an RPC error nor a missing mempool entry proves that the signed transaction cannot execute. There is no automatic fee bump or replacement spending authority. Public admission may pause at these finite limits. EOA-based limits are per address, not proof of one human; global ceilings remain the hard spend bound.
 
 
-## Final admission recovery corrections (prepared)
+## Admission recovery
 
 A project can hold one active registration intent. Repeating the same preparation returns that intent, while a different input is refused until it expires or terminates. No more than 16 registration preparations are retained per project. Submission rejects an already-bound project and concurrent alternative registrations; existing original IDs remain readable.
 

@@ -1,8 +1,8 @@
-# Prepared consolidated release, API 0.12.1
+# Release status: API 0.12.1
 
-This branch is an unactivated release candidate. Its Ethereum read-only routing, separate signing roles and gas policy require the concrete release approval and independent assessment described in [Mainnet](mainnet.md). Existing public services remain on their separately deployed release. This source does not turn on Mainnet, custody, inference or token launches.
+The consolidated runtime at source `4976a080290d57f85cc1afd2eaf924005d321259` is deployed and source-verified. All eight primary workers matched their expected releases on 12 October 2026 at 12:41 UTC. Public projects, agent management, free service collaboration, static project pages and portability are available through the documented interfaces. Public sponsored reviews and new public Sepolia admission remain disabled while the final independent assessment and live contract reference are completed.
 
-# Release status
+Ethereum Mainnet routing and separate signing roles are prepared; Mainnet is not activated. The concrete approval requirements remain in [Mainnet](mainnet.md). Custody, public inference and token launches are not enabled by this release.
 
 Status checked on 12 October 2026. The [live health response](https://claus-network-api.vercel.app/health) reports enabled capabilities separately from the [API schema](https://claus-network-api.vercel.app/openapi.json). Paid and onchain workflows have separate admission; public sponsorship remains off at this checkpoint.
 
@@ -11,7 +11,7 @@ The owner has deferred new token launches to a later phase. They are not prerequ
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
-| Programmatic interfaces | Live API 0.11.3; this branch prepares 0.12.1 |
+| Programmatic interfaces | Live API 0.12.1; 105 documented operations |
 | Source snapshots and compilation | Live; explicit publication and bounded Solidity 0.8.27 or 0.8.26 compilation |
 | Network explorer | [Home](https://claus.si/Home) and project pages update from explicitly published registry records |
 | IMD reviews | Paid reference reviews completed; published reports remain readable from stored artifacts during provider outages; new work needs project admission and available sponsor funds |
@@ -81,13 +81,13 @@ The mandatory one-hour upgrade rule is removed for new admitted Sepolia registra
 [Public inference](inference.md) has prepared interfaces and accounting but no activated customer provider. [Independent pilot acceptance](external-pilot.md) requires a real participant. Existing Club, staking, NFT rights, published payment history and existing pool fees are unchanged by this network release.
 
 
-## 0.11.3 candidate: public admission review repairs
+## Earlier 0.11.3 admission review repairs
 
-The independent review of 0.11.2 identified intake-scan starvation, unreleased unsent review exposure, expired-pilot gas-accounting bypasses, missing project dispatcher limits and local-signing recovery gaps. The candidate adds bounded scan progress, cancellation accounting, public gas enrollment, decision/intake admission limits, durable delegated credentials and per-project dispatcher accounting. The full candidate gate passed 390 tests with ten optional environment skips; this paragraph does not activate public sponsorship or contracts. Existing 0.11.2 live references above remain authoritative until deployment and public-scope review complete. Mainnet remains disabled.
+The independent review of 0.11.2 identified intake-scan starvation, unreleased unsent review exposure, expired-pilot gas-accounting bypasses, missing project dispatcher limits and local-signing recovery gaps. The candidate adds bounded scan progress, cancellation accounting, public gas enrollment, decision/intake admission limits, durable delegated credentials and per-project dispatcher accounting. The full candidate gate passed 390 tests with ten optional environment skips; this paragraph does not activate public sponsorship or contracts. The final deployed 0.12.1 contains these corrections; the older live references remain historical evidence. Mainnet remains disabled.
 
 
-## Prepared consolidated recovery corrections (0.12.1)
+## Deployed recovery corrections (0.12.1)
 
-One active registration per project, exact relayer-receipt recovery, same-byte rebroadcast and expiry handling close the remaining concrete admission findings. A finalized externally delivered callback completes against the original resolution receipt. A proven void review can be requested again without discarding its old identity. Public limits now apply to expired pilots before gas enrollment. The Inbox scanner filters registered requester/binding pairs before its page limit; daily capacity can wait until the next UTC day within the original request deadline, and concurrent-request rejections are available through the binding read. The final source gate passed 402 tests with 12 optional environment skips; the real local-chain checks are recorded separately. This candidate and its Mainnet preparation are not yet activated; independent reports and the final public reference are still being completed.
+One active registration per project, exact relayer-receipt recovery, same-byte rebroadcast and expiry handling close the remaining concrete admission findings. A finalized externally delivered callback completes against the original resolution receipt. A proven void review can be requested again without discarding its old identity. Public limits now apply to expired pilots before gas enrollment. The Inbox scanner filters registered requester/binding pairs before its page limit; daily capacity can wait until the next UTC day within the original request deadline, and concurrent-request rejections are available through the binding read. The final source gate passed 402 tests with 12 optional environment skips; the real local-chain checks are recorded separately. These runtime corrections are deployed. Public sponsored admission remains off pending the final independent assessment and fresh live reference; Mainnet preparation is inactive.
 
 The same candidate also checks worker signing roles before job claims, keeps missing-port requests cancellable, and recovers finalized chain events in bounded resumable ranges. Mainnet staging checks the retained target artifact and stored verification evidence. Real local chain-1 relay/cancellation, Sepolia cancellation/revocation and the guarded release fixture passed.
