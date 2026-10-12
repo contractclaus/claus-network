@@ -57,7 +57,7 @@ export function createSourceVerification({ store, etherscanKey, chainId = 111551
         const submission = await etherscan({ action: 'verifysourcecode', contractaddress: address,
           sourceCode: JSON.stringify(artifact.standardInput), codeformat: 'solidity-standard-json-input',
           contractname: artifact.entry + ':' + artifact.contract, compilerversion: 'v' + artifact.profile.compiler.replace('.Emscripten.clang', ''),
-          constructorArguments: constructorArguments.slice(2) });
+          constructorArguments: constructorArguments.slice(2), constructorArguements: constructorArguments.slice(2) });
         value.etherscanAttemptAt = now();
         if (submission.status === '1') value.etherscanGuid = submission.result;
         else value.etherscanError = String(submission.result).slice(0, 500);
