@@ -2,6 +2,10 @@
 
 The current export contains one source snapshot. It is not yet a full migration to another network operator. Switching agents within the same project is a separate capability and does not prove operator independence.
 
+The source candidate now includes a separately tested archive codec in `src/portability/index.mjs`. It captures source versions, project artifacts, review and deployment history, service records, payment identifiers and project events under one consistent database transaction. An Ed25519 signature binds its manifest and content pages to an operator key configured by the recipient. Runtime credentials, reusable signatures and other projects' records are excluded. Four targeted checks cover content tampering, owner and key mismatches, revoked export rights and retained verification keys after rotation.
+
+This codec is not exposed by the deployed API. Its output is explicitly `snapshot-only` and `historical-only`: it cannot activate imported spending authority or restart pending work. The fenced transfer, destination import and second-operator acceptance below remain required.
+
 ## Archive and provenance
 
 A full archive must contain project identity, all selected source versions, build and review evidence, deployment bindings, service manifests and results, published interfaces, cost receipts, pending operation identities and the project's event history. It must explicitly state which resources were omitted. Credentials, private keys, provider secrets, live leases and reusable signed payment material must never be included.
