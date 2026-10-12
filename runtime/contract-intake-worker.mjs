@@ -13,7 +13,8 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
     catch (error) {
       // Removing an admission stops new work, but an old signing host must
       // still account for already-broadcast transactions under its old pin.
-      if (!['intake_admission_changed', 'intake_review_not_admitted', 'intake_projects_not_admitted'].includes(error.code)) throw error;
+      if (!['intake_admission_changed', 'intake_review_not_admitted', 'intake_projects_not_admitted',
+        'chain_public_not_enabled', 'chain_admission_changed', 'chain_scope_not_reviewed'].includes(error.code)) throw error;
       disabledReason = error.code;
     }
     const profile = await chain.profile();
@@ -36,7 +37,8 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
       } catch (error) {
         if (!['contract_intake_disabled', 'contract_binding_inactive', 'contract_binding_exhausted', 'contract_request_closed',
           'scope_denied', 'unauthenticated', 'invalid_contract_input', 'contract_request_mismatch', 'invalid_input',
-          'inbox_request_closed', 'unknown_field', 'invalid_shape', 'invalid_identifier'].includes(error.code)) throw error;
+          'inbox_request_closed', 'unknown_field', 'invalid_shape', 'invalid_identifier',
+          'chain_public_not_enabled', 'chain_admission_changed', 'chain_scope_not_reviewed'].includes(error.code)) throw error;
         await store.transaction(async tx => {
           const key = digest({ inbox: profile.inbox, transactionHash: event.transactionHash, logIndex: event.logIndex });
           if (!await tx.read('contract-intake-rejections', key)) await tx.write('contract-intake-rejections', key,

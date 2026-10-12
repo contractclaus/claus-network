@@ -5,11 +5,12 @@ import { approvalMessage, approvalTypes, domain, validateModule, selectExecutorC
 import { ClausApprovalExecutorAbi as executorAbi, ClausReadonlyProjectAbi as targetAbi } from './chain-abi.mjs';
 import { authorityDenied } from './authorization.mjs';
 
-export function createChainExecutor({ store, client, signer, sealer, chain, verification, artifacts, now = () => Date.now() }) {
+export function createChainExecutor({ store, client, signer, sealer, chain, verification, artifacts, admission, now = () => Date.now() }) {
   const read = (address, functionName, args = [], abi = executorAbi) => client.readContract({ address, abi, functionName, args });
   async function transact({ id, to = null, data, authority, expiresAt, authorize, validate = async () => {} }) {
     let currentChainState = true;
     const transactions = createSepoliaTransactions({ store, client, signer, sealer, now,
+      onReserve: admission?.reserveGas, onFinalize: admission?.finalizeGas,
       authorize: async (intent, reader) => {
         requireThat(intent.to === to && intent.data === data && intent.value === '0' &&
           digest(intent.authority) === digest(authority), 'executor_intent_mismatch');

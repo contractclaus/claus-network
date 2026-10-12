@@ -49,6 +49,9 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
         await admitted(tx, config);
         const old = await tx.read('contract-bindings', id);
         if (old) { requireThat(old.value.configHash === digest(config), 'idempotency_conflict'); return bindingView(old); }
+        const capacity = await tx.read('contract-binding-capacity', projectId);
+        requireThat((capacity?.value.count ?? 0) < 32, 'capacity_reached');
+        await tx.write('contract-binding-capacity', projectId, { count: (capacity?.value.count ?? 0) + 1 }, capacity?.revision ?? 0);
         const row = await tx.write('contract-bindings', id, { ...config, id, configHash: digest(config), used: 0,
           revokedAt: null, createdAt: now() }, 0);
         await tx.event({ type: 'contract.binding_created', projectId, bindingId: id, at: now() });

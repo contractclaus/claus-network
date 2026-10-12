@@ -62,3 +62,17 @@ On 12 October 2026, both snapshots were restored into disposable schemas. Their 
 6. Confirm current deployment source, capabilities, funding and signer restrictions. Resume read access first, then one class of worker at a time, preserving existing idempotency keys. Verify pending work and health before reopening admission. Take and verify a new encrypted checkpoint after recovery.
 
 Recovery does not transfer an owner's authority to another operator. Lost or compromised credentials require the supported revocation and rotation process; restoring an older database must not revive them.
+
+## Public-access release
+
+The versioned `project-access` policy controls free collaboration and technical capacity. Use `access_policy_get`, `access_policy_publish` and `access_policy_activate` with the network owner session. Publication validates the complete configuration; activation compares the expected generation. `project_access_set` can suspend one abusive project. Neither API changes sponsor funds, chain grants, keys or existing accepted terms.
+
+Counters survive policy changes and process restarts. Global new-project and new-snapshot-byte counters begin with this release; old project histories retain their previous per-project counts. Initial defaults: 64 new projects/day and 2,000 total, 64 MB new snapshot input/day and 512 MB total. This bounds new admission, not all accumulated database storage. Inspect actual database size separately. Global pause blocks new mutating work while preserving authorized reads, exports, withdrawals and reconciliation.
+
+Before deploying the new compiler, run `node scripts/migrate-maintenance.mjs /absolute/private/operator-config.json` with the migration role. The config contains `migrationUrl`, `runtimeRole` and optional `schema`. The migration adds the project-page index and a fixed security-definer cleanup function. Runtime still has no table DELETE permission. The compiler invokes cleanup once per scheduled tick: at most 2,000 auth challenges or rate-limit rows expired more than 24 hours ago. No identity, revocation, job, financial, source or transaction history is pruned.
+
+Publish compatible workers before enabling a new admission policy. Verify each uploaded source manifest and observed worker release; preserve active jobs, original payment IDs and leases. Public review and public chain policies stay disabled during this rollout.
+
+`review_admission_*` manages a separate finite, expiring sponsorship policy. It requires both available deposited IMD and per-owner/project/global admission. Its lifetime exposure conservatively counts maximum admitted cost and is not reset by cancellation or a new policy version. No policy call deposits money or increases a wallet allowance.
+
+`chain_admission_*` manages a separate finite, expiring Sepolia-only readonly profile. It pins executor code, target build and independently reviewed evidence plus the operator’s explicit public-scope assessment. Global/project gas reservations and receipts survive expiry and policy changes. Expiry blocks new spending, while already submitted transactions remain reconcilable. All signing workers must run the compatible code before this policy is enabled. Mainnet, customer custody, inference and token launches remain separate gates.

@@ -3,13 +3,18 @@
     {
       "id": "contract-intake",
       "path": "src/contract-intake/",
-      "imports": ["shared"],
+      "imports": [
+        "shared"
+      ],
       "builtins": []
     },
     {
       "id": "inference",
       "path": "src/inference/",
-      "imports": ["shared", "billing"],
+      "imports": [
+        "shared",
+        "billing"
+      ],
       "builtins": []
     },
     {
@@ -133,7 +138,8 @@
       "id": "review-flow",
       "path": "src/review-flow/",
       "imports": [
-        "shared"
+        "shared",
+        "policies"
       ],
       "builtins": []
     },
@@ -141,7 +147,8 @@
       "id": "chain-deployments",
       "path": "src/chain-deployments/",
       "imports": [
-        "shared"
+        "shared",
+        "policies"
       ],
       "builtins": []
     },
@@ -203,6 +210,15 @@
       "imports": [
         "shared",
         "portability"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "access",
+      "path": "src/access/",
+      "imports": [
+        "shared",
+        "policies"
       ],
       "builtins": []
     }

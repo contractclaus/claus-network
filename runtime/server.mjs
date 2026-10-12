@@ -3,6 +3,7 @@ import {pathToFileURL} from 'node:url';
 import {Pool,neonConfig} from '@neondatabase/serverless';
 import ws from 'ws';
 import {verifyMessage,createPublicClient,http as rpcHttp} from 'viem';
+import {createAccess} from '../src/access/index.mjs';
 import {createIdentity} from '../src/identity/index.mjs';
 import {createProjects} from '../src/projects/index.mjs';
 import {createJobs} from '../src/jobs/index.mjs';
@@ -32,9 +33,13 @@ import {operatorConfig} from './operator-config.mjs';
 
 export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={}}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
- const identity=createIdentity({store,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
+ let access;
+ const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
+  writesEnabled:async reader=>!(await access.policy(reader)).config.paused,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
+ access=createAccess({store,identity,now,reviewAdmission:reader=>reviewSystem.flow.admission.active(reader),
+  chainAdmission:reader=>deployments.admission.admitted(reader),reviewEligibility:(reader,projectId)=>reviewSystem.flow.admission.eligible(reader,projectId)});
  let services,releases;
- const projects=createProjects({store,identity,now,publicDetails:async projectId=>({
+ const projects=createProjects({store,identity,now,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicDetails:async projectId=>({
   services:await services.publicForProject(projectId),releases:await releases.publicForProject(projectId)
  })});
  let reviewSystem,deployments,approvals,wallets,vaults,inference,intake;
@@ -45,27 +50,22 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   await intake.onCancel(tx,job);
  }});
  const artifacts=createArtifactStore({store});
- const builds=createBuilds({store,identity,projects,jobs,artifacts,now});
- reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,...reviewPorts});
+ const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
+ reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,validatePublicBuild:artifact=>chain.validateModule(artifact),...reviewPorts});
  const chain=chainPorts.chain??createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})});
  deployments=createChainDeployments({store,identity,builds,reviews:reviewSystem.flow,jobs,artifacts,chain,now});
  approvals=createApprovals({store,identity,projects,reviews:reviewSystem.flow,deployments,jobs,artifacts,chain,now});
- const collaborationAdmission=async(projectId,reader)=>{
-  const cap=(await reader.read('network-capabilities','collaboration'))?.value;
-  const pilot=(await reader.read('review-pilots',projectId))?.value;
-  requireThat(cap?.enabled===true,'collaboration_not_enabled');
-  requireThat(pilot?.enabled===true&&pilot.expiresAt>now(),'sponsor_not_enabled');
- };
- services=createServices({store,identity,artifacts,admit:collaborationAdmission,now});
+ const collaborationAdmission=access.collaboration;
+ services=createServices({store,identity,artifacts,limit:access.limit,admit:collaborationAdmission,now});
  wallets=createWallets({store,identity,jobs,services,now,chain:chainPorts.wallet??createWalletRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})}),now})});
  requireThat(!operatorPorts.siteOrigin || operatorPorts.siteOrigin !== origin, 'release_origin_not_isolated');
- releases=createReleases({store,identity,projects,artifacts,admit:collaborationAdmission,now,origin:operatorPorts.siteOrigin});
+ releases=createReleases({store,identity,projects,artifacts,limit:access.limit,admit:collaborationAdmission,now,origin:operatorPorts.siteOrigin});
  vaults=createVaults({store,identity,jobs,now,chain:chainPorts.vault??createVaultRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})})});
  const archives=operatorPorts.signingKey?createProjectArchives({store,identity,now,...operatorPorts}):null;
  const portabilityAdmission=async reader=>requireThat((await reader.read('network-capabilities','portability'))?.value.enabled===true,'portability_not_enabled');
- const transfers=createProjectTransfers({store,identity,artifacts,archives,now,admitImport:portabilityAdmission,
+ const transfers=createProjectTransfers({store,identity,artifacts,archives,now,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,admitImport:portabilityAdmission,
   admit:async(projectId,reader)=>{await portabilityAdmission(reader);await collaborationAdmission(projectId,reader);},...operatorPorts});
  inference=createInference({store,identity,jobs,artifacts,now,provider:inferencePorts.provider,
   verifyQuote:inferencePorts.verifyQuote,verifyReceipt:inferencePorts.verifyReceipt,
@@ -79,11 +79,12 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   },
   enabled:async (reader,projectId)=>intakePorts.enabled===true&&(await reader.read('network-capabilities','contract-intake'))?.value.enabled===true&&
    (!intakePorts.verifyAdmission||await intakePorts.verifyAdmission(reader,projectId)===true)});
- const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake});
+ const service=createService({access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake});
  const admit=async({route,peer})=>store.transaction(async tx=>{
   const window=Math.floor(now()/300000);
   const group=route.startsWith('auth_')?'auth':'api';
-  for(const [subject,maximum] of [[peer,group==='auth'?30:300],['global',group==='auth'?200:3000]]){
+  const limits=(await access.policy(tx)).config;
+  for(const [subject,maximum] of [[peer,group==='auth'?limits.authRequestsPerPeer:limits.requestsPerPeer],['global',group==='auth'?limits.authRequestsGlobal:limits.requestsGlobal]]){
    const key=digest({salt:rateSalt,subject,group});
    const old=await tx.read('rate-limits',key);
    const count=old?.value.window===window?old.value.count:0;
@@ -92,7 +93,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   }
  });
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

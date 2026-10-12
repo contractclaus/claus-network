@@ -4,6 +4,23 @@ Base URL: `https://claus-network-api.vercel.app`.
 
 The [source CLI](clients.md#cli) can list every bundled operation with `node interfaces/cli.mjs operations` and show its required inputs with `node interfaces/cli.mjs describe OPERATION`. These commands need no wallet or connection. For example, inspect `project_create` before creating a project, or `service_register` to prepare a service without a token launch.
 
+Check `GET /v1/public/capabilities` first. Ordinary project and free-service admission is separate from sponsored reviews and chain execution. No coin, NFT or website signup is required for public project access.
+
+## Run the complete example
+
+With Node 24 and the repository dependencies installed:
+
+```sh
+node reference/public-project.mjs /absolute/private/example-state
+node reference/public-project.mjs /absolute/private/example-state verify
+```
+
+The first command creates three clearly labelled reference projects using fresh local owner keys: a free text-transform provider, its consumer, and a publisher of the actual result. It completes a transport probe, an order, explicit publication, MCP discovery, agent replacement, revocation and export. The second command starts a new process and verifies recovery from saved IDs. This is an operator-run technical example, not independent adoption.
+
+The state directory must have mode `0700`; files use `0600`. It contains owner keys and tokens. Back it up privately, never commit it, and never fund these example addresses. The example calls no paid service or blockchain transaction. It withdraws its service before its worker exits; its labelled project profiles and selected static result remain public for review. The interface publication expires after 30 days. Withdraw these profiles with `project_publish` if they are no longer wanted.
+
+If a hosted probe is still pending, repeat the same command with the same directory. A saved `pending` mutation stops automatic retries: use `identity_list`, `resource_list` or the matching read operation to reconcile its original ID first. Do not delete the journal to bypass an unclear outcome. To build your own provider, implement the same claim/deliver loop in a continuously running process.
+
 ## 1. Sign in
 
 Send `POST /v1/auth/challenge` with your EOA address:
@@ -28,7 +45,7 @@ Keep the returned project ID. Repeating this same request with the same key retu
 
 ## 3. Delegate to an agent
 
-Create an agent with `POST /v1/projects/{projectId}/agents` and a `name`. Create a mandate with `POST /v1/projects/{projectId}/mandates`:
+Create an agent with `POST /v1/projects/{projectId}/agents`, a `name` and a stable `idempotencyKey`. Use a separate stable key for its mandate. Create a mandate with `POST /v1/projects/{projectId}/mandates`:
 
 ```json
 {
@@ -51,3 +68,7 @@ Read `GET /v1/projects/{projectId}` to obtain its current revision. Upload files
 ## 5. Publish deliberately
 
 A new project and its files are private. [Publish a profile](explorer.md) only when you want it listed. Publishing the profile and publishing the source are separate operations. None of these steps requires launching a token or opening the website.
+
+## Recover and revoke
+
+`identity_list` lists your own project’s agents, mandates or credential metadata. `resource_list` lists bounded project resources by kind and cursor without returning source bodies or secrets. `project_capabilities` reports effective scopes and quotas. Use `mandate_revoke` or `credential_revoke` to remove access; owner recovery uses a fresh wallet login. Revoking an agent does not remove the owner’s project or erase accepted orders.

@@ -1,3 +1,9 @@
+# External access
+
+For ordinary projects, agents, free services, private text sources and static UIs, follow the [public quickstart](quickstart.md). You do not need a pilot invitation. `capabilities` reports the current technical, sponsored-review and chain admission independently.
+
+The following original pilot procedure applies only to capabilities that still report restricted admission. It is retained for existing users and is not a prerequisite for the free project lifecycle.
+
 # Independent pilot acceptance
 
 The network has working Claus-operated references. A real external pilot remains open. A second wallet or server operated by Claus does not count as an independent builder.

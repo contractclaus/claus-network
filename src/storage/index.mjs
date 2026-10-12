@@ -24,12 +24,13 @@ export function openStore(path) {
     const row = lookup.get(collection, id);
     return row ? { revision: row.revision, value: JSON.parse(row.body) } : null;
   };
-  const list = (collection, { prefix = '', after = '', limit = 100 } = {}) => {
+  const list = (collection, { prefix = '', after = '', limit = 100, projectId }  = {}) => {
     text(collection); integer(limit, 1, 1000);
     requireThat(typeof prefix === 'string' && typeof after === 'string', 'invalid_cursor');
+    if (projectId !== undefined) text(projectId);
     return db.prepare(`SELECT id,revision,body FROM documents WHERE collection=?
-      AND substr(id,1,?)=? AND id>? ORDER BY id LIMIT ?`)
-      .all(collection, prefix.length, prefix, after, limit)
+      AND substr(id,1,?)=? AND id>? AND (? IS NULL OR json_extract(body,'$.projectId')=?) ORDER BY id LIMIT ?`)
+      .all(collection, prefix.length, prefix, after, projectId ?? null, projectId ?? null, limit)
       .map(row => ({ id: row.id, revision: row.revision, value: JSON.parse(row.body) }));
   };
   const events = ({ after = 0, limit = 1000 } = {}) => {
@@ -41,6 +42,14 @@ export function openStore(path) {
     read: (...args) => enqueue(() => read(...args)),
     list: (...args) => enqueue(() => list(...args)),
     events: options => enqueue(() => events(options)),
+    pruneEphemeral: (now = Date.now()) => enqueue(() => {
+      integer(now);
+      const result = db.prepare(`DELETE FROM documents WHERE (collection,id) IN (
+        SELECT collection,id FROM documents WHERE collection IN ('auth-challenges','rate-limits')
+          AND json_type(body,'$.expiresAt')='integer' AND json_extract(body,'$.expiresAt') < ?
+        ORDER BY collection,id LIMIT 2000)`).run(now - 86400000);
+      return { removed: Number(result.changes) };
+    }),
     transaction: run => enqueue(async () => {
       const deadline = Date.now() + 5000;
       for (;;) {

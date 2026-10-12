@@ -1,17 +1,15 @@
+import { createReviewAdmission } from './admission.mjs';
 import { digest, requireThat, text } from '../shared/index.mjs';
 
 export function createReviewFlow({ store, identity, projects, builds, jobs, artifacts, reviews,
-  workerActor, verifySource, now = () => Date.now() }) {
+  workerActor, verifySource, validatePublicBuild, now = () => Date.now() }) {
   async function getCase(reader, projectId, id) {
     const record = await reader.read('review-cases', text(id));
     requireThat(record?.value.projectId === projectId, 'not_found');
     return record;
   }
-  async function sponsor(reader, projectId) {
-    const value = (await reader.read('review-pilots', projectId))?.value;
-    requireThat(value?.enabled === true && value.expiresAt > now(), 'sponsor_not_enabled');
-    return value;
-  }
+  const admission = createReviewAdmission({ store, networkOwner, now });
+  const sponsor = (reader, projectId) => admission.eligible(reader, projectId);
   async function sourceIsPublished(reader, value) {
     const source = (await reader.read('public-sources', digest({ projectId: value.projectId, id: value.input.sourceHash })))?.value;
     requireThat(source?.published === true, 'source_not_published');
@@ -30,6 +28,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       typeof principal?.address === 'string' && principal.address === authority?.ownerAddress, 'scope_denied');
   }
   const api = {
+    admission,
     async pilot(actor, projectId) {
       await networkOwner(store, actor);
       const record = await store.read('review-pilots', text(projectId));
@@ -54,13 +53,33 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       requireThat(/^https:\/\/github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+$/.test(repoUrl) && /^[0-9a-f]{40}$/.test(baseCommit), 'unsupported_source_host');
       const build = await builds.get(actor, projectId, buildId);
       requireThat(build.state === 'compiled' && build.artifactHash, 'build_not_complete');
+      await identity.authorize(actor, 'review.quote', { projectId });
       const input = { repoUrl, baseCommit, contracts: [build.entry], sourceHash: build.snapshotId, buildHash: build.artifactHash };
       const inputHash = digest(input), id = digest({ projectId, review: idempotencyKey });
       return store.transaction(async tx => {
         const value = { id, projectId, buildId, input, inputHash, createdAt: now(), quoteId: null, reviewJobId: null, state: 'preparing' };
-        await mayDispatch(tx, value, actor, 'review.quote');
+        await identity.authorize(actor, 'review.quote', { projectId }, tx);
+        await sourceIsPublished(tx, value);
         const old = await tx.read('review-cases', id);
         if (old) { requireThat(old.value.inputHash === inputHash, 'idempotency_conflict'); return old.value; }
+        const candidates = await tx.list('review-cases', { projectId, limit: 1000 });
+        for (const row of candidates) {
+          const prior = row.value;
+          if (prior.inputHash !== inputHash) continue;
+          // A paid or uncertain attempt is never replaced by a new key.
+          if (['admitted', 'reviewed'].includes(prior.state)) return prior;
+          const workflow = (await tx.read('workflow-jobs', prior.quoteJobId))?.value;
+          if (prior.state === 'preparing' && workflow &&
+            !['failed', 'blocked', 'cancelled'].includes(workflow.state)) return prior;
+          const quote = prior.quoteId && (await tx.read('review-quotes', prior.quoteId))?.value;
+          if (prior.state === 'quoted' && quote?.offer.expiresAt > now()) return prior;
+        }
+        requireThat(candidates.length < 64, 'capacity_reached');
+        const eligibility = await sponsor(tx, projectId);
+        if (eligibility.kind === 'public') {
+          requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
+          validatePublicBuild(await artifacts.get(projectId, build.artifactHash, tx));
+        }
         const active = await tx.read('active-review-case', projectId);
         if (active) {
           const prior = await tx.read('workflow-jobs', active.value.quoteJobId);
@@ -146,14 +165,19 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       requireThat(value.state === 'quoted' && value.inputHash === quote.inputHash, 'quote_input_mismatch');
       const pilot = await sponsor(tx, projectId);
       requireThat(BigInt(quote.offer.maximum) <= BigInt(pilot.maximumPerReview), 'sponsor_limit');
+      if (pilot.kind === 'public') {
+        requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
+        validatePublicBuild(await artifacts.get(projectId, value.input.buildHash, tx));
+        await admission.reserve(tx, projectId, quote.offer.maximum, pilot);
+      }
       const active = (await tx.read('active-paid-reviews', 'global'))?.value.ids ?? [];
       const live = [];
       for (const id of active) {
         const job = (await tx.read('review-jobs', id))?.value;
         if (job && !(['completed', 'cancelled', 'failed'].includes(job.work) && ['settled', 'void'].includes(job.billing))) live.push(job);
       }
-      requireThat(live.length < 8 && !live.some(job => job.projectId === projectId), 'review_in_progress');
-      for (const [subject, maximum] of [[projectId, 2], ['global', 8]]) {
+      requireThat(live.length < (pilot.kind === 'public' ? pilot.activeGlobal : 8) && !live.some(job => job.projectId === projectId), 'review_in_progress');
+      for (const [subject, maximum] of [[projectId, pilot.kind === 'public' ? pilot.perProjectDay : 2], ['global', pilot.kind === 'public' ? pilot.globalDay : 8]]) {
         const key = digest({ subject, day: Math.floor(now() / 86400000), version: 'review-admission-v1' });
         const old = await tx.read('review-admission', key);
         requireThat((old?.value.count ?? 0) < maximum, 'capacity_reached');

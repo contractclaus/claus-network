@@ -17,7 +17,7 @@ async function fixture(t, options = {}) {
   const provider = { id: 'test-provider', quote: async ({ inputHash }) => ({ id: 'offer-' + ++quotes,
     provider: 'test-provider', asset, maximum: '5', expiresAt: Date.now() + 600000, inputHash }) };
   const app = createApplication({ store, now: () => time, rateSalt: 'x'.repeat(32), reviewPorts: { ownerAddress, provider,
-    verifyCost: async () => true, verifySource: options.verifySource ?? (async ({ input }) => ({ inputHash: digest(input) })) } });
+    validatePublicBuild: options.validatePublicBuild, verifyCost: async () => true, verifySource: options.verifySource ?? (async ({ input }) => ({ inputHash: digest(input) })) } });
   const challenge = await app.identity.challenge({ address: account.address });
   const session = await app.identity.session({ challengeId: challenge.id, signature: await account.signMessage({ message: challenge.message }) });
   const actor = await app.identity.authenticate(session.token);
@@ -27,8 +27,8 @@ async function fixture(t, options = {}) {
   await app.builds.runOne(async () => ({ status: 'compiled' }));
   const { network, workerActor, flow } = app.reviewSystem;
   await network.bootstrap({ actor: workerActor });
-  await network.billing.recordFunding({ actor: workerActor, account: 'sponsor:' + ownerAddress, asset, amount: '50', receiptId: 'local-test-only' });
-  await store.transaction(tx => tx.write('review-pilots', project.id, { enabled: true, expiresAt: Date.now() + 600000, maximumPerReview: '5' }, 0));
+  await network.billing.recordFunding({ actor: workerActor, account: 'sponsor:' + ownerAddress, asset, amount: options.funding ?? '50', receiptId: 'local-test-only' });
+  if (!options.publicOnly) await store.transaction(tx => tx.write('review-pilots', project.id, { enabled: true, expiresAt: Date.now() + 600000, maximumPerReview: '5' }, 0));
   const publish = () => app.projects.publishSource(actor, project.id, { snapshotId: snapshot.id, expectedRevision: 0, published: true });
   const input = { buildId: build.id, repoUrl: 'https://github.com/example/project', baseCommit: 'a'.repeat(40), idempotencyKey: 'review' };
   return { ...app, store, actor, token: session.token, flow, network, workerActor, projectId: project.id, snapshot, input, publish, quotes: () => quotes, asset, ownerAddress, advance: ms => { time += ms; } };
@@ -182,4 +182,33 @@ test('public source verification checks every pinned file and refuses mutable re
   assert.equal((await verifyPublicSource({ input, files, fetch })).fileCount, 1);
   await assert.rejects(verifyPublicSource({ input, files, fetch: async () => new Response('different') }), { code: 'source_mismatch' });
   await assert.rejects(verifyPublicSource({ input: { ...input, repoUrl: 'https://localhost/private' }, files, fetch }), { code: 'unsupported_source_host' });
+});
+
+
+test('public sponsorship is separate, bounded across policy changes and never creates unfunded credit', async t => {
+  const f = await fixture(t, { networkOwner: true, publicOnly: true, funding: '1', validatePublicBuild: artifact => assert.equal(artifact.status, 'compiled') });
+  await f.publish();
+  await assert.rejects(f.flow.request(f.actor, f.projectId, f.input), { code: 'sponsor_not_enabled' });
+  const config = { enabled: true, expiresAt: Date.now() + 3600000, maximumPerReview: '5', maximumLifetime: '5',
+    perOwnerDay: 2, perProjectDay: 2, globalDay: 8, activeGlobal: 8 };
+  await f.flow.admission.publish(f.actor, { version: 'public-1', config });
+  await f.flow.admission.activate(f.actor, { version: 'public-1', expectedGeneration: 0 });
+  const item = await f.flow.request(f.actor, f.projectId, f.input);
+  assert.equal((await f.flow.request(f.actor, f.projectId, { ...f.input, idempotencyKey: 'different-key-same-source' })).id, item.id);
+  await f.flow.runQuote();
+  const accept = { caseId: item.id, quoteId: item.id, idempotencyKey: 'paid' };
+  await assert.rejects(f.flow.accept(f.actor, f.projectId, accept), { code: 'funding_insufficient' });
+  assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '0');
+  await f.network.billing.recordFunding({ actor: f.workerActor, account: 'sponsor:' + f.ownerAddress, asset: f.asset, amount: '10', receiptId: 'second-test-funding' });
+  await f.flow.accept(f.actor, f.projectId, accept);
+  assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '5');
+  const current = await f.flow.get(f.actor, f.projectId, item.id);
+  await f.jobs.cancel(f.actor, f.projectId, current.executionJobId);
+  await f.flow.admission.publish(f.actor, { version: 'public-2', config });
+  await f.flow.admission.activate(f.actor, { version: 'public-2', expectedGeneration: 1 });
+  const next = await f.flow.request(f.actor, f.projectId, { ...f.input, baseCommit: 'b'.repeat(40), idempotencyKey: 'next-source' });
+  await f.flow.runQuote();
+  await assert.rejects(f.flow.accept(f.actor, f.projectId, { caseId: next.id, quoteId: next.id, idempotencyKey: 'over-limit' }), { code: 'sponsor_exhausted' });
+  assert.equal((await f.store.list('review-pilots')).length, 0);
+  assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '5');
 });

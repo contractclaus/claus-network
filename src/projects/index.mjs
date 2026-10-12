@@ -1,24 +1,46 @@
-import { canonical, copy, digest, integer, requireThat, text } from '../shared/index.mjs';
+import { canonical, copy, digest, integer, requireThat, text, sourcePath, sourceText } from '../shared/index.mjs';
 
-const filePath = value => {
-  requireThat(typeof value === 'string' && value.length <= 180 &&
-    /^[a-zA-Z0-9_/-]+\.(sol|json|md|txt|html|css|js|svg)$/.test(value) &&
-    !value.startsWith('/') && !value.includes('//') && !value.split('/').includes('..'), 'invalid_file_path');
-  return value;
-};
 const projectRef = (projectId, id) => digest({ projectId, id });
-const prose = (value, maximum) => {
-  requireThat(typeof value === 'string' && value.length <= maximum && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value), 'invalid_text');
-  return value;
-};
+const filePath = sourcePath, prose = sourceText;
 
-export function createProjects({ store, identity, publicDetails = async () => ({}), now = () => Date.now() }) {
+export function createProjects({ store, identity, publicDetails = async () => ({}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {} }) {
   async function snapshot(reader, projectId, id) {
     const value = (await reader.read('snapshots', projectRef(projectId, id)))?.value;
     requireThat(value && value.projectId === projectId, 'not_found');
     return value;
   }
   const api = {
+    async resources(actor, projectId, { kind, after = '', limit = 100 }) {
+      // Fixed, scoped metadata projections. Bodies and secrets use their own authorized endpoints.
+      const kinds = {
+        snapshots: ['snapshots', 'artifact.read'], builds: ['builds', 'artifact.read'],
+        jobs: ['workflow-jobs', 'project.read'], reviews: ['review-cases', 'review.read'],
+        proposals: ['chain-proposals', 'proposal.read'], services: ['service-versions', 'service.read'],
+        orders: ['service-orders', 'service.read'], releases: ['project-releases', 'resource.read'],
+        bindings: ['contract-bindings', 'contract.read'], requests: ['contract-requests', 'contract.read']
+      };
+      requireThat(Object.hasOwn(kinds, kind), 'invalid_resource_kind'); integer(limit, 1, 100);
+      const [collection, scope] = kinds[kind];
+      await identity.authorize(actor, scope, { projectId });
+      const rows = await store.list(collection, { after, limit, projectId });
+      const fields = ['id', 'projectId', 'state', 'kind', 'createdAt', 'updatedAt', 'snapshotId', 'buildId',
+        'jobId', 'quoteJobId', 'executionJobId', 'artifactHash', 'serviceId', 'quoteId', 'expiresAt'];
+      const items = rows.filter(row => row.value.projectId === projectId).map(row =>
+        Object.fromEntries(fields.filter(key => Object.hasOwn(row.value, key)).map(key => [key, row.value[key]])));
+      return { items, nextCursor: rows.length === limit ? rows.at(-1).id : null };
+    },
+    async publishAgent(actor, projectId, { agentId, published, expectedRevision }) {
+      requireThat(typeof published === 'boolean', 'invalid_publication'); integer(expectedRevision);
+      return store.transaction(async tx => {
+        await identity.authorize(actor, 'project.publish', { projectId, withdrawal: !published }, tx);
+        const agent = (await tx.read('principals', text(agentId)))?.value;
+        requireThat(agent?.kind === 'agent' && agent.projectId === projectId, 'not_found');
+        const value = { projectId, agentId, name: agent.name, published };
+        const row = await tx.write('project-public-agents', projectId + ':' + agentId, value, expectedRevision);
+        await tx.event({ type: published ? 'agent.published' : 'agent.withdrawn', projectId, agentId, at: now() });
+        return { ...value, revision: row.revision };
+      });
+    },
     async get(actor, projectId) {
       const project = await identity.project(actor, projectId);
       const publication = await store.read('public-projects', project.slug);
@@ -45,7 +67,9 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         if (old) return old;
         const usage = await tx.read('snapshot-capacity', projectId);
         const bytes = Buffer.byteLength(canonical(clean));
-        requireThat((usage?.value.count ?? 0) < 64 && (usage?.value.bytes ?? 0) + bytes <= 8000000, 'capacity_reached');
+        requireThat((usage?.value.count ?? 0) < (await limit('snapshotsPerProject', tx) ?? 64) &&
+          (usage?.value.bytes ?? 0) + bytes <= (await limit('snapshotBytesPerProject', tx) ?? 8000000), 'capacity_reached');
+        await consumeSnapshotBytes(tx, bytes);
         for (const file of clean) {
           const key = projectRef(projectId, file.hash);
           if (!await tx.read('artifacts', key)) await tx.write('artifacts', key, { projectId, ...file }, 0);
@@ -113,20 +137,45 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     async publicProject(slug) {
       const record = await store.read('public-projects', text(slug));
       requireThat(record?.value.published === true, 'not_found');
+      const project = (await store.read('projects', record.value.projectId))?.value;
+      requireThat(project && !project.archivedAt, 'not_found');
+      const agents = (await store.list('project-public-agents', { prefix: record.value.projectId + ':', limit: 128 }))
+        .filter(row => row.value.published).map(row => ({ id: row.value.agentId, name: row.value.name, revision: row.revision }));
       // Evidence is written only by the trusted workflow, not profile input.
       const evidence = (await store.read('public-evidence', record.value.projectId))?.value ?? { reviews: [], decisions: [], deployments: [] };
-      return { ...record.value, revision: record.revision, evidence, ...await publicDetails(record.value.projectId) };
+      return { ...record.value, revision: record.revision, agents, evidence, ...await publicDetails(record.value.projectId) };
     },
     async graph({ after = '', limit = 100 } = {}) {
       const records = await store.list('public-projects', { after, limit });
-      const projects = records.filter(x => x.value.published).map(x => ({
-        id: x.value.projectId, slug: x.value.slug, label: x.value.name, kind: 'project',
-        href: '/p/' + x.value.slug, revision: x.revision, status: 'registered'
-      }));
+      const projects = [], resources = [], relations = [];
+      for (const record of records.filter(x => x.value.published)) {
+        let project;
+        try { project = await api.publicProject(record.value.slug); }
+        catch (error) { if (error.code === 'not_found') continue; throw error; }
+        const href = '/p/' + project.slug;
+        projects.push({ id: project.projectId, slug: project.slug, label: project.name, kind: 'project',
+          href, revision: record.revision, status: 'registered' });
+        for (const [field, kind, relation, section] of [['services', 'service', 'offers', 'services'],
+          ['agents', 'agent', 'belongs_to', 'agents'], ['releases', 'interface', 'published_interface', 'interfaces']]) {
+          for (const item of project[field] ?? []) {
+            const id = kind + ':' + item.id;
+            resources.push({ id, projectId: project.projectId, kind, label: item.name ?? 'Interface', href: href + '#' + section });
+            relations.push({ source: id, target: project.projectId, relation });
+          }
+        }
+        for (const item of project.evidence.deployments ?? []) {
+          const id = 'contract:' + project.projectId + ':' + item.chainId + ':' + item.address;
+          resources.push({ id, projectId: project.projectId, kind: 'contract', label: item.address,
+            chainId: item.chainId, status: item.verification, href: href + '#contracts' });
+          relations.push({ source: id, target: project.projectId, relation: 'deployed_contract' });
+        }
+      }
       return {
         schemaVersion: '1.0', observedAt: now(),
         nodes: [{ id: 'claus', label: 'Claus', kind: 'coordinator', href: '/Home' }, ...projects],
-        edges: projects.map(p => ({ source: p.id, target: 'claus', relation: 'registered_with' })),
+        // Additive resources keep 1.0 project-only clients compatible.
+        resources,
+        edges: [...projects.map(p => ({ source: p.id, target: 'claus', relation: 'registered_with' })), ...relations],
         nextCursor: records.length === limit ? records.at(-1).id : null
       };
     },

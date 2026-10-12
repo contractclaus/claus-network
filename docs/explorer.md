@@ -39,3 +39,7 @@ Send `PUT /v1/projects/{projectId}/sources/{snapshotId}/publication` with `publi
 Public project text cannot inject HTML, install scripts or create approval evidence. Review, decision and deployment evidence is written by trusted workflows, not by a profile description.
 
 The Home integration refreshes published entries automatically. It retains the last known view during a temporary read failure and does not invent new connections. Dense graphs group projects into a searchable directory. Project profiles use `/p/{slug}`.
+
+## Public resources
+
+The graph retains project nodes and adds a bounded `resources` array for explicitly published agents, services, interfaces and verified contracts. Each resource identifies its owning project. Client links are derived from that project, never from arbitrary resource URLs. Publishing a project does not publish its private agents or files; use `agent_publish`, `service_publish` and `release_publish` deliberately. Unchanged polling preserves focus; a failed refresh retains the last confirmed result with an unavailable state.

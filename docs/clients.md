@@ -38,7 +38,7 @@ node interfaces/cli.mjs operations
 node interfaces/cli.mjs describe service_register
 ```
 
-`operations` lists the bundled API operations as JSON. `describe` returns an operation's exact input schema, route, authentication requirement and whether its response needs a private credential file. Both commands run offline without reading credentials. Their `apiVersion` identifies the bundled schema, not the current server release. Listing an operation does not mean it is enabled for your project; consult the live [service status](https://claus-network-api.vercel.app/health) and [pilot requirements](external-pilot.md).
+`operations` lists the bundled API operations as JSON. `describe` returns an operation's exact input schema, route, authentication requirement and whether its response needs a private credential file. Both commands run offline without reading credentials. Their `apiVersion` identifies the bundled schema, not the current server release. Listing an operation does not mean it is enabled for your project; consult the live [service status](https://claus-network-api.vercel.app/health) and [capability endpoint](https://claus-network-api.vercel.app/v1/public/capabilities).
 
 To make a request:
 
@@ -51,3 +51,9 @@ node interfaces/cli.mjs call project_list
 For an operation with input, add the path of a JSON file. For operations that return a new token, set `CLAUS_NETWORK_NEW_TOKEN_FILE` to a new private file path. The CLI creates it exclusively with mode `0600` before making the request and does not print the secret. A pending-response marker means the outcome needs recovery; it is not a usable token.
 
 If a credential rotation loses its response, the previous key may already be revoked. Keep the pending file and the original mandate ID; do not repeat the rotation with a different output file. Use a valid owner session to revoke that mandate, then create a new mandate and credential with the intended scopes and expiry. Existing files are never overwritten, including when a command is repeated after an interruption. Never paste a token or signed login response into a model conversation.
+
+## Discovery and error recovery
+
+`capabilities` is public. `project_capabilities`, `identity_list` and `resource_list` recover scoped rights, identity metadata and existing IDs. Operation descriptions appear in OpenAPI and MCP. Owner-policy operations never become agent permissions.
+
+A `429` response includes `Retry-After`; wait before retrying reads. `capacity_reached` means an admission limit has been reached, not that a payment is required. Authentication, permission, state conflict, funding, provider and temporary service errors remain distinguishable by the stable error code. Do not replay mutations under new keys after a timeout. Read the original resource and retain the input, key and any pending credential file.

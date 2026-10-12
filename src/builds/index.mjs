@@ -1,7 +1,7 @@
 import { digest, requireThat, text } from '../shared/index.mjs';
 
 export function createBuilds({ store, identity, projects, jobs, artifacts, now = () => Date.now(),
-  limits = { version: 'compile-admission-v1', projectPerDay: 16, globalPerDay: 256 } }) {
+  limit = async () => undefined, limits = { version: 'compile-admission-v1', projectPerDay: 16, globalPerDay: 256 } }) {
   async function find(reader, projectId, id) {
     const record = await reader.read('builds', text(id));
     requireThat(record?.value.projectId === projectId, 'not_found');
@@ -36,7 +36,7 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
           const job = (await tx.read('workflow-jobs', active.id))?.value;
           requireThat(!job || ['complete', 'failed', 'blocked', 'cancelled'].includes(job.state), 'build_in_progress');
         }
-        for (const [scope, maximum] of [[projectId, limits.projectPerDay], ['global', limits.globalPerDay]]) {
+        for (const [scope, maximum] of [[projectId, await limit('buildsPerProjectDay', tx) ?? limits.projectPerDay], ['global', await limit('buildsPerDay', tx) ?? limits.globalPerDay]]) {
           const key = digest({ scope, day: Math.floor(now() / 86400000), version: limits.version });
           const count = await tx.read('build-admission', key);
           requireThat((count?.value.count ?? 0) < maximum, 'capacity_reached');

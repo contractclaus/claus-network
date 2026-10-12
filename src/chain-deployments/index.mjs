@@ -1,6 +1,9 @@
+import { createChainAdmission } from './admission.mjs';
+export { createChainAdmission } from './admission.mjs';
 import { digest, requireThat, text } from '../shared/index.mjs';
 
 export function createChainDeployments({ store, identity, builds, reviews, jobs, artifacts, chain, now = () => Date.now() }) {
+  const admission = createChainAdmission({ store, identity, now });
   async function find(reader, collection, projectId, id) {
     const row = await reader.read(collection, text(id));
     requireThat(row?.value.projectId === projectId, 'not_found'); return row;
@@ -10,11 +13,11 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
     const pilot = (await reader.read('review-pilots', projectId))?.value;
     const capability = (await reader.read('network-capabilities', 'chain'))?.value;
     requireThat(capability?.enabled === true && capability.chainId === 11155111, 'chain_not_enabled');
-    requireThat(pilot?.enabled === true && pilot.expiresAt > now(), 'sponsor_not_enabled');
+    if (!pilot?.enabled || pilot.expiresAt <= now() || await reader.read('public-chain-projects', projectId)) await admission.admitted(reader);
     return capability;
   }
   const api = {
-    allowed,
+    allowed, admission,
     async onCancel(tx, job) {
       const moduleJob = job.kind === 'module-deploy';
       if (!moduleJob && job.kind !== 'project-register') return;
@@ -38,6 +41,8 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
         await allowed(actor, projectId, tx);
         const id = digest({ projectId, caseId, kind: 'module-deploy' });
         const old = await tx.read('chain-modules', id); if (old) return old.value;
+        const pilot = (await tx.read('review-pilots', projectId))?.value;
+        if (!pilot?.enabled || pilot.expiresAt <= now() || await tx.read('public-chain-projects', projectId)) await admission.reserveProject(tx, projectId);
         const job = await jobs.enqueue(tx, { projectId, kind: 'module-deploy', payload: { moduleId: id },
           authority: { actor }, idempotencyKey: id });
         const value = { id, projectId, caseId, buildId: build.id, artifactHash: build.artifactHash,

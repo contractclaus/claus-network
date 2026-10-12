@@ -2,7 +2,7 @@
 
 A source snapshot is immutable and identified by its content digest. A build references that exact snapshot, entry file and contract name.
 
-Snapshots accept up to 64 relative files with `.sol`, `.json`, `.md` or `.txt` extensions. Each file is at most 48,000 UTF-8 bytes; the complete canonical snapshot is at most 256,000 bytes. Absolute paths, parent traversal and duplicate paths are rejected. The initial admission profile allows 64 snapshots and 8 MB of cumulative snapshot input per project.
+Snapshots accept up to 64 UTF-8 text files at safe relative paths, including TypeScript, Python, HTML and dotfile examples. Uploading a file does not execute it. Binary data, invalid Unicode, control bytes, absolute paths and parent traversal are rejected. Each file is at most 48,000 UTF-8 bytes; the complete canonical snapshot is at most 256,000 bytes. Absolute paths, parent traversal and duplicate paths are rejected. The initial admission profile allows 64 snapshots and 8 MB of cumulative snapshot input per project.
 
 ## Request a build
 

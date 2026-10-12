@@ -1,7 +1,15 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake}){
+export function createService({access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake}){
  const operations={
+  capabilities:()=>access.discovery(),
+  project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
+  identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
+  resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),
+  access_policy_get:actor=>access.getPolicy(actor),
+  access_policy_publish:(actor,input)=>access.publishPolicy(actor,input),
+  access_policy_activate:(actor,input)=>access.activatePolicy(actor,input),
+  project_access_set:(actor,{projectId,...input})=>access.setProject(actor,projectId,input),
   auth_challenge:(_,input)=>identity.challenge(input),
   auth_session:(_,input)=>identity.session(input),
   principal_me:actor=>identity.me(actor),
@@ -21,6 +29,9 @@ export function createService({identity,projects,builds,jobs,reviews,deployments
   build_artifact:(actor,input)=>builds.artifact(actor,input.projectId,input.buildId),
   job_get:(actor,input)=>jobs.get(actor,input.projectId,input.jobId),
   job_cancel:(actor,input)=>jobs.cancel(actor,input.projectId,input.jobId),
+  review_admission_get:actor=>reviews.admission.get(actor),
+  review_admission_publish:(actor,input)=>reviews.admission.publish(actor,input),
+  review_admission_activate:(actor,input)=>reviews.admission.activate(actor,input),
   review_create:(actor,input)=>reviews.request(actor,input.projectId,input),
   review_pilot_get:(actor,input)=>reviews.pilot(actor,input.projectId),
   review_pilot_set:(actor,input)=>reviews.setPilot(actor,input.projectId,input),
@@ -28,6 +39,9 @@ export function createService({identity,projects,builds,jobs,reviews,deployments
   review_accept:(actor,input)=>reviews.accept(actor,input.projectId,input),
   review_artifact:(actor,input)=>reviews.artifact(actor,input.projectId,input.caseId),
   review_publish:(actor,input)=>reviews.publish(actor,input.projectId,input),
+  chain_admission_get:actor=>deployments.admission.get(actor),
+  chain_admission_publish:(actor,input)=>deployments.admission.publish(actor,input),
+  chain_admission_activate:(actor,input)=>deployments.admission.activate(actor,input),
   module_deploy:(actor,input)=>deployments.deployModule(actor,input.projectId,input),
   module_get:(actor,input)=>deployments.module(actor,input.projectId,input.moduleId),
   registration_prepare:(actor,input)=>deployments.prepareRegistration(actor,input.projectId,input),
@@ -80,6 +94,7 @@ export function createService({identity,projects,builds,jobs,reviews,deployments
   release_publish:(actor,input)=>releases.publish(actor,input.projectId,input),
   public_release:(_,input)=>releases.public(input.releaseId),
   source_publish:(actor,input)=>projects.publishSource(actor,input.projectId,input),
+  agent_publish:(actor,input)=>projects.publishAgent(actor,input.projectId,input),
   project_publish:(actor,input)=>projects.publish(actor,input.projectId,input),
   project_export:(actor,input)=>projects.export(actor,input.projectId,input),
   project_transfer_prepare:(actor,input)=>transfers.prepare(actor,input.projectId,input),

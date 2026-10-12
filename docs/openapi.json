@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.10.6"
+    "version": "0.11.0"
   },
   "servers": [
     {
@@ -10,9 +10,10 @@
     }
   ],
   "paths": {
-    "/v1/auth/challenge": {
-      "post": {
-        "operationId": "auth_challenge",
+    "/v1/public/capabilities": {
+      "get": {
+        "operationId": "capabilities",
+        "description": "Discover current admission, supported profiles and technical limits. Public read; no rights or credits are granted.",
         "security": [],
         "parameters": [],
         "responses": {
@@ -29,7 +30,481 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/capabilities": {
+      "get": {
+        "operationId": "project_capabilities",
+        "description": "Read own project rights and remaining local quotas. Requires project.read. Funding and chain checks remain separate.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/access/{kind}": {
+      "get": {
+        "operationId": "identity_list",
+        "description": "Recover project agents, mandates or credential metadata. Owner session required. No credential secrets are returned.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "agents",
+                "mandates",
+                "credentials"
+              ]
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/resources/{kind}": {
+      "get": {
+        "operationId": "resource_list",
+        "description": "Recover own resource IDs after restart. Requires the corresponding resource read scope; follow nextCursor until null.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "snapshots",
+                "builds",
+                "jobs",
+                "reviews",
+                "proposals",
+                "services",
+                "orders",
+                "releases",
+                "bindings",
+                "requests"
+              ]
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/admin/access-policy": {
+      "get": {
+        "operationId": "access_policy_get",
+        "description": "Read the active nonfinancial access policy. Network owner session required.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/admin/access-policy/versions": {
+      "post": {
+        "operationId": "access_policy_publish",
+        "description": "Store an immutable nonfinancial policy version. Network owner only. Does not activate it; same version and content are idempotent.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "config": true
+                },
+                "required": [
+                  "version",
+                  "config"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/access-policy/active": {
+      "put": {
+        "operationId": "access_policy_activate",
+        "description": "Activate a published nonfinancial policy using expectedGeneration. Network owner only. Existing usage is never reset.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "expectedGeneration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "version",
+                  "expectedGeneration"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/projects/{projectId}/access": {
+      "put": {
+        "operationId": "project_access_set",
+        "description": "Suspend or resume new project effects using expectedRevision. Network owner only. Reads, revocation and exits remain available.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "suspended": {
+                    "type": "boolean"
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "suspended",
+                  "expectedRevision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/challenge": {
+      "post": {
+        "operationId": "auth_challenge",
+        "description": "Request a five-minute EOA login message. Sign it locally; this authorizes login, not an onchain transaction.",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -58,6 +533,7 @@
     "/v1/auth/session": {
       "post": {
         "operationId": "auth_session",
+        "description": "Exchange a one-use signed challenge for a private owner session. Store securely; never send the result into model context.",
         "security": [],
         "parameters": [],
         "responses": {
@@ -74,7 +550,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -109,6 +591,7 @@
     "/v1/principals/me": {
       "get": {
         "operationId": "principal_me",
+        "description": "GET /v1/principals/me. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -129,7 +612,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -137,6 +626,7 @@
     "/v1/projects": {
       "get": {
         "operationId": "project_list",
+        "description": "GET /v1/projects. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -178,12 +668,19 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       },
       "post": {
         "operationId": "project_create",
+        "description": "Create a private project. Owner session required. Retry only with the same idempotencyKey and identical input.",
         "security": [
           {
             "bearerAuth": []
@@ -204,7 +701,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -245,6 +748,7 @@
     "/v1/projects/{projectId}": {
       "get": {
         "operationId": "project_get",
+        "description": "GET /v1/projects/{projectId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -276,7 +780,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -284,6 +794,7 @@
     "/v1/projects/{projectId}/agents": {
       "post": {
         "operationId": "agent_create",
+        "description": "Create an agent identity in own project. Owner only. Use idempotencyKey for lost-response recovery; identity_list recovers IDs.",
         "security": [
           {
             "bearerAuth": []
@@ -315,7 +826,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -329,6 +846,11 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 80
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
                   }
                 },
                 "required": [
@@ -344,6 +866,7 @@
     "/v1/projects/{projectId}/mandates": {
       "post": {
         "operationId": "mandate_create",
+        "description": "Authorize explicit project scopes and expiry for an agent. Owner only. Reuse idempotencyKey; revocation never creates replacement rights.",
         "security": [
           {
             "bearerAuth": []
@@ -375,7 +898,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -398,12 +927,17 @@
                       "maxLength": 256
                     },
                     "minItems": 1,
-                    "maxItems": 32
+                    "maxItems": 64
                   },
                   "expiresAt": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
                   }
                 },
                 "required": [
@@ -421,6 +955,7 @@
     "/v1/mandates/{mandateId}": {
       "delete": {
         "operationId": "mandate_revoke",
+        "description": "DELETE /v1/mandates/{mandateId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -452,7 +987,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -460,6 +1001,7 @@
     "/v1/credentials": {
       "post": {
         "operationId": "credential_create",
+        "description": "Issue a one-time secret for an active mandate. Owner only. Lost response: revoke mandate and issue a new grant; secret is not retrievable.",
         "security": [
           {
             "bearerAuth": []
@@ -480,7 +1022,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -509,6 +1057,7 @@
     "/v1/credentials/{credentialId}/rotate": {
       "post": {
         "operationId": "credential_rotate",
+        "description": "Rotate a credential, retiring the old token. Lost response: owner revokes the mandate and creates a fresh grant.",
         "security": [
           {
             "bearerAuth": []
@@ -540,7 +1089,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -548,6 +1103,7 @@
     "/v1/credentials/{credentialId}": {
       "delete": {
         "operationId": "credential_revoke",
+        "description": "DELETE /v1/credentials/{credentialId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -579,7 +1135,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -587,6 +1149,7 @@
     "/v1/projects/{projectId}/snapshots": {
       "post": {
         "operationId": "snapshot_create",
+        "description": "Store a bounded private text snapshot. Requires snapshot.create and expectedProjectRevision. Does not run or publish any file.",
         "security": [
           {
             "bearerAuth": []
@@ -618,7 +1181,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -672,6 +1241,7 @@
     "/v1/projects/{projectId}/snapshots/{snapshotId}": {
       "get": {
         "operationId": "snapshot_get",
+        "description": "GET /v1/projects/{projectId}/snapshots/{snapshotId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -713,7 +1283,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -721,6 +1297,7 @@
     "/v1/projects/{projectId}/builds": {
       "post": {
         "operationId": "build_create",
+        "description": "POST /v1/projects/{projectId}/builds. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -752,7 +1329,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -811,6 +1394,7 @@
     "/v1/projects/{projectId}/builds/{buildId}": {
       "get": {
         "operationId": "build_get",
+        "description": "GET /v1/projects/{projectId}/builds/{buildId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -852,7 +1436,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -860,6 +1450,7 @@
     "/v1/projects/{projectId}/builds/{buildId}/artifact": {
       "get": {
         "operationId": "build_artifact",
+        "description": "GET /v1/projects/{projectId}/builds/{buildId}/artifact. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -901,7 +1492,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -909,6 +1506,7 @@
     "/v1/projects/{projectId}/jobs/{jobId}": {
       "get": {
         "operationId": "job_get",
+        "description": "GET /v1/projects/{projectId}/jobs/{jobId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -950,12 +1548,19 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       },
       "delete": {
         "operationId": "job_cancel",
+        "description": "DELETE /v1/projects/{projectId}/jobs/{jobId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -997,7 +1602,221 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/admin/review-admission": {
+      "get": {
+        "operationId": "review_admission_get",
+        "description": "Read sponsored-review rules and lifetime committed maximum. Network owner session only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/admin/review-admission/versions": {
+      "post": {
+        "operationId": "review_admission_publish",
+        "description": "Store immutable bounded sponsored-review rules. Network owner session only. Does not fund or activate spending.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "config": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "expiresAt": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maximumPerReview": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 18
+                      },
+                      "maximumLifetime": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 30
+                      },
+                      "perOwnerDay": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "perProjectDay": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "globalDay": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "activeGlobal": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "enabled",
+                      "expiresAt",
+                      "maximumPerReview",
+                      "maximumLifetime",
+                      "perOwnerDay",
+                      "perProjectDay",
+                      "globalDay",
+                      "activeGlobal"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "version",
+                  "config"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/review-admission/active": {
+      "put": {
+        "operationId": "review_admission_activate",
+        "description": "Activate review rules by expectedGeneration. Network owner only. Existing exposure and reservations are preserved; funding remains necessary.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "expectedGeneration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "version",
+                  "expectedGeneration"
+                ],
+                "additionalProperties": false
+              }
+            }
           }
         }
       }
@@ -1005,6 +1824,7 @@
     "/v1/projects/{projectId}/reviews": {
       "post": {
         "operationId": "review_create",
+        "description": "POST /v1/projects/{projectId}/reviews. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1036,7 +1856,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -1083,6 +1909,7 @@
     "/v1/admin/review-pilots/{projectId}": {
       "get": {
         "operationId": "review_pilot_get",
+        "description": "GET /v1/admin/review-pilots/{projectId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -1114,12 +1941,19 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       },
       "put": {
         "operationId": "review_pilot_set",
+        "description": "PUT /v1/admin/review-pilots/{projectId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1151,7 +1985,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -1196,6 +2036,7 @@
     "/v1/projects/{projectId}/reviews/{caseId}": {
       "get": {
         "operationId": "review_get",
+        "description": "GET /v1/projects/{projectId}/reviews/{caseId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -1237,7 +2078,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -1245,6 +2092,7 @@
     "/v1/projects/{projectId}/reviews/{caseId}/accept": {
       "post": {
         "operationId": "review_accept",
+        "description": "POST /v1/projects/{projectId}/reviews/{caseId}/accept. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1286,7 +2134,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -1321,6 +2175,7 @@
     "/v1/projects/{projectId}/reviews/{caseId}/artifact": {
       "get": {
         "operationId": "review_artifact",
+        "description": "GET /v1/projects/{projectId}/reviews/{caseId}/artifact. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -1362,7 +2217,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -1370,6 +2231,7 @@
     "/v1/projects/{projectId}/reviews/{caseId}/publication": {
       "put": {
         "operationId": "review_publish",
+        "description": "PUT /v1/projects/{projectId}/reviews/{caseId}/publication. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1411,7 +2273,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -1441,9 +2309,242 @@
         }
       }
     },
+    "/v1/admin/chain-admission": {
+      "get": {
+        "operationId": "chain_admission_get",
+        "description": "GET /v1/admin/chain-admission. Requires current object read permission.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/admin/chain-admission/versions": {
+      "post": {
+        "operationId": "chain_admission_publish",
+        "description": "POST /v1/admin/chain-admission/versions. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "config": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "expiresAt": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "executor": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 42
+                      },
+                      "executorCodeHash": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 66
+                      },
+                      "targetArtifactHash": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 71
+                      },
+                      "reviewProjectId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "reviewCaseId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "reviewArtifactHash": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 71
+                      },
+                      "maximumProjects": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maximumTransactionGasWei": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 30
+                      },
+                      "maximumProjectGasWei": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 30
+                      },
+                      "maximumTotalGasWei": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 30
+                      }
+                    },
+                    "required": [
+                      "enabled",
+                      "expiresAt",
+                      "executor",
+                      "executorCodeHash",
+                      "targetArtifactHash",
+                      "reviewProjectId",
+                      "reviewCaseId",
+                      "reviewArtifactHash",
+                      "maximumProjects",
+                      "maximumTransactionGasWei",
+                      "maximumProjectGasWei",
+                      "maximumTotalGasWei"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "version",
+                  "config"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/chain-admission/active": {
+      "put": {
+        "operationId": "chain_admission_activate",
+        "description": "PUT /v1/admin/chain-admission/active. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "expectedGeneration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "version",
+                  "expectedGeneration"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/projects/{projectId}/modules": {
       "post": {
         "operationId": "module_deploy",
+        "description": "POST /v1/projects/{projectId}/modules. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1475,7 +2576,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -1504,6 +2611,7 @@
     "/v1/projects/{projectId}/modules/{moduleId}": {
       "get": {
         "operationId": "module_get",
+        "description": "GET /v1/projects/{projectId}/modules/{moduleId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -1545,7 +2653,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -1553,6 +2667,7 @@
     "/v1/projects/{projectId}/chain/registrations/prepare": {
       "post": {
         "operationId": "registration_prepare",
+        "description": "POST /v1/projects/{projectId}/chain/registrations/prepare. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1584,7 +2699,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -1631,6 +2752,7 @@
     "/v1/projects/{projectId}/chain/registrations/{registrationId}/submit": {
       "post": {
         "operationId": "registration_submit",
+        "description": "POST /v1/projects/{projectId}/chain/registrations/{registrationId}/submit. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1672,7 +2794,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -1701,6 +2829,7 @@
     "/v1/projects/{projectId}/chain/registrations/{registrationId}": {
       "get": {
         "operationId": "registration_get",
+        "description": "GET /v1/projects/{projectId}/chain/registrations/{registrationId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -1742,7 +2871,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -1750,6 +2885,7 @@
     "/v1/projects/{projectId}/chain": {
       "get": {
         "operationId": "chain_binding",
+        "description": "GET /v1/projects/{projectId}/chain. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -1781,7 +2917,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -1789,6 +2931,7 @@
     "/v1/projects/{projectId}/proposals": {
       "post": {
         "operationId": "proposal_create",
+        "description": "POST /v1/projects/{projectId}/proposals. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1820,7 +2963,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -1885,6 +3034,7 @@
     "/v1/projects/{projectId}/proposals/{proposalId}": {
       "get": {
         "operationId": "proposal_get",
+        "description": "GET /v1/projects/{projectId}/proposals/{proposalId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -1926,7 +3076,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -1934,6 +3090,7 @@
     "/v1/projects/{projectId}/proposals/{proposalId}/publication": {
       "put": {
         "operationId": "proposal_publish",
+        "description": "PUT /v1/projects/{projectId}/proposals/{proposalId}/publication. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -1975,7 +3132,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -2008,6 +3171,7 @@
     "/v1/projects/{projectId}/services": {
       "post": {
         "operationId": "service_register",
+        "description": "Register an immutable service manifest. Requires service.manage. Host creates an unpaid transport probe before availability.",
         "security": [
           {
             "bearerAuth": []
@@ -2039,7 +3203,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -2123,6 +3293,7 @@
     "/v1/projects/{projectId}/services/{serviceId}": {
       "get": {
         "operationId": "service_get",
+        "description": "GET /v1/projects/{projectId}/services/{serviceId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -2164,7 +3335,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -2172,6 +3349,7 @@
     "/v1/projects/{projectId}/services/{serviceId}/publication": {
       "put": {
         "operationId": "service_publish",
+        "description": "PUT /v1/projects/{projectId}/services/{serviceId}/publication. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2213,7 +3391,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -2246,6 +3430,7 @@
     "/v1/projects/{projectId}/services/{serviceId}/suspend": {
       "post": {
         "operationId": "service_suspend",
+        "description": "POST /v1/projects/{projectId}/services/{serviceId}/suspend. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2287,7 +3472,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -2295,6 +3486,7 @@
     "/v1/public/services": {
       "get": {
         "operationId": "service_catalog",
+        "description": "GET /v1/public/services. Public read.",
         "security": [],
         "parameters": [
           {
@@ -2332,7 +3524,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -2340,6 +3538,7 @@
     "/v1/projects/{projectId}/service-quotes": {
       "post": {
         "operationId": "service_quote",
+        "description": "POST /v1/projects/{projectId}/service-quotes. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2371,7 +3570,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -2408,6 +3613,7 @@
     "/v1/projects/{projectId}/service-orders": {
       "post": {
         "operationId": "service_accept",
+        "description": "Accept exact unexpired quote with service.call. Zero-price quotes need no payment; paid quotes await independent receipt verification. Same quoteId recovers order.",
         "security": [
           {
             "bearerAuth": []
@@ -2439,7 +3645,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -2468,6 +3680,7 @@
     "/v1/projects/{projectId}/service-orders/{orderId}": {
       "get": {
         "operationId": "service_order",
+        "description": "GET /v1/projects/{projectId}/service-orders/{orderId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -2509,12 +3722,19 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       },
       "delete": {
         "operationId": "service_cancel",
+        "description": "DELETE /v1/projects/{projectId}/service-orders/{orderId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2556,7 +3776,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -2564,6 +3790,7 @@
     "/v1/projects/{projectId}/service-orders/{orderId}/authorization": {
       "post": {
         "operationId": "service_authorize",
+        "description": "POST /v1/projects/{projectId}/service-orders/{orderId}/authorization. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2605,7 +3832,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -2634,6 +3867,7 @@
     "/v1/projects/{projectId}/service-orders/{orderId}/result": {
       "get": {
         "operationId": "service_result",
+        "description": "GET /v1/projects/{projectId}/service-orders/{orderId}/result. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -2675,7 +3909,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -2683,6 +3923,7 @@
     "/v1/projects/{projectId}/service-orders/{orderId}/acceptance": {
       "post": {
         "operationId": "service_accept_result",
+        "description": "POST /v1/projects/{projectId}/service-orders/{orderId}/acceptance. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2724,7 +3965,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -2757,6 +4004,7 @@
     "/v1/projects/{projectId}/service-assignments": {
       "get": {
         "operationId": "provider_orders",
+        "description": "GET /v1/projects/{projectId}/service-assignments. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -2808,7 +4056,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -2816,6 +4070,7 @@
     "/v1/projects/{projectId}/service-assignments/{orderId}/claim": {
       "post": {
         "operationId": "provider_claim",
+        "description": "POST /v1/projects/{projectId}/service-assignments/{orderId}/claim. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2857,7 +4112,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -2865,6 +4126,7 @@
     "/v1/projects/{projectId}/service-assignments/{orderId}/delivery": {
       "put": {
         "operationId": "provider_deliver",
+        "description": "PUT /v1/projects/{projectId}/service-assignments/{orderId}/delivery. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2906,7 +4168,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -2937,6 +4205,7 @@
     "/v1/projects/{projectId}/wallet": {
       "post": {
         "operationId": "wallet_create",
+        "description": "POST /v1/projects/{projectId}/wallet. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -2968,12 +4237,19 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       },
       "get": {
         "operationId": "wallet_get",
+        "description": "GET /v1/projects/{projectId}/wallet. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -3005,7 +4281,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -3013,6 +4295,7 @@
     "/v1/projects/{projectId}/wallet/actions/{actionId}": {
       "get": {
         "operationId": "wallet_action",
+        "description": "GET /v1/projects/{projectId}/wallet/actions/{actionId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -3054,7 +4337,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -3062,6 +4351,7 @@
     "/v1/projects/{projectId}/wallet/sessions/prepare": {
       "post": {
         "operationId": "wallet_session_prepare",
+        "description": "POST /v1/projects/{projectId}/wallet/sessions/prepare. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3093,7 +4383,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -3161,6 +4457,7 @@
     "/v1/projects/{projectId}/wallet/sessions/{sessionId}/submit": {
       "post": {
         "operationId": "wallet_session_submit",
+        "description": "POST /v1/projects/{projectId}/wallet/sessions/{sessionId}/submit. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3202,7 +4499,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -3231,6 +4534,7 @@
     "/v1/projects/{projectId}/wallet/sessions/{sessionId}/revoke-transaction": {
       "post": {
         "operationId": "wallet_session_revoke",
+        "description": "POST /v1/projects/{projectId}/wallet/sessions/{sessionId}/revoke-transaction. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3272,7 +4576,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -3280,6 +4590,7 @@
     "/v1/projects/{projectId}/wallet/payments/prepare": {
       "post": {
         "operationId": "wallet_payment_prepare",
+        "description": "POST /v1/projects/{projectId}/wallet/payments/prepare. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3311,7 +4622,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -3346,6 +4663,7 @@
     "/v1/projects/{projectId}/wallet/payments/{paymentId}/submit": {
       "post": {
         "operationId": "wallet_payment_submit",
+        "description": "POST /v1/projects/{projectId}/wallet/payments/{paymentId}/submit. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3387,7 +4705,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -3416,6 +4740,7 @@
     "/v1/projects/{projectId}/vault": {
       "post": {
         "operationId": "vault_create",
+        "description": "POST /v1/projects/{projectId}/vault. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3447,12 +4772,19 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       },
       "get": {
         "operationId": "vault_get",
+        "description": "GET /v1/projects/{projectId}/vault. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -3484,7 +4816,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -3492,6 +4830,7 @@
     "/v1/projects/{projectId}/vault/transaction": {
       "post": {
         "operationId": "vault_transaction",
+        "description": "POST /v1/projects/{projectId}/vault/transaction. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3523,7 +4862,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -3563,6 +4908,7 @@
     "/v1/projects/{projectId}/vault/balance": {
       "get": {
         "operationId": "vault_balance",
+        "description": "GET /v1/projects/{projectId}/vault/balance. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -3604,7 +4950,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -3612,6 +4964,7 @@
     "/v1/projects/{projectId}/contract-bindings": {
       "post": {
         "operationId": "contract_binding_create",
+        "description": "POST /v1/projects/{projectId}/contract-bindings. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3643,7 +4996,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -3690,6 +5049,7 @@
     "/v1/projects/{projectId}/contract-bindings/{bindingId}": {
       "get": {
         "operationId": "contract_binding_get",
+        "description": "GET /v1/projects/{projectId}/contract-bindings/{bindingId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -3731,12 +5091,19 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       },
       "delete": {
         "operationId": "contract_binding_revoke",
+        "description": "DELETE /v1/projects/{projectId}/contract-bindings/{bindingId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3778,7 +5145,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -3786,6 +5159,7 @@
     "/v1/projects/{projectId}/contract-requests/{requestId}": {
       "get": {
         "operationId": "contract_request_get",
+        "description": "GET /v1/projects/{projectId}/contract-requests/{requestId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -3827,7 +5201,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -3835,6 +5215,7 @@
     "/v1/admin/inference/profiles": {
       "put": {
         "operationId": "inference_profile_set",
+        "description": "PUT /v1/admin/inference/profiles. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -3855,7 +5236,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -3986,6 +5373,7 @@
     "/v1/admin/inference/allowances/{projectId}": {
       "put": {
         "operationId": "inference_allowance_set",
+        "description": "PUT /v1/admin/inference/allowances/{projectId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -4017,7 +5405,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4068,6 +5462,7 @@
     "/v1/projects/{projectId}/inference/profiles/{profileId}": {
       "get": {
         "operationId": "inference_profile",
+        "description": "GET /v1/projects/{projectId}/inference/profiles/{profileId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -4109,7 +5504,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -4117,6 +5518,7 @@
     "/v1/projects/{projectId}/inference/requests": {
       "post": {
         "operationId": "inference_submit",
+        "description": "POST /v1/projects/{projectId}/inference/requests. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -4148,7 +5550,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4207,6 +5615,7 @@
     "/v1/projects/{projectId}/inference/requests/{requestId}": {
       "get": {
         "operationId": "inference_get",
+        "description": "GET /v1/projects/{projectId}/inference/requests/{requestId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -4248,12 +5657,19 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       },
       "delete": {
         "operationId": "inference_cancel",
+        "description": "DELETE /v1/projects/{projectId}/inference/requests/{requestId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -4295,7 +5711,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -4303,6 +5725,7 @@
     "/v1/projects/{projectId}/inference/requests/{requestId}/output": {
       "get": {
         "operationId": "inference_output",
+        "description": "GET /v1/projects/{projectId}/inference/requests/{requestId}/output. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -4344,7 +5767,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -4352,6 +5781,7 @@
     "/v1/projects/{projectId}/releases": {
       "post": {
         "operationId": "release_create",
+        "description": "Select static files from own snapshot with release.publish and artifact.read. Does not publish the UI or expose other snapshot files.",
         "security": [
           {
             "bearerAuth": []
@@ -4383,7 +5813,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4423,6 +5859,7 @@
     "/v1/projects/{projectId}/releases/{releaseId}": {
       "get": {
         "operationId": "release_get",
+        "description": "GET /v1/projects/{projectId}/releases/{releaseId}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -4464,7 +5901,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -4472,6 +5915,7 @@
     "/v1/projects/{projectId}/releases/{releaseId}/publication": {
       "put": {
         "operationId": "release_publish",
+        "description": "Publish, renew or withdraw isolated static UI using expectedRevision. Requires release.publish. No backend or private API access is granted.",
         "security": [
           {
             "bearerAuth": []
@@ -4513,7 +5957,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4552,6 +6002,7 @@
     "/v1/public/releases/{releaseId}": {
       "get": {
         "operationId": "public_release",
+        "description": "GET /v1/public/releases/{releaseId}. Public read.",
         "security": [],
         "parameters": [
           {
@@ -4579,7 +6030,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -4587,6 +6044,7 @@
     "/v1/projects/{projectId}/sources/{snapshotId}/publication": {
       "put": {
         "operationId": "source_publish",
+        "description": "PUT /v1/projects/{projectId}/sources/{snapshotId}/publication. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -4628,7 +6086,94 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "published": {
+                    "type": "boolean"
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "published",
+                  "expectedRevision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/agents/{agentId}/publication": {
+      "put": {
+        "operationId": "agent_publish",
+        "description": "Explicitly publish or withdraw one agent name. Requires project.publish and expectedRevision; other identities stay private.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4661,6 +6206,7 @@
     "/v1/projects/{projectId}/publication": {
       "put": {
         "operationId": "project_publish",
+        "description": "Explicitly publish or withdraw a project profile using expectedRevision. Requires project.publish; private files and agents stay private.",
         "security": [
           {
             "bearerAuth": []
@@ -4692,7 +6238,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4729,6 +6281,7 @@
     "/v1/projects/{projectId}/exports": {
       "post": {
         "operationId": "project_export",
+        "description": "Export own selected snapshot and files. Requires project.export and artifact.read. No side effects or destination operator needed.",
         "security": [
           {
             "bearerAuth": []
@@ -4760,7 +6313,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4789,6 +6348,7 @@
     "/v1/projects/{projectId}/transfers": {
       "post": {
         "operationId": "project_transfer_prepare",
+        "description": "POST /v1/projects/{projectId}/transfers. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -4820,7 +6380,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4861,6 +6427,7 @@
     "/v1/projects/{projectId}/transfers/{archiveId}/pages/{page}": {
       "get": {
         "operationId": "project_transfer_page",
+        "description": "GET /v1/projects/{projectId}/transfers/{archiveId}/pages/{page}. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -4912,7 +6479,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -4920,6 +6493,7 @@
     "/v1/imports": {
       "post": {
         "operationId": "project_import_begin",
+        "description": "POST /v1/imports. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -4940,7 +6514,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -4965,6 +6545,7 @@
     "/v1/imports/{archiveId}/pages/{page}": {
       "put": {
         "operationId": "project_import_page",
+        "description": "PUT /v1/imports/{archiveId}/pages/{page}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -5006,7 +6587,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         },
         "requestBody": {
@@ -5036,6 +6623,7 @@
     "/v1/imports/{archiveId}/commit": {
       "post": {
         "operationId": "project_import_commit",
+        "description": "POST /v1/imports/{archiveId}/commit. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
         "security": [
           {
             "bearerAuth": []
@@ -5067,7 +6655,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -5075,6 +6669,7 @@
     "/v1/projects/{projectId}/import-history": {
       "get": {
         "operationId": "project_import_history",
+        "description": "GET /v1/projects/{projectId}/import-history. Requires current object read permission.",
         "security": [
           {
             "bearerAuth": []
@@ -5116,7 +6711,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -5124,6 +6725,7 @@
     "/v1/public/projects/{slug}": {
       "get": {
         "operationId": "public_project",
+        "description": "GET /v1/public/projects/{slug}. Public read.",
         "security": [],
         "parameters": [
           {
@@ -5151,7 +6753,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -5159,6 +6767,7 @@
     "/v1/public/sources/{sourceId}": {
       "get": {
         "operationId": "public_source",
+        "description": "GET /v1/public/sources/{sourceId}. Public read.",
         "security": [],
         "parameters": [
           {
@@ -5186,7 +6795,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -5194,6 +6809,7 @@
     "/v1/public/reviews/{caseId}": {
       "get": {
         "operationId": "public_review",
+        "description": "GET /v1/public/reviews/{caseId}. Public read.",
         "security": [],
         "parameters": [
           {
@@ -5221,7 +6837,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }
@@ -5229,6 +6851,7 @@
     "/v1/public/graph": {
       "get": {
         "operationId": "network_graph",
+        "description": "GET /v1/public/graph. Public read.",
         "security": [],
         "parameters": [
           {
@@ -5266,7 +6889,13 @@
             "description": "Scope denied"
           },
           "409": {
-            "description": "Revision or idempotency conflict"
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }

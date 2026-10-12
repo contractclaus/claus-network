@@ -26,10 +26,13 @@ const publicCredential = value => {
 };
 
 export function createIdentity({ store, verifySignature = async () => false,
-  domain = 'claus.si', chainId = 1, now = () => Date.now() }) {
+  domain = 'claus.si', chainId = 1, now = () => Date.now(), limit = async () => undefined,
+  consumeProjects = async () => {}, writesEnabled = async () => true }) {
   requireThat(/^[a-z0-9.-]+(?::[0-9]+)?$/.test(domain), 'invalid_domain');
   integer(chainId, 1);
   async function capacity(tx, kind, subject, maximum) {
+    const names = { projects: 'projectsPerOwner', agents: 'agentsPerProject', 'mandates-per-day': 'mandatesPerDay', 'credentials-per-day': 'credentialsPerDay' };
+    maximum = await limit(names[kind], tx) ?? maximum;
     const key = digest({ kind, subject }), old = await tx.read('identity-capacity', key);
     const count = old?.value.count ?? 0;
     requireThat(count < maximum, 'capacity_reached');
@@ -53,7 +56,8 @@ export function createIdentity({ store, verifySignature = async () => false,
       const who = await credential(actor, reader);
       const project = (await reader.read('projects', text(projectId)))?.value;
       if (!project || project.archivedAt) return false;
-      if (project.transfer && !FENCED_ACTIONS.has(action) && !(withdrawal && WITHDRAWAL_ACTIONS.has(action))) return false;
+      const suspended = (await reader.read('project-access', projectId))?.value.suspended === true || !await writesEnabled(reader);
+      if ((project.transfer || suspended) && !FENCED_ACTIONS.has(action) && !(withdrawal && WITHDRAWAL_ACTIONS.has(action))) return false;
       if (who.kind === 'owner') return project.ownerId === who.principalId && PROJECT_SCOPES.includes(action);
       const alias = action === 'wallet.revoke' ? 'wallet.manage' : action === 'service.settle' ? 'service.call' :
         action === 'contract.revoke' ? 'contract.request' : action;
@@ -72,7 +76,22 @@ export function createIdentity({ store, verifySignature = async () => false,
     requireThat(await allowed(actor, action, scope, reader), 'scope_denied');
   }
   const api = {
-    allowed, authorize, credential, owner,
+    allowed, authorize, credential, owner, scopes: PROJECT_SCOPES,
+    async listAccess(actor, projectId, { kind, after = '', limit = 100 }) {
+      await owner(actor, projectId); integer(limit, 1, 100);
+      requireThat(['agents', 'mandates', 'credentials'].includes(kind), 'invalid_resource_kind');
+      const rows = await store.list({ agents: 'principals', mandates: 'mandates', credentials: 'credentials' }[kind], { after, limit, projectId });
+      const items = [];
+      for (const row of rows.filter(row => row.value.projectId === projectId)) {
+        const value = kind === 'credentials' ? publicCredential(row.value) : copy(row.value);
+        if (kind === 'agents') {
+          const publication = await store.read('project-public-agents', projectId + ':' + row.value.id);
+          value.publication = { published: publication?.value.published === true, revision: publication?.revision ?? 0 };
+        }
+        items.push(value);
+      }
+      return { items, nextCursor: rows.length === limit ? rows.at(-1).id : null };
+    },
     // Internal port used only after verification of an operator-signed transfer.
     // No public identity route accepts an arbitrary project ID.
     async importProject(actor, value, provenance, tx) {
@@ -83,6 +102,7 @@ export function createIdentity({ store, verifySignature = async () => false,
       bounded(value.name, 80);
       requireThat(!await tx.read('projects', value.id), 'project_id_taken');
       requireThat(!await tx.read('project-slugs', value.slug), 'slug_taken');
+      await consumeProjects(tx);
       await capacity(tx, 'projects', who.principalId, 10);
       const project = { id: value.id, slug: value.slug, name: value.name, ownerId: who.principalId,
         createdAt: value.createdAt, archivedAt: null, provenance: copy(provenance) };
@@ -144,7 +164,8 @@ export function createIdentity({ store, verifySignature = async () => false,
           return (await tx.read('projects', old.projectId)).value;
         }
         requireThat(!await tx.read('project-slugs', slug), 'slug_taken');
-        await capacity(tx, 'projects', who.principalId, 10);
+        await consumeProjects(tx);
+      await capacity(tx, 'projects', who.principalId, 10);
         const id = opaque('prj_'), value = { id, slug, name, ownerId: who.principalId, createdAt: now(), archivedAt: null };
         await tx.write('projects', id, value, 0);
         await tx.write('project-slugs', slug, { projectId: id }, 0);
@@ -167,32 +188,52 @@ export function createIdentity({ store, verifySignature = async () => false,
         values.push((await store.read('projects', link.value.projectId)).value);
       return { items: values, nextCursor: links.length === (options.limit ?? 100) ? links.at(-1).id : null };
     },
-    async createAgent(actor, projectId, { name }) {
+    async createAgent(actor, projectId, { name, idempotencyKey }) {
       bounded(name, 80);
+      if (idempotencyKey !== undefined) text(idempotencyKey);
       return store.transaction(async tx => {
         const { project } = await owner(actor, projectId, tx);
+        const key = idempotencyKey === undefined ? null : digest({ kind: 'agent', projectId, idempotencyKey });
+        const old = key && await tx.read('identity-requests', key);
+        if (old) {
+          requireThat(old.value.hash === digest({ name }), 'idempotency_conflict');
+          return (await tx.read('principals', old.value.id)).value;
+        }
         requireThat(!project.transfer, 'project_transferred');
+        requireThat(!(await tx.read('project-access', project.id))?.value.suspended && await writesEnabled(tx), 'project_unavailable');
         await capacity(tx, 'agents', projectId, 32);
         const id = opaque('agent_'), value = { id, name, projectId, kind: 'agent', createdAt: now() };
         await tx.write('principals', id, value, 0);
         await tx.write('memberships', id + ':' + projectId, { projectId, principalId: id }, 0);
+        if (key) await tx.write('identity-requests', key, { id, hash: digest({ name }) }, 0);
         await tx.event({ type: 'agent.created', projectId, agentId: id, at: now() });
         return value;
       });
     },
-    async grant(actor, projectId, { principalId, scopes, expiresAt }) {
+    async grant(actor, projectId, { principalId, scopes, expiresAt, idempotencyKey }) {
       requireThat(Array.isArray(scopes) && scopes.length > 0 && scopes.length <= PROJECT_SCOPES.length &&
         scopes.every(s => PROJECT_SCOPES.includes(s)) && new Set(scopes).size === scopes.length, 'invalid_scopes');
-      integer(expiresAt, now() + 1000, now() + MAX_MANDATE_TTL);
+      integer(expiresAt);
+      if (idempotencyKey !== undefined) text(idempotencyKey);
       return store.transaction(async tx => {
         const { who, project } = await owner(actor, projectId, tx);
+        const key = idempotencyKey === undefined ? null : digest({ kind: 'mandate', projectId, idempotencyKey });
+        const hash = digest({ principalId, scopes: [...scopes].sort(), expiresAt });
+        const old = key && await tx.read('identity-requests', key);
+        if (old) {
+          requireThat(old.value.hash === hash, 'idempotency_conflict');
+          return (await tx.read('mandates', old.value.id)).value;
+        }
+        integer(expiresAt, now() + 1000, now() + MAX_MANDATE_TTL);
         requireThat(!project.transfer, 'project_transferred');
+        requireThat(!(await tx.read('project-access', project.id))?.value.suspended && await writesEnabled(tx), 'project_unavailable');
         const agent = (await tx.read('principals', text(principalId)))?.value;
         requireThat(agent?.kind === 'agent' && agent.projectId === projectId, 'not_found');
         await capacity(tx, 'mandates-per-day', projectId + ':' + Math.floor(now() / 86400000), 64);
         const id = opaque('mnd_'), value = { id, projectId, principalId, ownerId: who.principalId,
           scopes: copy(scopes), expiresAt, revokedAt: null, createdAt: now() };
         await tx.write('mandates', id, value, 0);
+        if (key) await tx.write('identity-requests', key, { id, hash }, 0);
         await tx.event({ type: 'mandate.granted', projectId, mandateId: id, at: now() });
         return value;
       });
@@ -204,6 +245,7 @@ export function createIdentity({ store, verifySignature = async () => false,
         requireThat(mandate && !mandate.revokedAt && mandate.expiresAt > now(), 'not_found');
         const { project } = await owner(actor, mandate.projectId, tx);
         requireThat(!project.transfer, 'project_transferred');
+        requireThat(!(await tx.read('project-access', project.id))?.value.suspended && await writesEnabled(tx), 'project_unavailable');
         await capacity(tx, 'credentials-per-day', mandate.projectId + ':' + Math.floor(now() / 86400000), 128);
         const value = { id, kind: 'agent', principalId: mandate.principalId, projectId: mandate.projectId,
           mandateId, scopes: mandate.scopes, createdAt: now(), expiresAt: mandate.expiresAt, revokedAt: null };

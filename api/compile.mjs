@@ -23,11 +23,12 @@ export default async function handler(req, res) {
       return { store, app };
     })().catch(error => { loaded = null; throw error; });
     const { store, app } = await loaded;
+    const maintenance = await store.pruneEphemeral();
     const result = await app.builds.runOne(compileSnapshot);
     await store.transaction(async tx => {
       const old = await tx.read('worker-health', 'compile');
       await tx.write('worker-health', 'compile', { observedAt: Date.now(), release: process.env.CLAUS_NETWORK_RELEASE,
-        idle: result.idle === true, state: result.state ?? null }, old?.revision ?? 0);
+        idle: result.idle === true, state: result.state ?? null, maintenance }, old?.revision ?? 0);
     });
     res.status(200).json({ ok: true, idle: result.idle === true, state: result.state ?? null });
   } catch { res.status(503).json({ error: 'worker_unavailable' }); }

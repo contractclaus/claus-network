@@ -21,7 +21,7 @@ export async function createChainWorker(role, env = process.env) {
   const chain = createChainRead({ client }), sealer = createSealer(env.CLAUS_NETWORK_SEALING_KEY);
   const app = createApplication({ store, origin: env.CLAUS_NETWORK_ORIGIN, rateSalt: env.CLAUS_NETWORK_RATE_SALT, chainPorts: { chain } });
   const controller = role === 'controller' ? createClausController({ store, chain, client, signer, secret: env.CLAUS_NETWORK_REVIEW_SECRET }) : null;
-  const executor = role === 'executor' ? createChainExecutor({ store, chain, client, signer, sealer, artifacts: app.artifacts,
+  const executor = role === 'executor' ? createChainExecutor({ store, chain, client, signer, sealer, artifacts: app.artifacts, admission: app.deployments.admission,
     verification: createSourceVerification({ store, etherscanKey: env.ETHERSCAN_API_KEY }) }) : null;
   return { store, async tick() {
     const capability = (await store.read('network-capabilities', 'chain'))?.value;

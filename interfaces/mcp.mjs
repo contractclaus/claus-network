@@ -25,7 +25,7 @@ export function createMcp({service,origin='https://claus.si',admit=async()=>{}})
   if(protocol&&protocol!==VERSION)return failure(id??null,-32600,'Unsupported protocol',400);
   if(id===undefined)return result(undefined,202);
   if(input.method==='ping')return result({jsonrpc:'2.0',id,result:{}});
-  if(input.method==='tools/list')return result({jsonrpc:'2.0',id,result:{tools:routes.map(r=>({name:r.name,description:r.method+' '+r.path,inputSchema:r.inputSchema,annotations:{readOnlyHint:r.method==='GET',destructiveHint:r.method!=='GET',openWorldHint:true}}))}});
+  if(input.method==='tools/list')return result({jsonrpc:'2.0',id,result:{tools:routes.map(r=>({name:r.name,description:r.description ?? r.method+' '+r.path,inputSchema:r.inputSchema,annotations:{readOnlyHint:r.method==='GET',destructiveHint:r.method!=='GET',openWorldHint:true}}))}});
   if(input.method!=='tools/call')return failure(id,-32601,'Method not found');
   if(!routes.some(r=>r.name===params.name))return failure(id,-32602,'Unknown tool');
   const rawToken=request.headers.get('authorization')?.match(/^Bearer (cln_[A-Za-z0-9_-]{43})$/)?.[1];

@@ -57,5 +57,5 @@ test('legacy delay conflicts reach the client as non-retryable, not a provider o
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ minDelaySeconds: 0 }),
   }));
   assert.equal(response.status, 409);
-  assert.deepEqual(await response.json(), { error: 'executor_delay_required', retryable: false });
+  assert.deepEqual(await response.json(), { error: 'executor_delay_required', category: 'state', retryable: false });
 });

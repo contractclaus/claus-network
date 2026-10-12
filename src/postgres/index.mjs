@@ -19,11 +19,12 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
         const { rows } = await client.query(`SELECT revision,body FROM ${documents} WHERE collection=$1 AND id=$2`, [collection, id]);
         return rows[0] ? { revision: integer(Number(rows[0].revision), 1), value: rows[0].body } : null;
       },
-      async list(collection, { prefix = '', after = '', limit = 100 } = {}) {
+      async list(collection, { prefix = '', after = '', limit = 100, projectId } = {}) {
         assertActive(); text(collection); integer(limit, 1, 1000);
         requireThat(typeof prefix === 'string' && typeof after === 'string', 'invalid_cursor');
+        if (projectId !== undefined) text(projectId);
         const { rows } = await client.query(`SELECT id,revision,body FROM ${documents}
-          WHERE collection=$1 AND left(id,length($2))=$2 AND id>$3 ORDER BY id LIMIT $4`, [collection, prefix, after, limit]);
+          WHERE collection=$1 AND left(id,length($2))=$2 AND id>$3 AND ($5::text IS NULL OR body->>'projectId'=$5) ORDER BY id LIMIT $4`, [collection, prefix, after, limit, projectId ?? null]);
         return rows.map(row => ({ id: row.id, revision: integer(Number(row.revision), 1), value: row.body }));
       },
       async events({ after = 0, limit = 1000 } = {}) {
@@ -35,6 +36,10 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
   }
   return {
     ...reader(pool),
+    async pruneEphemeral() {
+      const { rows } = await pool.query(`SELECT "${schema}".prune_ephemeral() AS removed`);
+      return { removed: Number(rows[0].removed) };
+    },
     async transaction(run) {
       const client = await pool.connect();
       let active = true;

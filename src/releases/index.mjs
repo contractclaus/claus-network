@@ -1,6 +1,6 @@
 import { canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
 
-export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, now = () => Date.now(),
+export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, limit = async () => undefined, now = () => Date.now(),
   origin = 'https://claus-network-sites.vercel.app' }) {
   requireThat(new URL(origin).origin === origin && new URL(origin).protocol === 'https:', 'invalid_release_origin');
   async function owned(actor,projectId,id,reader=store){
@@ -23,7 +23,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
         await admit(projectId,tx);
         const old=await tx.read('project-releases',id);if(old)return old.value;
         const capacity=await tx.read('release-capacity',projectId);
-        requireThat((capacity?.value.count??0)<32,'capacity_reached');
+        requireThat((capacity?.value.count??0)<(await limit('releasesPerProject',tx)??32),'capacity_reached');
         const contentHash=await artifacts.put(tx,projectId,files);
         const value={id,projectId,snapshotId,contentHash,paths:files.map(f=>f.path),createdAt:now(),
           isolation:'opaque-origin-static-v1',url:origin+'/r/'+id.slice(7)+'/index.html'};

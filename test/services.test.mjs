@@ -160,3 +160,15 @@ test('a replacement agent can explicitly adopt pending work without changing its
   assert.equal(adopted.id,o.id);assert.deepEqual(adopted.payment,o.payment);
   const claim=await f.services.claim(f.provider.actor,f.provider.id,o.id);assert.equal(claim.input.value,'continue');
 });
+
+
+test('a suspended provider does not poison the conformance cursor for another project', async t => {
+  const f = await fixture(t);
+  const a = await f.services.register(f.provider.actor, f.provider.id, f.manifest());
+  const b = await f.services.register(f.stranger.actor, f.stranger.id, f.manifest());
+  await f.store.transaction(tx => tx.write('project-access', f.provider.id, { suspended: true }, 0));
+  const result = await createServiceConformance({ store: f.store, services: f.services }).tick();
+  assert.equal(result.states.find(item => item.id === a.id).state, 'blocked');
+  assert.equal(result.states.find(item => item.id === b.id).state, 'proposed');
+  assert.equal((await f.services.assigned(f.stranger.actor, f.stranger.id)).orders.length, 1);
+});

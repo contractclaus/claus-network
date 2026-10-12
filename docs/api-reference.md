@@ -1,9 +1,17 @@
 # API reference
 
-The live API is 0.10.6 with 90 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+The live API is 0.11.0 with 105 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `capabilities` | GET | `/v1/public/capabilities` | Public |
+| `project_capabilities` | GET | `/v1/projects/{projectId}/capabilities` | Bearer credential |
+| `identity_list` | GET | `/v1/projects/{projectId}/access/{kind}` | Project owner session |
+| `resource_list` | GET | `/v1/projects/{projectId}/resources/{kind}` | Bearer credential |
+| `access_policy_get` | GET | `/v1/admin/access-policy` | Network owner session |
+| `access_policy_publish` | POST | `/v1/admin/access-policy/versions` | Network owner session |
+| `access_policy_activate` | PUT | `/v1/admin/access-policy/active` | Network owner session |
+| `project_access_set` | PUT | `/v1/admin/projects/{projectId}/access` | Network owner session |
 | `auth_challenge` | POST | `/v1/auth/challenge` | Public |
 | `auth_session` | POST | `/v1/auth/session` | Public |
 | `principal_me` | GET | `/v1/principals/me` | Bearer credential |
@@ -23,6 +31,9 @@ The live API is 0.10.6 with 90 operations. Endpoint availability and operational
 | `build_artifact` | GET | `/v1/projects/{projectId}/builds/{buildId}/artifact` | Bearer credential |
 | `job_get` | GET | `/v1/projects/{projectId}/jobs/{jobId}` | Bearer credential |
 | `job_cancel` | DELETE | `/v1/projects/{projectId}/jobs/{jobId}` | Bearer credential |
+| `review_admission_get` | GET | `/v1/admin/review-admission` | Network owner session |
+| `review_admission_publish` | POST | `/v1/admin/review-admission/versions` | Network owner session |
+| `review_admission_activate` | PUT | `/v1/admin/review-admission/active` | Network owner session |
 | `review_create` | POST | `/v1/projects/{projectId}/reviews` | Bearer credential |
 | `review_pilot_get` | GET | `/v1/admin/review-pilots/{projectId}` | Network owner session |
 | `review_pilot_set` | PUT | `/v1/admin/review-pilots/{projectId}` | Network owner session |
@@ -30,6 +41,9 @@ The live API is 0.10.6 with 90 operations. Endpoint availability and operational
 | `review_accept` | POST | `/v1/projects/{projectId}/reviews/{caseId}/accept` | Bearer credential |
 | `review_artifact` | GET | `/v1/projects/{projectId}/reviews/{caseId}/artifact` | Bearer credential |
 | `review_publish` | PUT | `/v1/projects/{projectId}/reviews/{caseId}/publication` | Bearer credential |
+| `chain_admission_get` | GET | `/v1/admin/chain-admission` | Network owner session |
+| `chain_admission_publish` | POST | `/v1/admin/chain-admission/versions` | Network owner session |
+| `chain_admission_activate` | PUT | `/v1/admin/chain-admission/active` | Network owner session |
 | `module_deploy` | POST | `/v1/projects/{projectId}/modules` | Bearer credential |
 | `module_get` | GET | `/v1/projects/{projectId}/modules/{moduleId}` | Bearer credential |
 | `registration_prepare` | POST | `/v1/projects/{projectId}/chain/registrations/prepare` | Bearer credential |
@@ -82,6 +96,7 @@ The live API is 0.10.6 with 90 operations. Endpoint availability and operational
 | `release_publish` | PUT | `/v1/projects/{projectId}/releases/{releaseId}/publication` | Bearer credential |
 | `public_release` | GET | `/v1/public/releases/{releaseId}` | Public |
 | `source_publish` | PUT | `/v1/projects/{projectId}/sources/{snapshotId}/publication` | Bearer credential |
+| `agent_publish` | PUT | `/v1/projects/{projectId}/agents/{agentId}/publication` | Bearer credential |
 | `project_publish` | PUT | `/v1/projects/{projectId}/publication` | Bearer credential |
 | `project_export` | POST | `/v1/projects/{projectId}/exports` | Bearer credential |
 | `project_transfer_prepare` | POST | `/v1/projects/{projectId}/transfers` | Owner session; admitted project |

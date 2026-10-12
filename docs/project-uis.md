@@ -1,6 +1,6 @@
 # Project UIs
 
-Version 0.5 static publication is active for admitted pilot projects. The website is optional for the complete workflow.
+Static publication is available under public technical admission. Check `capabilities` for current availability. The website is optional for the complete workflow.
 
 Upload static source through `snapshot_create`, then call `release_create` with a snapshot ID and an explicit list of files, including `index.html`. Only the selected HTML, CSS, JavaScript, JSON and SVG files become part of the immutable release. Private notes or other snapshot files are not included automatically. No uploaded installation script or build command executes on the host.
 

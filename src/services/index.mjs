@@ -2,20 +2,21 @@ import { randomBytes } from 'node:crypto';
 import { amount, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
 import { schemaDefinition, schemaValue, schemaSample } from './schema.mjs';
 
-export function createServices({ store, identity, artifacts, admit = async () => {}, now = () => Date.now() }) {
+export function createServices({ store, identity, artifacts, admit = async () => {}, limit = async () => undefined, now = () => Date.now() }) {
   const scoped = (actor, scope, projectId, reader = store) => identity.authorize(actor, scope, { projectId }, reader);
   async function service(reader, id) {
     const row = await reader.read('service-versions', text(id)); requireThat(row, 'service_not_found'); return row;
   }
   async function availableProject(reader, projectId) {
     const project = (await reader.read('projects', projectId))?.value;
-    return !!project && !project.transfer;
+    return !!project && !project.transfer && !project.archivedAt && !(await reader.read('project-access', projectId))?.value.suspended;
   }
   async function order(reader, projectId, id) {
     const row = await reader.read('service-orders', text(id));
     requireThat(row?.value.projectId === projectId, 'not_found'); return row;
   }
   async function capacity(tx, kind, subject, maximum) {
+    maximum = await limit({ versions: 'serviceVersionsPerProject', quotes: 'quotesPerProjectDay', orders: 'ordersPerProjectDay' }[kind], tx) ?? maximum;
     const key = digest({ kind, subject }), row = await tx.read('service-capacity', key);
     requireThat((row?.value.count ?? 0) < maximum, 'capacity_reached');
     await tx.write('service-capacity', key, { count: (row?.value.count ?? 0) + 1 }, row?.revision ?? 0);

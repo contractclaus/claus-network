@@ -5,6 +5,7 @@ import {randomBytes} from 'node:crypto';
 import {Pool, neonConfig} from '@neondatabase/serverless';
 import ws from 'ws';
 import {openPostgresStore} from '../src/postgres/index.mjs';
+import {maintenanceMigration} from '../src/postgres/maintenance.mjs';
 import {createNetwork} from '../src/index.mjs';
 import {digest} from '../src/shared/index.mjs';
 neonConfig.webSocketConstructor=ws;
@@ -23,6 +24,33 @@ test('PostgreSQL: atomic money, replay, policy pinning, transaction authorizatio
  const store=await openPostgresStore({pool,schema,migrate:true});
  let store2=await openPostgresStore({pool:makePool(),schema});
  t.after(async()=>{await store2.close();await pool.query(`DROP SCHEMA "${schema}" CASCADE`);await store.close();});
+ // Exercise the production runtime role against disposable data only.
+ assert.match(settings.runtimeRole, /^[a-z][a-z0-9_]{0,62}$/);
+ await pool.query(`GRANT USAGE ON SCHEMA "${schema}" TO "${settings.runtimeRole}";
+   GRANT SELECT,INSERT,UPDATE ON "${schema}".documents TO "${settings.runtimeRole}";`);
+ await pool.query(maintenanceMigration(schema, settings.runtimeRole));
+ const runtimePool = new Pool({connectionString:settings.runtimeUrl,connectionTimeoutMillis:10000,max:2});
+ const runtimeStore = await openPostgresStore({pool:runtimePool,schema});
+ try {
+   const expired=Date.now()-2*86400000;
+   await store.transaction(async tx=>{
+     await tx.write('auth-challenges','old',{expiresAt:expired},0);
+     await tx.write('rate-limits','old',{expiresAt:expired},0);
+     await tx.write('auth-challenges','new',{expiresAt:Date.now()+100000},0);
+     await tx.write('revocations','keep',{expiresAt:expired},0);
+     await tx.write('snapshots','a',{projectId:'foreign'},0);
+     await tx.write('snapshots','b',{projectId:'ours'},0);
+     await tx.write('snapshots','c',{projectId:'foreign'},0);
+     await tx.write('snapshots','d',{projectId:'ours'},0);
+   });
+   assert.deepEqual((await runtimeStore.list('snapshots',{projectId:'ours',limit:1})).map(x=>x.id),['b']);
+   assert.deepEqual((await runtimeStore.list('snapshots',{projectId:'ours',after:'b',limit:1})).map(x=>x.id),['d']);
+   await assert.rejects(runtimePool.query(`DELETE FROM "${schema}".documents WHERE false`), {code:'42501'});
+   assert.deepEqual(await runtimeStore.pruneEphemeral(), {removed:2});
+   assert(await runtimeStore.read('revocations','keep'));
+   assert(await runtimeStore.read('auth-challenges','new'));
+   assert.deepEqual(await runtimeStore.pruneEphemeral(), {removed:0});
+ } finally { await runtimeStore.close(); }
  let serial=0,time=1800000000000;
  const verified=new Map();
  const check=async(actor,action,scope,reader)=>{

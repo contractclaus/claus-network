@@ -7,20 +7,29 @@ The owner has deferred new token launches to a later phase. They are not prerequ
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
-| Programmatic interfaces | API 0.10.6; 90 operations |
+| Programmatic interfaces | API 0.11.0; 105 operations |
 | Source snapshots and compilation | Live; explicit publication and bounded Solidity 0.8.27 or 0.8.26 compilation |
 | Network explorer | [Home](https://claus.si/Home) and project pages update from explicitly published registry records |
 | IMD reviews | Paid reference reviews completed; published reports remain readable from stored artifacts during provider outages; new work needs project admission and available sponsor funds |
 | Claus approval and contract execution | Active for admitted Sepolia profiles; protected-change and native-vault references are finalized and published |
-| Services, project wallets and isolated project UIs | Active for admitted pilots; the Claus-operated reference paid two services, changed agents and retired its payment sessions |
+| Free services and isolated project UIs | Public technical admission, separately from paid reviews; no per-project pilot flag required |
+| Project wallets and paid services | Existing separately admitted Sepolia pilot; not enabled by free-service access |
 | Protected native vault | One owner-operated Sepolia reference complete; deposit, approved policy change and full principal withdrawal finalized, unchanged custody bytecode |
-| Signed project transfers | Active for admitted projects; separate Claus-operated destination continued work with fresh grants |
+| Signed project transfers | Available to admitted ordinary projects with a trusted destination; existing separate Claus-operated reference retained |
 | Contract request and callback | First finalized request received a genuine Claus approval; original callback failed; exact stored result recovery and original upgrade finalized; temporary access revoked; one Claus-owned Sepolia reference |
 | Token launch | Not included in this public release |
 | Public inference and holder credits | Disabled; provider permission, bounded billing acceptance and funding still required |
 | Mainnet launches and customer deposits | Disabled; require the specific release and economic approval |
 | Independent participant | Acceptance procedure ready; no independent participant has completed it |
 | GitBook | Optional mirror; public source docs are available, GitBook account access is still required |
+
+## Public-access release 0.11.0
+
+The API and compatible hosted workers now implement separate technical, review-sponsorship and chain admission. Public technical access is active through `project-access` policy `public-projects-2026-10-12-v1`, generation 1. Project users receive no authority over operator keys, budgets or another project. The public API exposes effective rights and bounded metadata recovery; static UI and agent publication remain explicit choices.
+
+The release gate passed 382 checks with nine optional environment-specific skips. A separate real PostgreSQL run verified atomic accounting, project-filtered pagination and bounded cleanup using the runtime role. The shipped three-project example passed in the isolated environment, including a second process; its live acceptance is being recorded separately. The new bounded-result contract candidate passed 60 Solidity tests and is published at `af8cf6370d5b3893fa5b38df251d4b27b5db5f8d`. It is not deployed. Existing contract addresses below remain authoritative.
+
+Public review sponsorship, public readonly contract admission and mainnet remain disabled pending their distinct review, funding and release requirements. This is not a claim that the entire target network is finished.
 
 ## Verified references
 
@@ -36,7 +45,7 @@ The first finalized contract request received a genuine Claus approval and reach
 
 ## Release and recovery
 
-API deployment: `dpl_5ydQwKwZAtZoKSJn8Spc7Yuf62SJ`, release `30a1a3446d40192f13074a057d6559350d5844723774cae6e431e7565d3e2a9b`. All 99 uploaded files matched the prepared release. The source suite passed 375 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
+Historical API 0.10.6 deployment: `dpl_5ydQwKwZAtZoKSJn8Spc7Yuf62SJ`, release `30a1a3446d40192f13074a057d6559350d5844723774cae6e431e7565d3e2a9b`. All 99 uploaded files matched the prepared release. The source suite passed 375 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
 
 API 0.10.4 also returns publication state and revisions in authenticated project, snapshot, review and proposal reads. A disk restart, a fresh client, concurrent-change rejection and revoked-access denial were tested. Live reads cover all four resource types. See [publication recovery](explorer.md#resume-publication-management).
 

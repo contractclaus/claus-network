@@ -10,6 +10,19 @@ export function text(value, code = 'invalid_identifier') {
   return value;
 }
 
+export function sourcePath(value) {
+  requireThat(typeof value === 'string' && value.length <= 180 &&
+    /^[a-zA-Z0-9_.@+/-]+$/.test(value) &&
+    value.split('/').every(part => part.length > 0 && part !== '.' && part !== '..'), 'invalid_file_path');
+  return value;
+}
+
+export function sourceText(value, maximum = 48000) {
+  requireThat(typeof value === 'string' && value.isWellFormed() && value.length <= maximum &&
+    !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value), 'invalid_text');
+  return value;
+}
+
 export function integer(value, min = 0, max = Number.MAX_SAFE_INTEGER) {
   requireThat(Number.isSafeInteger(value) && value >= min && value <= max, 'invalid_integer');
   return value;

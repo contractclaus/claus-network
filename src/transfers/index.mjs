@@ -1,4 +1,4 @@
-import { canonical, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
+import { canonical, digest, integer, requireThat, shape, text, sourcePath, sourceText } from '../shared/index.mjs';
 import { verifyArchiveHeader, verifyProjectArchive } from '../portability/index.mjs';
 
 const MAX_ARCHIVE = 3500000, MAX_HEADER = 48000;
@@ -9,7 +9,7 @@ const origin = value => {
 const header = archive => ({ id: archive.id, manifest: archive.manifest, signature: archive.signature });
 
 export function createProjectTransfers({ store, identity, artifacts, archives, operatorId, trustedOperators,
-  admit = async () => {}, admitImport = async () => {}, now = () => Date.now() }) {
+  consumeSnapshotBytes = async () => {}, limit = async () => undefined, admit = async () => {}, admitImport = async () => {}, now = () => Date.now() }) {
   async function owner(actor, reader = store) {
     const credential = await identity.credential(actor, reader);
     requireThat(credential.kind === 'owner', 'scope_denied');
@@ -115,14 +115,12 @@ export function createProjectTransfers({ store, identity, artifacts, archives, o
           archiveId, transferId: archive.manifest.transfer.id, importedAt: now(), historyAuthority: 'historical-only' }, tx);
         const files = new Map(records.filter(r => r.collection === 'artifacts').map(r => [r.value.hash, r]));
         const snapshots = records.filter(r => r.collection === 'snapshots');
-        requireThat(snapshots.length <= 64, 'capacity_reached');
+        requireThat(snapshots.length <= (await limit('snapshotsPerProject', tx) ?? 64), 'capacity_reached');
         let bytes = 0;
         for (const record of files.values()) {
           const file = record.value;
-          requireThat(typeof file.path === 'string' && file.path.length <= 180 &&
-            /^[a-zA-Z0-9_/-]+\.(sol|json|md|txt|html|css|js|svg)$/.test(file.path) &&
-            !file.path.startsWith('/') && !file.path.includes('//') && !file.path.split('/').includes('..') &&
-            typeof file.content === 'string' && Buffer.byteLength(file.content) <= 48000 &&
+          sourcePath(file.path); sourceText(file.content);
+          requireThat(Buffer.byteLength(file.content) <= 48000 &&
             digest({ path: file.path, content: file.content }) === file.hash &&
             record.id === digest({ projectId: project.id, id: file.hash }), 'archive_source_corrupt');
           await tx.write('artifacts', record.id, file, 0);
@@ -136,7 +134,8 @@ export function createProjectTransfers({ store, identity, artifacts, archives, o
           })));
           await tx.write('snapshots', record.id, snapshot, 0);
         }
-        requireThat(bytes <= 8000000, 'capacity_reached');
+        requireThat(bytes <= (await limit('snapshotBytesPerProject', tx) ?? 8000000), 'capacity_reached');
+        await consumeSnapshotBytes(tx, bytes);
         await tx.write('snapshot-capacity', project.id, { count: snapshots.length, bytes }, 0);
         // All remaining records stay in signed history pages. No imported job,
         // balance, signature, publication or onchain permission becomes active.

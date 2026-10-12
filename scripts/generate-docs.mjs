@@ -4,6 +4,8 @@ import { API_VERSION, ROUTES, openapi } from '../interfaces/contract.mjs';
 const docs = new URL('../docs/', import.meta.url);
 const origin = 'https://claus-network-api.vercel.app';
 const access = {
+  ...Object.fromEntries(['access_policy_get','access_policy_publish','access_policy_activate','project_access_set','review_admission_get','review_admission_publish','review_admission_activate','chain_admission_get','chain_admission_publish','chain_admission_activate'].map(name => [name, 'Network owner session'])),
+  identity_list: 'Project owner session',
   review_pilot_get: 'Network owner session', review_pilot_set: 'Network owner session',
   inference_profile_set: 'Network owner session', inference_allowance_set: 'Network owner session',
   project_transfer_prepare: 'Owner session; admitted project',

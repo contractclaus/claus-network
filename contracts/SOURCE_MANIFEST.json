@@ -51,7 +51,7 @@
     "src/ClausBalanceLens.sol": "550bf939f18393ea4a6216aed7df14c53054c3b0d54670e55c143ad13e5d0ff4",
     "src/ClausNativeVault.sol": "a1d74f600d75162d275f99ae8df9337a9d59dac244b70f4494f7a185e345167c",
     "src/ClausProjectWallet.sol": "8e607acbbf9ff47ff4edd1e9519ee710b215e7fb660b745cb472151ecbc1f556",
-    "src/ClausReadonlyProject.sol": "c45602bc748423f31b7128b7fa557f98aa4e273c2f388dc7729793ba550caa3a",
+    "src/ClausReadonlyProject.sol": "7c7fe172382a767b3700daac415fedb297b57ffe5c932deba561fffc1bbe75a1",
     "src/ClausRequestClient.sol": "37912a8217169aa961e8d7b45016ecbbe9c97287587ac01b32eb8a4d4a20f9c7",
     "src/ClausRequestInbox.sol": "3244917fea9275980c691acffe19cdd939dace62b9714dcc2138622bf6b832c7",
     "src/ClausVaultAdmission.sol": "d8068a7565a659ed3047dcd78b0e0738cebd5662ce2a0811ef7d638494a0e804",
@@ -59,6 +59,7 @@
     "test/ClausBalanceLens.t.sol": "370e67c9894c3c4c16acd57f23547cd3369e644dbc4800f406bc61ba3afe32aa",
     "test/ClausNativeVault.t.sol": "6ef8d421bd2d53d334951ca033a6c3488e39fd4fb4da3c79aacac033f36da6a1",
     "test/ClausProjectWallet.t.sol": "0a44a667675afa7ba9bb249bfabdc9d97452de821ab54fc0cda51b2cdc869d50",
+    "test/ClausReadonlyResult.t.sol": "9523f2f66c2ff1940649d6abc8afcc9bc5c200d30932a86d91b8755e08b158c2",
     "test/ClausRequestClient.t.sol": "8a6d7d481269ccda71e99ea633366e8fa9cfbe0baf704bf74fa47cf963ce864a",
     "test/ClausRequestInbox.t.sol": "8300821fe65f6769c7b560811af844cd6b7f47a1308affc19b0f9d53c3d90c63",
     "test/ClausVaultLifecycle.t.sol": "226ac00336859d06f11be6d36d2e04c6e214be78169601a2c181495e29483f36"

@@ -40,16 +40,19 @@ export default async function handler(req, res) {
       const vaults = (await store.read('network-capabilities', 'vaults'))?.value;
       const vaultWorker = (await store.read('worker-health', 'vaults'))?.value;
       const portability = (await store.read('network-capabilities', 'portability'))?.value;
+      const publicAccess = await app.access.discovery();
       const intakeState = await contractIntakeHealth(store, intakePorts);
       response = Response.json({ service: 'Claus Network', status: 'ok',
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
-        reviewExecution: enabled ? recent ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
-        testnetExecution: chain?.enabled === true ? controller?.observedAt > Date.now() - 300000 && executor?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
-        collaborationExecution: collaboration?.enabled === true ? serviceWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
+        projectAccess: publicAccess.projectAccess,
+        admission: publicAccess,
+        reviewExecution: enabled ? recent ? publicAccess.reviews.admission : 'worker_unavailable' : 'not_enabled',
+        testnetExecution: chain?.enabled === true ? controller?.observedAt > Date.now() - 300000 && executor?.observedAt > Date.now() - 300000 ? publicAccess.chainProfiles[0].admission : 'worker_unavailable' : 'not_enabled',
+        collaborationExecution: collaboration?.enabled === true ? serviceWorker?.observedAt > Date.now() - 300000 ? publicAccess.collaboration.admission : 'worker_unavailable' : 'not_enabled',
         walletExecution: wallets?.enabled === true ? walletWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         vaultExecution: vaults?.enabled === true ? vaultWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
-        portabilityExecution: portability?.enabled === true ? 'restricted_pilot' : 'not_enabled',
+        portabilityExecution: portability?.enabled === true ? publicAccess.collaboration.admission : 'not_enabled',
         inferenceExecution: 'not_enabled',
         contractIntakeExecution: intakeState,
         mainnetExecution: 'not_enabled' });
