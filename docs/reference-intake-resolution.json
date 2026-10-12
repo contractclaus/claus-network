@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-12T09:31:01.048Z",
+  "chainId": 11155111,
+  "requestId": "sha256:620af114646b9dcb1c26e36cfc6715e962ba8f7826a4d44bf1c97989e8defb0d",
+  "inbox": "0x01ec0bbb16aec60e823fa900cd5d725583f35898",
+  "transactionHash": "0x7c1cbeb530340bcdcd5ee894a568f482bbbdbc5ec1bde68dac75c7c8b8574d9b",
+  "blockNumber": 11897962,
+  "blockHash": "0xc1ad26a2e667a48f27ee0345379d96bd7ccfd0dcdaebec6f1fe573a826b9540f",
+  "finalized": false,
+  "decision": "approve",
+  "decisionHash": "sha256:dd11203bdda33af37fb3b9a8bc2c7424fc3e9ad7809237f4033f7d22d11ca50c",
+  "resultHash": "0x9d2ee72ec13c94278ff052d65636cbd408ed67ff226fe04365e347e1708c13b0",
+  "exactEventAndStoredResult": true,
+  "inboxCodeHash": "0x517ef000f0611660d644ec29c6ed22e30b9b78dbc143f535801c0fcf596a1064",
+  "gasCostWei": "260500781500",
+  "withinExistingBudget": true,
+  "callbackIncluded": false,
+  "executionCompleted": false
+}

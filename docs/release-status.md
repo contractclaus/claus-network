@@ -32,7 +32,7 @@ The [deployment manifest](deployments.json) records nine source-verified Sepolia
 
 The [published Inbox project and report](https://claus.si/p/claus-contract-inbox) are available in the explorer. The [Inbox assessment](reference-inbox-review.json) retains all ten findings and accepts only the bounded owner-operated Sepolia pilot. The [activation receipt](reference-intake-activation.json) pins one project, its verified Inbox, separate dispatcher and finite 0.0002-Sepolia-ETH budget. The requester is a separate reference contract, outside that independent Inbox audit. The [client example](contract-intake.md#client-example) was exercised against actual local bytecode, with no public transaction or fabricated Claus decision.
 
-The first finalized contract request received a genuine Claus approval and reached its [onchain queue](reference-intake-queue.json). The queue receipt confirms the full one-hour delay, with execution permitted no earlier than 12 October at 10:21:12 UTC. Callback finality and the subsequent execution are still pending.
+The first finalized contract request received a genuine Claus approval and reached its [onchain queue](reference-intake-queue.json). The queue receipt confirms the full one-hour delay, with execution permitted no earlier than 12 October at 10:21:12 UTC. The [result-resolution receipt](reference-intake-resolution.json) also matches the exact decision stored in the Inbox; that transaction is mined but not yet finalized. Callback finality and the subsequent execution are still pending.
 
 ## Release and recovery
 
