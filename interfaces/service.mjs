@@ -90,6 +90,7 @@ export function createService({identity,projects,builds,jobs,reviews,deployments
   project_import_history:(actor,input)=>transfers.history(actor,input.projectId,input),
   public_project:(_,input)=>projects.publicProject(input.slug),
   public_source:(_,input)=>projects.publicSource(input.sourceId),
+  public_review:(_,input)=>reviews.publicReport(input.caseId),
   network_graph:(_,input)=>projects.graph(input)
  };
  return {

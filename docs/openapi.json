@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.10.2"
+    "version": "0.10.3"
   },
   "servers": [
     {
@@ -5163,6 +5163,41 @@
         "parameters": [
           {
             "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "Revision or idempotency conflict"
+          }
+        }
+      }
+    },
+    "/v1/public/reviews/{caseId}": {
+      "get": {
+        "operationId": "public_review",
+        "security": [],
+        "parameters": [
+          {
+            "name": "caseId",
             "in": "path",
             "required": true,
             "schema": {

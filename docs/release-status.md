@@ -5,10 +5,10 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
-| Programmatic interfaces | API 0.10.2; 89 operations |
+| Programmatic interfaces | API 0.10.3; 90 operations |
 | Source snapshots and compilation | Live; explicit publication and bounded Solidity 0.8.27 or 0.8.26 compilation |
 | Network explorer | [Home](https://claus.si/Home) and project pages update from explicitly published registry records |
-| IMD reviews | Paid reference reviews completed; new work needs project admission and available sponsor funds |
+| IMD reviews | Paid reference reviews completed; published reports remain readable from stored artifacts during provider outages; new work needs project admission and available sponsor funds |
 | Claus approval and contract execution | Active for admitted Sepolia profiles; protected-change and native-vault references are finalized and published |
 | Services, project wallets and isolated project UIs | Active for admitted pilots; the Claus-operated reference paid two services, changed agents and retired its payment sessions |
 | Protected native vault | One owner-operated Sepolia reference complete; deposit, approved policy change and full principal withdrawal finalized, unchanged custody bytecode |
@@ -32,7 +32,9 @@ The [Inbox assessment](reference-inbox-review.json) retains all ten findings and
 
 ## Release and recovery
 
-API deployment: `dpl_5dKZKtBsqnfPtsNuiTYATr9eGcS3`, release `7ced78c9059f133c38fc8f0bea6e501e91c80e853c6830ceb7a1cd0711b84682`. All 99 uploaded files matched the prepared release. The source suite passed 362 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. API 0.10.2 automatically adds execution evidence to a previously published decision, while honoring withdrawal of publication. It also preserves compiler settings, original contract-result transactions and pending callbacks during [project export](portability.md); imports confer no active signing authority.
+API deployment: `dpl_DXLaBugxB1iNJoESsixn6dLpRoP2`, release `a2d8145766c82a049f676247aed30e81b4f91075ee0b80d29f4213c6956a3303`. All 99 uploaded files matched the prepared release. The source suite passed 364 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
+
+Exports preserve compiler settings, original contract-result transactions and pending callbacks during [project export](portability.md); imports confer no active signing authority.
 
 Both operator database snapshots were restored into disposable schemas and matched their original records, revisions and event sequences. The revoked credential remained denied. The encrypted remote bundle was read back, decrypted and compared. The [recovery receipt](reference-recovery.json) gives the checkpoint's actual date and coverage; later activity requires a newer checkpoint. It does not claim a production failover or continuous backup guarantee.
 

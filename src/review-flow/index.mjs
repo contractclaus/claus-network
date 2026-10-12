@@ -90,6 +90,25 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       requireThat(value.artifactHash, 'review_not_complete');
       return artifacts.get(projectId, value.artifactHash);
     },
+    async publicReport(caseId) {
+      const value = (await store.read('review-cases', text(caseId)))?.value;
+      requireThat(value?.state === 'reviewed' && value.artifactHash && value.providerJobId, 'not_found');
+      const project = (await store.read('projects', value.projectId))?.value;
+      const publication = (await store.read('review-publications', caseId))?.value;
+      const profile = project && (await store.read('public-projects', project.slug))?.value;
+      const source = (await store.read('public-sources', digest({ projectId: value.projectId, id: value.input.sourceHash })))?.value;
+      const evidence = (await store.read('public-evidence', value.projectId))?.value;
+      requireThat(project && !project.archivedAt && publication?.published === true && profile?.published === true &&
+        profile.projectId === value.projectId && source?.published === true &&
+        evidence?.reviews.some(item => item.id === caseId && item.artifactHash === value.artifactHash), 'not_found');
+      const artifact = await artifacts.get(value.projectId, value.artifactHash);
+      requireThat(artifact.complete === true && artifact.jobId === value.providerJobId &&
+        typeof artifact.report === 'string' && Buffer.byteLength(artifact.report) <= 1048576, 'review_report_invalid');
+      return { caseId, projectId: value.projectId, artifactHash: value.artifactHash,
+        provider: 'imd-audit-v1', providerJobId: value.providerJobId, report: artifact.report,
+        reportHash: digest(artifact.report), sourceKind: artifact.reportSource?.kind === 'accepted-audit-submission'
+          ? 'accepted-audit-submission' : 'provider-markdown' };
+    },
     async publish(actor, projectId, { caseId, published, expectedRevision }) {
       requireThat(typeof published === 'boolean' && Number.isSafeInteger(expectedRevision) && expectedRevision >= 0, 'invalid_publication');
       return store.transaction(async tx => {

@@ -12,6 +12,10 @@ The intended chain is source → build → independent review → Claus decision
 
 Required project permissions are `artifact.read`, `review.quote`, `review.admit` and `review.read`. Publication additionally requires `project.publish`. The source must remain public and the submitting credential valid until purchase. A workflow status of `failed` or `blocked` contains the specific reason. Status reads never buy another review.
 
+`public_review` retrieves the stored report at `GET /v1/public/reviews/{caseId}` without a credential, only while the review, its source and its project profile are published. The response contains the original report text, provider job ID, report hash and artifact hash. It excludes payment and provider-internal job data. Withdrawing any of those publications stops subsequent reads. Previously retrieved copies cannot be recalled.
+
+Explorer report links serve that stored text, so reading a completed report does not depend on the provider's Markdown endpoint being available. Reports reconstructed from an accepted IMD submission retain their original provenance notice and `accepted-audit-submission` source kind. This availability mechanism does not create a new review or turn findings into approval.
+
 An IMD audit currently costs at most 0.5 IMD within the supported profile. Price and terms are validated against each quote. Provider admission is purchased; a successful report or Claus approval is not guaranteed. Failed paid jobs retain their verified cost. Unknown payments are reconciled with the original order and are never automatically resent.
 
 ## Sponsor access

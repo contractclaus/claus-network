@@ -1,6 +1,6 @@
 # API reference
 
-The live API is 0.10.2 with 89 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+The live API is 0.10.3 with 90 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -92,6 +92,7 @@ The live API is 0.10.2 with 89 operations. Endpoint availability and operational
 | `project_import_history` | GET | `/v1/projects/{projectId}/import-history` | Artifact read capability |
 | `public_project` | GET | `/v1/public/projects/{slug}` | Public |
 | `public_source` | GET | `/v1/public/sources/{sourceId}` | Public |
+| `public_review` | GET | `/v1/public/reviews/{caseId}` | Public |
 | `network_graph` | GET | `/v1/public/graph` | Public |
 
 Errors contain `error` and `retryable`. Typical statuses: 400 invalid input, 401 missing/expired credential, 403 denied scope/origin, 404 unavailable resource, 409 revision/idempotency or active-work conflict, 429 admission capacity, and 503 temporary service failure. Do not infer success from a network timeout.
