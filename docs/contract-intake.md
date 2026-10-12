@@ -12,6 +12,52 @@ API 0.10.1 implements an asynchronous contract-request profile. On 12 October 20
 
 No website is required. There are four shared interface operations: binding creation, binding lookup, binding revocation and request lookup. Revocation stops new work; it does not undo a proposal or transaction already dispatched. Completed results remain available to authorized readers.
 
+## Client example
+
+The [reference client](../reference/contract-request-client.mjs) prepares calls for the source-verified `ClausRequestClient` contract. Use your own admitted project, deployed requester and controller. The live reference's requester belongs to Claus; its address is not a shared gateway for other projects.
+
+Create the binding with your existing authenticated SDK client. Store the exact body and returned ID before continuing; reuse them when recovering a lost response.
+
+```js
+const binding = await api.call('contract_binding_create', {
+  projectId,
+  requester: pin.requester,
+  expiresAt, // fixed future Unix timestamp in milliseconds
+  maxRequests: 1,
+  idempotencyKey: 'my-contract-binding-1'
+});
+```
+
+`pin` contains `chainId`, `inbox`, `codeHash` (the Inbox runtime hash), `requester`, `requesterCodeHash` and `controller`. Obtain these from the admitted deployment and your verified requester deployment, not from untrusted model output. `chain` is a viem public client for Sepolia; `api` is the authenticated network SDK client.
+
+```js
+import {
+  prepareContractRequest,
+  locateContractRequest
+} from './reference/contract-request-client.mjs';
+
+const prepared = await prepareContractRequest({
+  api, chain, projectId, bindingId: binding.id, pin,
+  input: { moduleId, configuration },
+  deadline // fixed future Unix timestamp in seconds, before binding expiry
+});
+```
+
+Preparation rereads the binding, checks both finalized runtimes and the requester controller, then simulates the call. It returns `prepared.transaction` with the exact chain, sender, recipient, data and zero value. It does not sign, fund or send. Use your existing durable wallet tooling to select gas and nonce, sign and submit once. Preserve the signed transaction hash before broadcast. A lost response requires reconciliation of that hash, not another call to `submit`.
+
+Save `prepared` alongside that original hash. Read its actual event to locate the network request:
+
+```js
+const located = await locateContractRequest({
+  chain, prepared, transactionHash: originalTransactionHash
+});
+const result = await api.call('contract_request_get', {
+  projectId, requestId: located.requestId
+});
+```
+
+The event lookup checks the canonical block, Inbox runtime, requester, binding and exact input. `located.finalized` describes the transaction's chain status. A network `404` before the finalized event is indexed means continue reading the same request ID; it is not a reason to submit again. A returned `proposal-decision` can be read through `proposal_get` to follow its separate delayed execution. Finish by revoking the binding with `contract_binding_revoke` and retiring any temporary agent mandate.
+
 ## Public data and limits
 
 Contract input, requester, result and evidence hashes are public. Do not include credentials, private source or personal information. Only the small decision receipt is returned; private review text is excluded. Input and output are bounded to 8 KiB; callback gas is bounded and the target is always the requester. The inbox cannot receive a user-supplied callback target or arbitrary value transfer.
