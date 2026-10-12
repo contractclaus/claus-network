@@ -62,12 +62,17 @@ export function createJobs({ store, identity, now = () => Date.now(), onCancel =
       integer(leaseMs, 1000, 300000);
       requireThat(Array.isArray(kinds) && kinds.length > 0, 'invalid_job_kinds');
       return store.transaction(async tx => {
-        // Persist the scan position so terminal history cannot starve newer work.
+        // Advance after each claim so a waiting job cannot monopolize its lane.
+        // Scan at most 1,000 rows and wrap once to retain prompt reconciliation.
         const scanKey = digest([...kinds].sort());
         const scan = after ? null : await tx.read('job-scan-cursors', scanKey);
-        const records = await tx.list('workflow-jobs', { after: after || scan?.value.after || '', limit: 1000 });
+        const start = after || scan?.value.after || '';
+        const records = await tx.list('workflow-jobs', { after: start, limit: 1000 });
+        if (!after && start && records.length < 1000) {
+          const wrapped = await tx.list('workflow-jobs', { limit: 1000 - records.length });
+          records.push(...wrapped.filter(record => record.id <= start));
+        }
         const nextCursor = records.length === 1000 ? records.at(-1).id : '';
-        if (!after) await tx.write('job-scan-cursors', scanKey, { after: nextCursor }, scan?.revision ?? 0);
         for (const record of records) {
           const value = record.value;
           if (!kinds.includes(value.kind) || !['queued', 'running', 'waiting'].includes(value.state) ||
@@ -76,8 +81,10 @@ export function createJobs({ store, identity, now = () => Date.now(), onCancel =
           const next = { ...value, state: 'running', attempts: value.attempts + 1,
             lease: { token, until: now() + leaseMs }, updatedAt: now() };
           await tx.write('workflow-jobs', value.id, next, record.revision);
+          if (!after) await tx.write('job-scan-cursors', scanKey, { after: value.id }, scan?.revision ?? 0);
           return { id: value.id, token, job: copy(next), mode: value.effect === 'not_started' ? 'dispatch' : 'reconcile' };
         }
+        if (!after) await tx.write('job-scan-cursors', scanKey, { after: nextCursor }, scan?.revision ?? 0);
         return { idle: true, nextCursor: nextCursor || null };
       });
     },
