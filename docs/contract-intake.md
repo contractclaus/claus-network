@@ -1,6 +1,6 @@
 # Contract requests
 
-Since API 0.10.1, the network implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The first finalized request received a genuine Claus approval. Its original 200,000-gas reference receiver failed to accept the callback; the stored Inbox result and queued upgrade remain intact. Receipt recovery is in progress. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
+Since API 0.10.1, the network implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The first finalized request received a genuine Claus approval. Its original 200,000-gas reference receiver failed to accept the callback; the stored Inbox result and queued upgrade remain intact. The [canonical result has been recovered](reference-intake-recovery.json) into the source-verified replacement receiver, with finalized chain readback. The original queued upgrade remains pending. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
 
 ## Flow
 
@@ -90,4 +90,4 @@ The replacement `ClausRequestClient` also exposes `syncResult(id, resultBytes)`.
 
 The controller alone may call `recoverResult(id, resultBytes)` to copy a result from an earlier client with the same controller and Inbox. It verifies the original client's request and the Inbox's immutable result, then emits `ResultRecovered` with the original requester. It does not create another request, review, decision or upgrade. The old client's failed callback remains part of the history.
 
-These client changes have local contract and EVM coverage; the replacement is not part of the earlier independent Inbox audit. Check the release receipts for its actual deployment and recovery status.
+These client changes have local contract and EVM coverage; the replacement is not part of the earlier independent Inbox audit. The [recovery receipt](reference-intake-recovery.json) records the finalized original-result recovery. This is a successful recovery path, not a successful legacy callback or a fresh live callback test.

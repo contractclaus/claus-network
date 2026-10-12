@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-12T10:16:19.854Z",
+  "state": "result_recovered",
+  "chainId": 11155111,
+  "projectId": "prj_6a2a275a-abc7-4e29-b91e-4e004ebb58ef",
+  "requestId": "sha256:620af114646b9dcb1c26e36cfc6715e962ba8f7826a4d44bf1c97989e8defb0d",
+  "onchainRequestId": "0xc6daae9230e08b66c9a0e0389dee579dd9289a4ac9d8fe54839c24a214914561",
+  "inbox": "0x01ec0bbb16aec60e823fa900cd5d725583f35898",
+  "originalRequester": "0x7b4e7112735c2a597b7e2880a3aa85e277b8d457",
+  "receiver": "0x7926d06961c9f37a585173a7a3dd6079cc574354",
+  "receiverCodeHash": "0xeca5262421c26d2f093811cf666f963a2f2369198b23d4b89539054ebf515994",
+  "transactionHash": "0x1aa2b2174feae5e7f852634feda705c30e481feedd5be76a13083727e65ddcc7",
+  "blockNumber": "11898162",
+  "finalizedBlock": "11898167",
+  "resultHash": "0x9d2ee72ec13c94278ff052d65636cbd408ed67ff226fe04365e347e1708c13b0",
+  "evidenceHash": "0xdd11203bdda33af37fb3b9a8bc2c7424fc3e9ad7809237f4033f7d22d11ca50c",
+  "originalCallbackDelivered": false,
+  "newRequestCreated": false,
+  "newReviewPurchased": false,
+  "scope": "Controller-authorized recovery of the original canonical result; not a successful legacy callback or completed upgrade"
+}
