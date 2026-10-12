@@ -74,3 +74,19 @@ test('terminal history cannot starve work beyond the first scan page', async t =
   assert.equal((await f.jobs.claim({ kinds: ['review'] })).id, 'z-new');
   assert.equal((await f.jobs.claim({ kinds: ['review'] })).idle, true);
 });
+
+test('waiting jobs rotate fairly while uncertain effects retain their identity', async t => {
+  const f = await fixture(t);
+  const pending = await Promise.all(['one', 'two', 'three'].map(idempotencyKey => f.enqueue({ idempotencyKey })));
+  const ids = pending.map(x => x.id).sort(), seen = [];
+  await f.enqueue({ kind: 'unrelated', idempotencyKey: 'other-kind' });
+  for (let i = 0; i < 9; i++) {
+    const claim = await f.jobs.claim({ kinds: ['review'] });
+    seen.push(claim.id); assert.equal(claim.job.effectKey, claim.id);
+    assert.equal(claim.mode, i < 3 ? 'dispatch' : 'reconcile');
+    if (claim.mode === 'dispatch') await f.jobs.beginEffect(claim, async () => true);
+    await f.jobs.finish(claim, { state: 'waiting', retryAt: f.now() + 30000 });
+    f.advance(60000);
+  }
+  assert.deepEqual(seen, [...ids, ...ids, ...ids]);
+});
