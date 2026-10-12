@@ -68,7 +68,8 @@ export function openStore(path) {
         write(collection, id, value, expectedRevision) {
           assertActive(); text(collection); text(id); integer(expectedRevision);
           const body = canonical(value);
-          requireThat(Buffer.byteLength(body) <= 65536, 'document_too_large');
+          // Match PostgreSQL: bounded transaction intent plus sealed raw bytes.
+          requireThat(Buffer.byteLength(body) <= (collection === 'chain-transactions' ? 393216 : 65536), 'document_too_large');
           requireThat((read(collection, id)?.revision ?? 0) === expectedRevision, 'revision_conflict');
           if (!expectedRevision) db.prepare('INSERT INTO documents VALUES (?,?,1,?)').run(collection, id, body);
           else requireThat(db.prepare(`UPDATE documents SET revision=revision+1,body=?

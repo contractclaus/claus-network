@@ -20,8 +20,8 @@ const file = new URL('api-reference.md', docs);
 let text = await readFile(file, 'utf8');
 const current = /\| Operation \| Method \| Path \| Access \|\n\| --- \| --- \| --- \| --- \|(?:\n\|[^\n]+\|)+/;
 if (!current.test(text)) throw new Error('API reference table not found');
-text = text.replace(current, () => table).replace(/The live API is [\d.]+ with \d+ operations\./,
-  `The live API is ${API_VERSION} with ${ROUTES.length} operations.`);
+text = text.replace(current, () => table).replace(/(?:The live API is|This source describes API) [\d.]+ with \d+ operations\./,
+  `This source describes API ${API_VERSION} with ${ROUTES.length} operations.`);
 await writeFile(file, text);
 await writeFile(new URL('openapi.json', docs), JSON.stringify(openapi({ origin }), null, 2) + '\n');
 console.log(JSON.stringify({ version: API_VERSION, operations: ROUTES.length }));

@@ -7,13 +7,14 @@ import { digest } from '../src/shared/index.mjs';
 import { createSealer } from '../adapters/secrets.mjs';
 import { admitContractDispatchBudget, revokeContractDispatchBudget, createContractDelivery } from '../adapters/contract-delivery.mjs';
 
-async function fixture(t, callback = false) {
+async function fixture(t, callback = false, publicAdmission = false) {
   const store = openStore(':memory:'); t.after(() => store.close());
   const signer = privateKeyToAccount(generatePrivateKey());
   const inbox = '0x' + '22'.repeat(20), codeHash = '0x' + '33'.repeat(32), now = Date.now();
   const budget = { id: 'fixture-budget', chainId: 11155111, dispatcher: signer.address.toLowerCase(), inbox,
     codeHash, projectIds: ['project-a'], expiresAt: now + 86400000, maximumTotal: '1000000000000',
     maximumTransaction: '200000000000', maximumGas: '1000000', maximumFeePerGas: '1000000' };
+  if (publicAdmission) { budget.projectIds = []; budget.admissionMode = 'public-readonly-v1'; }
   await admitContractDispatchBudget(store, budget);
   const observation = { inbox, codeHash, requester: '0x' + '44'.repeat(20), deadline: Math.floor(now / 1000) + 3600 };
   const request = { id: digest({ fixture: 1 }), projectId: 'project-a', bindingId: 'binding-a', state: 'result_ready',
@@ -43,7 +44,7 @@ async function fixture(t, callback = false) {
       blockNumber: Number(currentHeight), finalized: true }) };
   const identity = { authorize: async () => { if (++identityChecks >= denyAt) throw Object.assign(Error('denied'), { code: 'scope_denied' }); } };
   let admissionChecks = 0, withdrawAdmissionAt = Infinity;
-  const make = () => createContractDelivery({ store, client, signer, sealer: createSealer('11'.repeat(32)), chain, identity, budget,
+  const make = (selectedBudget = budget) => createContractDelivery({ store, client, signer, sealer: createSealer('11'.repeat(32)), chain, identity, budget: selectedBudget,
     admitted: async (_reader, projectId) => projectId === 'project-a' && ++admissionChecks < withdrawAdmissionAt, now: () => now });
   const input = { id: digest({ requestId: request.id, action: 'result-delivery' }), request, allowSubmit: true };
   return { store, budget, make, input, client, broadcasts: () => broadcasts, denyAt: n => { denyAt = n; },
@@ -138,4 +139,33 @@ test('concurrent workers share one reservation and one broadcast', async t => {
   assert.equal(f.broadcasts(), 1);
   assert.equal((await f.ledger()).reserved, '135000000000');
   assert.equal((await f.store.list('chain-transactions')).length, 1);
+});
+
+test('public callback budget uses current project admission without an operator-maintained project list', async t => {
+  const allowed = await fixture(t, true, true);
+  await allowed.make().step(allowed.input); allowed.confirm();
+  await allowed.make().step(allowed.input); allowed.confirm();
+  assert.equal((await allowed.make().step(allowed.input)).state, 'delivered');
+  assert.equal(allowed.broadcasts(), 2);
+  assert.equal((await allowed.ledger()).spent, '180000000000');
+  const revoked = await fixture(t, false, true); revoked.withdrawAdmissionAt(3);
+  assert.equal((await revoked.make().step(revoked.input)).state, 'closed');
+  assert.equal(revoked.broadcasts(), 0);
+  assert.equal((await revoked.ledger()).reserved, '0');
+  await assert.rejects(admitContractDispatchBudget(revoked.store, {...revoked.budget, id:'invalid-mode', admissionMode:'all'}), {code:'invalid_dispatch_budget'});
+  await assert.rejects(admitContractDispatchBudget(revoked.store, {...revoked.budget, id:'ambiguous', projectIds:['project-a']}), {code:'invalid_dispatch_budget'});
+});
+
+test('selecting a new public budget reconciles a pending old transaction against its original ledger', async t => {
+  const f = await fixture(t);
+  await f.make().step(f.input);
+  const next = {...f.budget, id:'public-next', admissionMode:'public-readonly-v1', projectIds:[]};
+  await admitContractDispatchBudget(f.store, next);
+  await revokeContractDispatchBudget(f.store, f.budget.id);
+  f.confirm();
+  assert.equal((await f.make(next).step({...f.input,allowSubmit:false})).state,'delivered');
+  assert.equal((await f.ledger()).spent,'90000000000');
+  assert.equal((await f.ledger()).reserved,'0');
+  const fresh=(await f.store.read('contract-dispatch-budgets',next.id)).value;
+  assert.equal(fresh.spent,'0');assert.equal(fresh.reserved,'0');assert.equal(f.broadcasts(),1);
 });

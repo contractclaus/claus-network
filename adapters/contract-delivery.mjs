@@ -8,11 +8,14 @@ const BUDGETS = 'contract-dispatch-budgets', RESERVATIONS = 'contract-dispatch-r
 // another grant requires the operator's separate financial authorization.
 export async function admitContractDispatchBudget(store, config) {
   shape(config, ['id', 'chainId', 'dispatcher', 'inbox', 'codeHash', 'projectIds', 'expiresAt',
-    'maximumTotal', 'maximumTransaction', 'maximumGas', 'maximumFeePerGas']);
+    'maximumTotal', 'maximumTransaction', 'maximumGas', 'maximumFeePerGas',
+    ...(Object.hasOwn(config, 'admissionMode') ? ['admissionMode'] : [])]);
+  const publicAdmission = config.admissionMode === 'public-readonly-v1';
+  requireThat(!Object.hasOwn(config, 'admissionMode') || publicAdmission, 'invalid_dispatch_budget');
   text(config.id); integer(config.expiresAt, 1);
   requireThat(config.chainId === 11155111 && address(config.dispatcher) && address(config.inbox) &&
     /^0x[0-9a-f]{64}$/.test(config.codeHash) && Array.isArray(config.projectIds) &&
-    config.projectIds.length > 0 && config.projectIds.length <= 100 &&
+    (publicAdmission ? config.projectIds.length === 0 : config.projectIds.length > 0 && config.projectIds.length <= 100) &&
     new Set(config.projectIds).size === config.projectIds.length, 'invalid_dispatch_budget');
   config.projectIds.forEach(value => text(value));
   const total = amount(config.maximumTotal), perTransaction = amount(config.maximumTransaction);
@@ -39,9 +42,28 @@ export async function revokeContractDispatchBudget(store, id, now = Date.now()) 
 
 // One bounded resolve and one bounded callback attempt per request. Unknown
 // broadcasts are reconciled by their original hash, including after revocation.
-export function createContractDelivery({ store, client, signer, sealer, chain, identity, budget,
-  admitted = async () => true, now = () => Date.now() }) {
+export function createContractDelivery(options) {
+  const current = createBoundContractDelivery(options);
+  return { async step(input) {
+    requireThat(input.id === digest({ requestId: input.request.id, action: 'result-delivery' }), 'dispatch_id_mismatch');
+    const original = (await options.store.read('chain-transactions', 'contract-delivery:' + input.id + ':resolve'))?.value;
+    const budgetId = original?.intent?.authority?.budgetId;
+    if (!budgetId || budgetId === options.budget.id) return current.step(input);
+    const prior = (await options.store.read(BUDGETS, budgetId))?.value.config;
+    requireThat(prior && prior.chainId === options.budget.chainId && prior.inbox === options.budget.inbox &&
+      prior.codeHash === options.budget.codeHash && prior.dispatcher === options.budget.dispatcher,
+    'dispatch_budget_mismatch');
+    // A newly selected allocation never rewrites a pending transaction's
+    // original authority, deadline or spending ledger.
+    return createBoundContractDelivery({ ...options, budget: prior }).step(input);
+  } };
+}
+
+function createBoundContractDelivery({ store, client, signer, sealer, chain, identity, budget,
+  admitted = null, now = () => Date.now() }) {
   requireThat(signer.address.toLowerCase() === budget.dispatcher, 'dispatch_signer_mismatch');
+  const publicAdmission = budget.admissionMode === 'public-readonly-v1';
+  requireThat(!publicAdmission || typeof admitted === 'function', 'dispatch_admission_required');
   const configHash = digest(budget);
   async function budgetRow(reader) {
     const row = await reader.read(BUDGETS, budget.id);
@@ -51,8 +73,9 @@ export function createContractDelivery({ store, client, signer, sealer, chain, i
   }
   async function active(reader, request) {
     const row = await budgetRow(reader);
-    if (row.value.revokedAt || budget.expiresAt <= now() || !budget.projectIds.includes(request.projectId)) return false;
-    if (await admitted(reader, request.projectId) !== true) return false;
+    if (row.value.revokedAt || budget.expiresAt <= now() ||
+      (!publicAdmission && !budget.projectIds.includes(request.projectId))) return false;
+    if (admitted && await admitted(reader, request.projectId) !== true) return false;
     const binding = (await reader.read('contract-bindings', request.bindingId))?.value;
     if (!binding || binding.projectId !== request.projectId || binding.revokedAt || binding.expiresAt <= now() ||
       binding.inbox !== budget.inbox || binding.codeHash !== budget.codeHash ||

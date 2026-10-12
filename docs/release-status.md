@@ -33,6 +33,12 @@ The owner authorized a finite seven-day public review and Sepolia start allocati
 
 API 0.11.1 separates public review admission counters from the historical pilot pool. Owner-only pilot limits can be adjusted with an expected revision; accumulated use, financial reservations and public lifetime limits are retained. The additional 36 core/review checks passed.
 
+## Prepared source 0.11.2
+
+The source supports admission-based public callback budgets while retaining each pending transaction’s original budget and ledger. Internal signed-transaction records have a separate bounded storage limit; ordinary project documents remain limited to 64 KiB. The release gate passed 383 tests with ten optional environment skips; the new journal boundary was also checked on real PostgreSQL. These source changes do not activate public reviews or contracts. The deployed API remains 0.11.1 until its separate source-verified release.
+
+The `ClausContentDigest` module is a minimal, separately identified example for the upcoming public contract lifecycle. It hashes content within a configurable namespace and cannot hold or transfer funds. It is not independently reviewed or deployed at this checkpoint.
+
 ## Verified references
 
 The [protected-change receipt](reference-lens.json) binds the genuine Claus decision, exact execution and finalized balance readback. The earlier rejected proposal remains part of the history; it was not converted into an approval.
