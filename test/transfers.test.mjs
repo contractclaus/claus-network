@@ -131,3 +131,24 @@ test('a transferred project may withdraw its source publications but cannot publ
   assert.equal(await f.a.identity.allowed(other, 'project.publish', { projectId: id, withdrawal: true }), false);
   assert.equal(await f.a.identity.allowed(f.actorA, 'wallet.pay', { projectId: id, withdrawal: true }), false);
 });
+
+test('contract intake remains attributed history after transfer, with no revived binding or transaction', async t => {
+  const f = await fixture(t), projectId = f.project.id;
+  await f.source.transaction(async tx => {
+    await tx.write('contract-bindings', 'binding', { id: 'binding', projectId, revokedAt: 123, actor: { secret: 'NO_AUTHORITY' } }, 0);
+    await tx.write('contract-requests', 'request', { id: 'request', projectId, state: 'result_ready', delivery: { state: 'pending' } }, 0);
+    await tx.write('chain-transactions', 'original-callback', { id: 'original-callback', state: 'unknown', hash: 'original-hash',
+      intent: { authority: { kind: 'contract-result', requestId: 'request', action: 'callback' } }, sealedRaw: 'NO_SIGNATURE' }, 0);
+  });
+  const header = await f.prepare(); await f.copy(header); f.closeSource();
+  await f.transfersB.commit(f.actorB, header.id);
+  for (const [collection, id] of [['contract-bindings', 'binding'], ['contract-requests', 'request'], ['chain-transactions', 'original-callback']])
+    assert.equal(await f.destination.read(collection, id), null);
+  const records = [];
+  for (let page = 0; page < header.manifest.pages.length; page++)
+    records.push(...await f.transfersB.history(f.actorB, projectId, { page }));
+  assert.equal(records.find(r => r.collection === 'contract-bindings').value.revokedAt, 123);
+  assert.equal(records.find(r => r.collection === 'chain-transactions').value.hash, 'original-hash');
+  assert.equal(JSON.stringify(records).includes('NO_SIGNATURE'), false);
+  assert.equal(JSON.stringify(records).includes('NO_AUTHORITY'), false);
+});

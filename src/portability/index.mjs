@@ -8,13 +8,13 @@ const MAX_BYTES = 64000000, MAX_RECORDS = 40000, PAGE_SIZE = 100, PAGE_BYTES = 2
 const FIELDS = Object.freeze({
   snapshots: 'id projectId files createdAt',
   artifacts: 'projectId path content hash',
-  builds: 'id projectId snapshotId entry contract requestHash state artifactHash admissionVersion createdAt completedAt evidenceLevel error',
+  builds: 'id projectId jobId snapshotId entry contract compilerProfile sourceRoot requestHash state artifactHash admissionVersion createdAt completedAt evidenceLevel error',
   'review-cases': 'id projectId buildId input inputHash state quoteJobId quoteId reviewJobId executionJobId artifactHash providerJobId sourceBinding createdAt',
   'review-quotes': 'id projectId inputHash requestHash offer policyRefs feeTerms sponsored sponsorAccount projectAccount maximum',
   'review-jobs': 'id projectId quoteId inputHash requestHash work billing maximum policyRefs cancelledAt reason providerJobId completedAt artifactHash actual costReceiptId',
   'inference-requests': 'id projectId requestHash inputHash profileHash jobId work billing actual providerRequestId outputHash receiptHash createdAt',
   'contract-bindings': 'id projectId requester expiresAt maxRequests chainId inbox codeHash capability configHash used revokedAt createdAt',
-  'contract-requests': 'id projectId bindingId jobId observation observationHash state proposalId result delivery createdAt updatedAt',
+  'contract-requests': 'id projectId bindingId jobId observation observationHash state proposalId result delivery error createdAt updatedAt',
   'chain-modules': 'id projectId caseId buildId artifactHash state jobId chainId expiresAt createdAt updatedAt address transactionHash codeHash verification error',
   'chain-registrations': 'id projectId moduleId mandateId domain types primaryType message state createdAt jobId chainId address transactionHash codeHash verification binding error updatedAt',
   'chain-bindings': 'projectId registrationId moduleId chainId target executor owner projectKey profile minDelaySeconds transactionHash codeHash verification',
@@ -114,13 +114,22 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
         // These publications are indexed by case/proposal ID rather than owner.
         const proposalIds = new Set(records.filter(r => r.collection === 'chain-proposals').map(r => r.id));
         const actionIds = new Set(records.filter(r => r.collection === 'wallet-actions').map(r => r.id));
+        const contractRequestIds = new Set(records.filter(r => r.collection === 'contract-requests').map(r => r.id));
         await all(tx, 'imd-payments', row => offerIds.has(row.id), row => add('imd-payments', row,
           select(row.value, 'id offerId state amount payer updatedAt paymentHash'), 'safe-fields'));
         await all(tx, 'chain-transactions', row => {
           const scope = row.value.intent?.authority;
-          return scope && (scope.projectId === projectId || proposalIds.has(scope.proposalId) || actionIds.has(scope.actionId));
-        }, row => add('chain-transactions', row,
-          select(row.value, 'id intentHash sender nonce state hash gas maxFeePerGas createdAt submittedAt completedAt receipt'), 'safe-fields'));
+          return scope && (scope.projectId === projectId || proposalIds.has(scope.proposalId) || actionIds.has(scope.actionId) ||
+            (scope.kind === 'contract-result' && contractRequestIds.has(scope.requestId)));
+        }, row => {
+          const scope = row.value.intent.authority;
+          const value = select(row.value, 'id intentHash sender nonce state hash gas maxFeePerGas createdAt submittedAt completedAt receipt');
+          if (scope.kind === 'contract-result' && contractRequestIds.has(scope.requestId)) {
+            value.contractRequestId = scope.requestId;
+            value.deliveryAction = scope.action;
+          }
+          add('chain-transactions', row, value, 'safe-fields');
+        });
         for (const [collection, ids] of [['review-publications', caseIds], ['proposal-publications', proposalIds]]) {
           await all(tx, collection, row => ids.has(row.id), row => add(collection, row));
         }
@@ -165,7 +174,19 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
           omitted: [...OMITTED], pendingEffects: records.filter(r => r.collection === 'workflow-jobs' &&
             !['complete', 'failed', 'cancelled'].includes(r.value.state)).map(r => ({ id: r.id,
               kind: r.value.kind, state: r.value.state, effect: r.value.effect, effectKey: r.value.effectKey,
-              disposition: 'retain-at-source; reconcile original identity; never re-purchase' })) };
+              disposition: 'retain-at-source; reconcile original identity; never re-purchase' })).concat(
+              records.filter(r => r.collection === 'contract-requests' && r.value.state === 'result_ready' &&
+                !['delivered', 'closed', 'failed'].includes(r.value.delivery?.state)).map(r => ({
+                id: r.id, kind: 'contract-result-delivery', state: r.value.delivery?.state ?? 'pending',
+                effect: 'result_pending', effectKey: r.id,
+                disposition: 'retain-at-source; reconcile original request and transactions; never re-dispatch at destination'
+              })),
+              records.filter(r => r.collection === 'chain-transactions' && r.value.contractRequestId &&
+                !['confirmed', 'reverted', 'cancelled'].includes(r.value.state)).map(r => ({
+                id: r.id, kind: 'contract-result-transaction', state: r.value.state,
+                effect: 'outcome_unknown', effectKey: r.id, transactionHash: r.value.hash,
+                disposition: 'retain-at-source; reconcile original transaction; never re-sign at destination'
+              }))) };
         const signature = sign(null, Buffer.from(canonical(manifest)), key).toString('base64');
         return { id: digest(manifest), manifest, signature, pages };
       };

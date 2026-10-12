@@ -113,3 +113,36 @@ test('inference export retains outcomes without carrying provider accounts or al
   assert.equal(await f.app.identity.allowed(f.actor, 'inference.read', { projectId }), true);
   assert.equal(await f.app.identity.allowed(f.actor, 'inference.submit', { projectId }), false);
 });
+
+test('archive preserves selected compiler identity and unresolved contract delivery without signing authority', async t => {
+  const f = await fixture(t), projectId = f.project.id;
+  await f.store.transaction(async tx => {
+    await tx.write('builds', 'build', { id: 'build', projectId, jobId: 'compile-job',
+      compilerProfile: 'solidity-0.8.26-static-v1', sourceRoot: 'market-contracts', state: 'compiled' }, 0);
+    await tx.write('contract-bindings', 'binding', { id: 'binding', projectId, revokedAt: 123,
+      actor: { credential: 'PRIVATE_BINDING_AUTHORITY' } }, 0);
+    await tx.write('contract-requests', 'request', { id: 'request', projectId, bindingId: 'binding',
+      state: 'result_ready', result: { decision: 'approve' }, delivery: { state: 'pending' } }, 0);
+    await tx.write('contract-requests', 'blocked', { id: 'blocked', projectId, state: 'blocked', error: 'scope_denied' }, 0);
+    await tx.write('workflow-jobs', 'intake-job', { id: 'intake-job', projectId, kind: 'contract-intake', state: 'complete' }, 0);
+    await tx.write('chain-transactions', 'original-resolve', { id: 'original-resolve', state: 'unknown', hash: 'original-hash',
+      intent: { authority: { kind: 'contract-result', requestId: 'request', action: 'resolve', budgetId: 'PRIVATE_BUDGET' } },
+      sealedRaw: 'PRIVATE_RAW' }, 0);
+    await tx.write('chain-transactions', 'other-project', { id: 'other-project', state: 'unknown', hash: 'FOREIGN_HASH',
+      intent: { authority: { kind: 'contract-result', requestId: 'foreign', action: 'resolve' } } }, 0);
+  });
+  const archive = await f.archives.export(f.actor, projectId), checked = verifyProjectArchive(archive, f.trust);
+  const build = checked.records.find(r => r.collection === 'builds').value;
+  assert.equal(build.jobId, 'compile-job');
+  assert.equal(build.compilerProfile, 'solidity-0.8.26-static-v1');
+  assert.equal(build.sourceRoot, 'market-contracts');
+  const transaction = checked.records.find(r => r.collection === 'chain-transactions').value;
+  assert.equal(transaction.contractRequestId, 'request'); assert.equal(transaction.deliveryAction, 'resolve');
+  assert.equal(transaction.hash, 'original-hash');
+  assert.equal(checked.records.find(r => r.id === 'blocked').value.error, 'scope_denied');
+  assert.equal(checked.records.find(r => r.collection === 'contract-bindings').value.revokedAt, 123);
+  assert(checked.manifest.pendingEffects.some(p => p.kind === 'contract-result-delivery' && p.id === 'request'));
+  assert(checked.manifest.pendingEffects.some(p => p.kind === 'contract-result-transaction' && p.effectKey === 'original-resolve'));
+  for (const secret of ['PRIVATE_BINDING_AUTHORITY', 'PRIVATE_BUDGET', 'PRIVATE_RAW', 'FOREIGN_HASH'])
+    assert.equal(JSON.stringify(archive).includes(secret), false);
+});

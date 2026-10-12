@@ -5,7 +5,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | State |
 | --- | --- |
 | Owner login, project identity and delegated agents | Live |
-| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.10.0 |
+| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.10.1 |
 | Source snapshots and explicit publication | Live |
 | Bounded Solidity compilation | Live; scheduled isolated compiler |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
@@ -24,7 +24,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Independent pilot | Procedure prepared; no independent participant has completed it |
 | GitBook publication | Optional mirror of public source docs; account connection still required |
 
-API deployment: `dpl_T3VzcjQmCmmuSKa9WBLzFwg2jtch`, release `e0b0651ee3525703e5426e152478935458e139c00484b85a04d5a9378f832c94`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
+API deployment: `dpl_6VgL7CJzx97GHvQeRR1VLhDwsArW`, release `a8f8354434ac8b191b77738f93772fed2f0861671c360a53a57cde1a11eefa52`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 
@@ -58,3 +58,5 @@ API 0.10 adds explicit Solidity 0.8.26 compilation and repository-relative sourc
 
 
 The [contract-intake activation](reference-intake-activation.json) pins the exact verified Inbox, API release and dispatcher for one Claus-owned Sepolia reference. Its finite budget does not admit other projects. The requester is a separate reference contract; its verification and complete genuine callback acceptance are tracked independently.
+
+API 0.10.1 preserves compiler profiles, source roots and pending contract-result transaction history in signed project archives. Completed intake jobs cannot hide an unresolved callback. Imported records remain history and confer no signing rights. All 360 enabled source tests passed; eight environment-specific cases were skipped. The existing intake project, Inbox, dispatcher and budget remain unchanged.
