@@ -1,6 +1,12 @@
 {
   "modules": [
     {
+      "id": "inference",
+      "path": "src/inference/",
+      "imports": ["shared", "billing"],
+      "builtins": []
+    },
+    {
       "id": "shared",
       "path": "src/shared/",
       "imports": [],

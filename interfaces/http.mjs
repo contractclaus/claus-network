@@ -15,7 +15,10 @@ const errors={unauthenticated:401,invalid_signature:401,challenge_expired:401,sc
  invalid_archive_signature:400,archive_key_mismatch:400,archive_pages_mismatch:400,unsupported_archive:400,
  dependency_code_missing:409,dependency_indirection_unsupported:400,dependency_delegation_unsupported:400,
  dependency_proxy_unsupported:400,dependency_evidence_mismatch:409,dependency_code_changed:409,evidence_block_changed:409,
- build_evidence_mismatch:409};
+ build_evidence_mismatch:409,inference_disabled:409,inference_profile_unavailable:409,inference_profile_changed:409,
+ inference_profile_immutable:409,inference_allowance_unavailable:403,inference_allowance_exhausted:409,
+ inference_allowance_below_exposure:409,inference_request_outside_profile:400,inference_quote_unverified:409,
+ inference_quote_mismatch:409,inference_output_unavailable:409};
 export const errorStatus=error=>errors[error.code]??(/^(invalid_|unknown_|missing_|duplicate_|value_|file_|snapshot_|document_)/.test(error.code??'')?400:503);
 export const errorBody=error=>({error:error.code&&errorStatus(error)!==503?error.code:'service_unavailable',retryable:errorStatus(error)>=500,
  ...(errorStatus(error)===400&&typeof error.field==='string'&&error.field.length<200?{field:error.field}:{})});

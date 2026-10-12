@@ -1,6 +1,6 @@
 # Native vault candidate
 
-The external vault report is assessed for a restricted Sepolia profile, with no medium or higher findings. The separate admission-policy review is still pending. The profile is not activated. Its API and isolated worker are deployed, with new vault deployments disabled. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
+The external vault and admission-policy reports are assessed for a restricted Sepolia profile, with no medium or higher findings. The policy report contains one low and four informational findings; the accepted profile and limitations are described below. The profile is not activated. Its API and isolated worker are deployed, with new vault deployments disabled. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
 
 `ClausNativeVault` records each depositor's native-ETH principal. Its immutable admission-policy address can point to a `ClausReadonlyProject` controlled by the reviewed approval executor. Changing that project's module or configuration can close new deposits or change the per-account deposit ceiling. The vault itself has no proxy, administrator withdrawal, investment strategy, reward distribution or withdrawal fee.
 
@@ -8,7 +8,7 @@ Withdrawals never call the admission policy. Each account can withdraw its own r
 
 The policy call is read-only, gas-bounded and accepts only the exact 128-byte ABI encoding of a `bytes` result containing `(bool,uint256)`. A malformed or oversized response rejects the deposit. This output boundary protects the vault even if a new policy tries to return excessive data.
 
-Local tests cover admission changes, broken policies, account isolation, malformed responses, failed withdrawals, reentrancy, uncredited ETH and principal conservation. These tests do not replace independent review or real deployment evidence. The dedicated API path and constructor checks are implemented and locally tested; independent review assessment, hosted worker activation and a public testnet lifecycle proof remain required. Mainnet custody and token launches are separate decisions.
+Local tests cover admission changes, broken policies, account isolation, malformed responses, failed withdrawals, reentrancy, uncredited ETH and principal conservation. These tests do not replace independent review or real deployment evidence. The dedicated API path and constructor checks are implemented and locally tested; hosted worker activation and a public testnet lifecycle proof remain required. Mainnet custody and token launches are separate decisions.
 
 A separate composition test registers the policy through the real approval executor, rejects an owner-only upgrade, enforces its delay, closes deposits through a signed test approval and then suspends upgrades for signer recovery. The depositor can still withdraw all principal, and the vault bytecode remains unchanged. The signatures in this test are fixtures, not an actual Claus decision.
 

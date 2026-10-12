@@ -24,21 +24,23 @@ import {createWalletRead} from '../adapters/wallet-read.mjs';
 import {createReleases} from '../src/releases/index.mjs';
 import {createVaults} from '../src/vaults/index.mjs';
 import {createVaultRead} from '../adapters/vault-read.mjs';
+import {createInference} from '../src/inference/index.mjs';
 import {createProjectArchives} from '../src/portability/index.mjs';
 import {createProjectTransfers} from '../src/transfers/index.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={}}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={}}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  const identity=createIdentity({store,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
  let services,releases;
  const projects=createProjects({store,identity,now,publicDetails:async projectId=>({
   services:await services.publicForProject(projectId),releases:await releases.publicForProject(projectId)
  })});
- let reviewSystem,deployments,approvals,wallets,vaults;
+ let reviewSystem,deployments,approvals,wallets,vaults,inference;
  const jobs=createJobs({store,identity,now,onCancel:async(tx,job)=>{
   await reviewSystem.flow.onCancel(tx,job);await deployments.onCancel(tx,job);await approvals.onCancel(tx,job);await wallets.onCancel(tx,job);
   await vaults.onCancel(tx,job);
+  await inference.onCancel(tx,job);
  }});
  const artifacts=createArtifactStore({store});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now});
@@ -63,7 +65,10 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const portabilityAdmission=async reader=>requireThat((await reader.read('network-capabilities','portability'))?.value.enabled===true,'portability_not_enabled');
  const transfers=createProjectTransfers({store,identity,artifacts,archives,now,admitImport:portabilityAdmission,
   admit:async(projectId,reader)=>{await portabilityAdmission(reader);await collaborationAdmission(projectId,reader);},...operatorPorts});
- const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers});
+ inference=createInference({store,identity,jobs,artifacts,now,provider:inferencePorts.provider,
+  verifyQuote:inferencePorts.verifyQuote,verifyReceipt:inferencePorts.verifyReceipt,
+  enabled:async reader=>inferencePorts.enabled===true&&(await reader.read('network-capabilities','inference'))?.value.enabled===true});
+ const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference});
  const admit=async({route,peer})=>store.transaction(async tx=>{
   const window=Math.floor(now()/300000);
   const group=route.startsWith('auth_')?'auth':'api';
@@ -76,7 +81,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   }
  });
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

@@ -92,3 +92,24 @@ test('retained historical verification keys allow rotation without trusting keys
   assert.equal(verifyProjectArchive(old, f.trust).id, old.id);
   assert.equal(verifyProjectArchive(current, f.trust).id, current.id);
 });
+
+test('inference export retains outcomes without carrying provider accounts or allowances', async t => {
+  const f = await fixture(t), projectId = f.project.id, hash = digest({ fixture: 'profile' });
+  await f.store.transaction(async tx => {
+    await tx.write('inference-requests', 'request', { id: 'request', projectId, requestHash: hash, profileHash: hash,
+      work: 'outcome_unknown', billing: 'pending', actual: null, providerRequestId: 'original-provider-id',
+      profile: { accountId: 'PRIVATE_PROVIDER_ACCOUNT' }, quote: { authorization: 'PRIVATE_QUOTE_AUTHORITY' } }, 0);
+    await tx.write('inference-allowances', 'grant', { projectId, limit: 'PRIVATE_ALLOWANCE' }, 0);
+    await tx.write('workflow-jobs', 'inference-job', { id: 'inference-job', projectId, kind: 'inference-execute',
+      state: 'waiting', effect: 'outcome_unknown', effectKey: 'one-original-effect' }, 0);
+    const project = await tx.read('projects', projectId);
+    await tx.write('projects', projectId, { ...project.value, transfer: { destination: 'https://destination.example' } }, project.revision);
+  });
+  const archive = await f.archives.export(f.actor, projectId), raw = JSON.stringify(archive);
+  for (const value of ['PRIVATE_PROVIDER_ACCOUNT', 'PRIVATE_QUOTE_AUTHORITY', 'PRIVATE_ALLOWANCE']) assert.equal(raw.includes(value), false);
+  const checked = verifyProjectArchive(archive, f.trust);
+  assert.equal(checked.records.find(r => r.collection === 'inference-requests').value.providerRequestId, 'original-provider-id');
+  assert.match(checked.manifest.pendingEffects[0].disposition, /retain-at-source/);
+  assert.equal(await f.app.identity.allowed(f.actor, 'inference.read', { projectId }), true);
+  assert.equal(await f.app.identity.allowed(f.actor, 'inference.submit', { projectId }), false);
+});

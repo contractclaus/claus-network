@@ -8,11 +8,11 @@ export const PROJECT_SCOPES = Object.freeze([
   'project.export', 'source.publish', 'budget.read', 'events.read', 'job.cancel',
   'service.manage', 'service.read', 'service.call', 'service.provide',
   'wallet.read', 'wallet.manage', 'wallet.pay', 'release.publish', 'resource.read',
-  'vault.read', 'vault.manage', 'wallet.revoke', 'service.settle'
+  'vault.read', 'vault.manage', 'wallet.revoke', 'service.settle', 'inference.read', 'inference.submit'
 ]);
 const FENCED_ACTIONS = new Set(['project.read', 'artifact.read', 'review.read', 'proposal.read', 'project.export',
   'budget.read', 'events.read', 'service.read', 'service.provide', 'service.settle', 'wallet.read', 'wallet.revoke',
-  'resource.read', 'vault.read', 'job.cancel']);
+  'resource.read', 'vault.read', 'job.cancel', 'inference.read']);
 const WITHDRAWAL_ACTIONS = new Set(['project.publish', 'source.publish', 'release.publish']);
 const OWNER_TTL = 60 * 60 * 1000;
 const MAX_MANDATE_TTL = 30 * 24 * OWNER_TTL;

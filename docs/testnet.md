@@ -24,7 +24,7 @@ The source and existing contract state must still match when Claus signs and whe
 
 ## Revoke and publish
 
-Revoking a credential, agent mandate or sponsorship stops new stoppable worker actions. A queued inference request is cancelled without buying inference. A possibly paid request is reconciled using its original identity. A blockchain transaction that has already been broadcast cannot be recalled by an API update.
+Revoking a credential, agent mandate or sponsorship stops new stoppable worker actions. A queued internal Claus inference request is cancelled without buying inference. A possibly paid request is reconciled using its original identity. A blockchain transaction that has already been broadcast cannot be recalled by an API update.
 
 Once an approval signature has been published on chain, anyone can submit it within its permitted window. The owner can use the executor's `cancelApproval(projectKey, nonce)` for a targeted on-chain cancellation, or `setAuthority(projectKey, mandateHash, false)` to invalidate the project's current authority. These are owner-signed contract calls and work from a CLI or wallet library without the website. The `ApprovalQueued` event exposes the nonce. Revoking upgrade authority does not disable public reads from the already installed module.
 

@@ -12,6 +12,7 @@ const FIELDS = Object.freeze({
   'review-cases': 'id projectId buildId input inputHash state quoteJobId quoteId reviewJobId executionJobId artifactHash providerJobId sourceBinding createdAt',
   'review-quotes': 'id projectId inputHash requestHash offer policyRefs feeTerms sponsored sponsorAccount projectAccount maximum',
   'review-jobs': 'id projectId quoteId inputHash requestHash work billing maximum policyRefs cancelledAt reason providerJobId completedAt artifactHash actual costReceiptId',
+  'inference-requests': 'id projectId requestHash inputHash profileHash jobId work billing actual providerRequestId outputHash receiptHash createdAt',
   'chain-modules': 'id projectId caseId buildId artifactHash state jobId chainId expiresAt createdAt updatedAt address transactionHash codeHash verification error',
   'chain-registrations': 'id projectId moduleId mandateId domain types primaryType message state createdAt jobId chainId address transactionHash codeHash verification binding error updatedAt',
   'chain-bindings': 'projectId registrationId moduleId chainId target executor owner projectKey profile minDelaySeconds transactionHash codeHash verification',
@@ -39,7 +40,7 @@ const OMITTED = Object.freeze([
   'Runtime credentials, private keys, live leases and reusable signatures',
   'Provider accounts, operator-wide balances, sponsorship grants and spending authority',
   'Derived indexes and runtime scheduling cursors',
-  'Records introduced after archive schema version 1'
+  'Collections not explicitly listed in coverage'
 ]);
 const select = (value, names) => Object.fromEntries(names.split(' ').filter(k => Object.hasOwn(value, k)).map(k => [k, value[k]]));
 function redact(value) {

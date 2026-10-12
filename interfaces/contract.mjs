@@ -1,4 +1,4 @@
-export const API_VERSION='0.7.0';
+export const API_VERSION='0.8.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
@@ -70,6 +70,17 @@ export const ROUTES=Object.freeze([
  route('vault_get','GET','/v1/projects/{projectId}/vault',{projectId:string()}),
  route('vault_transaction','POST','/v1/projects/{projectId}/vault/transaction',{projectId:string(),kind:string(12),amountWei:string(78),recipient:string(42)},['projectId','kind','amountWei']),
  route('vault_balance','GET','/v1/projects/{projectId}/vault/balance',{projectId:string(),account:string(42)}),
+ route('inference_profile_set','PUT','/v1/admin/inference/profiles',{profile:object({
+  id:string(),version:string(),enabled:boolean,providerId:string(),accountId:string(),model:string(),
+  providers:{type:'array',items:string(),minItems:1,maxItems:32},asset:string(),fundingAccount:string(),
+  permissionHash:string(71),dataPolicyHash:string(71),expiresAt:integer,maximumPerRequest:string(78),
+  maxInputBytes:{type:'integer',minimum:1,maximum:65536},maxOutputTokens:{type:'integer',minimum:1,maximum:16384}}),expectedRevision:integer}),
+ route('inference_allowance_set','PUT','/v1/admin/inference/allowances/{projectId}',{projectId:string(),profileId:string(),enabled:boolean,expiresAt:integer,limit:string(78),expectedRevision:integer}),
+ route('inference_profile','GET','/v1/projects/{projectId}/inference/profiles/{profileId}',{projectId:string(),profileId:string()}),
+ route('inference_submit','POST','/v1/projects/{projectId}/inference/requests',{projectId:string(),profileId:string(),profileHash:string(71),model:string(),input:string(65536),maxOutputTokens:{type:'integer',minimum:1,maximum:16384},idempotencyKey:string()}),
+ route('inference_get','GET','/v1/projects/{projectId}/inference/requests/{requestId}',{projectId:string(),requestId:string()}),
+ route('inference_output','GET','/v1/projects/{projectId}/inference/requests/{requestId}/output',{projectId:string(),requestId:string()}),
+ route('inference_cancel','DELETE','/v1/projects/{projectId}/inference/requests/{requestId}',{projectId:string(),requestId:string()}),
  route('release_create','POST','/v1/projects/{projectId}/releases',{projectId:string(),snapshotId:string(),paths:{type:'array',items:string(180),minItems:1,maxItems:32}}),
  route('release_get','GET','/v1/projects/{projectId}/releases/{releaseId}',{projectId:string(),releaseId:string()}),
  route('release_publish','PUT','/v1/projects/{projectId}/releases/{releaseId}/publication',{projectId:string(),releaseId:string(),published:boolean,expiresAt:integer,expectedRevision:integer}),
