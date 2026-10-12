@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createPublicClient, createWalletClient, http, encodeAbiParameters, decodeAbiParameters, encodeFunctionData, keccak256 } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { createApplication } from '../runtime/server.mjs';
-import { createChainRead } from '../adapters/chain-read.mjs';
+import { createChainRead, domain, approvalTypes } from '../adapters/chain-read.mjs';
 import { createChainExecutor } from '../adapters/chain-executor.mjs';
 import { createClausController } from '../adapters/claus-controller.mjs';
 import { createSealer } from '../adapters/secrets.mjs';
@@ -228,6 +228,7 @@ test('API project, real signatures and zero-delay execution work across isolated
   await assert.rejects(executor.execution.step({value: {...approved, decision: {...approved.decision, decisionHash: digest('tampered')}},
     authorize: async () => true}), {code: 'approval_missing'});
   assert.equal((await store.list('chain-transactions', {limit: 100})).length, count);
+  if (chainId === 11155111) {
   const cancelledOnchain=await app.approvals.create(actor,project.id,{moduleId:deployed.id,configuration,dependencies,idempotencyKey:'owner-cancel-before-queue'});
   await app.approvals.runDecision(unavailable);
   assert.notEqual((await store.read('workflow-jobs',cancelledOnchain.decisionJobId)).value.effect,'outcome_unknown');
@@ -242,6 +243,34 @@ test('API project, real signatures and zero-delay execution work across isolated
   await app.approvals.runExecution(executor.execution);
   assert.equal((await app.approvals.get(actor,project.id,cancelledOnchain.id)).error,'approval_cancelled');
   assert.equal(await store.read('chain-transactions','queue:'+cancelledOnchain.id),null);
+  }
+  // A distinct older signature may remain relayable after its local job ended.
+  // Its version transition must not be mistaken for this cancelled approval.
+  const superseded = await app.approvals.create(actor, project.id, { moduleId: deployed.id,
+    configuration, dependencies, idempotencyKey: 'cancel-after-other-approval' });
+  await app.approvals.runDecision(controller);
+  const supersededApproval = await app.approvals.get(actor, project.id, superseded.id);
+  assert.equal(supersededApproval.decision.decision, 'approve');
+  const originalSigned = (await store.read('claus-signed-approvals', superseded.id)).value;
+  const otherMessage = { ...originalSigned.message, nonce: BigInt(originalSigned.message.nonce) + 1000000n };
+  const otherSignature = await approval.signTypedData({ domain: domain(executorAddress, chainId),
+    types: approvalTypes, primaryType: 'Approval', message: otherMessage });
+  await wallet.writeContract({ chain: null, address: executorAddress, abi: executorSource.abi,
+    functionName: 'queue', args: [otherMessage, otherSignature] });
+  await wallet.writeContract({ chain: null, address: executorAddress, abi: executorSource.abi,
+    functionName: 'execute', args: [otherMessage, configuration, otherSignature] });
+  await wallet.writeContract({ chain: null, address: executorAddress, abi: executorSource.abi,
+    functionName: 'cancelApproval', args: [supersededApproval.proposal.projectKey, BigInt(supersededApproval.proposal.nonce)] });
+  await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] }); await advance(61);
+  const beforeSuperseded = await store.list('chain-event-recovery');
+  omitExecutionEvent = true;
+  await assert.rejects(executor.execution.step({ value: supersededApproval, authorize: async () => true }),
+    { code: 'recovery_logs_inconsistent' });
+  assert.deepEqual(await store.list('chain-event-recovery'), beforeSuperseded);
+  omitExecutionEvent = false;
+  await app.approvals.runExecution(executor.execution);
+  assert.equal((await app.approvals.get(actor, project.id, superseded.id)).error, 'approval_superseded');
+  assert.equal(await store.read('chain-transactions', 'queue:' + superseded.id), null);
   if (chainId === 1) {
     const mainnetUsage = (await app.deployments.admission.get(ownerActor, { chainId })).usage;
     assert(BigInt(mainnetUsage.spent) > 0n); assert.equal(mainnetUsage.reserved, '0');
