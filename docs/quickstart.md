@@ -2,6 +2,8 @@
 
 Base URL: `https://claus-network-api.vercel.app`.
 
+The [source CLI](clients.md#cli) can list every bundled operation with `node interfaces/cli.mjs operations` and show its required inputs with `node interfaces/cli.mjs describe OPERATION`. These commands need no wallet or connection. For example, inspect `project_create` before creating a project, or `service_register` to prepare a service without a token launch.
+
 ## 1. Sign in
 
 Send `POST /v1/auth/challenge` with your EOA address:

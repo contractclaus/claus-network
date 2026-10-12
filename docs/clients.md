@@ -33,6 +33,16 @@ The SDK and CLI default to `https://claus-network-api.vercel.app`. Set `origin` 
 Use Node 24.14 or later in the Node 24 line. From the source distribution:
 
 ```sh
+node interfaces/cli.mjs --help
+node interfaces/cli.mjs operations
+node interfaces/cli.mjs describe service_register
+```
+
+`operations` lists the bundled API operations as JSON. `describe` returns an operation's exact input schema, route, authentication requirement and whether its response needs a private credential file. Both commands run offline without reading credentials. Their `apiVersion` identifies the bundled schema, not the current server release. Listing an operation does not mean it is enabled for your project; consult the live [service status](https://claus-network-api.vercel.app/health) and [pilot requirements](external-pilot.md).
+
+To make a request:
+
+```sh
 export CLAUS_NETWORK_URL=https://claus-network-api.vercel.app
 export CLAUS_NETWORK_TOKEN_FILE=/absolute/private/path/token
 node interfaces/cli.mjs call project_list

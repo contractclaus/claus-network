@@ -27,4 +27,6 @@ Start from the published [client instructions](clients.md) and [service lifecycl
 node interfaces/cli.mjs call network_graph
 ```
 
+Use `node interfaces/cli.mjs operations` and `node interfaces/cli.mjs describe service_register` to inspect the bundled operations and exact inputs offline. These commands do not check pilot admission or issue credentials.
+
 The default API is `https://claus-network-api.vercel.app`. A successful connection check proves connectivity only. The participant records its own wallet and project IDs privately, obtains the specific project admission, and keeps all credential files outside source control. If a key rotation loses its response, follow the [interrupted-rotation recovery](clients.md#cli) instead of blindly retrying.

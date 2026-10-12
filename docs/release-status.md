@@ -42,6 +42,8 @@ API 0.10.4 also returns publication state and revisions in authenticated project
 
 The source client now defaults to the deployed API instead of the website. A live anonymous CLI read succeeded, and 32 focused checks covered the client, HTTP/MCP authorization and existing core protections. The CLI lifecycle test starts a fresh process for each operation and verifies private token files, key rotation, a lost rotation response, revocation and replacement authorization. This is local client verification, not independent participant acceptance. The source client changes were subsequently included in API 0.10.5.
 
+The published source CLI also provides offline `operations` and `describe` commands for discovering the bundled API and its input schemas. They do not load credentials or contact a server; their version identifies the client schema, not live project admission. These additions are client-side only and do not change the deployed API release. The seven existing CLI, HTTP/MCP and free-service lifecycle checks passed, including restart, lost-response recovery, publication withdrawal and revoked-access denial. See [client instructions](clients.md#cli).
+
 API 0.10.5 also exposes service publication state and revisions. A complete local HTTP/MCP service flow exercised project admission, the transport probe, a distinct free order, restart, result acceptance, withdrawal and revocation with no review purchase or chain transaction. Live SDK and MCP reads matched for both existing Claus services. This is an engineering test, not an external participant.
 
 Exports preserve compiler settings, original contract-result transactions and pending callbacks during [project export](portability.md); imports confer no active signing authority.

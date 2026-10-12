@@ -1,9 +1,25 @@
 #!/usr/bin/env node
 import {readFile,open} from 'node:fs/promises';
 import {createClient} from './sdk.mjs';
-const [command,operation,inputPath]=process.argv.slice(2);
-if(command!=='call'||!operation){
- console.error('Usage: claus-network call OPERATION [input.json]\nSet CLAUS_NETWORK_URL and CLAUS_NETWORK_TOKEN_FILE. Credential responses require CLAUS_NETWORK_NEW_TOKEN_FILE.');
+import {API_VERSION,ROUTES} from './contract.mjs';
+const [command,operation,inputPath,...extra]=process.argv.slice(2);
+const credentialOperations=new Set(['auth_session','credential_create','credential_rotate']);
+const usage='Usage: claus-network operations\n       claus-network describe OPERATION\n       claus-network call OPERATION [input.json]\n\noperations and describe read the bundled API schema without connecting or loading credentials.\nSet CLAUS_NETWORK_URL and CLAUS_NETWORK_TOKEN_FILE for calls.\nCredential responses require CLAUS_NETWORK_NEW_TOKEN_FILE.';
+const describe=route=>({name:route.name,method:route.method,path:route.path,
+ authentication:route.public?'none':'bearer',credentialFileRequired:credentialOperations.has(route.name)});
+if((command==='--help'||command==='help')&&!operation){
+ console.log(usage);
+}else if(command==='operations'&&!operation){
+ console.log(JSON.stringify({apiVersion:API_VERSION,operations:ROUTES.map(describe)},null,2));
+}else if(command==='describe'&&operation&&!inputPath){
+ const route=ROUTES.find(route=>route.name===operation);
+ if(route)console.log(JSON.stringify({apiVersion:API_VERSION,...describe(route),inputSchema:route.inputSchema},null,2));
+ else{console.error('Unknown operation. Run claus-network operations.');process.exitCode=2;}
+}else if(command!=='call'||!operation||extra.length){
+ console.error(usage);
+ process.exitCode=2;
+}else if(!ROUTES.some(route=>route.name===operation)){
+ console.error('Unknown operation. Run claus-network operations.');
  process.exitCode=2;
 }else{
  let destination;
@@ -12,7 +28,7 @@ if(command!=='call'||!operation){
   const token=tokenPath?(await readFile(tokenPath,'utf8')).trim():undefined;
   const client=createClient({origin:process.env.CLAUS_NETWORK_URL,token});
   const input=inputPath?JSON.parse(await readFile(inputPath,'utf8')):{};
-  if(['auth_session','credential_create','credential_rotate'].includes(operation)){
+  if(credentialOperations.has(operation)){
    if(!process.env.CLAUS_NETWORK_NEW_TOKEN_FILE)throw Error('Set CLAUS_NETWORK_NEW_TOKEN_FILE before issuing a credential');
    // Fail before revoking/issuing anything if the destination is unavailable.
    destination=await open(process.env.CLAUS_NETWORK_NEW_TOKEN_FILE,'wx',0o600);
