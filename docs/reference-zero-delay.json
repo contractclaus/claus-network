@@ -354,5 +354,38 @@
       "reviewedRuntimeAndOwnerMandate": true
     },
     "activationPending": true
+  },
+  "latestAcceptance": {
+    "at": "2026-10-12T10:36:32.073380+00:00",
+    "liveCheck": {
+      "at": "2026-10-12T10:36:06.293Z",
+      "chainId": 11155111,
+      "executor": "0x01a8d2e011dcb3fa65395e0343e1ab73d562b0f6",
+      "minimumUpgradeDelay": 0,
+      "oldExecutor": "0x9806bcbc514468231e0f2cdca6dcac874e98a8e7",
+      "oldMinimum": 3600,
+      "apiRelease": "30a1a3446d40192f13074a057d6559350d5844723774cae6e431e7565d3e2a9b",
+      "existingBindingVerified": true,
+      "originalQueuePreserved": true,
+      "originalProposalState": "executed",
+      "mainnet": "not_enabled",
+      "inference": "not_enabled",
+      "transactionsSent": 0,
+      "scope": "Read-only live API and deployed-contract acceptance, not a new live upgrade reference"
+    },
+    "originalRequestCompletion": {
+      "at": "2026-10-12T10:35:57.259Z",
+      "requestId": "sha256:620af114646b9dcb1c26e36cfc6715e962ba8f7826a4d44bf1c97989e8defb0d",
+      "proposalId": "sha256:53baa964a09465da490d7937a16cc30f0f6fd0ee07002411191a0d7d9eb88747",
+      "executionTransaction": "0xee56c7b33642ac223ea96fd3f4908f993ff5369dd37784246801a29a2c94e3e9",
+      "finalizedBlock": "11898263",
+      "originalCallbackDelivered": false,
+      "resultRecoveryFinalized": true,
+      "bindingRevoked": true,
+      "retiredCredentialDenied": true,
+      "publicExecutionExact": true,
+      "websiteProjectExact": true
+    },
+    "knowledgeRevision": 472
   }
 }

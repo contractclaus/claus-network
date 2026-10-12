@@ -1,13 +1,13 @@
 # Contract requests
 
-Since API 0.10.1, the network implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The first finalized request received a genuine Claus approval. Its original 200,000-gas reference receiver failed to accept the callback; the stored Inbox result and queued upgrade remain intact. The [canonical result has been recovered](reference-intake-recovery.json) into the source-verified replacement receiver, with finalized chain readback. The original queued upgrade remains pending. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
+Since API 0.10.1, the network implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The first finalized request received a genuine Claus approval. Its original 200,000-gas reference receiver failed to accept the callback; the stored Inbox result and queued upgrade remain intact. The [canonical result has been recovered](reference-intake-recovery.json) into the source-verified replacement receiver, with finalized chain readback. The [original queued upgrade has finalized](reference-intake.json); its temporary binding and mandate are revoked. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
 
 ## Flow
 
 1. An authorized project owner or agent creates a binding through `contract_binding_create`, using API, SDK or CLI. It names one requester contract, an expiry and a maximum request count. The host pins the inbox, its deployed code, chain and capability. Binding creation requires `contract.request` and `proposal.create`. The complete protected-change workflow additionally needs `proposal.execute`, `proposal.read`, `review.read` and `artifact.read`, together with current project and sponsor admission. Granting a binding alone does not grant these other capabilities.
 2. That contract calls `ClausRequestInbox.request` with the returned `onchainBinding`, capability, deadline, callback gas and UTF-8 JSON input. The initial input contains exactly `moduleId` and `configuration`. It requests a configuration change to a previously reviewed module, not an arbitrary call, purchase or new deployment.
 3. A worker reads finalized canonical events, checks current grants and creates the existing proposal workflow under a deterministic ID. Unknown bindings create no project work. A replay or lost response keeps the same proposal.
-4. The existing review and Claus decision process runs. The returned result explicitly says `proposal-decision`. An approval result does not say that its subsequent timelocked execution is complete.
+4. The existing review and Claus decision process runs. The returned result explicitly says `proposal-decision`. An approval result does not say that its subsequent contract execution is complete.
 5. An admitted dispatcher records the result hash and evidence hash in the inbox. The requester can receive `onClausResult(bytes32,uint8,bytes,bytes32)`. Failed callbacks can be retried with the identical result; a successful callback is delivered once.
 
 No website is required. There are four shared interface operations: binding creation, binding lookup, binding revocation and request lookup. Revocation stops new work; it does not undo a proposal or transaction already dispatched. Completed results remain available to authorized readers.
@@ -56,7 +56,7 @@ const result = await api.call('contract_request_get', {
 });
 ```
 
-The event lookup checks the canonical block, Inbox runtime, requester, binding and exact input. `located.finalized` describes the transaction's chain status. A network `404` before the finalized event is indexed means continue reading the same request ID; it is not a reason to submit again. A returned `proposal-decision` can be read through `proposal_get` to follow its separate delayed execution. Finish by revoking the binding with `contract_binding_revoke` and retiring any temporary agent mandate.
+The event lookup checks the canonical block, Inbox runtime, requester, binding and exact input. `located.finalized` describes the transaction's chain status. A network `404` before the finalized event is indexed means continue reading the same request ID; it is not a reason to submit again. A returned `proposal-decision` can be read through `proposal_get` to follow its separate execution and any accepted project delay. Finish by revoking the binding with `contract_binding_revoke` and retiring any temporary agent mandate.
 
 ## Public data and limits
 
@@ -91,3 +91,5 @@ The replacement `ClausRequestClient` also exposes `syncResult(id, resultBytes)`.
 The controller alone may call `recoverResult(id, resultBytes)` to copy a result from an earlier client with the same controller and Inbox. It verifies the original client's request and the Inbox's immutable result, then emits `ResultRecovered` with the original requester. It does not create another request, review, decision or upgrade. The old client's failed callback remains part of the history.
 
 These client changes have local contract and EVM coverage; the replacement is not part of the earlier independent Inbox audit. The [recovery receipt](reference-intake-recovery.json) records the finalized original-result recovery. This is a successful recovery path, not a successful legacy callback or a fresh live callback test.
+
+The original owner-operated reference completed through the canonical-result recovery path. Its legacy callback did not succeed. Local tests exercise the replacement client callback; a fresh live replacement-client callback is not claimed by this receipt.
