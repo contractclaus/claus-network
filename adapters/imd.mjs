@@ -134,7 +134,8 @@ export function createImdReviewProvider({ store, sealer, resolveInput, fetch: fe
       const accepted = result.accepts[0];
       requireThat(accepted.scheme === 'exact' && accepted.network === IMD_REVIEW.network && accepted.asset === IMD_REVIEW.asset &&
         accepted.payTo === IMD_REVIEW.payTo && accepted.amount === saved.quote.payment.amount &&
-        accepted.extra?.assetTransferMethod === 'permit2' && accepted.maxTimeoutSeconds === 300, 'provider_terms_changed');
+        accepted.extra?.assetTransferMethod === 'permit2' && Number.isSafeInteger(accepted.maxTimeoutSeconds) &&
+        accepted.maxTimeoutSeconds > 0 && accepted.maxTimeoutSeconds <= 300, 'provider_terms_changed');
       return result;
     },
     // Payment material comes only from the separate bounded signer; callers

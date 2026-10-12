@@ -15,7 +15,7 @@ test('real typed signatures bind both the bounded permit and exact payment to th
   const resource = { url: IMD_REVIEW.origin + '/requests/' + offerId };
   const payment = { scheme: 'exact', network: IMD_REVIEW.network, asset: IMD_REVIEW.asset, amount: IMD_REVIEW.maximum, payTo: IMD_REVIEW.payTo };
   const challenge = { resource, resourceUrl: resource.url, requesterScopeHash: 'ab'.repeat(32),
-    accepts: [{ ...payment, maxTimeoutSeconds: 300, extra: { assetTransferMethod: 'permit2' } }],
+    accepts: [{ ...payment, maxTimeoutSeconds: 137, extra: { assetTransferMethod: 'permit2' } }],
     quote: { id: offerId, action: 'job.open', quoteHash: 'cd'.repeat(32), expiresAt: Math.floor(time / 1000) + 600, payment } };
   let sends = 0, permitted = true;
   const signed = [];
@@ -31,6 +31,7 @@ test('real typed signatures bind both the bounded permit and exact payment to th
   }, status: async () => ({ status: 'admitted', payment: { paid: true, transactionHash: '0x' + '34'.repeat(32) } }) },
   authorize: async (_, tx) => { assert.ok(tx); return permitted; }, now: () => time });
   assert.equal((await api.prepare(offerId)).state, 'prepared');
+  assert.equal(signed[0].message.deadline, BigInt(Math.floor(time / 1000) + 137));
   assert.equal((await api.prepare(offerId)).state, 'prepared'); assert.equal(signed.length, 2);
   permitted = false;
   await assert.rejects(api.submit(offerId), { code: 'payment_not_authorized' }); assert.equal(sends, 0);

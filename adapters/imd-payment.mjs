@@ -50,7 +50,9 @@ export function createImdPayment({ store, sealer, provider, signer, authorize = 
       const n = amount(q.payment.amount);
       requireThat(n > 0n && n <= amount(IMD_REVIEW.maximum), 'payment_limit');
       const payer = signer.address.toLowerCase();
-      const deadline = Math.min(seconds() + 300, q.expiresAt - 5);
+      requireThat(Number.isSafeInteger(accepted.maxTimeoutSeconds) && accepted.maxTimeoutSeconds > 0 &&
+        accepted.maxTimeoutSeconds <= 300, 'invalid_payment_timeout');
+      const deadline = Math.min(seconds() + accepted.maxTimeoutSeconds, q.expiresAt - 5);
       const record = await store.transaction(async tx => {
         requireThat(await authorize({ offerId, challenge: copy(challenge), payer, amount: q.payment.amount }, tx) === true, 'payment_not_authorized');
         const old = await tx.read('imd-payments', offerId);
