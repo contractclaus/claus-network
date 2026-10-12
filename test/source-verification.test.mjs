@@ -55,3 +55,61 @@ test('an explorer source listing cannot replace exact creation and runtime match
   const result = await verifier.step(input);
   assert.equal(result.etherscanVerified, true); assert.equal(result.state, 'pending');
 });
+
+for (const chainId of [1, 11155111]) test('chain ' + chainId + ': terminal explorer failure retries unchanged input after cooldown and preserves failed GUID', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let time = 100000, submitted = 0, status = 'Fail - Unable to verify', indexed = false;
+  const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key', chainId, now: () => time,
+    fetcher: async (url, options = {}) => {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'sourcify.dev') return Response.json(options.method === 'POST'
+        ? { verificationId: 'source' } : { runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
+      const action = parsed.searchParams.get('action');
+      if (action === 'getsourcecode') return Response.json({ status: '1', result: [{ SourceCode: indexed ? '{}' : '', ContractName: 'Example' }] });
+      if (action === 'verifysourcecode') {
+        submitted++;
+        assert.equal(options.body.get('constructorArguments'), '1234');
+        assert.equal(options.body.get('constructorArguements'), '1234');
+        return Response.json({ status: '1', result: 'guid-' + submitted });
+      }
+      return Response.json({ status: '0', result: status });
+    } });
+  const failed = await verifier.step(input);
+  assert.equal(failed.state, 'pending'); assert.equal(failed.etherscanGuid, undefined);
+  const attempts = await store.list('chain-verification-attempts');
+  assert.equal(attempts.length, 1); assert.equal(attempts[0].value.guid, 'guid-1');
+  assert.equal(attempts[0].value.inputHash, failed.inputHash);
+  time += 60000; await verifier.step(input); assert.equal(submitted, 1);
+  time++; status = 'Pending in queue'; const retry = await verifier.step(input);
+  assert.equal(submitted, 2); assert.equal(retry.etherscanGuid, 'guid-2');
+  time += 120000; await verifier.step(input); assert.equal(submitted, 2);
+  status = 'Max rate limit reached'; await verifier.step(input); assert.equal(submitted, 2);
+  status = 'Pass - Verified'; await verifier.step(input); assert.equal(submitted, 2);
+  indexed = true; assert.equal((await verifier.step(input)).state, 'verified');
+  assert.equal((await store.list('chain-verification-attempts')).length, 1);
+});
+
+test('Sourcify HTML service failure keeps the retryable provider error', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key',
+    fetcher: async () => new Response('<html>Bad Gateway</html>', { status: 502 }) });
+  await assert.rejects(verifier.step(input), { code: 'verification_service_unavailable' });
+});
+
+test('a status transport failure resumes the saved GUID without another submission', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let posts = 0, polls = 0;
+  const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key', fetcher: async (url, options = {}) => {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'sourcify.dev') return Response.json(options.method === 'POST'
+      ? { verificationId: 'source' } : { runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
+    switch (parsed.searchParams.get('action')) {
+      case 'getsourcecode': return Response.json({ status: '1', result: [{ SourceCode: '' }] });
+      case 'verifysourcecode': posts++; return Response.json({ status: '1', result: 'saved-guid' });
+      default: polls++; assert.equal(parsed.searchParams.get('guid'), 'saved-guid');
+        return polls === 1 ? new Response('unavailable', { status: 503 }) : Response.json({ status: '0', result: 'Pending in queue' });
+    }
+  } });
+  await assert.rejects(verifier.step(input), { code: 'verification_service_unavailable' });
+  await verifier.step(input); assert.equal(posts, 1); assert.equal(polls, 2);
+});

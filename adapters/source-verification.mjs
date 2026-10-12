@@ -40,8 +40,8 @@ export function createSourceVerification({ store, etherscanKey, chainId = 111551
           method: 'POST', headers: { 'content-type': 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(25000),
           body: JSON.stringify({ stdJsonInput: artifact.standardInput, compilerVersion: artifact.profile.compiler.replace('.Emscripten.clang', ''),
             contractIdentifier: artifact.entry + ':' + artifact.contract, creationTransactionHash: creationTransaction }) });
-        const result = JSON.parse(await boundedResponse(response));
         requireThat(response.ok || response.status === 409, 'verification_service_unavailable');
+        const result = JSON.parse(await boundedResponse(response));
         value = { ...value, sourcifyId: result.verificationId ?? null }; await save();
       }
       try {
@@ -61,10 +61,25 @@ export function createSourceVerification({ store, etherscanKey, chainId = 111551
         value.etherscanAttemptAt = now();
         if (submission.status === '1') value.etherscanGuid = submission.result;
         else value.etherscanError = String(submission.result).slice(0, 500);
+        await save();
       }
       if (value.etherscanGuid && !value.etherscanVerified) {
         const status = await etherscan({ action: 'checkverifystatus', guid: value.etherscanGuid });
-        if (status.status === '0' && !/pending|queue/i.test(status.result)) value.etherscanError = String(status.result).slice(0, 500);
+        if (status.status === '0' && !/pending|queue/i.test(status.result)) {
+          value.etherscanError = String(status.result).slice(0, 500);
+          // Retry only an explicitly failed verification of the same immutable
+          // input. Queue, rate-limit and transport errors retain their GUID.
+          if (/^fail\b|unable to verify|verification failed/i.test(value.etherscanError)) {
+            const guid = value.etherscanGuid;
+            await store.transaction(async tx => {
+              const attemptId = digest({ id, guid });
+              if (!await tx.read('chain-verification-attempts', attemptId))
+                await tx.write('chain-verification-attempts', attemptId,
+                  { id, guid, inputHash, error: value.etherscanError, failedAt: now() }, 0);
+            });
+            delete value.etherscanGuid;
+          }
+        }
       }
       value = { ...value, checkedAt: now(), explorerUrl: (chainId === 1 ? 'https://etherscan.io/address/' : 'https://sepolia.etherscan.io/address/') + address + '#code',
         sourcifyUrl: 'https://repo.sourcify.dev/' + chainId + '/' + address };
