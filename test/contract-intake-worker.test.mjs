@@ -7,7 +7,8 @@ import { digest } from '../src/shared/index.mjs';
 async function fixture(t) {
   const store = openStore(':memory:'); t.after(() => store.close());
   const f = { store, active: true, calls: [], sends: [], fail: null, deliveryState: 'pending', scans: 0, runs: 0 };
-  await store.transaction(tx => tx.write('contract-bindings', 'known', { id: 'known' }, 0));
+  const binding = { id: 'known', chainId: 11155111, inbox: 'inbox', codeHash: 'pinned' };
+  await store.transaction(tx => tx.write('contract-bindings', 'known', binding, 0));
   const events = [{ bindingId: 'unknown', transactionHash: 'unknown', logIndex: 0 },
     { bindingId: 'known', transactionHash: 'known', logIndex: 1 }];
   const chain = { profile: async () => ({ chainId: 11155111, inbox: 'inbox', codeHash: 'pinned' }),
@@ -15,9 +16,13 @@ async function fixture(t) {
       cursor: { afterBlock: 200, blockHash: 'canonical' }, events: cursor.afterBlock < 200 ? events : [] }; } };
   const request = { id: 'request', projectId: 'project', state: 'result_ready', result: { decision: 'approve' },
     observation: { chainId: 11155111, inbox: 'inbox', codeHash: 'pinned' } };
-  const intake = { ingest: async (binding, pointer) => { f.calls.push([binding, pointer]); if (f.fail) throw Object.assign(Error(f.fail), { code: f.fail }); },
+  f.events = events; f.binding = binding; f.failures = {};
+  const intake = { ingest: async (binding, pointer) => { f.calls.push([binding, pointer]); const code = f.failures[binding] ?? f.fail; if (code) throw Object.assign(Error(code), { code }); },
     run: async () => { f.runs++; return { state: 'waiting' }; } };
-  const delivery = { step: async input => { f.sends.push(input); return { state: f.deliveryState,
+  f.deliveryFailures = {};
+  const delivery = { step: async input => { f.sends.push(input);
+    const code = f.deliveryFailures[input.request.id]; if (code) throw Object.assign(Error(code), { code });
+    return { state: f.deliveryState,
     resultHash: f.badHash ? digest('wrong') : digest(input.request.result), finalized: f.finalized ?? true,
     transactionHash: '0x' + '11'.repeat(32), privateCredential: 'must-not-be-stored' }; } };
   f.create = () => createContractIntakeWorker({ store, chain, intake, delivery, startBlock: 100, enabled: () => {
@@ -85,4 +90,38 @@ test('different inbox generations cannot block or consume one another\'s deliver
   await f.worker.tick();
   assert.equal(f.sends.length, 1); assert.equal(f.sends[0].request.id, 'request');
   assert.equal((await f.store.read('contract-requests', 'older')).value.delivery, undefined);
+});
+
+test('withdrawn project admission cannot block other projects in the same event batch', async t => {
+  const f = await fixture(t);
+  f.failures.known = 'contract_intake_disabled';
+  await f.store.transaction(tx => tx.write('contract-bindings', 'other', { ...f.binding, id: 'other' }, 0));
+  f.events.push({ bindingId: 'other', transactionHash: 'other', logIndex: 2 });
+  const result = await f.worker.tick();
+  assert.equal(result.ingested, 1); assert.equal(result.afterBlock, 200);
+  assert.equal(f.runs, 1);
+  assert.equal((await f.store.list('contract-intake-rejections'))[0].value.code, 'contract_intake_disabled');
+  assert.equal((await f.create().tick()).ingested, 0);
+});
+
+test('an event naming an older inbox binding cannot poison the current scanner', async t => {
+  const f = await fixture(t);
+  await f.store.transaction(tx => tx.write('contract-bindings', 'old', { ...f.binding, id: 'old', inbox: 'old-inbox' }, 0));
+  f.events.unshift({ bindingId: 'old', transactionHash: 'old', logIndex: 0 });
+  f.failures.old = 'inbox_binding_mismatch';
+  assert.equal((await f.worker.tick()).ingested, 1);
+  assert.deepEqual(f.calls.filter(Array.isArray).map(([id]) => id), ['known']);
+});
+
+test('fresh work waiting for funds or a wallet slot cannot starve existing transaction reconciliation', async t => {
+  for (const code of ['wallet_busy', 'dispatch_budget_exhausted', 'transaction_cost_limit', 'transaction_not_authorized']) {
+    const f = await fixture(t); await f.result();
+    const request = (await f.store.read('contract-requests', 'request')).value;
+    await f.store.transaction(tx => tx.write('contract-requests', 'a-new', { ...request, id: 'a-new' }, 0));
+    f.deliveryFailures['a-new'] = code; f.deliveryState = 'delivered';
+    const result = await f.worker.tick();
+    assert.equal(result.delivered, 1); assert.equal(result.deferred, 1);
+    assert.equal((await f.store.read('contract-requests', 'request')).value.delivery.state, 'delivered');
+    assert.equal((await f.store.read('contract-requests', 'a-new')).value.delivery, undefined);
+  }
 });

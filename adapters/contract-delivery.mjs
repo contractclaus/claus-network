@@ -60,8 +60,13 @@ export function createContractDelivery({ store, client, signer, sealer, chain, i
     const original = (await reader.read('contract-requests', request.id))?.value;
     if (!original || original.state !== 'result_ready' || digest(original.result) !== digest(request.result) ||
       original.observationHash !== digest(request.observation)) return false;
-    await identity.authorize(binding.actor, 'contract.request', { projectId: request.projectId }, reader);
-    await identity.authorize(binding.actor, 'proposal.create', { projectId: request.projectId }, reader);
+    try {
+      await identity.authorize(binding.actor, 'contract.request', { projectId: request.projectId }, reader);
+      await identity.authorize(binding.actor, 'proposal.create', { projectId: request.projectId }, reader);
+    } catch (error) {
+      if (error.code === 'scope_denied') return false;
+      throw error;
+    }
     return true;
   }
   async function reserve(tx, { id, maximum }) {

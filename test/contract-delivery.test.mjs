@@ -81,6 +81,14 @@ test('authority lost after signing cancels the unsent delivery and returns only 
   assert.equal(f.broadcasts(), 0); assert.equal((await f.ledger()).reserved, '0'); assert.equal((await f.ledger()).spent, '0');
 });
 
+test('an already revoked project is skipped without failing the shared delivery worker', async t => {
+  const f = await fixture(t); f.denyAt(1);
+  assert.equal((await f.make().step(f.input)).state, 'pending');
+  assert.equal(f.broadcasts(), 0);
+  assert.equal((await f.ledger()).reserved, '0');
+  assert.equal((await f.store.list('chain-transactions')).length, 0);
+});
+
 test('project admission is checked again after signing, while an old broadcast remains reconcilable', async t => {
   const before = await fixture(t); before.withdrawAdmissionAt(3);
   assert.equal((await before.make().step(before.input)).state, 'closed');

@@ -25,11 +25,16 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
     for (const event of batch.events) {
       const binding = await store.read('contract-bindings', event.bindingId);
       if (!binding) continue; // Unadmitted public contract traffic incurs no work.
+      // Binding words are public. A caller can reuse one from an older inbox;
+      // it must not stall this generation's cursor or any other project's work.
+      if (binding.value.chainId !== profile.chainId ||
+        binding.value.inbox?.toLowerCase() !== profile.inbox.toLowerCase() ||
+        binding.value.codeHash !== profile.codeHash) continue;
       try {
         await intake.ingest(event.bindingId, { transactionHash: event.transactionHash, logIndex: event.logIndex });
         ingested++;
       } catch (error) {
-        if (!['contract_binding_inactive', 'contract_binding_exhausted', 'contract_request_closed',
+        if (!['contract_intake_disabled', 'contract_binding_inactive', 'contract_binding_exhausted', 'contract_request_closed',
           'scope_denied', 'invalid_contract_input', 'contract_request_mismatch', 'invalid_input',
           'inbox_request_closed', 'unknown_field', 'invalid_shape', 'invalid_identifier'].includes(error.code)) throw error;
         await store.transaction(async tx => {
@@ -47,7 +52,7 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
     const proposal = active ? await intake.run() : { state: 'disabled' };
     const scan = await store.read('contract-delivery-cursors', id);
     const rows = await store.list('contract-requests', { after: scan?.value.after ?? '', limit: 100 });
-    let delivered = 0;
+    let delivered = 0, deferred = 0;
     for (const row of rows) {
       const request = row.value;
       if (request.state !== 'result_ready' || ['delivered', 'closed', 'failed'].includes(request.delivery?.state)) continue;
@@ -58,8 +63,18 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
       // The dispatcher independently verifies onchain state, immutable result,
       // expiry and its current spending mandate. It must reconcile old writes
       // even after that mandate is revoked; it must never replace unknown txs.
-      const outcome = await delivery.step({ id: digest({ requestId: request.id, action: 'result-delivery' }), request,
-        allowSubmit: active });
+      let outcome;
+      try {
+        outcome = await delivery.step({ id: digest({ requestId: request.id, action: 'result-delivery' }), request,
+          allowSubmit: active });
+      } catch (error) {
+        // A later row can own the pending wallet transaction. Keep walking so
+        // its settlement can release the slot and reserved budget; never make
+        // replenishment or a new transaction necessary to reconcile old work.
+        if (!['wallet_busy', 'dispatch_budget_exhausted', 'transaction_cost_limit',
+          'transaction_not_authorized'].includes(error.code)) throw error;
+        deferred++; continue;
+      }
       requireThat(['pending', 'delivered', 'closed', 'failed'].includes(outcome.state), 'invalid_delivery_state');
       requireThat(outcome.resultHash === digest(request.result), 'delivery_result_mismatch');
       if (outcome.state === 'delivered') requireThat(outcome.finalized === true &&
@@ -77,7 +92,7 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
     await store.transaction(async tx => {
       await tx.write('contract-delivery-cursors', id, { after: rows.length === 100 ? rows.at(-1).id : '' }, scan?.revision ?? 0);
     });
-    return { state: active ? 'active' : 'disabled', disabledReason, ingested, delivered,
+    return { state: active ? 'active' : 'disabled', disabledReason, ingested, delivered, deferred,
       proposal: proposal.state ?? 'idle', afterBlock: batch.cursor.afterBlock };
   } };
 }
