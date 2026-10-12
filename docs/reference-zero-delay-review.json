@@ -1,0 +1,135 @@
+{
+  "at": "2026-10-12T10:09:59.116Z",
+  "status": "accepted-for-sepolia",
+  "projectId": "prj_75bf7313-4bbb-4895-82a4-3a6e379af590",
+  "caseId": "sha256:198f393dd5321bd2002a198097f1a03a31d172daeef15ad91e627fed5fc816bb",
+  "providerJobId": "0ad06a7e-df39-4408-9daf-5c4221bfb58a",
+  "commit": "bc642d36d5eafffcd04859574219acfa7a3bb27d",
+  "buildHash": "sha256:b151ae030dceb48608cacb46810cf0645b8b5bd627146ae7c39a715ca0ca3040",
+  "reviewArtifactHash": "sha256:f1f79553566d1d246316c939185513df239bf2810bcf3a82e425629ea14994ae",
+  "reportHash": "sha256:43557582cda5d8638230229768037474d8f2bb50e1df9c1b6124668458218a7a",
+  "reportSource": {
+    "kind": "provider-markdown",
+    "url": "https://api.imd.fun/jobs/0ad06a7e-df39-4408-9daf-5c4221bfb58a/report.md"
+  },
+  "acceptedSubmissionHash": "e136f8e044d6ed2d2ae007d3d67c21b1910c2bf4db513db7ee887105a4fe079f",
+  "severity": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 2,
+    "info": 9
+  },
+  "scope": "Replacement noncustodial ClausApprovalExecutor and exact ClausReadonlyProject artifact for new admitted Sepolia registrations; existing bindings retain their executors. Not general wallet/vault approval, arbitrary modules, mainnet, public enrollment, token launches or customer custody.",
+  "mainnetApproved": false,
+  "publicEnrollmentApproved": false,
+  "findings": [
+    {
+      "id": 1,
+      "severity": "low",
+      "title": "Vault's fixed 250,000 policy gas cannot cover the 8192-byte configuration its admission project may hold: an admitting policy is reported as DepositDenied",
+      "path": "src/ClausNativeVault.sol",
+      "line": 15,
+      "disposition": "restricted existing vault profile",
+      "reason": "The unchanged vault pilot admits only the reviewed ClausVaultAdmission with its exact 64-byte configuration. Larger or arbitrary admission modules are outside that profile. This executor activation neither deploys another vault nor broadens deposit admission. Existing principal was fully withdrawn."
+    },
+    {
+      "id": 2,
+      "severity": "low",
+      "title": "A signed SessionAuthorization has no nonce and no targeted cancel: every signed draft for a (sessionId, generation) stays usable, and the only remedy retires the session id",
+      "path": "src/ClausProjectWallet.sol",
+      "line": 90,
+      "disposition": "documented unchanged wallet limitation",
+      "reason": "The unchanged wallet pilot uses fresh session IDs with one concrete owner-signed allowance, followed by permanent revocation. Do not distribute competing signed drafts; revoke the ID and use a fresh ID to replace a shared signature. Targeted draft cancellation is not implemented or claimed. This release creates no session or wallet."
+    },
+    {
+      "id": 3,
+      "severity": "info",
+      "title": "A pre-signed renewal is live from the moment it is signed, not from its validAfter, and it resets spent: totals are per generation, not per session id",
+      "path": "src/ClausProjectWallet.sol",
+      "line": 94,
+      "disposition": "documented per-generation budget",
+      "reason": "A renewal resets spending for the newly owner-signed generation and can retire the prior generation early. No future renewal is pre-signed; no lifetime-cap claim is made. Existing payment IDs and accounting remain intact."
+    },
+    {
+      "id": 4,
+      "severity": "info",
+      "title": "Zero-delay projects: queue and execute run in one transaction, so the owner and the recovery owner have no reaction window; the lower-bound check is dead code and AUDIT_RESPONSE.md still claims a one-",
+      "path": "src/ClausApprovalExecutor.sol",
+      "line": 22,
+      "disposition": "owner-requested zero-delay policy",
+      "reason": "The owner explicitly removed the mandatory upgrade hour. Zero permits queue and execution in one transaction with no reaction interval. The supported module uses STATICCALL and the executor does not custody funds. Existing explicit project delays are preserved. Documentation correction 4aa9a41d79719a992b4517014075eee0bf3f661e changes no reviewed source. The zero-valued lower-bound comparison is harmless and retained to avoid changing reviewed bytecode."
+    },
+    {
+      "id": 5,
+      "severity": "info",
+      "title": "Recovery owner can pause all upgrades without bound by rescheduling, and can invalidate every outstanding approval with no pending recovery",
+      "path": "src/ClausApprovalExecutor.sol",
+      "line": 220,
+      "disposition": "documented recovery authority",
+      "reason": "The fixed recovery owner can pause upgrades indefinitely or invalidate outstanding generations. This privileged assumption remains disclosed. The deployment uses the authorized owner and the existing two-day signer-recovery path, independently of the removed project upgrade delay."
+    },
+    {
+      "id": 6,
+      "severity": "info",
+      "title": "ClausNativeVault accepts any contract as admissionPolicy: a deployer-controlled project passes, and a bare admission module yields a vault that can never take a deposit",
+      "path": "src/ClausNativeVault.sol",
+      "line": 24,
+      "disposition": "verified deployment binding",
+      "reason": "The existing vault host pins the registered policy target, expected executor, project identity, code hashes and exact reviewed configuration. Constructor code existence alone is never treated as proof of Claus governance. No vault admission is expanded."
+    },
+    {
+      "id": 7,
+      "severity": "info",
+      "title": "Executor constructor allows the Claus signer and the recovery owner to be the same address",
+      "path": "src/ClausApprovalExecutor.sol",
+      "line": 103,
+      "disposition": "verified distinct deployed roles",
+      "reason": "The source allows equal roles, but the actual replacement uses distinct approval signer, recovery owner and executor. Their onchain values were read and recorded in zero-delay-role-check.json."
+    },
+    {
+      "id": 8,
+      "severity": "info",
+      "title": "Cancelled or generation-invalidated approvals keep a nonzero readyAt, so the public queue state shows changes that can never execute",
+      "path": "src/ClausApprovalExecutor.sol",
+      "line": 180,
+      "disposition": "validate authority beyond queue time",
+      "reason": "A nonzero readyAt is not treated as executable authority. The execution adapter checks nonce consumption, actual execution events, current generations, exact bindings, code and mandate before a new signature/broadcast. The final judge corrected the specialist claim: queue validates and rejects dead approvals."
+    },
+    {
+      "id": 9,
+      "severity": "info",
+      "title": "ETH forced into the vault above totalPrincipal can never leave",
+      "path": "src/ClausNativeVault.sol",
+      "line": 47,
+      "disposition": "documented immutable vault behavior",
+      "reason": "Forced ETH does not create depositor principal and has no administrator sweep. The release leaves this unchanged; no forced-ETH recovery or universal custody guarantee is claimed."
+    },
+    {
+      "id": 10,
+      "severity": "info",
+      "title": "Signature checks switch to ERC-1271 as soon as a signing EOA has code (EIP-7702 delegation): the Claus signer's approvals are then rejected until recovery completes",
+      "path": "src/ClausApprovalExecutor.sol",
+      "line": 144,
+      "disposition": "verified current signer profile",
+      "reason": "Live readback confirms the three current deployment roles are ordinary distinct EOAs with no delegation code. A future ERC-1271/EIP-7702 role change is not covered by this acceptance; the supported signing profile and recovery boundary remain explicit."
+    },
+    {
+      "id": 11,
+      "severity": "info",
+      "title": "Deposit verdict depends on the caller's gas: an out-of-gas policy call is reported as DepositDenied, and 2300-gas transfers to receive() always fail",
+      "path": "src/ClausNativeVault.sol",
+      "line": 77,
+      "disposition": "bounded deposit compatibility",
+      "reason": "The existing pilot uses explicit deposit calls with gas estimation and the 64-byte reviewed admission profile. Low-gas DepositDenied may mean execution exhaustion, and transfer/send stipends are unsupported. Withdrawals remain independent; this release enables no new deposit flow."
+    }
+  ],
+  "requiredPilotLimits": {
+    "chainId": 11155111,
+    "profile": "claus-readonly-v1",
+    "newMinimumUpgradeDelay": 0,
+    "retainExistingBindings": true,
+    "reviewedRuntimeAndOwnerMandate": true
+  },
+  "activationPending": true
+}

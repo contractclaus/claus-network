@@ -38,4 +38,4 @@ Complete source and both compiler artifacts can exceed the original small review
 
 ## Current reference decision
 
-Claus approved the exact Sepolia admission closure using configuration 451 on 12 October 2026. The [queue transaction](https://sepolia.etherscan.io/tx/0x993667cc8649120d129b2ffbdf3c4af752540dd58aaad34f0658ad06606dd536) binds that approval and starts a full one-hour delay, ending at 08:20:24 UTC. Queueing is not execution. Finalized execution and return of the owner's fixed test principal are still required for lifecycle acceptance.
+Claus approved the exact Sepolia admission closure using configuration 451 on 12 October 2026. The [queue transaction](https://sepolia.etherscan.io/tx/0x993667cc8649120d129b2ffbdf3c4af752540dd58aaad34f0658ad06606dd536) binds that approval and starts a full one-hour delay, ending at 08:20:24 UTC. The original execution and return of the owner's fixed test principal subsequently finalized, as recorded in the completed lifecycle receipt above. A queue receipt alone would not establish either result.

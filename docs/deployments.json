@@ -1,10 +1,10 @@
 {
   "chainId": 11155111,
   "network": "Ethereum Sepolia",
-  "checkedAt": "2026-10-12T09:00:15.028Z",
-  "observedBlock": "11897853",
-  "observedBlockHash": "0xc2ac15d3d8b1b3ee9b88999993099093ab7f67aa5f75b13c9f1a11cd1bc48086",
-  "finalizedBlock": "11897783",
+  "checkedAt": "2026-10-12T10:11:11.814Z",
+  "observedBlock": "11898207",
+  "observedBlockHash": "0x6ae5e08156ca05deca3ac7eb6105d8c30cefe5daeb647bc8d0b049f641367a45",
+  "finalizedBlock": "11898135",
   "scope": "Claus-operated reference deployments; verification is distinct from review and lifecycle acceptance",
   "contracts": [
     {
@@ -245,6 +245,68 @@
       "role": "Read-only implementation; cannot receive the project storage context",
       "creationBlock": "11897214",
       "creationBlockHash": "0x421ad31ecfc5d1d3da6928dbce58376d5fb68e60f6a7c7377b6bd583b4cfefb2",
+      "creationFinalized": true
+    },
+    {
+      "chainId": 11155111,
+      "contract": "ClausApprovalExecutor",
+      "address": "0x01a8d2e011dcb3fa65395e0343e1ab73d562b0f6",
+      "profile": "claus-readonly-v1",
+      "transactionHash": "0x015985a88a0fb2a6c03bee4a18ead48dfba069d46c8c612a30e0bb64b4b3fded",
+      "codeHash": "0x6658a77c95259d02f99e31d2281e44ea7e9916a97e4d346ed972b3f51d70c1e0",
+      "constructorArguments": "0x0000000000000000000000007c6fd554e6ca80914374c56a62351786053c0329000000000000000000000000bb145ca83272c3806d4ddc75ca1d5514789cf1c5000000000000000000000000000000000000000000000000000000000002a300",
+      "compiler": "0.8.27+commit.40a35a09.Emscripten.clang",
+      "settings": {
+        "evmVersion": "cancun",
+        "metadata": {
+          "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "outputSelection": {
+          "*": {
+            "*": [
+              "abi",
+              "evm.bytecode",
+              "evm.deployedBytecode",
+              "metadata",
+              "storageLayout"
+            ]
+          }
+        },
+        "remappings": [
+          "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/"
+        ],
+        "viaIR": true
+      },
+      "buildHash": "sha256:b151ae030dceb48608cacb46810cf0645b8b5bd627146ae7c39a715ca0ca3040",
+      "verification": {
+        "id": "sha256:e4436264db73cdabd36e4ac4de5deccc552f54ce3736f4b375558c664aefd3b6",
+        "state": "verified",
+        "address": "0x01a8d2e011dcb3fa65395e0343e1ab73d562b0f6",
+        "chainId": 11155111,
+        "checkedAt": 1791798837166,
+        "inputHash": "sha256:82d869aea21785b26100f4f04582e1f58def12e3f894e64f3e80c1cbfe80a98b",
+        "sourcifyId": "116c3cb4-41fc-46bf-a09b-d1c035bdbd59",
+        "explorerUrl": "https://sepolia.etherscan.io/address/0x01a8d2e011dcb3fa65395e0343e1ab73d562b0f6#code",
+        "sourcifyUrl": "https://repo.sourcify.dev/11155111/0x01a8d2e011dcb3fa65395e0343e1ab73d562b0f6",
+        "runtimeMatch": "exact_match",
+        "creationMatch": "exact_match",
+        "etherscanGuid": "s4x55bcf5s2zyyz87119n5c9jiwqipzfejadzpyj7xynp7tlwp",
+        "etherscanMatch": "exact",
+        "etherscanVerified": true,
+        "etherscanAttemptAt": 1791798775111
+      },
+      "sourceCommit": "bc642d36d5eafffcd04859574219acfa7a3bb27d",
+      "reviewArtifactHash": "sha256:f1f79553566d1d246316c939185513df239bf2810bcf3a82e425629ea14994ae",
+      "approvalSigner": "0x7C6Fd554E6CA80914374C56A62351786053c0329",
+      "recoveryOwner": "0xBb145cA83272c3806D4dDc75cA1D5514789cF1C5",
+      "recoveryDelay": 172800,
+      "minimumUpgradeDelay": 0,
+      "creationBlock": "11898105",
+      "creationBlockHash": "0x4ad0654a7e2335645ae589b8ba99e8f71f05eab8b650e6640f24cb98d5a08ef9",
       "creationFinalized": true
     },
     {
@@ -565,6 +627,68 @@
       "creationBlock": "11897749",
       "creationBlockHash": "0xe4ca75de89f853a3ea708ba380babc7a4bdd44ccb3f5551768287f155067a2f4",
       "creationFinalized": true
+    },
+    {
+      "chainId": 11155111,
+      "contract": "ClausRequestClient",
+      "address": "0x7926d06961c9f37a585173a7a3dd6079cc574354",
+      "profile": "claus-reference-request-client-v1",
+      "transactionHash": "0xae7e69ee9da92b7c21d370af7d7a6b5b4543672f5c263f710c7511c0e6264c38",
+      "codeHash": "0xeca5262421c26d2f093811cf666f963a2f2369198b23d4b89539054ebf515994",
+      "constructorArguments": "0x00000000000000000000000001ec0bbb16aec60e823fa900cd5d725583f358980000000000000000000000004579797848559111fd2b06ad3cfff121d4a17751",
+      "compiler": "0.8.27+commit.40a35a09.Emscripten.clang",
+      "settings": {
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "viaIR": true,
+        "evmVersion": "cancun",
+        "metadata": {
+          "bytecodeHash": "ipfs"
+        },
+        "remappings": [
+          "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/"
+        ],
+        "outputSelection": {
+          "*": {
+            "*": [
+              "abi",
+              "evm.bytecode",
+              "evm.deployedBytecode",
+              "metadata",
+              "storageLayout"
+            ]
+          }
+        }
+      },
+      "buildHash": "sha256:9b2c902c9ff1092fe9f96e3c5d0cc26d27f5468c7777f4ced33aa53d359292db",
+      "verification": {
+        "id": "sha256:ae1ce97f761914b330eff6e8fe4e7b9c0364e532fddc18db89c8a1c86082d10d",
+        "state": "verified",
+        "address": "0x7926d06961c9f37a585173a7a3dd6079cc574354",
+        "chainId": 11155111,
+        "checkedAt": 1791799308100,
+        "inputHash": "sha256:6646c8e69ae80b9460ad6998e1d779fc851fa5653493a53b8f823192c9c47f90",
+        "sourcifyId": "100f634e-6732-4d86-8d95-bb2a1197261b",
+        "explorerUrl": "https://sepolia.etherscan.io/address/0x7926d06961c9f37a585173a7a3dd6079cc574354#code",
+        "sourcifyUrl": "https://repo.sourcify.dev/11155111/0x7926d06961c9f37a585173a7a3dd6079cc574354",
+        "runtimeMatch": "exact_match",
+        "creationMatch": "exact_match",
+        "etherscanGuid": "e35ip38qt5mn8edxvzfrysa5qp6ry9ipzt3u9wssvmubpxznwq",
+        "etherscanMatch": "exact",
+        "etherscanVerified": true,
+        "etherscanAttemptAt": 1791799271443
+      },
+      "sourceCommit": "fcc800aa6cddeb13da8387c3c2dbbf82189a8f98",
+      "independentReview": false,
+      "inbox": "0x01ec0bbb16aec60e823fa900cd5d725583f35898",
+      "controller": "0x4579797848559111fd2b06aD3CffF121d4a17751",
+      "upgradeAdministrator": null,
+      "scope": "Operator-owned Sepolia requester only; no funds; not independently audited",
+      "creationBlock": "11898155",
+      "creationBlockHash": "0xad61f69b48a0517dd2301a7f64057ed1097aff978e6805751093bc64b01359a2",
+      "creationFinalized": false
     }
   ]
 }
