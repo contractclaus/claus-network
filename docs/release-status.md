@@ -10,7 +10,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Bounded Solidity compilation | Live; scheduled isolated compiler |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
 | Sponsored IMD reviews | Live for explicitly admitted pilots |
-| Claus decision and protected execution workers | Active for the restricted Sepolia profile; v2 rejected for missing evidence; the corrected v3 request is under actual Claus review |
+| Claus decision and protected execution workers | Active for the restricted Sepolia profile; v2 rejected for missing evidence; Claus approved v3 with the corrected evidence; onchain execution and finality remain pending |
 | Approval executor contract | Confirmed on Sepolia, source verified |
 | Service catalogue and isolated static publication | Active for admitted projects; the complete Claus-operated reference paid two services, changed agents, published its result and retired both payment sessions |
 | Project wallets | Active for admitted Sepolia projects; corrected review assessed and reference wallet source verified |
