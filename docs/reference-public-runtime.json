@@ -1,0 +1,186 @@
+{
+  "sourceCommit": "18401b940104f701946be523e9100ce3db754f1f",
+  "apiVersion": "0.11.2",
+  "scope": "Public project and free service operation; public sponsored reviews and public contracts remain disabled",
+  "deployments": [
+    {
+      "checkedAt": "2026-10-12T11:19:52.399Z",
+      "role": "api",
+      "deployment": "dpl_8wX33JhDNfw3dAkLBfjMjDM7Biyb",
+      "previous": "dpl_2DBCpPmAzKaVvR5ZfLYzGAbmQYVn",
+      "release": "8ed728263e3d43f3c2f78285e56580d6392730baeeca225644df5a0ef0716b9b",
+      "verifiedFiles": 105,
+      "changes": [
+        "adapters/contract-delivery.mjs",
+        "adapters/imd-payment.mjs",
+        "adapters/imd.mjs",
+        "interfaces/contract.mjs",
+        "package-lock.json",
+        "package.json",
+        "src/postgres/index.mjs",
+        "src/storage/index.mjs"
+      ],
+      "origin": "https://claus-network-api.vercel.app",
+      "schedules": [
+        {
+          "path": "/api/compile",
+          "schedule": "* * * * *"
+        }
+      ]
+    },
+    {
+      "checkedAt": "2026-10-12T11:20:11.004Z",
+      "role": "executor",
+      "deployment": "dpl_E9vfdKzYhqy6UD7GsqPNqmRbZX71",
+      "previous": "dpl_zkmD1czshfdqhxjkQPf9TSHyywRJ",
+      "release": "3131571044acf008f2cd174ad816412aedcc6460807ad0fb968c2b60e7f307a1",
+      "verifiedFiles": 82,
+      "changes": [
+        "adapters/contract-delivery.mjs",
+        "adapters/imd-payment.mjs",
+        "adapters/imd.mjs",
+        "interfaces/contract.mjs",
+        "package-lock.json",
+        "package.json",
+        "src/postgres/index.mjs",
+        "src/review-flow/index.mjs",
+        "src/storage/index.mjs"
+      ],
+      "origin": "https://claus-network-executor.vercel.app",
+      "schedules": [
+        {
+          "path": "/api/tick",
+          "schedule": "* * * * *"
+        }
+      ]
+    },
+    {
+      "checkedAt": "2026-10-12T11:20:32.581Z",
+      "role": "intake",
+      "deployment": "dpl_5a9FG6u3YQ6WaAeekPjXbiS5FgDz",
+      "previous": "dpl_91jCDZ3FaPiDk7p5P9FPGgBL9oQa",
+      "release": "e28433510b771568bb5acc4d34a7f1928ac9d5c15925c484c16f74a29f6a02b4",
+      "verifiedFiles": 105,
+      "changes": [
+        "adapters/contract-delivery.mjs",
+        "adapters/imd-payment.mjs",
+        "adapters/imd.mjs",
+        "interfaces/contract.mjs",
+        "package-lock.json",
+        "package.json",
+        "src/postgres/index.mjs",
+        "src/review-flow/index.mjs",
+        "src/storage/index.mjs"
+      ],
+      "origin": "https://claus-network-intake.vercel.app",
+      "schedules": [
+        {
+          "path": "/api/tick",
+          "schedule": "* * * * *"
+        }
+      ]
+    },
+    {
+      "checkedAt": "2026-10-12T11:21:00.882Z",
+      "role": "portable",
+      "deployment": "dpl_5ghSEXpDWL6UrLKo4VKoRhc9mzTQ",
+      "previous": "dpl_3Fe6kAmnp8Fk8bCKPdSjDXin872U",
+      "release": "54608c7784784cb83992464021dc47118585e6db65b809a971809d8fdfe87c72",
+      "verifiedFiles": 105,
+      "changes": [
+        "adapters/contract-delivery.mjs",
+        "adapters/imd-payment.mjs",
+        "adapters/imd.mjs",
+        "interfaces/contract.mjs",
+        "package-lock.json",
+        "package.json",
+        "src/postgres/index.mjs",
+        "src/storage/index.mjs"
+      ],
+      "origin": "https://claus-network-portable.vercel.app",
+      "schedules": [
+        {
+          "path": "/api/compile",
+          "schedule": "* * * * *"
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "tests": 393,
+    "passed": 383,
+    "optionalEnvironmentSkipped": 10,
+    "failed": 0,
+    "focusedStorageAndTransactionTests": 18,
+    "realPostgreSQL": true
+  },
+  "workerObservation": {
+    "at": "2026-10-12T11:22:14.884Z",
+    "workers": [
+      {
+        "role": "compile",
+        "expected": "8ed728263e3d43f3c2f78285e56580d6392730baeeca225644df5a0ef0716b9b",
+        "release": "8ed728263e3d43f3c2f78285e56580d6392730baeeca225644df5a0ef0716b9b",
+        "matching": true,
+        "ageMs": 57330,
+        "state": null
+      },
+      {
+        "role": "review",
+        "expected": "2e5f3ad65fe9f7d57196f9405198f81344ec43bc98b41f48eebc82539c7b6f8c",
+        "release": "2e5f3ad65fe9f7d57196f9405198f81344ec43bc98b41f48eebc82539c7b6f8c",
+        "matching": true,
+        "ageMs": 54310,
+        "state": null
+      },
+      {
+        "role": "controller",
+        "expected": "c308fdb66a329e2fc0d00b4d3e567ce8df5c01cb583cab574703b2df27f1879f",
+        "release": "c308fdb66a329e2fc0d00b4d3e567ce8df5c01cb583cab574703b2df27f1879f",
+        "matching": true,
+        "ageMs": 30811,
+        "state": null
+      },
+      {
+        "role": "executor",
+        "expected": "3131571044acf008f2cd174ad816412aedcc6460807ad0fb968c2b60e7f307a1",
+        "release": "3131571044acf008f2cd174ad816412aedcc6460807ad0fb968c2b60e7f307a1",
+        "matching": true,
+        "ageMs": 6677,
+        "state": null
+      },
+      {
+        "role": "services",
+        "expected": "f01cd2b07c0a5cf453118f541efd723a285486c2ccb063d01a48d1ac2d5f0161",
+        "release": "f01cd2b07c0a5cf453118f541efd723a285486c2ccb063d01a48d1ac2d5f0161",
+        "matching": true,
+        "ageMs": 53995,
+        "state": "ready"
+      },
+      {
+        "role": "wallets",
+        "expected": "f01cd2b07c0a5cf453118f541efd723a285486c2ccb063d01a48d1ac2d5f0161",
+        "release": "f01cd2b07c0a5cf453118f541efd723a285486c2ccb063d01a48d1ac2d5f0161",
+        "matching": true,
+        "ageMs": 25114,
+        "state": "ready"
+      },
+      {
+        "role": "vaults",
+        "expected": "f01cd2b07c0a5cf453118f541efd723a285486c2ccb063d01a48d1ac2d5f0161",
+        "release": "f01cd2b07c0a5cf453118f541efd723a285486c2ccb063d01a48d1ac2d5f0161",
+        "matching": true,
+        "ageMs": 48150,
+        "state": "ready"
+      },
+      {
+        "role": "contract-intake",
+        "expected": "e28433510b771568bb5acc4d34a7f1928ac9d5c15925c484c16f74a29f6a02b4",
+        "release": "e28433510b771568bb5acc4d34a7f1928ac9d5c15925c484c16f74a29f6a02b4",
+        "matching": true,
+        "ageMs": 33479,
+        "state": "active"
+      }
+    ]
+  }
+}
