@@ -1,0 +1,137 @@
+{
+  "at": "2026-10-12T09:39:54.326142+00:00",
+  "scope": "Mandatory upgrade delay removed from new executor source; compatible services live; replacement contract activation pending",
+  "contractSource": {
+    "at": "2026-10-12T09:37:42.854Z",
+    "commit": "bc642d36d5eafffcd04859574219acfa7a3bb27d",
+    "checkedFiles": [
+      {
+        "path": "README.md",
+        "sha256": "cca21f1183e6d75b84155ccaa9ed4b686922d6c135e2446f42012e9d1827f68e"
+      },
+      {
+        "path": "SOURCE_MANIFEST.json",
+        "sha256": "e3254f8291ee29e159adc747eac9717607f9db140383480ca3def8bf5620985e"
+      },
+      {
+        "path": "src/ClausApprovalExecutor.sol",
+        "sha256": "92df12300de383b7a5c113f43160ee95eb7f3edf25e83178d8bfbf005446a6df"
+      },
+      {
+        "path": "test/ClausApprovalExecutor.t.sol",
+        "sha256": "ca399a24f3a50e7d0991d2f3337b9d779ac5b805d1b5349a3ba72557c7bd9d96"
+      }
+    ],
+    "allExact": true
+  },
+  "reproducedBuilds": {
+    "at": "2026-10-12T09:39:38.903Z",
+    "checks": [
+      {
+        "contract": "ClausApprovalExecutor",
+        "artifactHash": "sha256:b151ae030dceb48608cacb46810cf0645b8b5bd627146ae7c39a715ca0ca3040",
+        "exact": true
+      },
+      {
+        "contract": "ClausReadonlyProject",
+        "artifactHash": "sha256:c3df931853540619b892e720f44bc7e31c73b3c0701102eb286900fd2fecb13a",
+        "exact": true
+      }
+    ]
+  },
+  "api": {
+    "checkedAt": "2026-10-12T09:38:19.531Z",
+    "deployment": "dpl_5ydQwKwZAtZoKSJn8Spc7Yuf62SJ",
+    "previous": "dpl_366xJv2xm8UWC5mmSz63TdgVpFpE",
+    "release": "30a1a3446d40192f13074a057d6559350d5844723774cae6e431e7565d3e2a9b",
+    "verifiedFiles": 99,
+    "changes": [
+      "adapters/chain-read.mjs",
+      "adapters/chain-executor.mjs",
+      "adapters/claus-controller.mjs",
+      "adapters/authorization.mjs",
+      "interfaces/http.mjs",
+      "interfaces/contract.mjs",
+      "package.json",
+      "package-lock.json"
+    ],
+    "operations": 90,
+    "health": {
+      "service": "Claus Network",
+      "status": "ok",
+      "release": "30a1a3446d40192f13074a057d6559350d5844723774cae6e431e7565d3e2a9b",
+      "capabilities": [
+        "identity",
+        "project.registry",
+        "source.snapshot",
+        "build.compile",
+        "public.projection"
+      ],
+      "reviewExecution": "restricted_pilot",
+      "testnetExecution": "restricted_pilot",
+      "collaborationExecution": "restricted_pilot",
+      "walletExecution": "restricted_pilot",
+      "vaultExecution": "restricted_pilot",
+      "portabilityExecution": "restricted_pilot",
+      "inferenceExecution": "not_enabled",
+      "contractIntakeExecution": "restricted_pilot",
+      "mainnetExecution": "not_enabled"
+    },
+    "inferenceScope": "prepared-interface-and-accounting; public-provider-disabled",
+    "contractIntakeScope": "active-only-for-original-owner-operated-Sepolia-reference; unchanged-inbox-dispatcher-and-budget",
+    "unauthenticatedAccessDenied": true
+  },
+  "controller": {
+    "role": "controller",
+    "checkedAt": "2026-10-12T09:38:58.270Z",
+    "deployment": "dpl_AyuYBzytc6d8jML3esctn8VpcUNB",
+    "previous": "dpl_7tZGTmwAKUwgcSaQrZRqs96b1M22",
+    "release": "0b27e43e7147d0d8c8f7a69336ccfd891535a08f763f42a8a59bc21dd2d77852",
+    "verifiedFiles": 65,
+    "changes": [
+      "adapters/chain-read.mjs",
+      "adapters/chain-executor.mjs",
+      "adapters/claus-controller.mjs",
+      "adapters/authorization.mjs"
+    ]
+  },
+  "executor": {
+    "role": "executor",
+    "checkedAt": "2026-10-12T09:38:31.610Z",
+    "deployment": "dpl_8Au6rEEPXkns4w7afqEhSgQ8qUvn",
+    "previous": "dpl_3xBawds16T7uUVcJSbQ5ECSLQQgC",
+    "release": "e35e3122a5283fc57e90deacd44ad36c3b8e0b14c3e5526d8144099d8921f392",
+    "verifiedFiles": 65,
+    "changes": [
+      "adapters/chain-read.mjs",
+      "adapters/chain-executor.mjs",
+      "adapters/claus-controller.mjs",
+      "adapters/authorization.mjs"
+    ]
+  },
+  "checks": {
+    "contracts": {
+      "passed": 53,
+      "failed": 0
+    },
+    "network": {
+      "passed": 375,
+      "failed": 0,
+      "environmentSkipped": 9
+    },
+    "realLocalEVM": {
+      "passed": 1,
+      "failed": 0,
+      "covers": [
+        "zero-delay execution",
+        "existing project after default executor replacement",
+        "reconcile sent transaction after executor withdrawal",
+        "deny new signature after withdrawal",
+        "owner authority revocation"
+      ]
+    }
+  },
+  "contractDeployed": false,
+  "capabilityChanged": false,
+  "onchainDelayRemoved": false
+}

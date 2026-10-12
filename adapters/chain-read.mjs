@@ -5,6 +5,19 @@ import { createChainEvidence, validateBuildEvidence } from './chain-evidence.mjs
 
 export const CHAIN_ID = 11155111;
 export const PROFILE = 'claus-readonly-v1';
+// A replacement becomes the default for new registrations. Already signed
+// registrations and existing projects keep their exact executor and artifacts.
+// Retained entries are operator configuration, never client-supplied addresses.
+export function selectExecutorCapability(current, executor = current?.executor) {
+  requireThat(current && typeof executor === 'string', 'executor_not_enabled');
+  const matches = value => value?.executor?.toLowerCase() === executor.toLowerCase();
+  const selected = matches(current) ? current : current.retainedExecutors?.find(matches);
+  requireThat(selected, 'executor_not_enabled');
+  const result = { enabled: current.enabled === true && selected.enabled === true };
+  for (const key of ['profile', 'chainId', 'executor', 'executorCodeHash', 'approvalSigner',
+    'executorPayer', 'artifactProjectId', 'targetArtifactHash']) result[key] = selected[key];
+  return result;
+}
 const fields = entries => entries.map(([name, type]) => ({ name, type }));
 export const registrationTypes = { Registration: fields([
   ['projectId', 'bytes32'], ['owner', 'address'], ['salt', 'bytes32'], ['implementation', 'address'], ['codeHash', 'bytes32'],
@@ -68,7 +81,11 @@ export function createChainRead({ client }) {
     async registration({ projectId, owner, module, configuration, mandateHash, minDelaySeconds, capability, expiresAt }) {
       await capabilityMatches(capability); await moduleMatches(module);
       requireThat(/^0x(?:[a-f0-9]{2}){0,8192}$/i.test(configuration) && Number.isSafeInteger(minDelaySeconds) &&
-        minDelaySeconds >= 3600 && minDelaySeconds <= 5 * 86400, 'invalid_registration');
+        minDelaySeconds >= 0 && minDelaySeconds <= 5 * 86400, 'invalid_registration');
+      // Read the actual pinned executor: older deployments still enforce an
+      // hour. Never prepare an owner signature for a registration it rejects.
+      const minimum = await read(capability.executor, 'MIN_UPGRADE_DELAY');
+      requireThat(minimum >= 0n && minimum <= BigInt(minDelaySeconds), 'executor_delay_required');
       const salt = keccak256(stringToHex(projectId));
       const projectKey = keccak256(encodeAbiParameters([{ type: 'address' }, { type: 'bytes32' }], [owner, salt]));
       const message = { projectId: projectKey, owner, salt, implementation: module.address, codeHash: module.codeHash,

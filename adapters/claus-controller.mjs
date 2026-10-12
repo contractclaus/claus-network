@@ -1,6 +1,6 @@
 import { hashTypedData, recoverTypedDataAddress } from 'viem';
 import { digest, requireThat } from '../src/shared/index.mjs';
-import { approvalMessage, approvalTypes, domain } from './chain-read.mjs';
+import { approvalMessage, approvalTypes, domain, selectExecutorCapability } from './chain-read.mjs';
 import { ClausApprovalExecutorAbi } from './chain-abi.mjs';
 import { boundedResponse } from './imd.mjs';
 import { authorityDenied } from './authorization.mjs';
@@ -8,6 +8,12 @@ import { authorityDenied } from './authorization.mjs';
 // This host owns the dedicated testnet approval key, never the transaction
 // payer or the network owner's key. Source and model prose are not commands.
 export function createClausController({ store, chain, client, signer, secret, fetcher = fetch, now = () => Date.now() }) {
+  async function executorAllowed(executor, reader) {
+    const cap = selectExecutorCapability((await reader.read('network-capabilities', 'chain'))?.value, executor);
+    requireThat(cap.enabled && cap.chainId === 11155111 && cap.profile === 'claus-readonly-v1' &&
+      cap.approvalSigner?.toLowerCase() === signer.address.toLowerCase(), 'executor_not_enabled');
+    return cap;
+  }
   async function call(path, body, method = body ? 'POST' : 'GET') {
     const response = await fetcher('https://claus-agent.vercel.app/internal/network' + path, {
       method, headers: { authorization: 'Bearer ' + secret, 'content-type': 'application/json' },
@@ -26,6 +32,7 @@ export function createClausController({ store, chain, client, signer, secret, fe
       requireThat(binding, 'project_not_registered');
       let permitted = false;
       try {
+        await chain.capabilityMatches(await executorAllowed(value.proposal.executor, store));
         permitted = await authorize(store) === true;
         if (permitted) await chain.validateProposal(value.proposal, binding, input.evidence?.chain);
       } catch (error) {
@@ -39,6 +46,7 @@ export function createClausController({ store, chain, client, signer, secret, fe
       }
       if (status.status === 404 || status.state === 'queued' && Date.parse(status.retryAt) <= now()) {
         await store.transaction(async tx => {
+          await executorAllowed(value.proposal.executor, tx);
           await authorize(tx);
           const existing = await tx.read('claus-decision-requests', value.id);
           if (existing) requireThat(existing.value.inputHash === digest(input), 'decision_input_mismatch');
@@ -65,6 +73,7 @@ export function createClausController({ store, chain, client, signer, secret, fe
       const typed = { domain: domain(value.proposal.executor), types: approvalTypes, primaryType: 'Approval', message };
       const approvalHash = hashTypedData(typed);
       await store.transaction(async tx => {
+        await executorAllowed(value.proposal.executor, tx);
         await authorize(tx);
         const old = await tx.read('claus-signed-approvals', value.id);
         if (old) { requireThat(old.value.approvalHash === approvalHash, 'approval_conflict'); return; }

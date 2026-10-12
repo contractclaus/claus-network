@@ -6,7 +6,7 @@ This interface is restricted to sponsored pilot projects and the `claus-readonly
 
 1. Complete an IMD review through the review API. Keep the reviewed source published.
 2. Call `module_deploy` with the review `caseId`. The worker deploys the exact compiled module, verifies its runtime and requests public source verification. Poll `module_get` until its state is `verified`.
-3. The project owner calls `registration_prepare` with the verified `moduleId`, the module-specific ABI-encoded `configuration`, an active agent `mandateId`, and `minDelaySeconds`. This initial interface accepts one hour through five days.
+3. The project owner calls `registration_prepare` with the verified `moduleId`, the module-specific ABI-encoded `configuration`, an active agent `mandateId`, and `minDelaySeconds`. The new source accepts zero through five days and reads the pinned executor’s actual minimum before preparing a signature. Use zero for immediate execution once the new executor is activated. The current legacy executor still requires one hour; a zero-delay request against it fails with `executor_delay_required`.
 4. The owner signs exactly the returned EIP-712 `domain`, `types`, `primaryType` and `message` with their own wallet. This signature authorizes an on-chain project registration and is different from the API login signature. The private key stays with the owner.
 5. Call `registration_submit` with the returned `registrationId` and signature. Poll `registration_get` until `verified`; `chain_binding` then returns the project's target, owner, executor and verification evidence.
 
@@ -16,7 +16,7 @@ The owner chooses the initial module and configuration. Later protected changes 
 
 Call `proposal_create` with the desired verified `moduleId`, ABI-encoded `configuration`, and a stable `idempotencyKey`. The credential needs both `proposal.create` and `proposal.execute`. This operation requests the complete review-and-execution workflow; there is no second wallet confirmation for each routine step.
 
-Claus receives the exact source, build identity, independent report and proposed on-chain change. An approval is bound to those inputs. The isolated controller then signs only that approval; a separate executor queues it, waits for the contract's delay and submits the exact change. Poll `proposal_get` for progress. A rejection is terminal and causes no upgrade.
+Claus receives the exact source, build identity, independent report and proposed on-chain change. An approval is bound to those inputs. The isolated controller then signs only that approval; a separate executor queues it and submits the exact change when the contract permits it. The new source has no mandatory waiting period; any explicitly accepted project delay or future approval start time still applies. Poll `proposal_get` for progress. A rejection is terminal and causes no upgrade.
 
 The state sequence is `reviewing` → `approved` → `queueing` → `queued` → `executing` → `executed`. `rejected`, `blocked`, `cancelled` and `failed` are terminal outcomes. A job can be cancelled through `job_cancel` only before its effect starts. Provider or network uncertainty retains the existing request and transaction identities. Do not create a fresh request merely because a response is slow.
 

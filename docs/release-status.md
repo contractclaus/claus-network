@@ -7,7 +7,7 @@ The owner has deferred new token launches to a later phase. They are not prerequ
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
-| Programmatic interfaces | API 0.10.5; 90 operations |
+| Programmatic interfaces | API 0.10.6; 90 operations |
 | Source snapshots and compilation | Live; explicit publication and bounded Solidity 0.8.27 or 0.8.26 compilation |
 | Network explorer | [Home](https://claus.si/Home) and project pages update from explicitly published registry records |
 | IMD reviews | Paid reference reviews completed; published reports remain readable from stored artifacts during provider outages; new work needs project admission and available sponsor funds |
@@ -32,11 +32,11 @@ The [deployment manifest](deployments.json) records nine source-verified Sepolia
 
 The [published Inbox project and report](https://claus.si/p/claus-contract-inbox) are available in the explorer. The [Inbox assessment](reference-inbox-review.json) retains all ten findings and accepts only the bounded owner-operated Sepolia pilot. The [activation receipt](reference-intake-activation.json) pins one project, its verified Inbox, separate dispatcher and finite 0.0002-Sepolia-ETH budget. The requester is a separate reference contract, outside that independent Inbox audit. The [client example](contract-intake.md#client-example) was exercised against actual local bytecode, with no public transaction or fabricated Claus decision.
 
-The first finalized contract request received a genuine Claus approval and reached its [onchain queue](reference-intake-queue.json). The queue receipt confirms the full one-hour delay, with execution permitted no earlier than 12 October at 10:21:12 UTC. The [result-resolution receipt](reference-intake-resolution.json) also matches the exact decision stored in the Inbox; that transaction is mined but not yet finalized. Callback finality and the subsequent execution are still pending.
+The first finalized contract request received a genuine Claus approval and reached its [onchain queue](reference-intake-queue.json). The queue receipt confirms the full one-hour delay, with execution permitted no earlier than 12 October at 10:21:12 UTC. The [result-resolution receipt](reference-intake-resolution.json) also matches the exact decision stored in the Inbox; that transaction is finalized. The separate callback has been submitted and awaits finalized receipt validation; the subsequent upgrade execution is still pending.
 
 ## Release and recovery
 
-API deployment: `dpl_366xJv2xm8UWC5mmSz63TdgVpFpE`, release `8877f5e7a5d8ece11b945f9e4a364c730422a7b6cbe4b502d80c8f5b45716b6b`. All 99 uploaded files matched the prepared release. The source suite passed 369 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
+API deployment: `dpl_5ydQwKwZAtZoKSJn8Spc7Yuf62SJ`, release `30a1a3446d40192f13074a057d6559350d5844723774cae6e431e7565d3e2a9b`. All 99 uploaded files matched the prepared release. The source suite passed 375 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
 
 API 0.10.4 also returns publication state and revisions in authenticated project, snapshot, review and proposal reads. A disk restart, a fresh client, concurrent-change rejection and revoked-access denial were tested. Live reads cover all four resource types. See [publication recovery](explorer.md#resume-publication-management).
 
@@ -48,7 +48,11 @@ Exports preserve compiler settings, original contract-result transactions and pe
 
 Both operator database snapshots were restored into disposable schemas and matched their original records, revisions and event sequences. The revoked credential remained denied. The encrypted remote bundle was read back, decrypted and compared. The [recovery receipt](reference-recovery.json) gives the checkpoint's actual date and coverage; later activity requires a newer checkpoint. It does not claim a production failover or continuous backup guarantee.
 
+API 0.10.6 accepts zero as the requested registration delay and checks the actual deployed executor before preparing a signature. The replacement contract source permits immediate approved changes; it is not yet the active executor. Its 53 contract tests passed. A separate real local-EVM test verified zero-delay execution, an executor replacement retaining existing projects, in-flight receipt reconciliation and revocation. The [implementation receipt](reference-zero-delay.json) records the checks and pending contract activation. The exact replacement source is [published here](https://github.com/contractclaus/claus-network-contracts/commit/bc642d36d5eafffcd04859574219acfa7a3bb27d).
+
 ## Remaining production work
+
+The owner removed the mandatory one-hour upgrade rule for the replacement executor. Its source and client validation now support zero delay; independent review and live adoption of that changed contract remain pending. Existing queued approvals are still governed by their original executor. A source update does not shorten their timers.
 
 
 [Public inference](inference.md) has prepared interfaces and accounting but no activated customer provider. [Independent pilot acceptance](external-pilot.md) requires a real participant. Existing Club, staking, NFT rights, published payment history and existing pool fees are unchanged by this network release.

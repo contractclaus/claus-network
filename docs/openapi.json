@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.10.5"
+    "version": "0.10.6"
   },
   "servers": [
     {
@@ -1611,7 +1611,7 @@
                   },
                   "minDelaySeconds": {
                     "type": "integer",
-                    "minimum": 3600,
+                    "minimum": 0,
                     "maximum": 432000
                   }
                 },

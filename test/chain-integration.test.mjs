@@ -12,7 +12,7 @@ import { compileSnapshot } from '../adapters/compiler.mjs';
 import { openStore } from '../src/storage/index.mjs';
 import { digest } from '../src/shared/index.mjs';
 
-test('API project, real signatures, contract queue and delayed execution work across isolated roles',
+test('API project, real signatures and zero-delay execution work across isolated roles',
   { skip: !process.env.CLAUS_TEST_CHAIN, timeout: 90000 }, async t => {
   const url = new URL(process.env.CLAUS_TEST_CHAIN);
   assert.equal(url.hostname, '127.0.0.1', 'This fixture must never use a public chain');
@@ -84,12 +84,22 @@ test('API project, real signatures, contract queue and delayed execution work ac
   const balanceAddress = (await client.waitForTransactionReceipt({ hash: balanceHash })).contractAddress;
   const configuration = encodeAbiParameters([{ type: 'address' }, { type: 'address' }], [balanceAddress, balanceAddress]);
   const registration = await app.deployments.prepareRegistration(ownerActor, project.id, { moduleId: deployed.id,
-    configuration, mandateId: mandate.id, minDelaySeconds: 3600 });
+    configuration, mandateId: mandate.id, minDelaySeconds: 0 });
+  assert.equal(registration.message.minDelaySeconds, 0);
   const signature = await owner.signTypedData({ domain: registration.domain, types: registration.types,
     primaryType: registration.primaryType, message: registration.message });
   await app.deployments.submitRegistration(actor, project.id, { registrationId: registration.id, signature });
   await until(() => app.deployments.runOne(executor.deployment),
     () => app.deployments.registration(actor, project.id, registration.id), 'verified');
+  const replacementHash = await wallet.deployContract({ chain: null, abi: executorSource.abi,
+    bytecode: executorSource.bytecode.object, args: [approval.address, owner.address, 86400n] });
+  const replacementAddress = (await client.waitForTransactionReceipt({ hash: replacementHash })).contractAddress;
+  await store.transaction(async tx => {
+    const previous = await tx.read('network-capabilities', 'chain');
+    await tx.write('network-capabilities', 'chain', { ...previous.value, executor: replacementAddress,
+      executorCodeHash: keccak256(await client.getCode({ address: replacementAddress })),
+      retainedExecutors: [previous.value] }, previous.revision);
+  });
   // Anvil finalizes with a block lag too: evidence must observe finalized code.
   await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
   await advance();
@@ -99,6 +109,7 @@ test('API project, real signatures, contract queue and delayed execution work ac
   const controller = createClausController({ store, chain, client, signer: approval, secret: 'local-test', now: () => clock,
     fetcher: async (url, options) => {
       if (options.method === 'GET') return Response.json({ error: 'not_found' }, { status: 404 });
+      if (options.method === 'DELETE') return Response.json({ state: 'blocked' });
       calls++; const input = JSON.parse(options.body);
       const result = { decision: 'approve', reason: 'Local fixture approves this exact non-custodial change.', risks: ['Local fixture only'],
         inputHash: digest(input), proposalHash: input.proposalHash, reviewArtifactHash: input.review.artifactHash,
@@ -114,13 +125,13 @@ test('API project, real signatures, contract queue and delayed execution work ac
   assert.equal(input.evidence.build.runtimeTemplateHash, deployed.codeHash);
   assert.equal(input.evidence.chain.dependencies[0].address, balanceAddress.toLowerCase());
   assert.equal(proposal.proposal.dependencySnapshotHash, '0x' + digest(input.evidence.chain).slice(7));
+  assert.equal(proposal.proposal.executor, executorAddress, 'the default replacement does not move an existing project');
   await assert.rejects(controller.step({ value: approved, input: { ...input, proposal: { ...input.proposal, nonce: '0' } }, authorize: async () => true }), { code: 'decision_input_mismatch' });
-  const queued = await until(() => app.approvals.runExecution(executor.execution),
-    () => app.approvals.get(actor, project.id, proposal.id), 'queued');
-  assert(queued.readyAt > Math.floor(clock / 1000));
-  await advance(3700);
   const completed = await until(() => app.approvals.runExecution(executor.execution),
     () => app.approvals.get(actor, project.id, proposal.id), 'executed');
+  const queueReceipt = await client.getTransactionReceipt({ hash: completed.queueTransaction });
+  const queueBlock = await client.getBlock({ blockNumber: queueReceipt.blockNumber });
+  assert.equal(completed.readyAt, Number(queueBlock.timestamp), 'no artificial delay after approval');
   const target = completed.execution.address;
   const targetAbi = (await contract('ClausReadonlyProject')).abi;
   const encoded = await client.readContract({ address: target, abi: targetAbi, functionName: 'evaluate',
@@ -137,17 +148,45 @@ test('API project, real signatures, contract queue and delayed execution work ac
   await assert.rejects(executor.execution.step({value: {...approved, decision: {...approved.decision, decisionHash: digest('tampered')}},
     authorize: async () => true}), {code: 'approval_missing'});
   assert.equal((await store.list('chain-transactions', {limit: 100})).length, count);
+  // Already broadcast execution keeps its original receipt even if the old
+  // executor is withdrawn while confirmations are still outstanding.
+  const inFlight = await app.approvals.create(actor, project.id, { moduleId: deployed.id, configuration,
+    dependencies, idempotencyKey: 'withdraw-after-broadcast' });
+  await app.approvals.runDecision(controller);
+  for (let i = 0; i < 10; i++) {
+    await app.approvals.runExecution(executor.execution);
+    if (await store.read('chain-transactions', 'execute:' + inFlight.id)) break;
+    await advance();
+  }
+  const sent = (await store.read('chain-transactions', 'execute:' + inFlight.id)).value;
+  assert(['submitted', 'broadcasting', 'unknown'].includes(sent.state));
+  async function retainEnabled(enabled) {
+    await store.transaction(async tx => {
+      const old = await tx.read('network-capabilities', 'chain');
+      await tx.write('network-capabilities', 'chain', { ...old.value,
+        retainedExecutors: old.value.retainedExecutors.map(cap => ({ ...cap, enabled })) }, old.revision);
+    });
+  }
+  await retainEnabled(false); await advance();
+  const reconciled = await until(() => app.approvals.runExecution(executor.execution),
+    () => app.approvals.get(actor, project.id, inFlight.id), 'executed');
+  assert.equal(reconciled.execution.transactionHash, sent.hash);
+  const declined = await app.approvals.create(actor, project.id, { moduleId: deployed.id, configuration,
+    dependencies, idempotencyKey: 'withdrawn-executor' });
+  const beforeDecline = calls;
+  await app.approvals.runDecision(controller);
+  assert.equal((await app.approvals.get(actor, project.id, declined.id)).state, 'blocked');
+  assert.equal(calls, beforeDecline, 'a withdrawn executor cannot buy another decision or signature');
+  await retainEnabled(true);
   const cancelled = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, dependencies, idempotencyKey: 'cancelled-upgrade'});
   await app.jobs.cancel(actor, project.id, cancelled.decisionJobId);
   assert.equal((await app.approvals.get(actor, project.id, cancelled.id)).state, 'cancelled');
   const stale = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, dependencies, idempotencyKey: 'stale-upgrade'});
   await app.approvals.runDecision(controller);
-  await until(() => app.approvals.runExecution(executor.execution),
-    () => app.approvals.get(actor, project.id, stale.id), 'queued');
   const revokeHash = await wallet.writeContract({chain: null, address: executorAddress, abi: executorSource.abi,
     functionName: 'setAuthority', args: [stale.proposal.projectKey, stale.proposal.mandateHash, false]});
   await client.waitForTransactionReceipt({hash: revokeHash});
-  await advance(3700);
+  await advance();
   assert.equal((await app.approvals.runExecution(executor.execution)).state, 'blocked');
   assert.equal((await app.approvals.get(actor, project.id, stale.id)).state, 'blocked');
   assert.equal(await store.read('chain-transactions', 'execute:' + stale.id), null);
@@ -159,6 +198,6 @@ test('API project, real signatures, contract queue and delayed execution work ac
   const freshSession = await app.identity.session({challengeId: freshChallenge.id, signature: await owner.signMessage({message: freshChallenge.message})});
   await app.identity.revoke(await app.identity.authenticate(freshSession.token), 'mandate', mandate.id);
   assert.equal((await app.approvals.runDecision(controller)).state, 'blocked');
-  assert.equal(calls, 2, 'revocation blocks a fresh paid decision');
+  assert.equal(calls, 3, 'revocation blocks a fresh paid decision');
   assert.equal(await store.read('claus-signed-approvals', next.id), null);
 });

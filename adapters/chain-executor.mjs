@@ -1,7 +1,7 @@
 import { encodeAbiParameters, encodeFunctionData, hashTypedData, keccak256, recoverTypedDataAddress } from 'viem';
 import { digest, requireThat } from '../src/shared/index.mjs';
 import { createSepoliaTransactions } from './sepolia-transactions.mjs';
-import { approvalMessage, approvalTypes, domain, validateModule } from './chain-read.mjs';
+import { approvalMessage, approvalTypes, domain, validateModule, selectExecutorCapability } from './chain-read.mjs';
 import { ClausApprovalExecutorAbi as executorAbi, ClausReadonlyProjectAbi as targetAbi } from './chain-abi.mjs';
 import { authorityDenied } from './authorization.mjs';
 
@@ -43,20 +43,27 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     const source = await reader.read('public-sources', digest({ projectId: module.projectId, id: review.input.sourceHash }));
     requireThat(source?.value.published === true, 'source_not_published');
   }
-  async function capability() {
-    const value = (await store.read('network-capabilities', 'chain'))?.value;
-    await chain.capabilityMatches(value); return value;
+  async function capability(executor) {
+    const value = selectExecutorCapability((await store.read('network-capabilities', 'chain'))?.value, executor);
+    // A withdrawn profile may still have a broadcast transaction to reconcile.
+    // Fresh signatures/broadcasts check the current enabled profile below.
+    await chain.capabilityMatches({ ...value, enabled: true }); return value;
+  }
+  async function currentCapability(cap, reader) {
+    const value = selectExecutorCapability((await reader.read('network-capabilities', 'chain'))?.value, cap.executor);
+    requireThat(value.enabled && digest(value) === digest({ ...cap, enabled: true }) &&
+      value.executorPayer?.toLowerCase() === signer.address.toLowerCase(), 'executor_not_enabled');
   }
   const terminal = tx => tx.state === 'cancelled' ? { state: 'blocked', error: 'authority_or_window_closed' } :
     tx.state === 'reverted' ? { state: 'failed', error: 'transaction_reverted', transactionHash: tx.hash } : null;
   const deployment = {
     async step({ kind, value, artifact, signature, authorize }) {
-      const cap = await capability();
+      const cap = await capability(kind === 'project-register' ? value.executor : undefined);
       if (kind === 'module-deploy') {
         validateModule(artifact);
         const tx = await transact({ id: 'deploy:' + value.id, data: artifact.creationBytecode,
           authority: { kind, projectId: value.projectId, moduleId: value.id }, expiresAt: value.expiresAt,
-          authorize: async reader => { await published(value, reader); return authorize(reader); } });
+          authorize: async reader => { await currentCapability(cap, reader); await published(value, reader); return authorize(reader); } });
         if (terminal(tx)) return terminal(tx);
         if (tx.state !== 'confirmed') return { state: 'deploying', transactionHash: tx.hash };
         const address = tx.receipt.contractAddress;
@@ -72,6 +79,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       const tx = await transact({ id: 'register:' + value.id, to: value.executor, data,
         authority: { kind, projectId: value.projectId, registrationId: value.id }, expiresAt: value.message.expiresAt * 1000,
         authorize: async reader => {
+          await currentCapability(cap, reader);
           const mandate = (await reader.read('mandates', value.mandateId))?.value;
           requireThat(mandate && !mandate.revokedAt && mandate.expiresAt > now() &&
             '0x' + digest(mandate).slice(7) === value.message.mandateHash, 'invalid_mandate');
@@ -100,7 +108,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
   const execution = {
     async step({ value, authorize }) {
       const p = value.proposal;
-      const cap = await capability();
+      const cap = await capability(p.executor);
       requireThat(p.chainId === 11155111 && p.executor === cap.executor && digest(p) === value.proposalHash, 'proposal_mismatch');
       const signed = (await store.read('claus-signed-approvals', value.id))?.value;
       requireThat(signed && value.decision?.decision === 'approve' && signed.decisionHash === value.decision.decisionHash &&
@@ -118,6 +126,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       const validate = () => chain.validateProposal(p, binding, input.evidence?.chain);
       const executionId = 'execute:' + value.id;
       async function fresh(reader) {
+        await currentCapability(cap, reader);
         const module = (await reader.read('chain-modules', value.moduleId))?.value;
         await published(module, reader);
         return authorize(reader);

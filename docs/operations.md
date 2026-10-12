@@ -34,6 +34,14 @@ Set `CLAUS_OPERATOR_ID` to the operator’s HTTPS origin, `CLAUS_ARCHIVE_SIGNING
 
 Run database grants as the database owner. Revoke public database connection rights and explicitly grant each runtime role access only to its own database. Verify both allowed local reads and denied cross-database connection privileges. Separate databases within one hosting account are not separate organizational trust domains.
 
+## Replacing an upgrade executor
+
+A deployed executor and each project's target keep their original onchain rules. Publishing new source does not change an existing project's binding or shorten a queued approval. A replacement must have its own exact build, independent review, source verification and explicit operator admission.
+
+The chain capability selects the default executor for new registrations. To adopt a replacement, retain the previous complete capability in `retainedExecutors`, including its address, runtime hash, approval signer, payer and target-artifact references. Workers select the exact entry belonging to each signed registration or existing project. Never overwrite a project's binding or relabel the old target as migrated.
+
+Set a retained entry's `enabled` to false to deny new decisions and broadcasts for that executor; preserve the entry for reconciliation of transactions already sent. Removing the entry or its original journals prevents that reconciliation. A global chain disable still stops the chain worker. All accepted project delays and future approval start times remain enforced onchain. The replacement source permits an explicitly signed zero delay.
+
 ## Recovery checkpoints
 
 The hosted reference stores an encrypted recovery bundle outside the serving hosts. It contains the released network source, protected operational checkpoints, the network's dedicated signer keystores and passphrases, and snapshots of both operator databases. The decryption key remains in the owner's existing protected recovery configuration; it is not included in the bundle. An encrypted bundle is still sensitive and belongs in private storage.

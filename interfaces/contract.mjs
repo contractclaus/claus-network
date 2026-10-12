@@ -1,4 +1,4 @@
-export const API_VERSION='0.10.5';
+export const API_VERSION='0.10.6';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
@@ -35,7 +35,7 @@ export const ROUTES=Object.freeze([
  route('review_publish','PUT','/v1/projects/{projectId}/reviews/{caseId}/publication',{projectId:string(),caseId:string(),published:boolean,expectedRevision:integer}),
  route('module_deploy','POST','/v1/projects/{projectId}/modules',{projectId:string(),caseId:string()}),
  route('module_get','GET','/v1/projects/{projectId}/modules/{moduleId}',{projectId:string(),moduleId:string()}),
- route('registration_prepare','POST','/v1/projects/{projectId}/chain/registrations/prepare',{projectId:string(),moduleId:string(),configuration:string(16386),mandateId:string(),minDelaySeconds:{type:'integer',minimum:3600,maximum:432000}}),
+ route('registration_prepare','POST','/v1/projects/{projectId}/chain/registrations/prepare',{projectId:string(),moduleId:string(),configuration:string(16386),mandateId:string(),minDelaySeconds:{type:'integer',minimum:0,maximum:432000}}),
  route('registration_submit','POST','/v1/projects/{projectId}/chain/registrations/{registrationId}/submit',{projectId:string(),registrationId:string(),signature:string(132)}),
  route('registration_get','GET','/v1/projects/{projectId}/chain/registrations/{registrationId}',{projectId:string(),registrationId:string()}),
  route('chain_binding','GET','/v1/projects/{projectId}/chain',{projectId:string()}),
