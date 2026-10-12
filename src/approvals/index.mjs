@@ -1,6 +1,11 @@
 import { canonical, digest, requireThat, text } from '../shared/index.mjs';
 
 export function createApprovals({ store, identity, projects, reviews, deployments, jobs, artifacts, chain, now = () => Date.now() }) {
+  function executionEvidence(value) {
+    return { id: value.id, ...value.execution,
+      verification: value.execution.verification.state === 'verified' ? 'verified' : 'pending',
+      sourceVerification: value.execution.verification };
+  }
   async function find(reader, projectId, id) {
     const row = await reader.read('chain-proposals', text(id));
     requireThat(row?.value.projectId === projectId, 'not_found'); return row;
@@ -104,9 +109,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
           decisions.push({ id: proposalId, proposalHash: value.proposalHash,
             status: decision === 'approve' ? 'Approved' : 'Rejected', decision, reason, risks,
             decisionHash, configurationRevision, model, completedAt });
-          if (value.state === 'executed') deployments.push({ id: proposalId, ...value.execution,
-            verification: value.execution.verification.state === 'verified' ? 'verified' : 'pending',
-            sourceVerification: value.execution.verification });
+          if (value.state === 'executed') deployments.push(executionEvidence(value));
         }
         await tx.write('public-evidence', projectId, { ...prior, decisions, deployments }, evidence?.revision ?? 0);
         const saved = await tx.write('proposal-publications', proposalId, { published }, expectedRevision);
@@ -171,7 +174,16 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         return jobs.finish(claim, { state: done ? result.state === 'executed' ? 'complete' : result.state : 'waiting',
           retryAt: done ? null : Math.max(now() + 30000, result.readyAt ? result.readyAt * 1000 : 0), result: { state: result.state } }, async tx => {
           const old = await find(tx, value.projectId, value.id);
-          await tx.write('chain-proposals', value.id, { ...old.value, ...result, updatedAt: now() }, old.revision);
+          const next = { ...old.value, ...result, updatedAt: now() };
+          await tx.write('chain-proposals', value.id, next, old.revision);
+          if (next.state === 'executed') {
+            const publication = await tx.read('proposal-publications', value.id);
+            const evidence = await tx.read('public-evidence', value.projectId);
+            if (publication?.value.published === true && evidence?.value.decisions.some(x => x.id === value.id)) {
+              await tx.write('public-evidence', value.projectId, { ...evidence.value,
+                deployments: [...evidence.value.deployments.filter(x => x.id !== value.id), executionEvidence(next)] }, evidence.revision);
+            }
+          }
         });
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };

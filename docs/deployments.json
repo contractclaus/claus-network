@@ -1,10 +1,10 @@
 {
   "chainId": 11155111,
   "network": "Ethereum Sepolia",
-  "checkedAt": "2026-10-12T08:42:43.507Z",
-  "observedBlock": "11897765",
-  "observedBlockHash": "0xddd3191035d0c0ecd24d91fa8b6cd756d37416ee6f575ed7303c822581081426",
-  "finalizedBlock": "11897687",
+  "checkedAt": "2026-10-12T09:00:15.028Z",
+  "observedBlock": "11897853",
+  "observedBlockHash": "0xc2ac15d3d8b1b3ee9b88999993099093ab7f67aa5f75b13c9f1a11cd1bc48086",
+  "finalizedBlock": "11897783",
   "scope": "Claus-operated reference deployments; verification is distinct from review and lifecycle acceptance",
   "contracts": [
     {
@@ -564,7 +564,7 @@
       "scope": "Operator-owned Sepolia requester only; no funds; not independently audited",
       "creationBlock": "11897749",
       "creationBlockHash": "0xe4ca75de89f853a3ea708ba380babc7a4bdd44ccb3f5551768287f155067a2f4",
-      "creationFinalized": false
+      "creationFinalized": true
     }
   ]
 }

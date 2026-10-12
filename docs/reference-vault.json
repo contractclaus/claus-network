@@ -1,0 +1,77 @@
+{
+  "at": "2026-10-12T08:59:58.345Z",
+  "scope": "Owner-operated Sepolia reference; no mainnet or customer custody",
+  "projectId": "prj_6a2a275a-abc7-4e29-b91e-4e004ebb58ef",
+  "chainId": 11155111,
+  "vault": "0x66fa2f848a9ea0be9be69f29b91c1d48b9dc95a4",
+  "codeHash": "0x7586a71b43ac9c8e33e3536f6068856565f84e6cc84f217bd3aef05961b25d6b",
+  "verification": {
+    "id": "sha256:e321ec6f6a803d9a1835c7dae273a4b09f18d50c27208696c0b81364f8d0c596",
+    "state": "verified",
+    "address": "0x66fa2f848a9ea0be9be69f29b91c1d48b9dc95a4",
+    "chainId": 11155111,
+    "checkedAt": 1791788607298,
+    "inputHash": "sha256:8368063491d42eda3fc01494f52e58652180deb521a5b2c5d6f0fa1061ad1498",
+    "sourcifyId": "72609b60-854c-443c-8cbf-4b645809f2e2",
+    "explorerUrl": "https://sepolia.etherscan.io/address/0x66fa2f848a9ea0be9be69f29b91c1d48b9dc95a4#code",
+    "sourcifyUrl": "https://repo.sourcify.dev/11155111/0x66fa2f848a9ea0be9be69f29b91c1d48b9dc95a4",
+    "runtimeMatch": "exact_match",
+    "creationMatch": "exact_match",
+    "etherscanGuid": "zmm93z4rrjhduadyuztl6xqsnfwqyxugbfabdtxtjz2hcfgasy",
+    "etherscanMatch": "exact",
+    "etherscanVerified": true,
+    "etherscanAttemptAt": 1791788547194
+  },
+  "deposit": {
+    "kind": "deposit",
+    "chainId": 11155111,
+    "hash": "0xd047683e5467417d5ce809597018e11c94fdb5e2c6bdd8d1057f617bb4f4bafe",
+    "status": "success",
+    "blockNumber": "11897272",
+    "blockHash": "0x2929e926e84142c0744f26dca3a1d5344a5c1b6e41e9628eb15eb70839d13af8",
+    "to": "0x66fa2f848a9ea0be9be69f29b91c1d48b9dc95a4",
+    "amountWei": "100000000000",
+    "gasUsed": "266019",
+    "effectiveGasPrice": "1000005"
+  },
+  "closed": {
+    "blockNumber": "11897687",
+    "blockHash": "0x22f8011f558d4bd166029c6157cbf9045672f7b6660ae680199a5a8f026412f5",
+    "execution": "0x5213e677790fd99e3b17680017c19c669c4314c772462b545d5bdf53d9a5588d"
+  },
+  "withdrawal": {
+    "kind": "withdrawal",
+    "chainId": 11155111,
+    "hash": "0xd7e475b1a76f7fd64e8112bee91638fc6e549a6298813a79d19a80e61a13c2a3",
+    "status": "success",
+    "blockNumber": "11897761",
+    "blockHash": "0x57b68a180fea79ed63179b8be4bcae928486edd622c3cfd836e85f50817a6ba9",
+    "to": "0x66fa2f848a9ea0be9be69f29b91c1d48b9dc95a4",
+    "amountWei": "100000000000",
+    "gasUsed": "51275",
+    "effectiveGasPrice": "1000035"
+  },
+  "proposalId": "sha256:2b80fc25d0a4691c0fe042586f40c833ec89dacd7a3e945c09ae8755396be3b7",
+  "decision": {
+    "model": "gpt-6-astra",
+    "risks": [
+      "Finalized RPC observations are not cryptographic state proofs. This judgment does not replace the separate signer's independent validation or guarantee safety.",
+      "The maximum is per account, not a global cap or owner allowlist. Future admission changes are not approved here; larger configurations can exceed the vault's policy gas budget, and stipend-only deposits fail.",
+      "A chosen recipient can reject or exhaust gas during withdrawal, causing an atomic revert. Forced ETH is not credited as principal.",
+      "Limited to this exact owner-operated Sepolia policy change and recorded vault. No approval for vault deployment, mainnet, customers, investment, yield, general custody or unregistered consumers."
+    ],
+    "reason": "This exact Sepolia change retains the observed ClausVaultAdmission code and sets (enabled=false, maximum=1000000000000), closing new deposits through deposit() and receive(). The supplied vault runtime matches the artifact with its immutable policy binding. Withdrawals never consult that policy: they debit the caller's principal before a reentrancy-guarded payment to the caller's chosen recipient, reverting atomically on failure. This grants no authority to pause withdrawals, redirect principal or impose fees. At finalized block 11897272, the recorded owner's 100000000000 wei equals total principal and is below the scope limit. The pure module has no external dependencies; the reported large-configuration gas issue does not affect this 64-byte configuration.",
+    "decision": "approve",
+    "inputHash": "sha256:53af2fbee16e518f1a890f118ffc1bc40a6135356f34470d5ffac289eb34a5fe",
+    "completedAt": "2026-10-12T07:19:20.633Z",
+    "decisionHash": "sha256:c265812a05931d121c757911fd39895879812b73c8b6c716c757c3cee77877c5",
+    "proposalHash": "sha256:ea0addb3b46f5cb0e9ea3bc175c95bef6a798c14b56731f19936e79d8b2b2d38",
+    "configurationHash": "0fd658580d895046ee4253ef298476541cbdde9a8bea0f3e2207242252f6655d",
+    "reviewArtifactHash": "sha256:177a4908cc67daa06738b476cc7cf41a7d2ec5f0f63a357961e2e40269862133",
+    "configurationRevision": 451
+  },
+  "finalizedBlock": "11897783",
+  "principalAfter": "0",
+  "vaultBytecodeUnchanged": true,
+  "profile": "https://claus.si/p/claus-native-vault"
+}

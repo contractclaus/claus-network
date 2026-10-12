@@ -107,6 +107,9 @@ test('API project, real signatures, contract queue and delayed execution work ac
     } });
   assert.equal((await app.approvals.runDecision(controller)).state, 'complete'); assert.equal(calls, 1);
   const approved = await app.approvals.get(actor, project.id, proposal.id); assert.equal(approved.state, 'approved');
+  await app.approvals.publish(actor, project.id, { proposalId: proposal.id, published: true, expectedRevision: 0 });
+  await app.projects.publish(actor, project.id, { published: true, expectedRevision: 0 });
+  assert.equal((await app.projects.publicProject(project.slug)).evidence.deployments.length, 0);
   const input = await app.artifacts.get(project.id, approved.inputArtifactHash);
   assert.equal(input.evidence.build.runtimeTemplateHash, deployed.codeHash);
   assert.equal(input.evidence.chain.dependencies[0].address, balanceAddress.toLowerCase());
@@ -126,8 +129,6 @@ test('API project, real signatures, contract queue and delayed execution work ac
     { type: 'uint256' }, { type: 'address' }, { type: 'uint256' }], encoded);
   assert.equal(result[0], 11155111n); assert.equal(result[4], 23n); assert.equal(result[6], 23n);
   assert.equal(completed.execution.version, 2);
-  await app.approvals.publish(actor, project.id, { proposalId: proposal.id, published: true, expectedRevision: 0 });
-  await app.projects.publish(actor, project.id, { published: true, expectedRevision: 0 });
   const publicProject = await app.projects.publicProject(project.slug);
   assert.equal(publicProject.evidence.deployments[0].transactionHash, completed.execution.transactionHash);
   assert.equal(publicProject.evidence.deployments[0].verification, 'verified');

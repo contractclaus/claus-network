@@ -30,6 +30,8 @@ Once an approval signature has been published on chain, anyone can submit it wit
 
 Use `proposal_publish` to add a completed decision and, when executed, its deployment receipt to the public project profile. Publication requires `project.publish`, an expected revision and still-published source. Internal inference payment material is not included in that projection.
 
+A decision can be published while its approved change is still queued. When execution completes, the worker adds the deployment receipt to that existing publication automatically. It does not require another publication request or change its publication revision. Withdrawing the publication before completion prevents that receipt from being added; execution never publishes a private decision by itself.
+
 Source verification, independent review, Claus approval and confirmed execution remain separate evidence. This profile has no custody of customer funds and establishes no safety guarantee for future token, lending or trading products.
 
 ## Retained trust boundaries
