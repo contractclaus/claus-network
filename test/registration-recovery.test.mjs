@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { encodeFunctionData } from 'viem';
+import { encodeFunctionData, keccak256 } from 'viem';
 import { openStore } from '../src/storage/index.mjs';
 import { canonical, digest } from '../src/shared/index.mjs';
 import { createChainExecutor } from '../adapters/chain-executor.mjs';
@@ -120,6 +120,34 @@ test('post-receipt state reads are pinned and transient missing state is retryab
   await assert.rejects(f.step(), { code: 'registration_state_unavailable' });
   lag = false;
   assert.equal((await f.step()).state, 'verified');
+});
+
+test('registration recovery passes empty history before a replacement executor existed', async t => {
+  const f = await fixture(t); f.earlier(20100n); f.finalize(20200n);
+  const read = f.client.readContract;
+  f.client.getCode = async ({ address: target, blockNumber }) =>
+    target === f.value.executor && blockNumber < 20000n ? '0x' : '0x1234';
+  f.client.readContract = input => {
+    if (input.functionName === 'projects' && input.blockNumber < 20000n) assert.fail('read before executor deployment');
+    return read(input);
+  };
+  assert.equal((await f.step()).state, 'registering');
+  assert.equal((await f.step()).state, 'registering');
+  assert.equal((await f.step()).state, 'verified');
+});
+
+test('a missing pinned target code cannot persist an empty-code binding', async t => {
+  const f = await fixture(t); f.finalize(110n); let lag = true;
+  f.client.getCode = async ({ address: target, blockNumber }) => {
+    if (target === f.project[1]) {
+      assert.equal(blockNumber, 101n);
+      return lag ? '0x' : '0x1234';
+    }
+    return '0x1234';
+  };
+  await assert.rejects(f.step(), { code: 'registration_state_unavailable' });
+  lag = false;
+  assert.equal((await f.step()).binding.codeHash, keccak256('0x1234'));
 });
 
 test('a missing finalized registration past its deadline terminates without a new transaction', async t => {

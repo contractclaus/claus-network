@@ -71,7 +71,9 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     const found = await recoverChainEvent({store,client,chainId,key:'registration:v2:'+value.id,
       fromBlock:deployed < observed ? deployed : observed,
       validateEmpty: async ({ fromBlock, toBlock }) => {
-        if (toBlock < deployed || /^0x0{40}$/i.test((await projectAt(toBlock))[1])) return;
+        if (toBlock < deployed) return;
+        const endCode = await client.getCode({ address: value.executor, blockNumber: toBlock });
+        if (!endCode || endCode === '0x' || /^0x0{40}$/i.test((await projectAt(toBlock))[1])) return;
         // A state change inside an allegedly empty page means the RPC's log
         // index is behind. Do not advance the cursor past that missing event.
         const code = fromBlock > 0n ? await client.getCode({ address: value.executor, blockNumber: fromBlock - 1n }) : null;
@@ -163,6 +165,8 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         Number(project[4]) === value.message.minDelaySeconds,
         'registration_state_unavailable');
       const target = project[1];
+      const targetCode = await client.getCode({ address: target, blockNumber });
+      requireThat(targetCode && targetCode !== '0x', 'registration_state_unavailable');
       requireThat((await registeredRead(target, 'executor', [], targetAbi)).toLowerCase() === value.executor.toLowerCase() &&
         await registeredRead(target, 'projectId', [], targetAbi) === value.message.projectId, 'registration_state_unavailable');
       const targetArtifact = await artifacts.get(cap.artifactProjectId, cap.targetArtifactHash);
@@ -172,7 +176,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         constructorArguments, creationTransaction: tx.hash });
       return { state: proof.state === 'verified' ? 'verified' : 'verifying', transactionHash: tx.hash,
         binding: { profile: cap.profile, chainId, executor: value.executor, projectKey: value.message.projectId,
-          owner: value.message.owner, target, codeHash: keccak256(await client.getCode({ address: target })),
+          owner: value.message.owner, target, codeHash: keccak256(targetCode),
           registrationTransaction: tx.hash, verification: proof } };
     }
   };
@@ -233,13 +237,24 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         // successful event; nonce consumption alone could also be cancellation.
         const queued = (await store.read('chain-transactions', 'queue:' + value.id))?.value;
         const event = executorAbi.find(x => x.type === 'event' && x.name === 'UpgradeExecuted');
-        const found = await recoverChainEvent({store,client,chainId,key:'execution:'+value.id,
+        const versionAt = blockNumber => client.readContract({ address: p.target, abi: targetAbi,
+          functionName: 'version', blockNumber });
+        const found = await recoverChainEvent({store,client,chainId,key:'execution:v2:'+value.id,
           fromBlock:input.evidence?.chain?.blockNumber??queued?.receipt?.blockNumber??0,
+          validateEmpty: async ({ toBlock }) => {
+            const code = await client.getCode({ address: p.target, blockNumber: toBlock });
+            if (!code || code === '0x') return;
+            // Cancellation consumes a nonce without upgrading the target. A
+            // changed version with no matching event is missing evidence,
+            // never proof that the signed approval was cancelled.
+            requireThat(await versionAt(toBlock) <= BigInt(p.fromVersion), 'recovery_logs_inconsistent');
+          },
           query:{address:p.executor,event,args:{projectId:p.projectKey,approvalHash:signed.approvalHash}}});
         if(!found.complete)return {state:'executing',error:'execution_history_pending'};
         const logs=found.logs;
         if (!logs.length) {
-          const consumed=await client.readContract({address:p.executor,abi:executorAbi,functionName:'executionNonces',args:[p.projectKey,BigInt(p.nonce)],blockTag:'finalized'});
+          const consumed=await client.readContract({address:p.executor,abi:executorAbi,functionName:'executionNonces',args:[p.projectKey,BigInt(p.nonce)],blockNumber:found.finalizedBlock.number});
+          if (consumed) requireThat(await versionAt(found.finalizedBlock.number) <= BigInt(p.fromVersion), 'recovery_logs_inconsistent');
           return consumed?{state:'blocked',error:'approval_cancelled'}:{state:'executing'};
         }
         const receipt = await client.getTransactionReceipt({ hash: logs.at(-1).transactionHash });

@@ -129,7 +129,11 @@ test('failed callback consumes one bounded attempt without repeating completed w
   await f.make().step(f.input); f.confirm();
   assert.equal((await f.make().step(f.input)).state, 'pending');
   f.confirm(false);
-  assert.equal((await f.make().step(f.input)).state, 'failed');
+  const failed = await f.make().step(f.input);
+  assert.equal(failed.state, 'failed');
+  assert.equal(failed.reason, 'dispatch_callback_not_delivered');
+  assert.equal(failed.phase, 'callback'); assert.equal(failed.resolutionFinalized, true);
+  assert.equal(failed.transactionHash, (await f.store.list('chain-transactions')).find(x => x.id.endsWith(':resolve')).value.hash);
   assert.equal((await f.make().step(f.input)).state, 'failed');
   assert.equal(f.broadcasts(), 2); assert.equal((await f.ledger()).spent, '180000000000');
   assert.equal((await f.ledger()).reserved, '0');
@@ -267,6 +271,8 @@ test('a resolved request with expired callback funding has a final delivery fail
   await f.make().step(f.input); f.confirm(); f.advanceTo(f.budget.expiresAt + 1);
   const result = await f.make().step(f.input);
   assert.equal(result.state, 'failed'); assert.equal(result.reason, 'dispatch_subsidy_expired');
+  assert.equal(result.phase, 'callback'); assert.equal(result.resolutionFinalized, true);
+  assert.equal(result.transactionHash, (await f.store.list('chain-transactions'))[0].value.hash);
   const next = { ...f.budget, id: 'later-explicit-allocation', expiresAt: f.budget.expiresAt + 86400000 };
   await admitContractDispatchBudget(f.store, next);
   assert.equal((await f.make(next).step(f.input)).state, 'failed');

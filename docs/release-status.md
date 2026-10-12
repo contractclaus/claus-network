@@ -1,6 +1,6 @@
 # Release status: API 0.12.1
 
-Source candidate 0.12.3 fixes registration relay recovery and distinguishes expired dispatch funding from a closed request. It also stops finalized-history conflicts explicitly and waits for external callback finality. The 0.12.2 reassessment found additional relay and state-recovery defects; 0.12.3 addresses them. Independent reassessment and deployment are pending; the current public scope below is unchanged.
+Source candidate 0.12.4 fixes recovery across executor replacement, rejects missing receipt-pinned target code, and prevents missing execution logs from being treated as cancellation. Callback failures retain the finalized resolution receipt. Chain workers require an explicitly configured archive RPC. These changes follow the 0.12.3 specialist findings; final independent reassessment and deployment remain pending. The current public scope below is unchanged.
 
 The consolidated runtime at source `4976a080290d57f85cc1afd2eaf924005d321259` is deployed and source-verified. All eight primary workers matched their expected releases on 12 October 2026 at 12:41 UTC. Public projects, agent management, free service collaboration, static project pages and portability are available through the documented interfaces. Public sponsored reviews and new public Sepolia admission remain disabled while the final independent assessment and live contract reference are completed.
 

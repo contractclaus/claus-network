@@ -142,11 +142,12 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
     requireThat(profile.chainId === budget.chainId && profile.inbox === budget.inbox &&
       profile.codeHash === budget.codeHash, 'dispatch_profile_mismatch');
     const resultHash = digest(request.result);
-    const answer = (state, extra = {}) => ({ state, resultHash, ...extra });
+    let resolveTransaction;
+    const answer = (state, extra = {}) => ({ state, resultHash,
+      ...(resolveTransaction ? { resolutionFinalized: true, transactionHash: resolveTransaction.hash } : {}), ...extra });
     const resolution = await chain.resolution(request);
     requireThat(resolution.chainId === budget.chainId && resolution.from.toLowerCase() === budget.dispatcher &&
       resolution.to.toLowerCase() === budget.inbox && resolution.value === '0', 'dispatch_intent_mismatch');
-    let resolveTransaction;
     for (const action of ['resolve', ...(resolution.callback ? ['callback'] : [])]) {
       const intent = action === 'resolve' ? resolution : resolution.callback;
       requireThat(intent.to.toLowerCase() === budget.inbox && intent.value === '0', 'dispatch_intent_mismatch');
@@ -185,7 +186,7 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
         // An externally resolved request has no local resolution receipt.
         if (action === 'resolve' && observed.resolved) return answer('pending');
         if (action === 'resolve' && resolution.expiresAt <= now()) return answer('closed');
-        if (expiresAt <= now()) return answer('failed', { reason: 'dispatch_subsidy_expired' });
+        if (expiresAt <= now()) return answer('failed', { reason: 'dispatch_subsidy_expired', phase: action });
         if (!allowSubmit || !await active(store, request)) return answer('pending');
         transaction = await transactions.prepare({ id: transactionId, to: intent.to, data: intent.data, authority, expiresAt });
       }
@@ -200,16 +201,16 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
         if (transaction.state === 'cancelled') {
           if (action === 'resolve' && ((await chain.deliveryState(request)).closed || resolution.expiresAt <= now()))
             return answer('closed');
-          return answer('failed', { reason: 'dispatch_cancelled' });
+          return answer('failed', { reason: 'dispatch_cancelled', phase: action });
         }
-        return answer('failed', { reason: 'dispatch_transaction_reverted' });
+        return answer('failed', { reason: 'dispatch_transaction_reverted', phase: action });
       }
       if (transaction.state !== 'confirmed') return answer('pending');
       const observed = await chain.deliveryState(request, 'finalized');
       if (observed.blockNumber < Number(transaction.receipt.blockNumber)) return answer('pending');
       requireThat(observed.resolved, 'dispatch_result_not_finalized');
       if (action === 'resolve') resolveTransaction = transaction;
-      else if (!observed.callbackDelivered) return answer('failed');
+      else if (!observed.callbackDelivered) return answer('failed', { reason: 'dispatch_callback_not_delivered', phase: action });
     }
     return answer('delivered', { finalized: true, transactionHash: resolveTransaction.hash });
   } };

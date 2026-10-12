@@ -23,9 +23,13 @@ export async function checkChainWorkerRoles(store, role, signers) {
 
 export async function createChainWorker(role, env = process.env) {
   requireThat(['controller', 'executor'].includes(role), 'invalid_worker_role');
+  // Receipt-pinned state and resumable event scans need historical data.
+  // The operator must select and verify an archive RPC before activation.
+  requireThat(typeof env.CLAUS_SEPOLIA_RPC_URL === 'string' &&
+    new URL(env.CLAUS_SEPOLIA_RPC_URL).protocol === 'https:', 'historical_rpc_required');
   neonConfig.webSocketConstructor = ws;
   const store = await openPostgresStore({ pool: new Pool({ connectionString: env.CLAUS_NETWORK_DATABASE_URL, max: 3, connectionTimeoutMillis: 8000 }) });
-  const client = createPublicClient({ transport: http('https://ethereum-sepolia-rpc.publicnode.com', { retryCount: 0, timeout: 15000 }) });
+  const client = createPublicClient({ transport: http(env.CLAUS_SEPOLIA_RPC_URL, { retryCount: 0, timeout: 15000 }), cacheTime: 0 });
   const signer = privateKeyToAccount(env.CLAUS_CHAIN_PRIVATE_KEY);
   requireThat(signer.address.toLowerCase() === env.CLAUS_CHAIN_SIGNER?.toLowerCase(), 'worker_signer_mismatch');
   const sepolia = createChainRead({ client }), sealer = createSealer(env.CLAUS_NETWORK_SEALING_KEY);
