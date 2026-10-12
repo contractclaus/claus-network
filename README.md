@@ -15,7 +15,9 @@ API 0.10.5 exposes 90 operations. Sponsored IMD reviews, the automatic Home map,
 
 Inference interfaces and accounting are deployed in a disabled state. No public provider or holder-credit program is activated. See the [inference integration boundaries](docs/inference.md).
 
-The [contract-request interface](docs/contract-intake.md), scanner and delivery coordinator are active for one admitted Claus-operated Sepolia project. Its first real request awaits finalized intake and genuine decision/callback acceptance. The source also includes read-only Base settlement verification. General contract intake, token launches and public inference remain unavailable.
+The [contract-request interface](docs/contract-intake.md), scanner and delivery coordinator are active for one admitted Claus-operated Sepolia project. Its first finalized request received a genuine Claus approval and reached the onchain queue; callback and delayed execution acceptance remain pending. General contract intake and public inference remain unavailable.
+
+The current delivery focuses on projects, agents and services without a token requirement. New token launches were deferred by the owner on 12 October 2026. Existing CLAUS, Club, staking and NFT services are unchanged.
 
 ## Development
 

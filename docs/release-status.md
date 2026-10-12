@@ -2,6 +2,8 @@
 
 Status checked on 12 October 2026. The [live health response](https://claus-network-api.vercel.app/health) reports enabled capabilities separately from the [API schema](https://claus-network-api.vercel.app/openapi.json). Most paid and onchain workflows require an admitted pilot project.
 
+The owner has deferred new token launches to a later phase. They are not prerequisites for the current delivery of projects, agents, services, programmatic interfaces, explorer, portability and the restricted Sepolia contract workflow. Public inference remains a separate, inactive service.
+
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
