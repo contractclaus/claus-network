@@ -1,0 +1,39 @@
+{
+  "at": "2026-10-12T08:42:15.005Z",
+  "scope": "One Claus-owned Sepolia reference project; no mainnet or public enrollment",
+  "profileHash": "sha256:603625b70515e9702b46ed8f011db48d84220814cd65e102f7993a7ba790629e",
+  "capability": {
+    "enabled": true,
+    "profileHash": "sha256:603625b70515e9702b46ed8f011db48d84220814cd65e102f7993a7ba790629e",
+    "projectIds": [
+      "prj_6a2a275a-abc7-4e29-b91e-4e004ebb58ef"
+    ],
+    "workerRelease": "aebe61504d28acbf1060ffd69aea1d04a03714e90831b0b13e85350b83829c8a"
+  },
+  "budgetId": "claus-intake-sepolia-reference-v1",
+  "fundingHash": "0xcfe807e9721e3d89f4f6171f8cdab0ee26d0cefc36b575328cee418931e1061c",
+  "hostDeployment": "dpl_EV3h7NFfqFaAKBS9EHLGKsQRb2qV",
+  "apiDeployment": "dpl_T3VzcjQmCmmuSKa9WBLzFwg2jtch",
+  "health": {
+    "service": "Claus Network",
+    "status": "ok",
+    "release": "e0b0651ee3525703e5426e152478935458e139c00484b85a04d5a9378f832c94",
+    "capabilities": [
+      "identity",
+      "project.registry",
+      "source.snapshot",
+      "build.compile",
+      "public.projection"
+    ],
+    "reviewExecution": "restricted_pilot",
+    "testnetExecution": "restricted_pilot",
+    "collaborationExecution": "restricted_pilot",
+    "walletExecution": "restricted_pilot",
+    "vaultExecution": "restricted_pilot",
+    "portabilityExecution": "restricted_pilot",
+    "inferenceExecution": "not_enabled",
+    "contractIntakeExecution": "restricted_pilot",
+    "mainnetExecution": "not_enabled"
+  },
+  "referenceAcceptancePending": true
+}

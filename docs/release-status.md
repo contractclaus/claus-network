@@ -14,17 +14,17 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Approval executor contract | Confirmed on Sepolia, source verified |
 | Service catalogue and isolated static publication | Active for admitted projects; the complete Claus-operated reference paid two services, changed agents, published its result and retired both payment sessions |
 | Project wallets | Active for admitted Sepolia projects; corrected review assessed and reference wallet source verified |
-| Native-principal vault | One Claus-operated Sepolia vault is deployed and source verified; fixed owner test principal finalized; Claus approved the policy change; the approved change executed after its one-hour delay; finality and withdrawal acceptance pending |
+| Native-principal vault | One Claus-operated Sepolia vault is deployed and source verified; fixed owner test principal finalized; Claus approved the policy change; the approved change is finalized after its one-hour delay; the fixed owner withdrawal succeeded and awaits finality |
 | Production token launches and capital products | Not enabled |
 | Inference API and accounting | Interfaces and disabled implementation deployed; project allowances, durable requests and cost reconciliation tested without a live provider |
 | Public inference and holder credits | Not enabled; provider authorization and actual billing conformance still required |
 | Signed operator transfer | Live for admitted projects; hosted reference completed between separately configured Claus-operated instances |
-| Contract request interfaces | Four API operations deployed; public inbox and signing dispatcher not activated |
+| Contract request interfaces | Four API operations and verified Inbox active for one Claus-owned Sepolia project, with a separate bounded dispatcher; genuine callback acceptance pending |
 | Token launch | Not included in this public release |
 | Independent pilot | Procedure prepared; no independent participant has completed it |
 | GitBook publication | Optional mirror of public source docs; account connection still required |
 
-API deployment: `dpl_Ei5xdviRZpXBqZoPMdtqCbJwNMep`, release `e0b0651ee3525703e5426e152478935458e139c00484b85a04d5a9378f832c94`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
+API deployment: `dpl_T3VzcjQmCmmuSKa9WBLzFwg2jtch`, release `e0b0651ee3525703e5426e152478935458e139c00484b85a04d5a9378f832c94`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 
@@ -36,7 +36,7 @@ The public `claus-approval-contracts` project and the reference service projects
 
 Existing Claus Club, staking and NFT rights are unchanged by this release.
 
-The [native-vault profile](native-vault.md) has an assessed external report, together with its separate policy report. Its one deployed owner-operated testnet vault does not activate public custody or token launches. The [manifest](deployments.json) records seven verified reference contracts, including both policy/project kernels, their modules and the vault.
+The [native-vault profile](native-vault.md) has an assessed external report, together with its separate policy report. Its one deployed owner-operated testnet vault does not activate public custody or token launches. The [manifest](deployments.json) records nine source-verified reference contracts, including both policy/project kernels, their modules, the vault, Inbox and requester.
 
 Source 0.7 adds signed, paged operator transfers. The source and second operator are deployed with separate databases and keys. A local HTTP/SDK acceptance continues source work with the original server stopped. The hosted reference imported its signed archive, continued work and published an isolated interface using only the destination API. Both instances belong to Claus, with separate database roles and signing keys. The source remained available to its other projects; the reference client was restricted to the destination. No imported payment or contract authority was activated. See the [transfer receipt](reference-portability.json).
 
@@ -46,7 +46,7 @@ Both operator database snapshots were restored exactly into disposable schemas. 
 
 The agent review-context release `dpl_B8t89cuyE1EEMLzWEooEZbYqXrDE` matched all 156 source files, preserved configuration 451 and passed 614 tests. It binds the registered downstream vault to a policy review; neither this code change nor the API 0.8 release grants mainnet authority.
 
-API 0.9.3 adds the gated host configuration and bounded dispatcher implementation. Public intake remains disabled. Its local reference passed with two intentionally lost broadcast responses; cumulative gas accounting, revocation, concurrent workers and callback failure were checked. The original paid Inbox review is complete. Its [assessment](reference-inbox-review.json) retains all repository findings and admits only the exact immutable Inbox for a bounded owner-operated Sepolia reference. Source verification and runtime activation are tracked separately. Claus knowledge configuration 456 records the verified API release, completed M1 reference and updated external integration discovery. Identity, settings and policy were preserved; no X post was triggered.
+API 0.9.3 adds the gated host configuration and bounded dispatcher implementation. Public intake remains disabled. Its local reference passed with two intentionally lost broadcast responses; cumulative gas accounting, revocation, concurrent workers and callback failure were checked. The original paid Inbox review is complete. Its [assessment](reference-inbox-review.json) retains all repository findings and admits only the exact immutable Inbox for a bounded owner-operated Sepolia reference. Source verification and runtime activation are tracked separately. Claus knowledge configuration 458 records the verified API release, completed M1 reference and updated external integration discovery. Identity, settings and policy were preserved; no X post was triggered.
 
 The original balance-lens change is finalized. The [reference receipt](reference-lens.json) binds the genuine Claus decision, exact execution transaction and finalized balance readback. The original public project is available in the network explorer.
 
@@ -56,3 +56,5 @@ API 0.9.4 also closes requests whose underlying proposal terminated without a de
 
 API 0.10 adds explicit Solidity 0.8.26 compilation and repository-relative source roots for the market candidate. Existing default compiler requests retain their original identity and artifact bytes. New-profile jobs use a separate worker queue; a worker running the previous version cannot silently compile them with the wrong version. The existing deployment admission still excludes these market builds. All 356 enabled source tests passed, with eight environment-specific skips.
 
+
+The [contract-intake activation](reference-intake-activation.json) pins the exact verified Inbox, API release and dispatcher for one Claus-owned Sepolia reference. Its finite budget does not admit other projects. The requester is a separate reference contract; its verification and complete genuine callback acceptance are tracked independently.

@@ -1,6 +1,6 @@
 # Contract requests
 
-The 0.9.4 source implements an asynchronous contract-request profile. Its API and worker are prepared; no public inbox or dispatcher is activated. Existing API clients continue to submit proposals directly.
+API 0.10.0 implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The complete genuine decision/callback reference is still pending. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
 
 ## Flow
 
@@ -24,9 +24,9 @@ Solidity tests cover cancellation, expiry, callback failure/retry, reentrancy, r
 
 The scanner preserves its canonical cursor across restarts, and the delivery coordinator preserves the original delivery ID. Turning off intake stops new submissions while still allowing existing deliveries to be reconciled. The separate dispatcher enforces the exact inbox, result, current grant, a cumulative gas budget and original transaction identity. Reservation and wallet locking are atomic. Budget is released only on final settlement or cancellation before broadcast; revocation still permits read-only reconciliation. One automated callback attempt is sponsored, and a failed callback can subsequently be retried onchain by its caller.
 
-Before activation, the new inbox needs independent review, source-verified deployment, a bounded dispatcher deployment, a genuine Claus-approved end-to-end run, and explicit capability admission. None of the prepared endpoints, fixture receipts or a database flag alone supplies these requirements. Check [release status](release-status.md).
+A broader release requires a genuine end-to-end decision/callback run in addition to the independent assessment, source-verified Inbox, bounded dispatcher and explicit capability admission. None of the endpoints, fixture receipts or a database flag alone proves completion. Check [release status](release-status.md).
 
-The hosted worker entry and public API deployment-pin loader are implemented, but no live pin, budget or inbox admission has been installed. The original independent inbox review is complete. The [assessment](reference-inbox-review.json) retains all ten repository findings and accepts only the exact Inbox and bounded owner-operated Sepolia pilot. The provider Markdown endpoint returned 503, so the worker retained the officially accepted judge submission, its complete findings and its provenance. No replacement order or payment was created.
+The hosted worker, exact API deployment pin, seven-day one-project budget and Inbox admission are installed for the bounded Sepolia reference. The lifetime dispatcher gas ceiling is 0.0002 Sepolia ETH, with no automatic refill. The original independent inbox review is complete. The [assessment](reference-inbox-review.json) retains all ten repository findings and accepts only the exact Inbox and bounded owner-operated Sepolia pilot. The provider Markdown endpoint returned 503, so the worker retained the officially accepted judge submission, its complete findings and its provenance. No replacement order or payment was created.
 
 The admitted capability lists exact pilot project IDs. A project outside that list cannot create a binding or start a queued proposal. Removing a project also prevents a newly signed delivery from being broadcast; an already broadcast transaction retains its original hash and accounting. Intake health requires the admitted worker release and exact inbox generation, so a stale worker cannot report the new deployment as ready.
 
