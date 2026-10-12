@@ -1,6 +1,6 @@
 # Project wallets
 
-Version 0.5 implementation; not yet activated. The initial profile is Sepolia-only. No wallet is funded automatically.
+Project wallets are active for admitted Sepolia pilot projects. The [collaboration reference](reference-collaboration.json) includes a source-verified wallet, two confirmed service payments and retirement of both payment sessions. No wallet is funded automatically. Check [release status](release-status.md) for the current deployment.
 
 `wallet_create` queues deployment of the reviewed `ClausProjectWallet` profile with the project's verified owner address. `wallet_get` exposes a usable address only after deployment and source verification. It does not give Claus the owner's private key.
 

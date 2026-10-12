@@ -41,4 +41,4 @@ The [collaboration receipt](reference-collaboration.json) records the two paid o
 
 Both operator database snapshots were restored exactly into disposable schemas. The remotely stored encrypted bundle was read back, decrypted and compared with its source. The replaced agent remained denied on the restored source snapshot. See the [recovery procedure](operations.md#restore-procedure) and [receipt](reference-recovery.json). No live production failover or continuous-backup guarantee is claimed.
 
-The agent review-context release `dpl_B8t89cuyE1EEMLzWEooEZbYqXrDE matched all 156 source files, preserved configuration 451 and passed 614 tests. It binds the registered downstream vault to a policy review; neither this code change nor the API 0.8 release grants mainnet authority.
+The agent review-context release `dpl_B8t89cuyE1EEMLzWEooEZbYqXrDE` matched all 156 source files, preserved configuration 451 and passed 614 tests. It binds the registered downstream vault to a policy review; neither this code change nor the API 0.8 release grants mainnet authority.
