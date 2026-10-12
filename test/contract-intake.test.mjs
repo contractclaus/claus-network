@@ -7,7 +7,7 @@ import { digest, requireThat } from '../src/shared/index.mjs';
 
 const word = n => '0x' + n.repeat(64), address = n => '0x' + n.repeat(40);
 async function fixture(t) {
-  const f = { time: 1800000000000, enabled: true, revoked: false, pending: true, submissions: 0, proposals: new Map() };
+  const f = { time: 1800000000000, enabled: true, allowedProjects: ['project-a'], revoked: false, pending: true, submissions: 0, proposals: new Map() };
   f.store = openStore(':memory:'); t.after(() => f.store.close());
   const identity = { async authorize(actor, _action, { projectId }) {
     requireThat((actor === 'owner' || actor === 'agent' && !f.revoked) && projectId === 'project-a', 'scope_denied');
@@ -16,7 +16,8 @@ async function fixture(t) {
   const chain = { profile: async () => profile, observe: async () => structuredClone(f.observation), pending: async () => f.pending };
   f.open = () => {
     f.jobs = createJobs({ store: f.store, identity, now: () => f.time, onCancel: (tx, job) => f.api.onCancel(tx, job) });
-    f.api = createContractIntake({ store: f.store, identity, jobs: f.jobs, chain, now: () => f.time, enabled: () => f.enabled,
+    f.api = createContractIntake({ store: f.store, identity, jobs: f.jobs, chain, now: () => f.time,
+      enabled: (_reader, projectId) => f.enabled && f.allowedProjects.includes(projectId),
       readProposal: async (_project, id) => f.proposals.get(id),
       createProposal: async (_actor, projectId, input) => {
         f.submissions++;
@@ -122,4 +123,17 @@ test('disabled intake does not admit requests and other projects cannot read the
   await assert.rejects(f.ingest(), { code: 'contract_intake_disabled' });
   await f.api.run();
   assert.equal(f.submissions, 0);
+});
+
+test('withdrawing a project admission blocks a new binding and queued proposal without consuming another request', async t => {
+  const f = await fixture(t), request = await f.ingest();
+  f.allowedProjects = [];
+  await assert.rejects(f.api.bind('owner', 'project-a', { ...f.bindingBody, idempotencyKey: 'second' }),
+    { code: 'contract_intake_disabled' });
+  f.observation.requestId = word('8');
+  await assert.rejects(f.ingest(), { code: 'contract_intake_disabled' });
+  await f.api.run();
+  assert.equal(f.submissions, 0);
+  assert.equal((await f.api.request('owner', 'project-a', request.id)).state, 'blocked');
+  assert.equal((await f.api.binding('owner', 'project-a', f.binding.id)).used, 1);
 });

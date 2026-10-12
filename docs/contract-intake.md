@@ -1,6 +1,6 @@
 # Contract requests
 
-The 0.9.1 source implements an asynchronous contract-request profile. Its API and worker are prepared; no public inbox or dispatcher is activated. Existing API clients continue to submit proposals directly.
+The 0.9.2 source implements an asynchronous contract-request profile. Its API and worker are prepared; no public inbox or dispatcher is activated. Existing API clients continue to submit proposals directly.
 
 ## Flow
 
@@ -27,3 +27,5 @@ The scanner preserves its canonical cursor across restarts, and the delivery coo
 Before activation, the new inbox needs independent review, source-verified deployment, a bounded dispatcher deployment, a genuine Claus-approved end-to-end run, and explicit capability admission. None of the prepared endpoints, fixture receipts or a database flag alone supplies these requirements. Check [release status](release-status.md).
 
 The hosted worker entry and public API deployment-pin loader are implemented, but no live pin, budget or inbox admission has been installed. The independent inbox review is paid under its original order; its result is still pending.
+
+The admitted capability lists exact pilot project IDs. A project outside that list cannot create a binding or start a queued proposal. Removing a project also prevents a newly signed delivery from being broadcast; an already broadcast transaction retains its original hash and accounting. Intake health requires the admitted worker release and exact inbox generation, so a stale worker cannot report the new deployment as ready.

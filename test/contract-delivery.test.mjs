@@ -42,9 +42,12 @@ async function fixture(t, callback = false) {
     deliveryState: async () => ({ pending: !resolved, resolved, callbackDelivered, closed: false,
       blockNumber: Number(currentHeight), finalized: true }) };
   const identity = { authorize: async () => { if (++identityChecks >= denyAt) throw Object.assign(Error('denied'), { code: 'scope_denied' }); } };
-  const make = () => createContractDelivery({ store, client, signer, sealer: createSealer('11'.repeat(32)), chain, identity, budget, now: () => now });
+  let admissionChecks = 0, withdrawAdmissionAt = Infinity;
+  const make = () => createContractDelivery({ store, client, signer, sealer: createSealer('11'.repeat(32)), chain, identity, budget,
+    admitted: async (_reader, projectId) => projectId === 'project-a' && ++admissionChecks < withdrawAdmissionAt, now: () => now });
   const input = { id: digest({ requestId: request.id, action: 'result-delivery' }), request, allowSubmit: true };
   return { store, budget, make, input, client, broadcasts: () => broadcasts, denyAt: n => { denyAt = n; },
+    withdrawAdmissionAt: n => { withdrawAdmissionAt = n; },
     ledger: async () => (await store.read('contract-dispatch-budgets', budget.id)).value,
     confirm: (deliverCallback = true, final = true) => {
       currentHeight = final ? 103n : 99n;
@@ -76,6 +79,18 @@ test('authority lost after signing cancels the unsent delivery and returns only 
   const f = await fixture(t); f.denyAt(5);
   assert.equal((await f.make().step(f.input)).state, 'closed');
   assert.equal(f.broadcasts(), 0); assert.equal((await f.ledger()).reserved, '0'); assert.equal((await f.ledger()).spent, '0');
+});
+
+test('project admission is checked again after signing, while an old broadcast remains reconcilable', async t => {
+  const before = await fixture(t); before.withdrawAdmissionAt(3);
+  assert.equal((await before.make().step(before.input)).state, 'closed');
+  assert.equal(before.broadcasts(), 0);
+  assert.equal((await before.ledger()).reserved, '0');
+  const after = await fixture(t);
+  await after.make().step(after.input); after.withdrawAdmissionAt(1); after.confirm();
+  assert.equal((await after.make().step(after.input)).state, 'delivered');
+  assert.equal(after.broadcasts(), 1);
+  assert.equal((await after.ledger()).spent, '90000000000');
 });
 
 test('cumulative gas cap rejects fresh work without consuming the wallet slot', async t => {

@@ -27,7 +27,7 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
     requireThat(row?.value.projectId === projectId, 'not_found'); return row;
   }
   async function admitted(reader, binding) {
-    requireThat(await enabled(reader) === true, 'contract_intake_disabled');
+    requireThat(await enabled(reader, binding.projectId) === true, 'contract_intake_disabled');
     requireThat(!binding.revokedAt && binding.expiresAt > now(), 'contract_binding_inactive');
     await identity.authorize(binding.actor, 'contract.request', { projectId: binding.projectId }, reader);
     await identity.authorize(binding.actor, 'proposal.create', { projectId: binding.projectId }, reader);

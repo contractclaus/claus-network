@@ -4,7 +4,7 @@ import { openPostgresStore } from '../src/postgres/index.mjs';
 import { createApplication } from '../runtime/server.mjs';
 import { requestUrl } from '../runtime/request-url.mjs';
 import { operatorConfig } from '../runtime/operator-config.mjs';
-import { contractIntakePorts } from '../runtime/contract-intake-config.mjs';
+import { contractIntakePorts, contractIntakeHealth } from '../runtime/contract-intake-config.mjs';
 
 neonConfig.webSocketConstructor = ws;
 let loaded;
@@ -40,8 +40,7 @@ export default async function handler(req, res) {
       const vaults = (await store.read('network-capabilities', 'vaults'))?.value;
       const vaultWorker = (await store.read('worker-health', 'vaults'))?.value;
       const portability = (await store.read('network-capabilities', 'portability'))?.value;
-      const intakeActive = intakePorts.enabled === true && await intakePorts.verifyAdmission(store);
-      const intakeWorker = (await store.read('worker-health', 'contract-intake'))?.value;
+      const intakeState = await contractIntakeHealth(store, intakePorts);
       response = Response.json({ service: 'Claus Network', status: 'ok',
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
@@ -52,7 +51,7 @@ export default async function handler(req, res) {
         vaultExecution: vaults?.enabled === true ? vaultWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         portabilityExecution: portability?.enabled === true ? 'restricted_pilot' : 'not_enabled',
         inferenceExecution: 'not_enabled',
-        contractIntakeExecution: intakeActive ? intakeWorker?.observedAt > Date.now() - 300000 && intakeWorker?.state === 'active' ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
+        contractIntakeExecution: intakeState,
         mainnetExecution: 'not_enabled' });
     } else {
       const headers = new Headers();

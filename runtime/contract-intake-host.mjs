@@ -26,7 +26,8 @@ export async function createHostedContractIntakeWorker(env = process.env) {
     const app = createApplication({ store, origin: env.CLAUS_NETWORK_ORIGIN,
       rateSalt: env.CLAUS_NETWORK_RATE_SALT, intakePorts: ports });
     const delivery = createContractDelivery({ store, client: ports.client, signer,
-      sealer: createSealer(env.CLAUS_NETWORK_SEALING_KEY), chain: ports.chain, identity: app.identity, budget });
+      sealer: createSealer(env.CLAUS_NETWORK_SEALING_KEY), chain: ports.chain, identity: app.identity, budget,
+      admitted: ports.verifyAdmission });
     const worker = createContractIntakeWorker({ store, intake: app.intake, chain: ports.chain, delivery,
       startBlock: ports.pin.startBlock, enabled: () => ports.verifyAdmission(store) });
     return { store, async tick() {

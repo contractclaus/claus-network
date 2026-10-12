@@ -1,0 +1,74 @@
+{
+  "scope": "Claus-operated Sepolia reference; no independent-customer or mainnet claim",
+  "state": "executed_and_verified",
+  "projectId": "prj_775ef2ff-81a6-4821-a18f-2bbbe0fab6a5",
+  "proposalId": "sha256:478c5073884978d89b963b04706ac92a1ff0a5768885b94944f7bff57c7e0ef5",
+  "execution": {
+    "address": "0x3a81D1e73D560D9e21F30110677a3f78c32172E4",
+    "chainId": 11155111,
+    "version": 2,
+    "codeHash": "0xccae90f1d0798b9cf73b9a3041c74414968fc4ddd239b04d6e41f5c30db3688c",
+    "blockHash": "0x6f3e3a0668038383e2f935bb1c18e382c35b09f20c380cdeb68bda9317ac29f4",
+    "blockNumber": "11897438",
+    "explorerUrl": "https://sepolia.etherscan.io/tx/0xf9d8e3f77db5254e3fa0bc05ceca66b09c7fad20973278cc4cccac1b87e74146",
+    "approvalHash": "0xaa250e91a3cb3e581d218e91c902c678a26da513c03b1325df3c698729198ae5",
+    "verification": {
+      "id": "sha256:053908f188031c03fc4395c1133eb41407280573b034c98e34f2e6ebf5ba339d",
+      "state": "verified",
+      "address": "0x3a81D1e73D560D9e21F30110677a3f78c32172E4",
+      "chainId": 11155111,
+      "checkedAt": 1791784568202,
+      "inputHash": "sha256:387339f979ad13ebd09cd31be0706fd37efdfb3b1d16c583e3e33c9f6a73fbef",
+      "sourcifyId": "d0096e8d-58dd-414a-9d3a-8e3ad39c25ab",
+      "explorerUrl": "https://sepolia.etherscan.io/address/0x3a81D1e73D560D9e21F30110677a3f78c32172E4#code",
+      "sourcifyUrl": "https://repo.sourcify.dev/11155111/0x3a81D1e73D560D9e21F30110677a3f78c32172E4",
+      "runtimeMatch": "exact_match",
+      "creationMatch": "exact_match",
+      "etherscanGuid": "pkkejf4wfxwk1ak2m3xcqfb2cw6undqv8v9y64l6m1b2yucsqn",
+      "etherscanMatch": "exact",
+      "etherscanVerified": true,
+      "etherscanAttemptAt": 1791784509618
+    },
+    "implementation": "0xdabeba256c37244d1b74199146db103be12277c3",
+    "transactionHash": "0xf9d8e3f77db5254e3fa0bc05ceca66b09c7fad20973278cc4cccac1b87e74146"
+  },
+  "decision": {
+    "model": "gpt-6-astra",
+    "risks": [
+      "Finalized RPC observations and opcode inspection are not state proofs. Approval relies on independent signer validation of current authority, nonce, timing and exact bindings.",
+      "Balances intentionally change and represent wallet holdings only, not staked balances or reward eligibility.",
+      "Reported executor monitoring and recovery limitations remain; revoking upgrade authority does not halt reads.",
+      "No dedicated lens test suite or target-level gas probe is supplied."
+    ],
+    "reason": "For this exact Sepolia configuration, the supplied deployed runtime matches the ClausBalanceLens artifact and proposed code hash. Both configured balanceOf dependencies are covered, with direct storage-backed read paths and no observed delegation. Input guards, STATICCALLs and a fixed 224-byte payload fit the read-only profile. No reported finding materially blocks this proposal.",
+    "decision": "approve",
+    "inputHash": "sha256:41ff91b16601c255d996d779b8f0b31daa85a0f40dcb10b029da783b30665169",
+    "completedAt": "2026-10-12T06:35:40.455Z",
+    "decisionHash": "sha256:d3fa2ec6ec6a61a9e21a7b4c09b299b3e4d707047df4ea924d4e3b41a4ed3f60",
+    "proposalHash": "sha256:2f4c46200b6b12ec80ba0b431b45b0e48b2023f0f0a9c1f53ffb23f456411fa5",
+    "inferenceReceipt": {
+      "payer": "0xA46A89b5b3504C1c999696de8173ec9b2eB0a01a",
+      "amount": "108960",
+      "network": "eip155:8453",
+      "success": true,
+      "transaction": "0x943829491e2f0b86697048d52a983ce214c214637c33a7ddf2e2ebd3f3a556e0"
+    },
+    "configurationHash": "7e0659591bec87bfda00d3ac426619c5a742477e74e7e43801da9e78804285ed",
+    "reviewArtifactHash": "sha256:c5af919c9e0f7df0b55a7207a62b2a83cbf8138bbf9ff7426778633ada0af735",
+    "configurationRevision": 450
+  },
+  "read": {
+    "blockNumber": "11897463",
+    "blockHash": "0x51f899704e0f6af5f8f3ca57aaebff85a3a0aa7e6164042182dfd3184fc2cba7",
+    "values": [
+      "11155111",
+      "11897463",
+      "0xBb145cA83272c3806D4dDc75cA1D5514789cF1C5",
+      "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+      "0",
+      "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85",
+      "0"
+    ]
+  },
+  "at": "2026-10-12T07:55:58.753Z"
+}

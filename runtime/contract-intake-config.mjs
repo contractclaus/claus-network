@@ -13,7 +13,7 @@ export function contractIntakePorts(env = process.env, suppliedClient) {
   const client = suppliedClient ?? createPublicClient({ transport: http('https://ethereum-sepolia-rpc.publicnode.com',
     { retryCount: 0, timeout: 15000 }), cacheTime: 0 });
   const chain = createContractInboxRead({ client, ...pin });
-  async function admitted(reader) {
+  async function admitted(reader, projectId) {
     const capability = (await reader.read('network-capabilities', 'contract-intake'))?.value;
     if (!capability?.enabled) return false;
     requireThat(capability.profileHash === digest(pin), 'intake_admission_changed');
@@ -22,8 +22,29 @@ export function contractIntakePorts(env = process.env, suppliedClient) {
     requireThat(assessment?.accepted === true && assessment.profileHash === digest(pin) &&
       review?.projectId === pin.reviewProjectId && review.state === 'reviewed' &&
       review.artifactHash === pin.reviewArtifactHash, 'intake_review_not_admitted');
+    // The first deployment is a project-scoped pilot. A global enable flag
+    // must not let unrelated owners create sponsored proposals.
+    requireThat(Array.isArray(capability.projectIds) && capability.projectIds.length > 0 &&
+      capability.projectIds.length <= 100 && capability.projectIds.every(id => typeof id === 'string' && id.length > 0) &&
+      new Set(capability.projectIds).size === capability.projectIds.length, 'intake_projects_not_admitted');
+    if (projectId !== undefined && !capability.projectIds.includes(projectId)) return false;
     return true;
   }
   return { enabled: true, chain, client, pin, verifyAdmission: admitted };
+}
+
+export async function contractIntakeHealth(store, ports, now = Date.now()) {
+  if (ports.enabled !== true) return 'not_enabled';
+  try { if (!await ports.verifyAdmission(store)) return 'not_enabled'; }
+  catch (error) {
+    if (['intake_admission_changed', 'intake_review_not_admitted', 'intake_projects_not_admitted'].includes(error.code))
+      return 'admission_unavailable';
+    throw error;
+  }
+  const worker = (await store.read('worker-health', 'contract-intake'))?.value;
+  const capability = (await store.read('network-capabilities', 'contract-intake'))?.value;
+  return worker?.state === 'active' && worker.observedAt > now - 300000 && worker.observedAt <= now &&
+    worker.profileHash === digest(ports.pin) && typeof capability?.workerRelease === 'string' &&
+    worker.release === capability.workerRelease ? 'restricted_pilot' : 'worker_unavailable';
 }
 

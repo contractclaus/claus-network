@@ -8,7 +8,14 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
   enabled = async () => false, now = () => Date.now() }) {
   requireThat(Number.isSafeInteger(startBlock) && startBlock >= 1, 'invalid_start_block');
   return { async tick() {
-    const active = await enabled() === true;
+    let active = false, disabledReason = null;
+    try { active = await enabled() === true; }
+    catch (error) {
+      // Removing an admission stops new work, but an old signing host must
+      // still account for already-broadcast transactions under its old pin.
+      if (!['intake_admission_changed', 'intake_review_not_admitted', 'intake_projects_not_admitted'].includes(error.code)) throw error;
+      disabledReason = error.code;
+    }
     const profile = await chain.profile();
     const id = digest({ chainId: profile.chainId, inbox: profile.inbox, codeHash: profile.codeHash });
     const prior = await store.read('contract-intake-cursors', id);
@@ -44,6 +51,9 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
     for (const row of rows) {
       const request = row.value;
       if (request.state !== 'result_ready' || ['delivered', 'closed', 'failed'].includes(request.delivery?.state)) continue;
+      if (request.observation?.chainId !== profile.chainId ||
+        request.observation?.inbox?.toLowerCase() !== profile.inbox.toLowerCase() ||
+        request.observation?.codeHash !== profile.codeHash) continue;
       if (!delivery) continue;
       // The dispatcher independently verifies onchain state, immutable result,
       // expiry and its current spending mandate. It must reconcile old writes
@@ -67,6 +77,7 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
     await store.transaction(async tx => {
       await tx.write('contract-delivery-cursors', id, { after: rows.length === 100 ? rows.at(-1).id : '' }, scan?.revision ?? 0);
     });
-    return { state: active ? 'active' : 'disabled', ingested, delivered, proposal: proposal.state ?? 'idle', afterBlock: batch.cursor.afterBlock };
+    return { state: active ? 'active' : 'disabled', disabledReason, ingested, delivered,
+      proposal: proposal.state ?? 'idle', afterBlock: batch.cursor.afterBlock };
   } };
 }

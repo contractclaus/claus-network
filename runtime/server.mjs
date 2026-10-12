@@ -77,8 +77,8 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
    const proposal=(await store.read('chain-proposals',id))?.value;
    requireThat(!proposal||proposal.projectId===projectId,'contract_proposal_mismatch');return proposal??null;
   },
-  enabled:async reader=>intakePorts.enabled===true&&(await reader.read('network-capabilities','contract-intake'))?.value.enabled===true&&
-   (!intakePorts.verifyAdmission||await intakePorts.verifyAdmission(reader)===true)});
+  enabled:async (reader,projectId)=>intakePorts.enabled===true&&(await reader.read('network-capabilities','contract-intake'))?.value.enabled===true&&
+   (!intakePorts.verifyAdmission||await intakePorts.verifyAdmission(reader,projectId)===true)});
  const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake});
  const admit=async({route,peer})=>store.transaction(async tx=>{
   const window=Math.floor(now()/300000);

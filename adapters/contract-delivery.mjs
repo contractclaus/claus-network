@@ -40,7 +40,7 @@ export async function revokeContractDispatchBudget(store, id, now = Date.now()) 
 // One bounded resolve and one bounded callback attempt per request. Unknown
 // broadcasts are reconciled by their original hash, including after revocation.
 export function createContractDelivery({ store, client, signer, sealer, chain, identity, budget,
-  now = () => Date.now() }) {
+  admitted = async () => true, now = () => Date.now() }) {
   requireThat(signer.address.toLowerCase() === budget.dispatcher, 'dispatch_signer_mismatch');
   const configHash = digest(budget);
   async function budgetRow(reader) {
@@ -52,6 +52,7 @@ export function createContractDelivery({ store, client, signer, sealer, chain, i
   async function active(reader, request) {
     const row = await budgetRow(reader);
     if (row.value.revokedAt || budget.expiresAt <= now() || !budget.projectIds.includes(request.projectId)) return false;
+    if (await admitted(reader, request.projectId) !== true) return false;
     const binding = (await reader.read('contract-bindings', request.bindingId))?.value;
     if (!binding || binding.projectId !== request.projectId || binding.revokedAt || binding.expiresAt <= now() ||
       binding.inbox !== budget.inbox || binding.codeHash !== budget.codeHash ||
