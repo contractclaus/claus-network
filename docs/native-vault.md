@@ -1,6 +1,6 @@
 # Native vault candidate
 
-This contract profile is submitted for independent review and is not activated. Its API and isolated worker are deployed, with new vault deployments disabled. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
+The external vault report is assessed for a restricted Sepolia profile, with no medium or higher findings. The separate admission-policy review is still pending. The profile is not activated. Its API and isolated worker are deployed, with new vault deployments disabled. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
 
 `ClausNativeVault` records each depositor's native-ETH principal. Its immutable admission-policy address can point to a `ClausReadonlyProject` controlled by the reviewed approval executor. Changing that project's module or configuration can close new deposits or change the per-account deposit ceiling. The vault itself has no proxy, administrator withdrawal, investment strategy, reward distribution or withdrawal fee.
 
@@ -14,10 +14,16 @@ A separate composition test registers the policy through the real approval execu
 
 ## Interface
 
-API 0.6 exposes `vault_create`, `vault_get`, `vault_transaction` and `vault_balance` through the same API, SDK, CLI and MCP. Their presence does not activate the contract profile. Deployment requests remain gated by the separately controlled capability.
+API 0.7 exposes `vault_create`, `vault_get`, `vault_transaction` and `vault_balance` through the same API, SDK, CLI and MCP. Their presence does not activate the contract profile. Deployment requests remain gated by the separately controlled capability.
 
 `vault_create` requires `vault.manage`, sponsor admission and a previously verified policy registration belonging to the same project. It deploys only the operator's exact reviewed vault artifact. Concurrent calls share one job, and an uncertain broadcast keeps its original transaction. A changed artifact, review, policy binding or revoked mandate prevents a new broadcast.
 
 `vault_transaction` requires `vault.read` and returns calldata for either `deposit` or `withdraw`; it never signs or sends a depositor's transaction. `amountWei` is an exact integer string. A withdrawal also supplies `recipient`. No recipient is accepted for a deposit. The caller's wallet owns the resulting principal claim. The fixed contract and its immutable policy binding are checked before returning calldata.
 
 Disabling sponsored deployment does not disable reading a withdrawal transaction. Direct contract withdrawals need neither this API nor an active network mandate. `vault_balance` returns principal at a named finalized block; it does not mistake pending deposits for finalized funds.
+
+## Reviewed limits
+
+The assessed pilot uses exactly `ClausVaultAdmission` with its 64-byte `(bool,uint256)` configuration. The fixed 250,000-gas policy call does not support every 8,192-byte configuration accepted by the general read-only kernel. Large configurations or another admission module require a new profile assessment and measured gas bounds. Failure closes deposits while preserving withdrawals.
+
+Deposits use an explicit `deposit()` call with estimated gas. Solidity `transfer()` and `send()` with the 2,300-gas stipend are not supported deposit paths. The host verifies the policy's project identity, executor and code hash before deploying; the vault constructor alone does not certify timelocked governance.
