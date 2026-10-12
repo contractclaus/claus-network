@@ -16,10 +16,10 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       const old = await find(tx, job.projectId, job.payload.proposalId);
       await tx.write('chain-proposals', old.value.id, { ...old.value, state: 'cancelled', updatedAt: now() }, old.revision);
     },
-    async create(actor, projectId, { moduleId, configuration, idempotencyKey }) {
+    async create(actor, projectId, { moduleId, configuration, dependencies = [], idempotencyKey }) {
       text(idempotencyKey);
       const id = digest({ projectId, idempotencyKey, kind: 'protected-upgrade' });
-      const requestHash = digest({ moduleId, configuration });
+      const requestHash = digest(dependencies.length ? { moduleId, configuration, dependencies } : { moduleId, configuration });
       await allowed(actor, projectId);
       const existing = await store.read('chain-proposals', id);
       if (existing) { requireThat(existing.value.requestHash === requestHash, 'idempotency_conflict'); return existing.value; }
@@ -32,10 +32,15 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       const report = await reviews.artifact(actor, projectId, module.caseId);
       requireThat(report.complete === true && report.jobId === reviewed.providerJobId, 'review_mismatch');
       const files = (await projects.files(actor, projectId, reviewed.input.sourceHash)).map(({ path, content }) => ({ path, content }));
-      const proposal = await chain.proposal({ binding, module, configuration, nonceSeed: id, now: Math.floor(now() / 1000) });
+      const build = await artifacts.get(projectId, reviewed.input.buildHash);
+      const snapshot = await chain.captureEvidence({ module, dependencies });
+      const source = { snapshotHash: reviewed.input.sourceHash, buildHash: reviewed.input.buildHash,
+        repository: reviewed.input.repoUrl, commit: reviewed.input.baseCommit, entry: reviewed.input.contracts[0], files };
+      chain.validateBuildEvidence(build, source, snapshot.implementation);
+      const proposal = await chain.proposal({ binding, module, configuration, dependencySnapshot: snapshot,
+        nonceSeed: id, now: Math.floor(now() / 1000) });
       const input = { projectId, caseId: module.caseId, proposal, proposalHash: digest(proposal),
-        source: { snapshotHash: reviewed.input.sourceHash, buildHash: reviewed.input.buildHash,
-          repository: reviewed.input.repoUrl, commit: reviewed.input.baseCommit, entry: reviewed.input.contracts[0], files },
+        source, evidence: { build, chain: snapshot },
         review: { provider: 'imd-audit-v1', jobId: report.jobId, artifactHash: reviewed.artifactHash,
           report: report.report, repository: reviewed.input.repoUrl, commit: reviewed.input.baseCommit } };
       requireThat(Buffer.byteLength(canonical(input)) <= 200000, 'review_context_too_large');
@@ -123,7 +128,9 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         });
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
-        const blocked = ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'source_not_published', 'proposal_expiring', 'proposal_stale', 'project_suspended'].includes(error.code);
+        const blocked = ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'source_not_published', 'proposal_expiring', 'proposal_stale', 'project_suspended',
+          'dependency_evidence_mismatch', 'evidence_block_changed', 'dependency_code_changed', 'dependency_code_missing',
+          'dependency_delegation_unsupported', 'dependency_indirection_unsupported', 'dependency_proxy_unsupported'].includes(error.code);
         return jobs.finish(claim, { state: blocked ? 'blocked' : 'waiting', retryAt: blocked ? null : now() + 60000,
           result: { error: error.code ?? 'decision_unavailable' } }, async tx => {
           if (blocked) {

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createPublicClient, createWalletClient, http, encodeAbiParameters, decodeAbiParameters, keccak256 } from 'viem';
+import { createPublicClient, createWalletClient, http, encodeAbiParameters, decodeAbiParameters, encodeFunctionData, keccak256 } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { createApplication } from '../runtime/server.mjs';
 import { createChainRead } from '../adapters/chain-read.mjs';
@@ -90,7 +90,11 @@ test('API project, real signatures, contract queue and delayed execution work ac
   await app.deployments.submitRegistration(actor, project.id, { registrationId: registration.id, signature });
   await until(() => app.deployments.runOne(executor.deployment),
     () => app.deployments.registration(actor, project.id, registration.id), 'verified');
-  const proposal = await app.approvals.create(actor, project.id, { moduleId: deployed.id, configuration, idempotencyKey: 'upgrade' });
+  // Anvil finalizes with a block lag too: evidence must observe finalized code.
+  await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
+  await advance();
+  const dependencies = [{address: balanceAddress, callData: encodeFunctionData({abi: balanceArtifact.abi, functionName: 'balanceOf', args: [owner.address]})}];
+  const proposal = await app.approvals.create(actor, project.id, { moduleId: deployed.id, configuration, dependencies, idempotencyKey: 'upgrade' });
   let calls = 0;
   const controller = createClausController({ store, chain, client, signer: approval, secret: 'local-test', now: () => clock,
     fetcher: async (url, options) => {
@@ -104,6 +108,9 @@ test('API project, real signatures, contract queue and delayed execution work ac
   assert.equal((await app.approvals.runDecision(controller)).state, 'complete'); assert.equal(calls, 1);
   const approved = await app.approvals.get(actor, project.id, proposal.id); assert.equal(approved.state, 'approved');
   const input = await app.artifacts.get(project.id, approved.inputArtifactHash);
+  assert.equal(input.evidence.build.runtimeTemplateHash, deployed.codeHash);
+  assert.equal(input.evidence.chain.dependencies[0].address, balanceAddress.toLowerCase());
+  assert.equal(proposal.proposal.dependencySnapshotHash, '0x' + digest(input.evidence.chain).slice(7));
   await assert.rejects(controller.step({ value: approved, input: { ...input, proposal: { ...input.proposal, nonce: '0' } }, authorize: async () => true }), { code: 'decision_input_mismatch' });
   const queued = await until(() => app.approvals.runExecution(executor.execution),
     () => app.approvals.get(actor, project.id, proposal.id), 'queued');
@@ -129,10 +136,10 @@ test('API project, real signatures, contract queue and delayed execution work ac
   await assert.rejects(executor.execution.step({value: {...approved, decision: {...approved.decision, decisionHash: digest('tampered')}},
     authorize: async () => true}), {code: 'approval_missing'});
   assert.equal((await store.list('chain-transactions', {limit: 100})).length, count);
-  const cancelled = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, idempotencyKey: 'cancelled-upgrade'});
+  const cancelled = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, dependencies, idempotencyKey: 'cancelled-upgrade'});
   await app.jobs.cancel(actor, project.id, cancelled.decisionJobId);
   assert.equal((await app.approvals.get(actor, project.id, cancelled.id)).state, 'cancelled');
-  const stale = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, idempotencyKey: 'stale-upgrade'});
+  const stale = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, dependencies, idempotencyKey: 'stale-upgrade'});
   await app.approvals.runDecision(controller);
   await until(() => app.approvals.runExecution(executor.execution),
     () => app.approvals.get(actor, project.id, stale.id), 'queued');
@@ -146,7 +153,7 @@ test('API project, real signatures, contract queue and delayed execution work ac
   const restoreHash = await wallet.writeContract({chain: null, address: executorAddress, abi: executorSource.abi,
     functionName: 'setAuthority', args: [stale.proposal.projectKey, stale.proposal.mandateHash, true]});
   await client.waitForTransactionReceipt({hash: restoreHash});
-  const next = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, idempotencyKey: 'revoked-upgrade'});
+  const next = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, dependencies, idempotencyKey: 'revoked-upgrade'});
   const freshChallenge = await app.identity.challenge({address: owner.address});
   const freshSession = await app.identity.session({challengeId: freshChallenge.id, signature: await owner.signMessage({message: freshChallenge.message})});
   await app.identity.revoke(await app.identity.authenticate(freshSession.token), 'mandate', mandate.id);

@@ -1,6 +1,7 @@
 import { encodeAbiParameters, keccak256, stringToHex, verifyTypedData } from 'viem';
 import { ClausApprovalExecutorAbi as executorAbi, ClausReadonlyProjectAbi as targetAbi } from './chain-abi.mjs';
 import { digest, requireThat } from '../src/shared/index.mjs';
+import { createChainEvidence, validateBuildEvidence } from './chain-evidence.mjs';
 
 export const CHAIN_ID = 11155111;
 export const PROFILE = 'claus-readonly-v1';
@@ -33,6 +34,7 @@ export function validateModule(artifact) {
 }
 
 export function createChainRead({ client }) {
+  const evidence = createChainEvidence({ client });
   async function correctChain() { requireThat(await client.getChainId() === CHAIN_ID, 'wrong_chain'); }
   async function capabilityMatches(capability) {
     await correctChain();
@@ -61,7 +63,8 @@ export function createChainRead({ client }) {
       keccak256(await client.getCode({ address: module.address })) === module.codeHash, 'module_code_changed');
   }
   return {
-    validateModule, state, capabilityMatches,
+    validateModule, state, capabilityMatches, validateBuildEvidence,
+    captureEvidence: evidence.capture,
     async registration({ projectId, owner, module, configuration, mandateHash, minDelaySeconds, capability, expiresAt }) {
       await capabilityMatches(capability); await moduleMatches(module);
       requireThat(/^0x(?:[a-f0-9]{2}){0,8192}$/i.test(configuration) && Number.isSafeInteger(minDelaySeconds) &&
@@ -78,18 +81,19 @@ export function createChainRead({ client }) {
       return verifyTypedData({ address: prepared.message.owner, domain: prepared.domain,
         types: registrationTypes, primaryType: 'Registration', message: prepared.message, signature });
     },
-    async proposal({ binding, module, configuration, nonceSeed, now }) {
+    async proposal({ binding, module, configuration, dependencySnapshot, nonceSeed, now }) {
       await moduleMatches(module); const s = await state(binding);
+      requireThat(dependencySnapshot?.implementation?.codeHash === module.codeHash, 'dependency_evidence_mismatch');
       requireThat(s.minDelaySeconds <= 5 * 86400, 'unsupported_delay');
       requireThat(/^0x(?:[a-f0-9]{2}){0,8192}$/i.test(configuration), 'invalid_configuration');
       return { profile: PROFILE, chainId: CHAIN_ID, executor: binding.executor, projectKey: binding.projectKey,
         target: binding.target, fromVersion: s.version, fromCodeHash: s.codeHash, implementation: module.address,
-        toCodeHash: module.codeHash, configuration, dependencySnapshotHash: '0x' + digest({ moduleId: module.id, codeHash: module.codeHash }).slice(7),
+        toCodeHash: module.codeHash, configuration, dependencySnapshotHash: '0x' + digest(dependencySnapshot).slice(7),
         policyVersion: s.policyVersion, policyGeneration: s.policyGeneration, authorityGeneration: s.authorityGeneration,
         clausGeneration: s.clausGeneration, mandateHash: s.mandateHash, nonce: BigInt('0x' + digest(nonceSeed).slice(7)).toString(),
         notBefore: now, expiresAt: now + Math.max(86400, s.minDelaySeconds + 7200) };
     },
-    async validateProposal(proposal, binding) {
+    async validateProposal(proposal, binding, snapshot) {
       requireThat(proposal.profile === PROFILE && proposal.chainId === CHAIN_ID &&
         proposal.executor.toLowerCase() === binding.executor.toLowerCase() && proposal.projectKey === binding.projectKey, 'proposal_mismatch');
       const s = await state(binding);
@@ -97,6 +101,7 @@ export function createChainRead({ client }) {
         proposal.policyVersion === s.policyVersion && proposal.policyGeneration === s.policyGeneration &&
         proposal.authorityGeneration === s.authorityGeneration && proposal.clausGeneration === s.clausGeneration &&
         keccak256(await client.getCode({ address: proposal.implementation })) === proposal.toCodeHash, 'proposal_stale');
+      await evidence.validate(snapshot, proposal);
       return s;
     }
   };

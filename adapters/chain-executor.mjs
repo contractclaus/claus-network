@@ -112,6 +112,10 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         (await recoverTypedDataAddress({ ...typed, signature: signed.signature })).toLowerCase() === signed.signer.toLowerCase() &&
         signed.signer.toLowerCase() === cap.approvalSigner.toLowerCase(), 'approval_mismatch');
       const binding = (await store.read('chain-bindings', value.projectId))?.value;
+      const input = await artifacts.get(value.projectId, value.inputArtifactHash);
+      requireThat(digest(input.proposal) === value.proposalHash && input.proposalHash === value.proposalHash,
+        'decision_input_mismatch');
+      const validate = () => chain.validateProposal(p, binding, input.evidence?.chain);
       const executionId = 'execute:' + value.id;
       async function fresh(reader) {
         const module = (await reader.read('chain-modules', value.moduleId))?.value;
@@ -125,7 +129,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       if (existingExecution) {
         const tx = await transact({ id: executionId, to: p.executor, data: executeData,
           authority: { kind: 'execute', proposalId: value.id }, expiresAt: p.expiresAt * 1000, authorize: fresh,
-          validate: () => chain.validateProposal(p, binding) });
+          validate });
         if (terminal(tx)) return terminal(tx);
         if (tx.state !== 'confirmed') return { state: 'executing', executionTransaction: tx.hash };
         executed = tx;
@@ -134,7 +138,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       if (!executed && await store.read('chain-transactions', 'queue:' + value.id)) {
         queued = await transact({ id: 'queue:' + value.id, to: p.executor, data: queueData,
           authority: { kind: 'queue', proposalId: value.id }, expiresAt: p.expiresAt * 1000, authorize: fresh,
-          validate: () => chain.validateProposal(p, binding) });
+          validate });
         if (terminal(queued)) return terminal(queued);
         if (queued.state !== 'confirmed') return { state: 'queueing', queueTransaction: queued.hash };
       }
@@ -165,14 +169,14 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       if (Number(latest.timestamp) >= p.expiresAt) return { state: 'failed', error: 'approval_expired' };
       queued ??= await transact({ id: 'queue:' + value.id, to: p.executor, data: queueData,
         authority: { kind: 'queue', proposalId: value.id }, expiresAt: p.expiresAt * 1000, authorize: fresh,
-        validate: () => chain.validateProposal(p, binding) });
+        validate });
       if (terminal(queued)) return terminal(queued);
       if (queued.state !== 'confirmed') return { state: 'queueing', queueTransaction: queued.hash };
       const readyAt = Number(await read(p.executor, 'readyAt', [signed.approvalHash]));
       if (Number(latest.timestamp) < readyAt) return { state: 'queued', queueTransaction: queued.hash, readyAt };
       const tx = await transact({ id: executionId, to: p.executor, data: executeData,
         authority: { kind: 'execute', proposalId: value.id }, expiresAt: p.expiresAt * 1000, authorize: fresh,
-        validate: () => chain.validateProposal(p, binding) });
+        validate });
       if (terminal(tx)) return terminal(tx);
       return { state: 'executing', executionTransaction: tx.hash, readyAt };
     }

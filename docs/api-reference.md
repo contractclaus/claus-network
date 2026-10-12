@@ -78,3 +78,11 @@ This reference covers API 0.6. Check the [release status](release-status.md) for
 | `network_graph` | GET | `/v1/public/graph` | Public |
 
 Errors contain `error` and `retryable`. Typical statuses: 400 invalid input, 401 missing/expired credential, 403 denied scope/origin, 404 unavailable resource, 409 revision/idempotency or active-work conflict, 429 admission capacity, and 503 temporary service failure. Do not infer success from a network timeout.
+
+## Protected-change evidence
+
+`proposal_create` accepts up to eight declared direct-contract dependencies as `dependencies: [{address, callData}]`. Use `callData: "0x"` for code inspection without a probe. Other call data is executed as a read-only RPC probe at the same finalized block, with a 250,000 gas bound. The complete request, including dependencies, is bound to the idempotency key.
+
+The network attaches the exact reviewed compiler artifact, deployed runtime, block number/hash, dependency runtimes, selected proxy-storage slots and probe results to Claus's decision. The dependency hash commits to this full snapshot. Missing code, EIP-7702 delegation, CALLCODE/DELEGATECALL/SELFDESTRUCT instructions or nonzero EIP-1967/EIP-1822 implementation slots are unsupported by this initial direct-contract profile. The opcode scan is conservative and includes metadata; it is not a general control-flow proof.
+
+Code identity and proxy slots are checked again before signing and execution. Balances and other mutable external data remain live. RPC observations are not cryptographic state proofs, and callers must declare all dependencies relevant to their configuration. Claus reviews completeness and can reject the request. A rejected request remains rejected; corrected evidence requires a new explicit proposal. Newly deployed code must first be visible in a finalized block.

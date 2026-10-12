@@ -27,7 +27,7 @@ export function createClausController({ store, chain, client, signer, secret, fe
       let permitted = false;
       try {
         permitted = await authorize(store) === true;
-        if (permitted) await chain.validateProposal(value.proposal, binding);
+        if (permitted) await chain.validateProposal(value.proposal, binding, input.evidence?.chain);
       } catch (error) {
         if (!authorityDenied(error)) throw error;
         permitted = false;
@@ -54,7 +54,7 @@ export function createClausController({ store, chain, client, signer, secret, fe
       const { decisionHash, ...unsignedDecision } = decision;
       requireThat(digest(unsignedDecision) === decisionHash && ['approve', 'reject'].includes(decision.decision), 'decision_hash_mismatch');
       if (decision.decision === 'reject') return { state: 'rejected', decision, reviewId: expectedId };
-      const state = await chain.validateProposal(value.proposal, binding);
+      const state = await chain.validateProposal(value.proposal, binding, input.evidence?.chain);
       requireThat(value.proposal.expiresAt > Math.floor(now() / 1000) + state.minDelaySeconds + 300, 'proposal_expiring');
       const currentSigner = await client.readContract({ address: value.proposal.executor,
         abi: ClausApprovalExecutorAbi, functionName: 'clausSigner' });

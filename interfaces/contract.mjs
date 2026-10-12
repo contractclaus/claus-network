@@ -1,4 +1,4 @@
-export const API_VERSION='0.6.0';
+export const API_VERSION='0.6.1';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
@@ -38,7 +38,9 @@ export const ROUTES=Object.freeze([
  route('registration_submit','POST','/v1/projects/{projectId}/chain/registrations/{registrationId}/submit',{projectId:string(),registrationId:string(),signature:string(132)}),
  route('registration_get','GET','/v1/projects/{projectId}/chain/registrations/{registrationId}',{projectId:string(),registrationId:string()}),
  route('chain_binding','GET','/v1/projects/{projectId}/chain',{projectId:string()}),
- route('proposal_create','POST','/v1/projects/{projectId}/proposals',{projectId:string(),moduleId:string(),configuration:string(16386),idempotencyKey:string()}),
+ route('proposal_create','POST','/v1/projects/{projectId}/proposals',{projectId:string(),moduleId:string(),configuration:string(16386),
+  dependencies:{type:'array',maxItems:8,items:object({address:string(42),callData:string(8194)})},idempotencyKey:string()},
+  ['projectId','moduleId','configuration','idempotencyKey']),
  route('proposal_get','GET','/v1/projects/{projectId}/proposals/{proposalId}',{projectId:string(),proposalId:string()}),
  route('proposal_publish','PUT','/v1/projects/{projectId}/proposals/{proposalId}/publication',{projectId:string(),proposalId:string(),published:boolean,expectedRevision:integer}),
  route('service_register','POST','/v1/projects/{projectId}/services',{projectId:string(),manifest:object({name:string(80),capability:string(64),version:string(20),inputSchema:true,outputSchema:true,priceWei:string(30),recipient:string(42),maxDurationSeconds:{type:'integer',minimum:30,maximum:3600},validUntil:integer,dataPolicy:string(32)})}),
