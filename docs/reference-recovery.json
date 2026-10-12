@@ -1,6 +1,6 @@
 {
   "ownerJournal": {
-    "at": "2026-10-12T09:18:24.767Z",
+    "at": "2026-10-12T09:21:34.968Z",
     "actions": 10,
     "files": 20,
     "signedActions": 10,
@@ -8,7 +8,7 @@
       1,
       11155111
     ],
-    "sha256": "3f965f9361b3cbb4bea3a5448e5d94a235d334402bd2a2e8cccf70588f9907c5",
+    "sha256": "bec979564b21e81850925dfd989ffc2a651725748998fbca8f7704e8dd0240f6",
     "readOnly": true,
     "signaturesVerified": true,
     "ownerKeyExported": false,
@@ -17,10 +17,10 @@
   "databaseRecovery": [
     {
       "operator": "https://claus-network-api.vercel.app",
-      "capturedAt": "2026-10-12T09:18:27.205Z",
-      "documents": 822,
-      "events": 426,
-      "sha256": "f25daade2b2bca1e505e8c9561777a2258ce46dabfd68cd95290e69fad0abea2",
+      "capturedAt": "2026-10-12T09:21:38.369Z",
+      "documents": 840,
+      "events": 439,
+      "sha256": "83e5b209005db6e5e963d924db828a7fc05638d8ecedd82f90423911d430f2bb",
       "isolatedSchemaRestore": true,
       "exactValuesRevisionsEventsAndSequence": true,
       "oldCredentialDenied": true,
@@ -29,10 +29,10 @@
     },
     {
       "operator": "https://claus-network-portable.vercel.app",
-      "capturedAt": "2026-10-12T09:18:34.682Z",
+      "capturedAt": "2026-10-12T09:21:45.971Z",
       "documents": 47,
       "events": 11,
-      "sha256": "69ee66b670bb5b817591ae59785b812ee0074c19a950a598d1c33f813228f9a7",
+      "sha256": "08b4150141a8a77aef0bbad74bffd69b9fc6be0adf59374dbc77f27fc7ba2ab1",
       "isolatedSchemaRestore": true,
       "exactValuesRevisionsEventsAndSequence": true,
       "oldCredentialDenied": null,
@@ -40,11 +40,11 @@
       "externalEffectsDispatched": false
     }
   ],
-  "createdAt": "2026-10-12T09:18:40.572Z",
-  "sha256": "67c7778a7de1bafdabce4d7057c55bcd836adc1a9188c45e1072b2bcbbbaa745",
-  "bytes": 6321032,
-  "sourceFiles": 298,
-  "operationalFiles": 139,
+  "createdAt": "2026-10-12T09:21:51.547Z",
+  "sha256": "e1fcce0b01d2a4431287233f4be1cf38b36b84570a7ba1e4f5db5e6f676a0d2d",
+  "bytes": 6533000,
+  "sourceFiles": 299,
+  "operationalFiles": 141,
   "encryptedReadback": true,
   "decryptedReadback": true
 }

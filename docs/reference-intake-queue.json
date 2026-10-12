@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-12T09:21:23.709Z",
+  "chainId": 11155111,
+  "requestId": "sha256:620af114646b9dcb1c26e36cfc6715e962ba8f7826a4d44bf1c97989e8defb0d",
+  "proposalId": "sha256:53baa964a09465da490d7937a16cc30f0f6fd0ee07002411191a0d7d9eb88747",
+  "decision": "approve",
+  "decisionHash": "sha256:dd11203bdda33af37fb3b9a8bc2c7424fc3e9ad7809237f4033f7d22d11ca50c",
+  "transactionHash": "0x5ff74e54967378fae0b4ac311433ad10e3d676d032d2e9fed9224e2f7fc8adf9",
+  "blockNumber": 11897958,
+  "blockHash": "0xd90d08577ef4eae4e1c740aeb96f42aab59c6d239c0457257c1b4c0a613a2aaa",
+  "queueFinalized": false,
+  "minimumDelaySeconds": 3600,
+  "readyAt": 1791800472,
+  "readyAtUtc": "2026-10-12T10:21:12.000Z",
+  "state": "queued_with_verified_real_delay",
+  "executed": false
+}

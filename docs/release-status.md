@@ -13,7 +13,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Services, project wallets and isolated project UIs | Active for admitted pilots; the Claus-operated reference paid two services, changed agents and retired its payment sessions |
 | Protected native vault | One owner-operated Sepolia reference complete; deposit, approved policy change and full principal withdrawal finalized, unchanged custody bytecode |
 | Signed project transfers | Active for admitted projects; separate Claus-operated destination continued work with fresh grants |
-| Contract request and callback | Verified Inbox and bounded dispatcher active for one Claus-owned Sepolia project; genuine end-to-end acceptance pending |
+| Contract request and callback | First finalized request received a genuine Claus approval; callback and delayed execution acceptance pending; one admitted Claus-owned Sepolia project |
 | Token launch | Not included in this public release |
 | Public inference and holder credits | Disabled; provider permission, bounded billing acceptance and funding still required |
 | Mainnet launches and customer deposits | Disabled; require the specific release and economic approval |
@@ -29,6 +29,8 @@ The [collaboration receipt](reference-collaboration.json) records two paid servi
 The [deployment manifest](deployments.json) records nine source-verified Sepolia contracts with creation transactions, runtime hashes and verification evidence. Source verification establishes which code is deployed; it is not a security audit. The [native-vault profile](native-vault.md) retains the scope and findings of its external reviews. Its [completed lifecycle receipt](reference-vault.json) proves full owner withdrawal after the approved admission change.
 
 The [published Inbox project and report](https://claus.si/p/claus-contract-inbox) are available in the explorer. The [Inbox assessment](reference-inbox-review.json) retains all ten findings and accepts only the bounded owner-operated Sepolia pilot. The [activation receipt](reference-intake-activation.json) pins one project, its verified Inbox, separate dispatcher and finite 0.0002-Sepolia-ETH budget. The requester is a separate reference contract, outside that independent Inbox audit. The [client example](contract-intake.md#client-example) was exercised against actual local bytecode, with no public transaction or fabricated Claus decision.
+
+The first finalized contract request received a genuine Claus approval and reached its [onchain queue](reference-intake-queue.json). The queue receipt confirms the full one-hour delay, with execution permitted no earlier than 12 October at 10:21:12 UTC. Callback finality and the subsequent execution are still pending.
 
 ## Release and recovery
 

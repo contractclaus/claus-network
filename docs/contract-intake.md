@@ -1,6 +1,6 @@
 # Contract requests
 
-Since API 0.10.1, the network implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The complete genuine decision/callback reference is still pending. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
+Since API 0.10.1, the network implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The first finalized request received a genuine Claus approval; callback and delayed execution acceptance are still pending. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
 
 ## Flow
 
