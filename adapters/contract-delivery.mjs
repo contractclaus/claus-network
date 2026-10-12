@@ -22,6 +22,7 @@ export async function admitContractDispatchBudget(store, config) {
   const total = amount(config.maximumTotal), perTransaction = amount(config.maximumTransaction);
   if (publicAdmission) requireThat(amount(config.maximumProject) > 0n && amount(config.maximumProject) <= total,
     'invalid_dispatch_budget');
+  if (publicAdmission) requireThat(perTransaction <= amount(config.maximumProject), 'invalid_dispatch_budget');
   requireThat(total > 0n && perTransaction > 0n && perTransaction <= total &&
     perTransaction <= 10000000000000000n && amount(config.maximumGas) > 0n &&
     amount(config.maximumGas) <= 30000000n && amount(config.maximumFeePerGas) > 0n &&

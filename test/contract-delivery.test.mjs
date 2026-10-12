@@ -168,6 +168,7 @@ test('public callback budget uses current project admission without an operator-
   assert.equal((await revoked.ledger()).reserved, '0');
   await assert.rejects(admitContractDispatchBudget(revoked.store, {...revoked.budget, id:'invalid-mode', admissionMode:'all'}), {code:'invalid_dispatch_budget'});
   await assert.rejects(admitContractDispatchBudget(revoked.store, {...revoked.budget, id:'ambiguous', projectIds:['project-a']}), {code:'invalid_dispatch_budget'});
+  await assert.rejects(admitContractDispatchBudget(revoked.store, {...revoked.budget, id:'inconsistent-share', maximumProject:'100000000000'}), {code:'invalid_dispatch_budget'});
 });
 
 test('selecting a new public budget reconciles a pending old transaction against its original ledger', async t => {

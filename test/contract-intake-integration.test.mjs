@@ -57,7 +57,8 @@ test('a real local contract event becomes one proposal and an authenticated resu
   await assert.rejects(intake.ingest(binding.id, pointer), { code: 'inbox_event_not_finalized' });
   await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
   time = Number((await client.getBlock()).timestamp) * 1000;
-  const scanned = await chain.scan({ afterBlock: Number(receipt.blockNumber) - 1 });
+  const scanned = await chain.scan({ afterBlock: Number(receipt.blockNumber) - 1,
+    bindings: [{ id: binding.id, requester: receiver }] });
   assert.equal(scanned.events.length, 1);
   assert.deepEqual(scanned.events[0], { bindingId: binding.id, ...pointer });
   const request = await intake.ingest(binding.id, pointer);

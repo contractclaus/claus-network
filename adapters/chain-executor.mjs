@@ -4,6 +4,7 @@ import { createReadonlyTransactions } from './sepolia-transactions.mjs';
 import { approvalMessage, approvalTypes, domain, validateModule, selectExecutorCapability } from './chain-read.mjs';
 import { ClausApprovalExecutorAbi as executorAbi, ClausReadonlyProjectAbi as targetAbi } from './chain-abi.mjs';
 import { authorityDenied } from './authorization.mjs';
+import { recoverChainEvent } from './chain-event-recovery.mjs';
 
 export function createChainExecutor({ store, client, signer, sealer, chain, verification, artifacts, admission, chainId = 11155111, now = () => Date.now() }) {
   requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
@@ -62,8 +63,12 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     const project = await read(value.executor, 'projects', [value.message.projectId]);
     if (/^0x0{40}$/i.test(project[1])) return null;
     const event = executorAbi.find(x => x.type === 'event' && x.name === 'ProjectRegistered');
-    const logs = await client.getLogs({ address: value.executor, event,
-      args: { projectId: value.message.projectId }, fromBlock: 0n, toBlock: 'latest' });
+    const module = (await store.read('chain-modules',value.moduleId))?.value;
+    const found = await recoverChainEvent({store,client,chainId,key:'registration:'+value.id,
+      fromBlock:value.observedBlock??module?.receipt?.blockNumber??0,
+      query:{address:value.executor,event,args:{projectId:value.message.projectId}}});
+    const logs=found.logs;
+    if(!logs.length)return {state:'submitted',relayed:true};
     requireThat(logs.length === 1 && logs[0].args.owner.toLowerCase() === value.message.owner.toLowerCase() &&
       logs[0].args.mandateHash === value.message.mandateHash, 'registered_project_mismatch');
     const receipt = await client.getTransactionReceipt({ hash: logs[0].transactionHash });
@@ -187,9 +192,15 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         // successful event; nonce consumption alone could also be cancellation.
         const queued = (await store.read('chain-transactions', 'queue:' + value.id))?.value;
         const event = executorAbi.find(x => x.type === 'event' && x.name === 'UpgradeExecuted');
-        const logs = await client.getLogs({ address: p.executor, event, args: { projectId: p.projectKey, approvalHash: signed.approvalHash },
-          fromBlock: BigInt(queued?.receipt?.blockNumber ?? 0), toBlock: 'latest' });
-        if (!logs.length) return { state: 'blocked', error: 'approval_cancelled' };
+        const found = await recoverChainEvent({store,client,chainId,key:'execution:'+value.id,
+          fromBlock:input.evidence?.chain?.blockNumber??queued?.receipt?.blockNumber??0,
+          query:{address:p.executor,event,args:{projectId:p.projectKey,approvalHash:signed.approvalHash}}});
+        if(!found.complete)return {state:'executing',error:'execution_history_pending'};
+        const logs=found.logs;
+        if (!logs.length) {
+          const consumed=await client.readContract({address:p.executor,abi:executorAbi,functionName:'executionNonces',args:[p.projectKey,BigInt(p.nonce)],blockTag:'finalized'});
+          return consumed?{state:'blocked',error:'approval_cancelled'}:{state:'executing'};
+        }
         const receipt = await client.getTransactionReceipt({ hash: logs.at(-1).transactionHash });
         const block = await client.getBlock({ blockNumber: receipt.blockNumber }), head = await client.getBlockNumber();
         requireThat(receipt.status === 'success' && receipt.blockHash === block.hash, 'execution_receipt_mismatch');

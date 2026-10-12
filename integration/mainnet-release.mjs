@@ -1,5 +1,6 @@
 import { encodeDeployData, encodeAbiParameters, getContractAddress, keccak256 } from 'viem';
 import { digest, requireThat } from '../src/shared/index.mjs';
+import { createArtifactStore } from '../src/artifact-store/index.mjs';
 import { createReadonlyTransactions } from '../adapters/sepolia-transactions.mjs';
 
 // Operator-only release functions. This module is not reachable from HTTP/MCP.
@@ -17,9 +18,17 @@ export function mainnetDeployment(plan, artifact) {
   return { data, constructorArguments, address };
 }
 export function requireMainnetApproval(plan, authorization, assessment) {
+  const roles=[plan.approvalSigner,plan.executorPayer,plan.recoveryOwner];
+  requireThat(roles.every(v=>/^0x[0-9a-fA-F]{40}$/.test(v)) &&
+    new Set(roles.map(v=>v.toLowerCase())).size===3 && plan.recoveryDelay===172800,'release_roles_mismatch');
+  requireThat(Number.isSafeInteger(plan.bootstrapMaximumGas) && plan.bootstrapMaximumGas>0 &&
+    plan.bootstrapMaximumGas<=30000000,'release_gas_limit');
+  // This record is retained evidence of the human's exact approval, supplied
+  // only by the trusted operator. It is not a signature or a public API input.
+
   requireThat(authorization?.approved === true && authorization.planHash === digest(plan) &&
     authorization.owner?.toLowerCase() === plan.recoveryOwner.toLowerCase() &&
-    authorization.revoked !== true, 'exact_mainnet_authorization_required');
+    authorization.revoked !== true && Number.isSafeInteger(authorization.expiresAt), 'exact_mainnet_authorization_required');
   requireThat(assessment?.status === 'accepted-for-mainnet-readonly' && assessment.chainId === 1 &&
     assessment.sourceCommit === plan.runtimeCommit && assessment.contractCommit === plan.contractCommit &&
     assessment.buildHash === plan.buildHash, 'mainnet_scope_not_reviewed');
@@ -32,7 +41,7 @@ export async function deployMainnetRelease({ store, client, signer, sealer, veri
   const id = 'bootstrap:mainnet-readonly:' + digest(plan).slice(7);
   const authority = { kind: 'approved-mainnet-bootstrap', planHash: digest(plan), assessmentHash: digest(assessment) };
   const txs = createReadonlyTransactions({ store, client, signer, sealer, chainId: 1, finalized: true,
-    limits: { gas: '5000000', cost: plan.bootstrapMaximumWei },
+    limits: { gas: String(plan.bootstrapMaximumGas), cost: plan.bootstrapMaximumWei },
     authorize: async intent => intent.to === null && intent.data === data && intent.value === '0' &&
       digest(intent.authority) === digest(authority) && authorization.revoked !== true && now() < authorization.expiresAt });
   let tx = await txs.status(id);
@@ -59,6 +68,11 @@ export async function stageMainnetCapability({ store, plan, authorization, asses
   requireMainnetApproval(plan, authorization, assessment);
   requireThat(Date.now() < authorization.expiresAt, 'release_authorization_expired');
   const { data, address } = mainnetDeployment(plan, artifact);
+  const target=await createArtifactStore({store}).get(plan.artifactProjectId,plan.targetArtifactHash);
+  requireThat(target.contract==='ClausReadonlyProject' && target.standardInput && target.creationBytecode,'release_target_artifact_missing');
+  const proof=(await store.read('chain-verifications',digest({chainId:1,address:address.toLowerCase()})))?.value;
+  requireThat(proof?.state==='verified' && proof.etherscanVerified &&
+    digest(proof)===digest(deployment.verification),'stored_verification_required');
   requireThat(deployment.state === 'verified' && deployment.planHash === digest(plan) &&
     deployment.address.toLowerCase() === address.toLowerCase() && deployment.verification.creationMatch === 'exact_match' &&
     deployment.verification.runtimeMatch === 'exact_match', 'exact_verified_release_required');

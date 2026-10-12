@@ -37,8 +37,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       await allowed(actor, projectId);
       const existing = await store.read('chain-proposals', id);
       if (existing) { requireThat(existing.value.requestHash === requestHash, 'idempotency_conflict'); return existing.value; }
-      await publicDecisionCapacity(store, projectId, now());
-      if (await store.read('public-chain-projects', projectId))
+      if (await publicDecisionCapacity(store, projectId, now()))
         requireThat((await identity.credential(actor)).kind === 'agent', 'durable_agent_required');
       const activeBeforeRead = await store.read('active-proposals', projectId);
       if (activeBeforeRead) {
@@ -83,7 +82,8 @@ export function createApprovals({ store, identity, projects, reviews, deployment
           requireThat(!prior || ['executed', 'rejected', 'failed', 'blocked', 'cancelled'].includes(prior.state), 'proposal_in_progress');
         }
         const inputArtifactHash = await artifacts.put(tx, projectId, input);
-        await publicDecisionCapacity(tx, projectId, now(), true);
+        if (await publicDecisionCapacity(tx, projectId, now(), true))
+          requireThat((await identity.credential(actor, tx)).kind === 'agent', 'durable_agent_required');
         const job = await jobs.enqueue(tx, { projectId, kind: 'claus-review', payload: { proposalId: id },
           authority: { actor }, idempotencyKey: id });
         const value = { id, projectId, requestHash, moduleId, caseId: module.caseId, proposal,
@@ -143,6 +143,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         requireThat(source?.value.published === true, 'source_not_published'); return true;
       };
       try {
+        await controller.preflight?.(value);
         if (claim.mode === 'dispatch') await jobs.beginEffect(claim, (_job, tx) => authorize(tx));
         const result = await controller.step({ value, input: await readInput(value), authorize });
         const done = ['approved', 'rejected', 'failed', 'blocked'].includes(result.state);
@@ -181,6 +182,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         await consumerMatches(value, reader); return true;
       };
       try {
+        await executor.preflight?.(value);
         if (claim.mode === 'dispatch') await jobs.beginEffect(claim, (_job, tx) => authorize(tx));
         const result = await executor.step({ value, authorize });
         const done = ['executed', 'failed', 'blocked'].includes(result.state);
@@ -206,7 +208,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
             await tx.write('chain-proposals', value.id, { ...old.value, state: 'blocked', error: error.code }, old.revision);
           });
         }
-        return jobs.finish(claim, { state: 'waiting', retryAt: now() + (['chain_gas_exhausted', 'transaction_cost_limit'].includes(error.code) ? 15 * 60000 : 60000),
+        return jobs.finish(claim, { state: 'waiting', retryAt: now() + (['chain_gas_exhausted', 'transaction_cost_limit', 'capacity_reached'].includes(error.code) ? 15 * 60000 : 60000),
           result: { error: error.code ?? 'execution_unavailable' } });
       }
     }

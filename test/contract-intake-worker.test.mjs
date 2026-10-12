@@ -7,7 +7,8 @@ import { digest } from '../src/shared/index.mjs';
 async function fixture(t) {
   const store = openStore(':memory:'); t.after(() => store.close());
   const f = { store, active: true, calls: [], sends: [], fail: null, deliveryState: 'pending', scans: 0, runs: 0 };
-  const binding = { id: 'known', chainId: 11155111, inbox: 'inbox', codeHash: 'pinned' };
+  const binding = { id: 'known', chainId: 11155111, inbox: 'inbox', codeHash: 'pinned',
+    expiresAt: Date.now() + 86400000, used: 0, maxRequests: 10, requester: 'requester' };
   await store.transaction(tx => tx.write('contract-bindings', 'known', binding, 0));
   const events = [{ bindingId: 'unknown', transactionHash: 'unknown', logIndex: 0 },
     { bindingId: 'known', transactionHash: 'known', logIndex: 1 }];
@@ -39,8 +40,8 @@ test('scanner ignores unknown bindings and resumes its canonical cursor after re
   assert.equal((await f.worker.tick()).ingested, 1);
   assert.equal((await f.create().tick()).ingested, 0);
   assert.equal(f.calls.filter(Array.isArray).length, 1);
-  assert.deepEqual(f.calls[0], { afterBlock: 99, blockHash: null });
-  assert.deepEqual(f.calls.at(-1), { afterBlock: 200, blockHash: 'canonical' });
+  assert.deepEqual(f.calls[0], { afterBlock: 99, blockHash: null, bindings: [{ id: 'known', requester: 'requester' }] });
+  assert.deepEqual(f.calls.at(-1), { afterBlock: 200, blockHash: 'canonical', bindings: [{ id: 'known', requester: 'requester' }] });
 });
 
 test('a failing scanner cannot prevent reconciliation of an already submitted result', async t => {

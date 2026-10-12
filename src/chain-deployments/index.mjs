@@ -157,6 +157,7 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
         return true;
       };
       try {
+        await executor.preflight?.(value);
         if (claim.mode === 'dispatch') await jobs.beginEffect(claim, (_job, tx) => authorize(tx));
         const result = await executor.step({ kind: claim.job.kind, value, authorize,
           artifact: moduleJob ? await artifacts.get(value.projectId, value.artifactHash) : null,
@@ -183,7 +184,7 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
             await tx.write(collection, id, { ...old.value, state: 'blocked', error: error.code, updatedAt: now() }, old.revision);
           });
         }
-        return jobs.finish(claim, { state: 'waiting', retryAt: now() + (['chain_gas_exhausted', 'transaction_cost_limit'].includes(error.code) ? 15 * 60000 : 60000),
+        return jobs.finish(claim, { state: 'waiting', retryAt: now() + (['chain_gas_exhausted', 'transaction_cost_limit', 'capacity_reached'].includes(error.code) ? 15 * 60000 : 60000),
           result: { error: error.code ?? 'chain_execution_unavailable' } });
       }
     }

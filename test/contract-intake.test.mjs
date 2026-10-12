@@ -21,6 +21,7 @@ async function fixture(t) {
       enabled: (_reader, projectId) => f.enabled && f.allowedProjects.includes(projectId),
       readProposal: async (_project, id) => f.proposals.get(id),
       createProposal: async (_actor, projectId, input) => {
+        if (f.capacityError) throw f.capacityError;
         f.submissions++;
         const { idempotencyKey, ...body } = input;
         const id = digest({ projectId, idempotencyKey, kind: 'protected-upgrade' });
@@ -193,4 +194,25 @@ test('public intake uses durable credentials and one outstanding request per pro
   await f.jobs.cancel('agent', 'project-a', prior.jobId);
   await Promise.all([f.ingest(), f.ingest()]);
   assert.equal((await f.api.binding('agent', 'project-a', f.binding.id)).used, 2);
+});
+
+test('a daily decision limit waits on the same request, while lifetime exhaustion is terminal', async t => {
+  const f=await fixture(t), request=await f.ingest();
+  f.capacityError=Object.assign(new Error('capacity'),{code:'decision_capacity_reached',retryAt:f.time+60000});
+  assert.equal((await f.api.run()).state,'waiting');
+  assert.equal(f.submissions,0);assert.equal((await f.api.binding('owner','project-a',f.binding.id)).used,1);
+  f.advance();f.capacityError=null;
+  await f.api.run();assert.equal(f.submissions,1);
+  f.decide(request);f.advance();await f.api.run();
+  assert.equal((await f.api.request('owner','project-a',request.id)).error,null);
+  const exhausted=await fixture(t);await exhausted.ingest();
+  exhausted.capacityError=Object.assign(new Error('capacity'),{code:'decision_capacity_reached'});
+  assert.equal((await exhausted.api.run()).state,'blocked');assert.equal(exhausted.submissions,0);
+});
+
+test('an authorized binding read exposes the latest rejected event without implying admission',async t=>{
+ const f=await fixture(t);const rejected={bindingId:f.binding.id,code:'contract_request_in_progress',transactionHash:word('7'),logIndex:2,observedAt:f.time};
+ await f.store.transaction(tx=>tx.write('contract-intake-rejections',digest({inbox:f.binding.inbox,bindingId:f.binding.id}),rejected,0));
+ assert.deepEqual((await f.api.binding('owner','project-a',f.binding.id)).latestRejection,rejected);
+ assert.equal((await f.api.binding('owner','project-a',f.binding.id)).used,0);
 });

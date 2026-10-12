@@ -12,6 +12,15 @@ import { createChainExecutor } from '../adapters/chain-executor.mjs';
 import { createSourceVerification } from '../adapters/source-verification.mjs';
 import { requireThat } from '../src/shared/index.mjs';
 
+export async function checkChainWorkerRoles(store, role, signers) {
+  for(const [chainId,signer] of signers){
+    const cap=(await store.read('network-capabilities',chainId===1?'chain:1':'chain'))?.value;
+    if(!cap)continue;
+    const expected=role==='controller'?cap.approvalSigner:cap.executorPayer;
+    requireThat(expected?.toLowerCase()===signer.address.toLowerCase(),'worker_role_mismatch');
+  }
+}
+
 export async function createChainWorker(role, env = process.env) {
   requireThat(['controller', 'executor'].includes(role), 'invalid_worker_role');
   neonConfig.webSocketConstructor = ws;
@@ -21,6 +30,10 @@ export async function createChainWorker(role, env = process.env) {
   requireThat(signer.address.toLowerCase() === env.CLAUS_CHAIN_SIGNER?.toLowerCase(), 'worker_signer_mismatch');
   const sepolia = createChainRead({ client }), sealer = createSealer(env.CLAUS_NETWORK_SEALING_KEY);
   const configuredMainnet = !!env.CLAUS_MAINNET_RPC_URL && !!env.CLAUS_MAINNET_PRIVATE_KEY;
+  if(env.CLAUS_MAINNET_RPC_URL||env.CLAUS_MAINNET_PRIVATE_KEY||env.CLAUS_MAINNET_SIGNER){
+    requireThat(configuredMainnet&&!!env.CLAUS_MAINNET_SIGNER,'incomplete_mainnet_worker');
+    requireThat(new URL(env.CLAUS_MAINNET_RPC_URL).protocol==='https:','invalid_mainnet_rpc');
+  }
   const mainnetClient = configuredMainnet ? createPublicClient({ transport: http(env.CLAUS_MAINNET_RPC_URL, { retryCount: 0, timeout: 15000 }) }) : null;
   const mainnetSigner = configuredMainnet ? privateKeyToAccount(env.CLAUS_MAINNET_PRIVATE_KEY) : null;
   if (mainnetSigner) requireThat(mainnetSigner.address.toLowerCase() === env.CLAUS_MAINNET_SIGNER?.toLowerCase() &&
@@ -40,10 +53,12 @@ export async function createChainWorker(role, env = process.env) {
     const chainId = value.proposal?.chainId ?? value.chainId ?? 11155111;
     const port = ports.get(chainId); requireThat(port, 'chain_not_configured'); return port;
   };
-  const controller = { step: input => selected(input.value).step(input) };
-  const executor = { deployment: { step: input => selected(input.value).deployment.step(input) },
-    execution: { step: input => selected(input.value).execution.step(input) } };
+  const preflight = value => { selected(value); };
+  const controller = { preflight, step: input => selected(input.value).step(input) };
+  const executor = { deployment: { preflight, step: input => selected(input.value).deployment.step(input) },
+    execution: { preflight, step: input => selected(input.value).execution.step(input) } };
   return { store, async tick() {
+    await checkChainWorkerRoles(store,role,[[11155111,signer],...(mainnetSigner?[[1,mainnetSigner]]:[])]);
     // Keep reconciling already broadcast work after either admission is disabled.
     // Each dispatch/signature rechecks its own current capability and authority.
     const work = role === 'controller' ? await app.approvals.runDecision(controller) : {

@@ -56,7 +56,7 @@ const result = await api.call('contract_request_get', {
 });
 ```
 
-The event lookup checks the canonical block, Inbox runtime, requester, binding and exact input. `located.finalized` describes the transaction's chain status. A network `404` before the finalized event is indexed means continue reading the same request ID; it is not a reason to submit again. A returned `proposal-decision` can be read through `proposal_get` to follow its separate execution and any accepted project delay. Finish by revoking the binding with `contract_binding_revoke` and retiring any temporary agent mandate.
+The event lookup checks the canonical block, Inbox runtime, requester, binding and exact input. `located.finalized` describes the transaction's chain status. A network `404` before the finalized event is indexed means continue reading the same request ID; it is not a reason to submit again. If indexing does not appear, inspect the binding's `latestRejection`: a skipped concurrent request is not queued for later execution. A returned `proposal-decision` can be read through `proposal_get` to follow its separate execution and any accepted project delay. Finish by revoking the binding with `contract_binding_revoke` and retiring any temporary agent mandate.
 
 ## Public data and limits
 
@@ -97,4 +97,6 @@ The original owner-operated reference completed through the canonical-result rec
 
 ### Public admission limits
 
-The 0.11.3 public candidate requires a delegated agent credential for binding creation, with `contract.request` and `proposal.create` and an expiry covering the binding. Owner sessions remain suitable for granting/revoking that delegation. Each public project can have one queued or waiting intake request; a second receives `contract_request_in_progress` without consuming its binding quota. Completion, cancellation, rejection or expiry lets the next request enter. A binding can still impose a lower lifetime request cap. Public proposal caps and explicit dispatcher gas shares apply independently. Deferred delivery includes its reason and retry time; it does not imply a completed callback.
+The 0.12.1 public candidate requires a delegated agent credential for binding creation, with `contract.request` and `proposal.create` and an expiry covering the binding. Owner sessions remain suitable for granting/revoking that delegation. Each public project can have one queued or waiting intake request. A second concurrent onchain event is not queued and receives no Claus decision or callback; it is skipped without consuming its binding quota. Read `contract_binding_get.latestRejection` for the latest rejected transaction and log index, including `contract_request_in_progress`. Once the first request completes, is cancelled, rejected or expires, submit a new request if still needed. Only the latest rejection per binding is retained. A binding can still impose a lower lifetime request cap. Public proposal caps and explicit dispatcher gas shares apply independently. Deferred delivery includes its reason and retry time; it does not imply a completed callback.
+
+An admitted request that reaches a daily decision limit waits under the same ID until the next UTC day if its original deadline allows it. A lifetime limit or a deadline before capacity returns is terminal. No new review or payment is created to bypass either limit.

@@ -65,7 +65,9 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
     },
     async binding(actor, projectId, id) {
       await identity.authorize(actor, 'contract.read', { projectId });
-      return bindingView(await owned(store, 'contract-bindings', projectId, id));
+      const row = await owned(store, 'contract-bindings', projectId, id);
+      const rejected = (await store.read('contract-intake-rejections', digest({ inbox: row.value.inbox, bindingId: id })))?.value;
+      return { ...bindingView(row), latestRejection: rejected ?? null };
     },
     async revoke(actor, projectId, id) {
       return store.transaction(async tx => {
@@ -135,7 +137,7 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
       const update = (state, result, error) => async tx => {
         const row = await owned(tx, 'contract-requests', request.projectId, request.id);
         await tx.write('contract-requests', request.id, { ...row.value, state, result,
-          ...(error ? { error } : {}), updatedAt: now() }, row.revision);
+            error: error ?? null, updatedAt: now() }, row.revision);
       };
       let proposal = await readProposal(request.projectId, request.proposalId);
       if (!proposal) {
@@ -156,11 +158,14 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
           if (error.code === 'lease_lost') return { stale: true };
           // A transport failure might have created the proposal. Keep the
           // original request; the next run looks it up before any admission.
-          const denied = ['contract_intake_disabled', 'contract_binding_inactive', 'scope_denied', 'unauthenticated',
+          const capacityWait = error.code === 'decision_capacity_reached' &&
+            Number.isSafeInteger(error.retryAt) && error.retryAt > now() && error.retryAt < request.observation.deadline * 1000;
+          const denied = !capacityWait && ['contract_intake_disabled', 'contract_binding_inactive', 'scope_denied', 'unauthenticated',
             'contract_request_closed', 'decision_capacity_reached', 'durable_agent_required'].includes(error.code);
           return jobs.finish(claim, { state: denied ? 'blocked' : 'waiting',
-            ...(denied ? {} : { retryAt: now() + 60000 }), result: { requestId: request.id, error: denied ? error.code : 'proposal_pending' } },
-          update(denied ? 'blocked' : 'waiting', null, denied ? error.code : undefined));
+            ...(denied ? {} : { retryAt: capacityWait ? Math.max(error.retryAt, now() + 1000) : now() + 60000 }),
+            result: { requestId: request.id, error: denied || capacityWait ? error.code : 'proposal_pending' } },
+          update(denied ? 'blocked' : 'waiting', null, denied || capacityWait ? error.code : undefined));
         }
       }
       requireThat(proposal.id === request.proposalId && proposal.projectId === request.projectId &&

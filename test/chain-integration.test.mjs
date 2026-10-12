@@ -100,6 +100,10 @@ test('API project, real signatures and zero-delay execution work across isolated
     assert.fail(JSON.stringify({ value: await read(), jobs: (await store.list('workflow-jobs', {limit: 100})).map(x => ({kind:x.value.kind, state:x.value.state, result:x.value.result})) }));
   }
   const module = await app.deployments.deployModule(actor, project.id, { caseId, chainId });
+  const unavailable={preflight:async()=>{throw Object.assign(Error('missing port'),{code:'chain_not_configured'});},step:async()=>assert.fail('must not dispatch')};
+  await app.deployments.runOne(unavailable);
+  assert.notEqual((await store.read('workflow-jobs',module.jobId)).value.effect,'outcome_unknown');
+  await advance(61);
   const deployed = await until(() => app.deployments.runOne(executor.deployment),
     () => app.deployments.module(actor, project.id, module.id), 'verified');
   const expired = await executor.deployment.step({ kind: 'module-deploy',
@@ -198,6 +202,20 @@ test('API project, real signatures and zero-delay execution work across isolated
   await assert.rejects(executor.execution.step({value: {...approved, decision: {...approved.decision, decisionHash: digest('tampered')}},
     authorize: async () => true}), {code: 'approval_missing'});
   assert.equal((await store.list('chain-transactions', {limit: 100})).length, count);
+  const cancelledOnchain=await app.approvals.create(actor,project.id,{moduleId:deployed.id,configuration,dependencies,idempotencyKey:'owner-cancel-before-queue'});
+  await app.approvals.runDecision(unavailable);
+  assert.notEqual((await store.read('workflow-jobs',cancelledOnchain.decisionJobId)).value.effect,'outcome_unknown');
+  await advance(61);await app.approvals.runDecision(controller);
+  const cancelledApproval=await app.approvals.get(actor,project.id,cancelledOnchain.id);
+  await app.approvals.runExecution(unavailable);
+  assert.notEqual((await store.read('workflow-jobs',cancelledApproval.executionJobId)).value.effect,'outcome_unknown');
+  const cancelHash=await wallet.writeContract({chain:null,address:executorAddress,abi:executorSource.abi,functionName:'cancelApproval',
+    args:[cancelledApproval.proposal.projectKey,BigInt(cancelledApproval.proposal.nonce)]});
+  await client.waitForTransactionReceipt({hash:cancelHash});
+  await client.request({method:'anvil_mine',params:['0x60','0x1']});await advance(61);
+  await app.approvals.runExecution(executor.execution);
+  assert.equal((await app.approvals.get(actor,project.id,cancelledOnchain.id)).error,'approval_cancelled');
+  assert.equal(await store.read('chain-transactions','queue:'+cancelledOnchain.id),null);
   if (chainId === 1) {
     const mainnetUsage = (await app.deployments.admission.get(ownerActor, { chainId })).usage;
     assert(BigInt(mainnetUsage.spent) > 0n); assert.equal(mainnetUsage.reserved, '0');
@@ -255,8 +273,9 @@ test('API project, real signatures and zero-delay execution work across isolated
   const next = await app.approvals.create(actor, project.id, {moduleId: deployed.id, configuration, dependencies, idempotencyKey: 'revoked-upgrade'});
   const freshChallenge = await app.identity.challenge({address: owner.address});
   const freshSession = await app.identity.session({challengeId: freshChallenge.id, signature: await owner.signMessage({message: freshChallenge.message})});
+  const callsBeforeRevoke=calls;
   await app.identity.revoke(await app.identity.authenticate(freshSession.token), 'mandate', mandate.id);
   assert.equal((await app.approvals.runDecision(controller)).state, 'blocked');
-  assert.equal(calls, 3, 'revocation blocks a fresh paid decision');
+  assert.equal(calls, callsBeforeRevoke, 'revocation blocks a fresh paid decision');
   assert.equal(await store.read('claus-signed-approvals', next.id), null);
 });

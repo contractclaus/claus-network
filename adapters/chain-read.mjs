@@ -96,7 +96,7 @@ export function createChainRead({ client, chainId = CHAIN_ID }) {
       const message = { projectId: projectKey, owner, salt, implementation: module.address, codeHash: module.codeHash,
         initCallHash: keccak256(configuration), mandateHash, policyVersion: '0x' + digest({ profile: PROFILE, version: 1 }).slice(7),
         minDelaySeconds, nonce: BigInt('0x' + digest({ projectId, module: module.id, configuration, expiresAt }).slice(7)).toString(), expiresAt };
-      return { profile: PROFILE, chainId: chainId, executor: capability.executor, configuration,
+      return { profile: PROFILE, chainId: chainId, executor: capability.executor, configuration, observedBlock: String(await client.getBlockNumber()),
         domain: domain(capability.executor, chainId), types: registrationTypes, primaryType: 'Registration', message };
     },
     async verifyRegistration(prepared, signature) {

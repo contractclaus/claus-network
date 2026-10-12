@@ -32,9 +32,12 @@ export function createContractInboxRead({ client, inbox, codeHash, dispatcher })
   }
   return {
     profile: async () => ({ ...profile }),
-    async scan({ afterBlock, blockHash = null, afterLogIndex = null, limit = 500 }) {
+    async scan({ afterBlock, blockHash = null, afterLogIndex = null, limit = 500, bindings = null }) {
       requireThat(Number.isSafeInteger(afterBlock) && afterBlock >= 0 && Number.isSafeInteger(limit) &&
         limit > 0 && limit <= 2000 && (afterLogIndex === null || Number.isSafeInteger(afterLogIndex) && afterLogIndex >= 0), 'invalid_scan_range');
+      requireThat(bindings === null || Array.isArray(bindings) && bindings.length <= 4096 && bindings.every(b =>
+        /^sha256:[0-9a-f]{64}$/.test(b.id) && /^0x[0-9a-fA-F]{40}$/.test(b.requester)), 'invalid_scan_bindings');
+      const accepted = bindings === null ? null : new Map(bindings.map(b => ['0x' + b.id.slice(7), lower(b.requester)]));
       const finalized = await client.getBlock({ blockTag: 'finalized' });
       await verify(finalized.number);
       if (blockHash) requireThat((await client.getBlock({ blockNumber: BigInt(afterBlock) })).hash === blockHash,
@@ -48,8 +51,9 @@ export function createContractInboxRead({ client, inbox, codeHash, dispatcher })
       // a log-index cursor, so even a block larger than one page can progress.
       while (true) {
         try {
-          logs = await client.getLogs({ address: inbox,
+          logs = accepted?.size === 0 ? [] : await client.getLogs({ address: inbox,
             event: inboxAbi.find(x => x.type === 'event' && x.name === 'Requested'),
+            ...(accepted ? { args: { binding: [...accepted.keys()], requester: [...new Set(accepted.values())] } } : {}),
             fromBlock: from, toBlock: end, strict: true });
         } catch (error) {
           if (end === from) throw error;
@@ -58,6 +62,9 @@ export function createContractInboxRead({ client, inbox, codeHash, dispatcher })
         if (logs.length <= 5000 || end === from) break;
         end = from + (end - from) / 2n;
       }
+      // Indexed filters exclude anonymous traffic at the RPC. The pair check
+      // excludes cross-product matches before they consume the work page.
+      if (accepted) logs = logs.filter(log => accepted.get(log.args.binding) === lower(log.args.requester));
       logs.sort((a, b) => Number(a.blockNumber - b.blockNumber) || a.logIndex - b.logIndex);
       if (afterLogIndex !== null) logs = logs.filter(log => log.blockNumber > from || log.logIndex > afterLogIndex);
       // Bound work per hosted invocation independently of the RPC range limit.

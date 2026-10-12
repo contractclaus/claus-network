@@ -9,7 +9,7 @@ function registration(minimum) {
   const code = '0x60006000', codeHash = keccak256(code);
   const executor = '0x' + '11'.repeat(20);
   const chain = createChainRead({ client: {
-    getChainId: async () => 11155111,
+    getChainId: async () => 11155111, getBlockNumber:async()=>100n,
     getCode: async () => code,
     readContract: async ({ address, functionName }) => {
       assert.equal(address, executor);

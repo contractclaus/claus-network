@@ -74,7 +74,20 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
     let scanError = null;
     let batch = { events: [], cursor: prior?.value ?? { afterBlock: startBlock - 1, blockHash: null } };
     if (active) {
-      try { batch = await chain.scan(batch.cursor); }
+      try {
+        const bindings = [];
+        let after = '';
+        for (;;) {
+          const page = await store.list('contract-bindings', { after, limit: 1000 });
+          for (const { value } of page) if (!value.revokedAt && value.expiresAt > now() && value.used < value.maxRequests &&
+            value.chainId === profile.chainId && value.inbox?.toLowerCase() === profile.inbox.toLowerCase() && value.codeHash === profile.codeHash)
+            bindings.push({ id: value.id, requester: value.requester });
+          requireThat(bindings.length <= 4096, 'intake_binding_capacity');
+          if (page.length < 1000) break;
+          after = page.at(-1).id;
+        }
+        batch = await chain.scan({ ...batch.cursor, bindings });
+      }
       catch (error) { scanError = error.code ?? 'intake_scan_unavailable'; }
     }
     let ingested = 0;

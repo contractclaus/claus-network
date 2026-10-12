@@ -25,3 +25,18 @@ test('dense event ranges and one oversized block advance without losing or repea
   const lagging = await chain.scan({ afterBlock: 501, blockHash: 'block-501', afterLogIndex: 10 });
   assert.equal(lagging.events.length, 0); assert.equal(lagging.cursor.afterLogIndex, 10);
 });
+
+test('RPC topics and exact requester-binding pairs exclude foreign spam before the page limit', async () => {
+  const inbox='0x'+'22'.repeat(20), dispatcher='0x'+'11'.repeat(20), requester='0x'+'44'.repeat(20), other='0x'+'55'.repeat(20);
+  const word='0x'+'33'.repeat(32), second='0x'+'66'.repeat(32), code='0x1234'; let calls=0;
+  const client={getChainId:async()=>11155111,getCode:async()=>code,readContract:async()=>dispatcher,
+    getBlock:async()=>({number:500n,hash:'block-500'}),getLogs:async input=>{
+      calls++;assert.deepEqual(input.args,{binding:[word,second],requester:[requester,other]});
+      return [...Array.from({length:64},(_,logIndex)=>({blockNumber:1n,logIndex,args:{binding:word,requester:other},transactionHash:'foreign'})),
+        {blockNumber:1n,logIndex:64,args:{binding:word,requester},transactionHash:'admitted'}];
+    }};
+  const chain=createContractInboxRead({client,inbox,dispatcher,codeHash:keccak256(code)});
+  const page=await chain.scan({afterBlock:0,bindings:[{id:'sha256:'+word.slice(2),requester},{id:'sha256:'+second.slice(2),requester:other}]});
+  assert.equal(page.events.length,1);assert.equal(page.events[0].transactionHash,'admitted');assert.equal(page.cursor.afterBlock,500);
+  const empty=await chain.scan({afterBlock:0,bindings:[]});assert.equal(empty.events.length,0);assert.equal(calls,1);
+});

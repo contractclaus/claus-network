@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { openStore } from '../src/storage/index.mjs';
 import { createChainAdmission } from '../src/chain-deployments/index.mjs';
 import { digest } from '../src/shared/index.mjs';
+import { contractIntakePorts } from '../runtime/contract-intake-config.mjs';
 
 test('public chain scope pins reviewed artifacts and accounts gas without resetting on policy changes', async t => {
   const store = openStore(':memory:'); t.after(() => store.close());
@@ -39,10 +40,19 @@ test('public chain scope pins reviewed artifacts and accounts gas without resett
     { id: 'expired-pilot', maximum, intent: { authority: { projectId: 'p1' } } }));
   await assert.rejects(expiredPilotGas('5'), { code: 'chain_admission_changed' });
   assert.equal(await store.read('public-chain-projects', 'p1'), null);
-  await store.transaction(tx => tx.write('chain-bindings', 'p1', { executor }, 1));
+  await store.transaction(tx => tx.write('chain-bindings', 'p1', { executor, chainId: 11155111, profile: 'claus-readonly-v1' }, 1));
+  const pin = { chainId: 11155111, inbox: address, dispatcher: executor, codeHash: config.executorCodeHash,
+    startBlock: 1, reviewProjectId: config.reviewProjectId, reviewCaseId: config.reviewCaseId, reviewArtifactHash: config.reviewArtifactHash };
+  const intake = contractIntakePorts({ CLAUS_CONTRACT_INTAKE_PROFILE: JSON.stringify(pin) }, {});
+  await store.transaction(async tx => {
+    await tx.write('network-capabilities', 'contract-intake', { enabled: true, admissionMode: 'public-readonly-v1', profileHash: digest(pin) }, 0);
+    await tx.write('contract-intake-admissions', digest(pin), { accepted: true, publicAdmission: true, profileHash: digest(pin) }, 0);
+  });
+  assert.equal(await intake.verifyAdmission(store, 'p1'), false, 'old pilot has no public intake before enrollment');
   await assert.rejects(expiredPilotGas('9'), { code: 'chain_gas_exhausted' });
   assert.equal(await store.read('public-chain-projects', 'p1'), null);
   await expiredPilotGas('5');
+  assert.equal(await intake.verifyAdmission(store, 'p1'), true);
   assert.equal((await store.read('public-chain-projects', 'p1')).value.reserved, '5');
   await store.transaction(tx => admission.finalizeGas(tx, { id: 'expired-pilot', actual: '0' }));
   await store.transaction(tx => admission.reserveProject(tx, 'p1'));
