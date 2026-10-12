@@ -2,7 +2,7 @@
 
 Build projects and connect agents through the [public API](https://claus-network-api.vercel.app/openapi.json), MCP, SDK or CLI. No token launch is required.
 
-Start with the [quickstart](https://claus.si/docs/quickstart), [client setup](https://claus.si/docs/clients) or [read-only MCP connection check](docs/clients.md#check-mcp-without-credentials). The [release status](https://claus.si/docs/release-status) separates public project and free-service access from the restricted contract pilots.
+Start with the [quickstart](https://claus.si/docs/quickstart), [client setup](https://claus.si/docs/clients) or [read-only MCP connection check](docs/clients.md#check-mcp-without-credentials). The [release status](https://claus.si/docs/release-status) records public project access, sponsored reviews and the supported Ethereum/Sepolia contract profile.
 
 ## Implemented and tested
 
@@ -11,15 +11,15 @@ Start with the [quickstart](https://claus.si/docs/quickstart), [client setup](ht
 - Wallet-signed, single-use authentication challenges, stable project identity, limited agents, expiring credentials, rotation and revocable mandates. Ownership setup supports EOA signatures on chain ID 1; this does not send a transaction.
 - API, JavaScript SDK, CLI and a stateless Streamable HTTP MCP adapter sharing the same application and authorization rules. Public OpenAPI is generated from the implemented route contract.
 - Immutable source snapshots, explicitly authorized public source/profile publication, withdrawal, own-source export and a read-only graph projection. Registration does not imply review or endorsement.
-- A separate non-custodial contract profile proving signed Claus approval, owner registration, delay enforcement, revocation and generation invalidation. Modules execute by STATICCALL; this profile is not a token, vault or lending product. The approval executor is deployed and source-verified on Sepolia; see [deployment evidence](docs/deployments.json).
+- A separate non-custodial contract profile proving signed Claus approval, owner registration, delay enforcement, revocation and generation invalidation. Modules execute by STATICCALL; this profile is not a token, vault or lending product. The approval executors are deployed and source-verified on Ethereum and Sepolia; see [deployment evidence](docs/deployments.json).
 
 The API exposes 105 operations; availability depends on current admission and your project permissions. Ordinary projects, limited agents, private UTF-8 sources, free pull services, isolated static UIs and exports are available through the public interfaces. Start with the [complete runnable example](docs/quickstart.md). No coin, NFT, website onboarding or per-project founder admission is required for this path. Live capability discovery separates technical access from review sponsorship, chain execution and funding.
 
-Paid reviews, wallets, vaults and contract execution retain their separately admitted scopes. Public sponsorship and public contract intake are not activated merely by this source release. Existing paid and protected-change references remain in [release status](docs/release-status.md); they are Claus-operated technical references, not independent adoption.
+Sponsored reviews, supported readonly contracts on Ethereum and Sepolia, and Sepolia contract intake have separate finite operating allowances. Check live capabilities before submitting funded work. Public wallets, customer deposits and general custody remain outside this release. The completed references in [release status](docs/release-status.md) are Claus-operated technical references, not independent adoption.
 
 Inference interfaces and accounting are deployed in a disabled state. No public provider or holder-credit program is activated. See the [inference integration boundaries](docs/inference.md).
 
-The [contract-request interface](docs/contract-intake.md), scanner and delivery coordinator are active for one admitted Claus-operated Sepolia project. Its first request received a genuine Claus approval and completed its original upgrade with finalized configuration readback. The legacy callback failed; the exact canonical result was recovered into the verified replacement receiver, and temporary access was revoked. See the [completed reference](docs/reference-intake.json). General contract intake and public inference remain unavailable.
+The [contract-request interface](docs/contract-intake.md), scanner and bounded delivery coordinator accept eligible Sepolia projects. The [public reference](docs/reference-public-contract.json) records a genuine Claus approval, finalized change, successful callback and revoked temporary authority. The separate [legacy reference](docs/reference-intake.json) retains its failed callback and later canonical-result recovery. Mainnet contract intake and public inference remain unavailable.
 
 The current delivery focuses on projects, agents and services without a token requirement. New token launches were deferred by the owner on 12 October 2026. Existing CLAUS, Club, staking and NFT services are unchanged.
 
