@@ -29,6 +29,7 @@ export function createSourceVerification({ store, etherscanKey, chainId = 111551
       if (row) requireThat(row.value.inputHash === inputHash, 'verification_input_changed');
       let value = row?.value ?? { id, address, chainId, inputHash, state: 'pending' };
       if (value.state === 'verified') return value;
+      if (value.nextCheckAt > now()) return value;
       value.etherscanSubmissionCount ??= value.etherscanGuid || value.etherscanAttemptAt ? 1 : 0;
       async function save() {
         row = await store.transaction(async tx => {
@@ -56,21 +57,55 @@ export function createSourceVerification({ store, etherscanKey, chainId = 111551
       const entry = source.status === '1' && Array.isArray(source.result) ? source.result[0] : null;
       value.etherscanVerified = !!entry?.SourceCode && entry.ContractName === artifact.contract;
       value.etherscanMatch = value.etherscanVerified ? entry.SimilarMatch ? 'similar' : 'exact' : null;
+      if (!entry) {
+        value.etherscanError = String(source.result).slice(0, 500);
+        value.etherscanRefusals = Math.min((value.etherscanRefusals ?? 0) + 1, 7);
+        value.nextCheckAt = now() + Math.min(3600000, 60000 * 2 ** (value.etherscanRefusals - 1));
+        value.checkedAt = now(); await save(); return value;
+      }
       if (!value.etherscanVerified && !value.etherscanGuid && value.etherscanSubmissionCount < 3 &&
           (!value.etherscanAttemptAt || value.etherscanAttemptAt < now() - 60000)) {
         // Reserve before the external call, including uncertain/failed replies.
         value.etherscanSubmissionCount++; value.etherscanAttemptAt = now();
+        value.nextCheckAt = now() + 60000;
         await save();
+        const reserved = { count: value.etherscanSubmissionCount, at: value.etherscanAttemptAt };
         const submission = await etherscan({ action: 'verifysourcecode', contractaddress: address,
           sourceCode: JSON.stringify(artifact.standardInput), codeformat: 'solidity-standard-json-input',
           contractname: artifact.entry + ':' + artifact.contract, compilerversion: 'v' + artifact.profile.compiler.replace('.Emscripten.clang', ''),
           constructorArguments: constructorArguments.slice(2), constructorArguements: constructorArguments.slice(2) });
-        if (submission.status === '1') {
-          requireThat(typeof submission.result === 'string' && submission.result.length > 0 && submission.result.length <= 256, 'verification_invalid_response');
-          value.etherscanGuid = submission.result; delete value.etherscanError;
-        }
-        else value.etherscanError = String(submission.result).slice(0, 500);
-        await save();
+        if (submission.status === '1') requireThat(typeof submission.result === 'string' &&
+          submission.result.length > 0 && submission.result.length <= 256, 'verification_invalid_response');
+        // Keep an accepted provider ID even if a concurrent read advanced the
+        // row. Apply its result only to the reservation that sent this request.
+        row = await store.transaction(async tx => {
+          const current = await tx.read('chain-verifications', id);
+          requireThat(current?.value.inputHash === inputHash, 'verification_input_changed');
+          if (submission.status === '1') {
+            const attemptId = digest({ id, guid: submission.result });
+            if (!await tx.read('chain-verification-attempts', attemptId)) await tx.write('chain-verification-attempts', attemptId,
+              { id, guid: submission.result, inputHash, acceptedAt: now() }, 0);
+          }
+          if (current.value.etherscanSubmissionCount !== reserved.count || current.value.etherscanAttemptAt !== reserved.at ||
+              current.value.state === 'verified' || current.value.etherscanGuid) return current;
+          const next = { ...current.value };
+          if (submission.status === '1') {
+            next.etherscanGuid = submission.result; next.etherscanRefusals = 0;
+            delete next.etherscanError; delete next.nextCheckAt;
+          } else {
+            next.etherscanError = String(submission.result).slice(0, 500);
+            // These explicit refusals created no verification job. Uncertain
+            // sends and actual verification failures still consume the cap.
+            if (/invalid api key|rate limit|daily limit|unable to locate contractcode|invalid action/i.test(next.etherscanError)) {
+              next.etherscanSubmissionCount--;
+              next.etherscanRefusals = Math.min((next.etherscanRefusals ?? 0) + 1, 7);
+              next.nextCheckAt = now() + Math.min(3600000, 60000 * 2 ** (next.etherscanRefusals - 1));
+            }
+          }
+          return tx.write('chain-verifications', id, next, current.revision);
+        });
+        value = row.value;
+        if (value.state === 'verified') return value;
       }
       if (value.etherscanGuid && !value.etherscanVerified && !value.etherscanRetryExhausted) {
         const status = await etherscan({ action: 'checkverifystatus', guid: value.etherscanGuid });
@@ -83,16 +118,17 @@ export function createSourceVerification({ store, etherscanKey, chainId = 111551
             const guid = value.etherscanGuid;
             await store.transaction(async tx => {
               const attemptId = digest({ id, guid });
-              if (!await tx.read('chain-verification-attempts', attemptId))
-                await tx.write('chain-verification-attempts', attemptId,
-                  { id, guid, inputHash, error: value.etherscanError, failedAt: now() }, 0);
+              const previous = await tx.read('chain-verification-attempts', attemptId);
+              await tx.write('chain-verification-attempts', attemptId,
+                { ...previous?.value, id, guid, inputHash, error: value.etherscanError, failedAt: now() }, previous?.revision ?? 0);
             });
             delete value.etherscanGuid;
-          }
+          } else value.nextCheckAt = now() + 3600000;
         }
       }
       value.etherscanRetryExhausted = !value.etherscanVerified && !value.etherscanGuid && value.etherscanSubmissionCount >= 3;
       value.etherscanState = value.etherscanVerified ? 'verified' : value.etherscanRetryExhausted ? 'operator_action_required' : 'pending';
+      if (value.etherscanRetryExhausted) value.nextCheckAt = now() + 3600000;
       value = { ...value, checkedAt: now(), explorerUrl: (chainId === 1 ? 'https://etherscan.io/address/' : 'https://sepolia.etherscan.io/address/') + address + '#code',
         sourcifyUrl: 'https://repo.sourcify.dev/' + chainId + '/' + address };
       if (value.etherscanVerified) delete value.etherscanError;
