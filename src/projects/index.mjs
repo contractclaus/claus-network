@@ -19,6 +19,12 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     return value;
   }
   const api = {
+    async get(actor, projectId) {
+      const project = await identity.project(actor, projectId);
+      const publication = await store.read('public-projects', project.slug);
+      return { ...project, publication: { published: publication?.value.published === true,
+        revision: publication?.revision ?? 0, description: publication?.value.description ?? '' } };
+    },
     async createSnapshot(actor, projectId, { files, expectedProjectRevision }) {
       integer(expectedProjectRevision, 1);
       requireThat(Array.isArray(files) && files.length > 0 && files.length <= 64, 'invalid_files');
@@ -55,6 +61,12 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     async snapshot(actor, projectId, id) {
       await identity.authorize(actor, 'artifact.read', { projectId });
       return snapshot(store, projectId, id);
+    },
+    async describeSnapshot(actor, projectId, id) {
+      const version = await api.snapshot(actor, projectId, id);
+      const publication = await store.read('public-sources', projectRef(projectId, id));
+      return { ...version, publication: { published: publication?.value.published === true,
+        revision: publication?.revision ?? 0 } };
     },
     async files(actor, projectId, snapshotId) {
       await identity.authorize(actor, 'artifact.read', { projectId });

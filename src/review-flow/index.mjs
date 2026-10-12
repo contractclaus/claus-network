@@ -81,7 +81,9 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       const quote = value.quoteId ? (await store.read('review-quotes', value.quoteId))?.value : null;
       const job = value.reviewJobId ? await reviews.job({ actor, projectId, jobId: value.reviewJobId }) : null;
       const workflow = (await store.read('workflow-jobs', value.executionJobId ?? value.quoteJobId))?.value;
+      const publication = await store.read('review-publications', id);
       return { ...value, state: ['cancelled', 'failed', 'blocked'].includes(workflow?.state) ? workflow.state : value.state,
+        publication: { published: publication?.value.published === true, revision: publication?.revision ?? 0 },
         workflow: workflow ? { state: workflow.state, result: workflow.result } : null, quote, job };
     },
     async artifact(actor, projectId, id) {

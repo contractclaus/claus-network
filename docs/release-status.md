@@ -5,7 +5,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | Current state |
 | --- | --- |
 | Owner login, private projects and delegated agents | Live; revocable access through API, SDK, CLI and MCP |
-| Programmatic interfaces | API 0.10.3; 90 operations |
+| Programmatic interfaces | API 0.10.4; 90 operations |
 | Source snapshots and compilation | Live; explicit publication and bounded Solidity 0.8.27 or 0.8.26 compilation |
 | Network explorer | [Home](https://claus.si/Home) and project pages update from explicitly published registry records |
 | IMD reviews | Paid reference reviews completed; published reports remain readable from stored artifacts during provider outages; new work needs project admission and available sponsor funds |
@@ -28,11 +28,13 @@ The [collaboration receipt](reference-collaboration.json) records two paid servi
 
 The [deployment manifest](deployments.json) records nine source-verified Sepolia contracts with creation transactions, runtime hashes and verification evidence. Source verification establishes which code is deployed; it is not a security audit. The [native-vault profile](native-vault.md) retains the scope and findings of its external reviews. Its [completed lifecycle receipt](reference-vault.json) proves full owner withdrawal after the approved admission change.
 
-The [Inbox assessment](reference-inbox-review.json) retains all ten findings and accepts only the bounded owner-operated Sepolia pilot. The [activation receipt](reference-intake-activation.json) pins one project, its verified Inbox, separate dispatcher and finite 0.0002-Sepolia-ETH budget. The requester is a separate reference contract, outside that independent Inbox audit. The [client example](contract-intake.md#client-example) was exercised against actual local bytecode, with no public transaction or fabricated Claus decision.
+The [published Inbox project and report](https://claus.si/p/claus-contract-inbox) are available in the explorer. The [Inbox assessment](reference-inbox-review.json) retains all ten findings and accepts only the bounded owner-operated Sepolia pilot. The [activation receipt](reference-intake-activation.json) pins one project, its verified Inbox, separate dispatcher and finite 0.0002-Sepolia-ETH budget. The requester is a separate reference contract, outside that independent Inbox audit. The [client example](contract-intake.md#client-example) was exercised against actual local bytecode, with no public transaction or fabricated Claus decision.
 
 ## Release and recovery
 
-API deployment: `dpl_DXLaBugxB1iNJoESsixn6dLpRoP2`, release `a2d8145766c82a049f676247aed30e81b4f91075ee0b80d29f4213c6956a3303`. All 99 uploaded files matched the prepared release. The source suite passed 364 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
+API deployment: `dpl_Hnxf6p4UTemaRkkd12DFZTQ7ijNL`, release `15aac24854a2a4848368b273b0df347850464e88f1cee73cef2cedc954663a30`. All 99 uploaded files matched the prepared release. The source suite passed 365 enabled tests with nine environment-specific skips. The separate local-EVM requester and protected-change tests passed. Execution evidence is added automatically to a previously published decision, while honoring withdrawal of publication. API 0.10.3 adds an anonymous report endpoint that requires a published project, source, review and matching evidence. It returns only the stored report and public provenance, without provider internals or payment records. Both live vault reports matched their original artifacts byte for byte; the website serves them as uncached plain text. See [review publication](reviews-and-contracts.md).
+
+API 0.10.4 also returns publication state and revisions in authenticated project, snapshot, review and proposal reads. A disk restart, a fresh client, concurrent-change rejection and revoked-access denial were tested. Live reads cover all four resource types. See [publication recovery](explorer.md#resume-publication-management).
 
 Exports preserve compiler settings, original contract-result transactions and pending callbacks during [project export](portability.md); imports confer no active signing authority.
 
