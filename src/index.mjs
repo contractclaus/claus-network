@@ -7,7 +7,7 @@ import { validateUpgradeRules } from './upgrades/index.mjs';
 export { effectiveUpgradeRules } from './upgrades/index.mjs';
 // Composition root. Authentication, provider quotes and cost verification are
 // trusted host ports, never values selected by a project or returned by a model.
-export function createNetwork({ databasePath, store: suppliedStore, ownerAddress, authorize: check = () => false, provider = null, verifyCost = () => false, now = () => Date.now() }) {
+export function createNetwork({ databasePath, store: suppliedStore, ownerAddress, authorize: check = () => false, provider = null, verifyCost = () => false, onReviewAdmission, beforeReviewAdmission, now = () => Date.now() }) {
     requireThat(typeof ownerAddress === 'string' && /^0x[0-9a-fA-F]{40}$/.test(ownerAddress), 'invalid_owner');
     const store = suppliedStore ?? openStore(databasePath);
     const dependencies = { store, authorize: check, now };
@@ -20,7 +20,8 @@ export function createNetwork({ databasePath, store: suppliedStore, ownerAddress
         }
     });
     const billing = createBilling(dependencies);
-    const reviews = createReviews({ ...dependencies, policies, provider, verifyCost });
+    const reviews = createReviews({ ...dependencies, policies, provider, verifyCost,
+        onAdmission: onReviewAdmission, beforeAdmission: beforeReviewAdmission });
     return {
         policies, billing, reviews,
         async bootstrap({ actor }) {

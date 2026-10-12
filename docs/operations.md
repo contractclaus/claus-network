@@ -22,4 +22,6 @@ Initial rate limits are separate from any future financial allowance. Authentica
 
 Use a separate database and operator credentials. Run schema setup with the migration role, then start the service with the runtime role. Configure the API origin and a private rate-limit salt. The hosted compiler trigger requires a separate private cron secret. Never publish database connection strings, provider tokens, payment authorizations or wallet keys.
 
-The current build worker does not hold a wallet signing key. Automatic financial and contract execution requires a separately scoped signer and verified mandates; merely running the API does not grant that authority.
+The API and compiler do not hold a wallet signing key. A separate review worker has a dedicated Ethereum wallet, finite IMD funding and a finite Permit2 allowance. It signs only the fixed provider payment profile after checking the exact funded reservation and current authorization. Its cron trigger is authenticated, its source is not publicly served, and its heartbeat is stored independently. Contract administration uses a different role and is not enabled by running this worker.
+
+Revocation before a proven-unsent payment destroys the private payment material and releases the reservation. A persisted submit intent is treated as potentially paid until reconciled. A provider failure never implies a refund.

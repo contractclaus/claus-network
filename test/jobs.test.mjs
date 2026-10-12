@@ -60,3 +60,17 @@ test('sealed provider credentials cannot be copied between orders or read with a
   assert.throws(() => s.open('order-b', value), { code: 'sealed_record_unavailable' });
   assert.throws(() => createSealer('02'.repeat(32)).open('order-a', value), { code: 'sealed_record_unavailable' });
 });
+test('terminal history cannot starve work beyond the first scan page', async t => {
+  const f = await fixture(t);
+  await f.store.transaction(async tx => {
+    for (let i = 0; i < 1000; i++) {
+      const id = 'a' + String(i).padStart(4, '0');
+      await tx.write('workflow-jobs', id, { id, kind: 'review', state: 'complete' }, 0);
+    }
+    await tx.write('workflow-jobs', 'z-new', { id: 'z-new', kind: 'review', state: 'queued',
+      effect: 'not_started', availableAt: 0, attempts: 0, lease: null }, 0);
+  });
+  assert.equal((await f.jobs.claim({ kinds: ['review'] })).idle, true);
+  assert.equal((await f.jobs.claim({ kinds: ['review'] })).id, 'z-new');
+  assert.equal((await f.jobs.claim({ kinds: ['review'] })).idle, true);
+});

@@ -11,17 +11,19 @@ This page describes the deployed scope on 12 October 2026. Check the live [healt
 | Bounded Solidity compilation | Live; hosted scheduled worker verified |
 | Public graph | Live API |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
-| Publicly sponsored review admission | Not enabled |
-| Independent IMD review of Claus contracts | One paid audit in progress |
+| Sponsored review admission | Live for explicitly admitted pilots; public registration alone grants no subsidy |
+| Independent IMD review of Claus contracts | Initial findings addressed; corrected candidate under review |
 | Claus approval and chain execution | Not enabled |
 | Verified network contract deployments | None yet |
 | Project hosting, customer wallets, service marketplace | Planned |
 | Public inference and holder credits | Planned |
 
-Current API deployment: `dpl_GSypxCj18VR9RC4tjaCQv3pqGSS8`.
+Current API deployment: `dpl_GPHtv2XB86zt3TpZjU4cQZSdauNn`.
 
-Release input digest: `8cc398f94efd1e0008dfa759dcbaf43163b3ba059041af920a4b36337386d786`.
+Release input digest: `3b74929056a67550a32f0c159cae4a3267cb61c2ab23a98d4a1373fb2e7e5c0c`.
 
 The published `claus-approval-contracts` project belongs to Claus. It is not evidence of independent customer adoption. Compilation, a review report, approval, execution and source verification are different states; none should be inferred from another.
 
 Website deployment: `dpl_EzguQigqsVYoJ4T26mMn2sAd7w4j`. Its 1,022 uploaded source files matched the prepared release; the live graph, project profile and existing product routes returned successfully.
+
+Review worker deployment: `dpl_C3HL7dHEY5NkXbh1oLpg4RhNvHHX`, with 37 exact source files verified. The API has 32 documented operations and 55 passing checks, including real PostgreSQL concurrency/recovery acceptance. These checks are not a claim of complete network delivery.

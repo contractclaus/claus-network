@@ -3,7 +3,8 @@ import { price, reserve, settleReservation } from '../billing/index.mjs';
 const ref = policy => ({
     version: policy.version, hash: policy.hash, generation: policy.generation
 });
-export function createReviews({ store, policies, provider, verifyCost, authorize: check, now }) {
+export function createReviews({ store, policies, provider, verifyCost, authorize: check, now,
+    onAdmission = async () => {}, beforeAdmission = async () => {} }) {
     async function find(reader, collection, id, projectId) {
         const record = (await reader.read(collection, id));
         requireThat(record?.value.projectId === projectId, 'not_found');
@@ -80,6 +81,7 @@ export function createReviews({ store, policies, provider, verifyCost, authorize
                 requireThat(!(await tx.read('admitted-quotes', quoteId)), 'quote_already_admitted');
                 const offerKey = digest({ provider: quote.offer.provider, id: quote.offer.id });
                 requireThat(!(await tx.read('admitted-offers', offerKey)), 'provider_offer_already_admitted');
+                await beforeAdmission(tx, { actor, projectId, quote, jobId: id });
                 if (quote.sponsored) {
                     const current = (await policies.active('review.sponsorship', tx)).config;
                     requireThat(current.enabled && current.capabilities.includes('review.code') &&
@@ -94,6 +96,7 @@ export function createReviews({ store, policies, provider, verifyCost, authorize
                 (await tx.write('review-jobs', id, job, 0));
                 (await tx.write('admitted-quotes', quoteId, { jobId: id }, 0));
                 (await tx.write('admitted-offers', offerKey, { jobId: id }, 0));
+                await onAdmission(tx, { actor, projectId, quote, job });
                 (await tx.event({ type: 'review.admitted', jobId: id, projectId, maximum: quote.maximum, at: now() }));
                 return copy(job);
             });
@@ -102,13 +105,62 @@ export function createReviews({ store, policies, provider, verifyCost, authorize
             (await authorize(check, actor, 'review.read', { projectId }));
             return (await find(store, 'review-jobs', jobId, projectId)).value;
         },
+        // Internal transaction port. The host must prove that the linked
+        // workflow has never crossed its effect boundary before calling it.
+        async cancelUnsent(tx, { actor, projectId, jobId }) {
+            await authorize(check, actor, 'review.cancel_unsent', { projectId }, tx);
+            const old = await find(tx, 'review-jobs', jobId, projectId);
+            if (old.value.work === 'cancelled' && old.value.billing === 'void') return old.value;
+            requireThat(['queued', 'outcome_unknown'].includes(old.value.work) &&
+                ['reserved', 'pending'].includes(old.value.billing), 'effect_requires_reconciliation');
+            const quote = (await find(tx, 'review-quotes', old.value.quoteId, projectId)).value;
+            if (quote.sponsored) await settleReservation(tx, quote.sponsorAccount, quote.offer.asset, quote.maximum.sponsor, '0');
+            await settleReservation(tx, quote.projectAccount, quote.offer.asset, quote.maximum.project, '0');
+            const value = { ...old.value, work: 'cancelled', billing: 'void', cancelledAt: now() };
+            await tx.write('review-jobs', jobId, value, old.revision);
+            await tx.event({ type: 'review.cancelled_unsent', projectId, jobId, at: now() });
+            return value;
+        },
+        async failure({ actor, projectId, jobId, reason, providerJobId = null }) {
+            await authorize(check, actor, 'review.report', { projectId });
+            text(reason);
+            return store.transaction(async tx => {
+                await authorize(check, actor, 'review.report', { projectId }, tx);
+                const old = await find(tx, 'review-jobs', jobId, projectId);
+                requireThat(old.value.billing === 'settled', 'effect_requires_reconciliation');
+                requireThat(!['cancelled', 'completed'].includes(old.value.work), 'job_terminal');
+                if (old.value.work === 'failed') return old.value;
+                const value = { ...old.value, work: 'failed', reason, providerJobId, completedAt: now() };
+                await tx.write('review-jobs', jobId, value, old.revision);
+                await tx.event({ type: 'review.failed', projectId, jobId, reason, providerJobId, at: now() });
+                return value;
+            });
+        },
+        async result({ actor, projectId, jobId, artifactHash, providerJobId }) {
+            await authorize(check, actor, 'review.report', { projectId });
+            contentHash(artifactHash); text(providerJobId);
+            return store.transaction(async tx => {
+                await authorize(check, actor, 'review.report', { projectId }, tx);
+                const old = await find(tx, 'review-jobs', jobId, projectId);
+                requireThat(old.value.work !== 'cancelled', 'job_terminal');
+                if (old.value.artifactHash) {
+                    requireThat(old.value.artifactHash === artifactHash && old.value.providerJobId === providerJobId, 'review_result_conflict');
+                    return old.value;
+                }
+                const value = { ...old.value, work: 'completed', artifactHash, providerJobId, completedAt: now() };
+                await tx.write('review-jobs', jobId, value, old.revision);
+                await tx.event({ type: 'review.result_recorded', projectId, jobId, artifactHash, at: now() });
+                return value;
+            });
+        },
         async markUnknown({ actor, projectId, jobId }) {
             (await authorize(check, actor, 'review.report', { projectId }));
             return store.transaction(async (tx) => {
                 await authorize(check, actor, 'review.report', { projectId }, tx);
                 const old = (await find(tx, 'review-jobs', jobId, projectId));
-                if (old.value.work === 'outcome_unknown')
+                if (['outcome_unknown', 'completed'].includes(old.value.work))
                     return old.value;
+                requireThat(old.value.work === 'queued', 'job_terminal');
                 const value = { ...old.value, work: 'outcome_unknown' };
                 if (value.billing === 'reserved')
                     value.billing = 'pending';

@@ -32,6 +32,16 @@ export function createImdPayment({ store, sealer, provider, signer, authorize = 
     });
   }
   return {
+    // Called only inside the workflow's fenced transaction. No state after
+    // submit intent is reversible here, even if the provider says unpaid.
+    async abandonUnsent(tx, offerId) {
+      const old = await tx.read('imd-payments', offerId);
+      if (!old || old.value.state === 'cancelled') return true;
+      if (!['signing', 'signing_unknown', 'prepared'].includes(old.value.state)) return false;
+      const { sealedMaterial, sealedIntent, ...record } = old.value;
+      await tx.write('imd-payments', offerId, { ...record, state: 'cancelled', updatedAt: now() }, old.revision);
+      return true;
+    },
     async prepare(offerId) {
       const previous = await store.read('imd-payments', offerId);
       if (previous) return summary(previous.value);

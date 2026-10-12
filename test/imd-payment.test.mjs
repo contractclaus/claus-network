@@ -41,3 +41,19 @@ test('real typed signatures bind both the bounded permit and exact payment to th
   const stored = JSON.stringify((await store.read('imd-payments', offerId)).value);
   assert.equal(stored.includes('quoteSignature'), false); assert.equal(stored.includes('paymentSignature'), false);
 });
+
+test('only provably unsent payment material can be cancelled and it cannot be resurrected', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  const api = createImdPayment({ store, sealer: createSealer('11'.repeat(32)), signer: {}, provider: {} });
+  await store.transaction(async tx => {
+    await tx.write('imd-payments', 'unsent', { id: 'unsent', offerId: 'unsent', state: 'prepared',
+      sealedMaterial: 'private-signature', sealedIntent: 'private-intent' }, 0);
+    await tx.write('imd-payments', 'uncertain', { id: 'uncertain', offerId: 'uncertain', state: 'submitting' }, 0);
+    assert.equal(await api.abandonUnsent(tx, 'unsent'), true);
+    assert.equal(await api.abandonUnsent(tx, 'uncertain'), false);
+  });
+  assert.equal((await api.prepare('unsent')).state, 'cancelled');
+  assert.equal((await api.submit('unsent')).state, 'cancelled');
+  assert.equal((await store.read('imd-payments', 'unsent')).value.sealedMaterial, undefined);
+  assert.equal((await api.status('uncertain')).state, 'submitting');
+});

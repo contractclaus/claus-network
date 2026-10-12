@@ -116,6 +116,14 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "review-flow",
+      "path": "src/review-flow/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [

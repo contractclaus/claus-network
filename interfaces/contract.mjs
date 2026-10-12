@@ -24,6 +24,13 @@ export const ROUTES=Object.freeze([
  route('build_artifact','GET','/v1/projects/{projectId}/builds/{buildId}/artifact',{projectId:string(),buildId:string()}),
  route('job_get','GET','/v1/projects/{projectId}/jobs/{jobId}',{projectId:string(),jobId:string()}),
  route('job_cancel','DELETE','/v1/projects/{projectId}/jobs/{jobId}',{projectId:string(),jobId:string()}),
+ route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string()}),
+ route('review_pilot_get','GET','/v1/admin/review-pilots/{projectId}',{projectId:string()}),
+ route('review_pilot_set','PUT','/v1/admin/review-pilots/{projectId}',{projectId:string(),enabled:boolean,expiresAt:integer,maximumPerReview:string(18),expectedRevision:integer}),
+ route('review_get','GET','/v1/projects/{projectId}/reviews/{caseId}',{projectId:string(),caseId:string()}),
+ route('review_accept','POST','/v1/projects/{projectId}/reviews/{caseId}/accept',{projectId:string(),caseId:string(),quoteId:string(),idempotencyKey:string()}),
+ route('review_artifact','GET','/v1/projects/{projectId}/reviews/{caseId}/artifact',{projectId:string(),caseId:string()}),
+ route('review_publish','PUT','/v1/projects/{projectId}/reviews/{caseId}/publication',{projectId:string(),caseId:string(),published:boolean,expectedRevision:integer}),
  route('source_publish','PUT','/v1/projects/{projectId}/sources/{snapshotId}/publication',{projectId:string(),snapshotId:string(),published:boolean,expectedRevision:integer}),
  route('project_publish','PUT','/v1/projects/{projectId}/publication',{projectId:string(),published:boolean,expectedRevision:integer,description:{type:'string',maxLength:500}},['projectId','published','expectedRevision']),
  route('project_export','POST','/v1/projects/{projectId}/exports',{projectId:string(),snapshotId:string()}),
@@ -46,7 +53,7 @@ export function validate(schema,value,path='input'){
   if(!Number.isSafeInteger(value)||value<(schema.minimum??0)||value>(schema.maximum??Number.MAX_SAFE_INTEGER))throw Object.assign(Error('invalid_integer'),{code:'invalid_input',field:path});
  }else if(schema.type==='boolean'&&typeof value!=='boolean')throw Object.assign(Error('invalid_boolean'),{code:'invalid_input',field:path});
 }
-export function openapi({origin,version='0.2.0'}){
+export function openapi({origin,version='0.3.0'}){
  const paths={};
  for(const r of ROUTES){
   const pathNames=[...r.path.matchAll(/\{(\w+)\}/g)].map(x=>x[1]);

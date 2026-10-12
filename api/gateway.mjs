@@ -22,10 +22,15 @@ export default async function handler(req, res) {
     let response;
     if (url.pathname === '/health') {
       await store.read('network', 'authority');
+      const review = (await store.read('network-capabilities', 'review'))?.value;
+      const worker = (await store.read('worker-health', 'review'))?.value;
+      const enabled = review?.enabled === true;
+      const recent = worker?.observedAt > Date.now() - 300000;
       response = Response.json({ service: 'Claus Network', status: 'ok',
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
-        reviewExecution: 'not_enabled', mainnetExecution: 'not_enabled' });
+        reviewExecution: enabled ? recent ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
+        mainnetExecution: 'not_enabled' });
     } else {
       const headers = new Headers();
       for (const [key, value] of Object.entries(req.headers)) if (typeof value === 'string') headers.set(key, value);

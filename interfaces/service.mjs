@@ -1,6 +1,6 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({identity,projects,builds,jobs}){
+export function createService({identity,projects,builds,jobs,reviews}){
  const operations={
   auth_challenge:(_,input)=>identity.challenge(input),
   auth_session:(_,input)=>identity.session(input),
@@ -21,6 +21,13 @@ export function createService({identity,projects,builds,jobs}){
   build_artifact:(actor,input)=>builds.artifact(actor,input.projectId,input.buildId),
   job_get:(actor,input)=>jobs.get(actor,input.projectId,input.jobId),
   job_cancel:(actor,input)=>jobs.cancel(actor,input.projectId,input.jobId),
+  review_create:(actor,input)=>reviews.request(actor,input.projectId,input),
+  review_pilot_get:(actor,input)=>reviews.pilot(actor,input.projectId),
+  review_pilot_set:(actor,input)=>reviews.setPilot(actor,input.projectId,input),
+  review_get:(actor,input)=>reviews.get(actor,input.projectId,input.caseId),
+  review_accept:(actor,input)=>reviews.accept(actor,input.projectId,input),
+  review_artifact:(actor,input)=>reviews.artifact(actor,input.projectId,input.caseId),
+  review_publish:(actor,input)=>reviews.publish(actor,input.projectId,input),
   source_publish:(actor,input)=>projects.publishSource(actor,input.projectId,input),
   project_publish:(actor,input)=>projects.publish(actor,input.projectId,input),
   project_export:(actor,input)=>projects.export(actor,input.projectId,input),

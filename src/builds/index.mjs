@@ -7,6 +7,10 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
     requireThat(record?.value.projectId === projectId, 'not_found');
     return record;
   }
+  async function visible(reader, record) {
+    const job = (await reader.read('workflow-jobs', record.value.id))?.value;
+    return job?.state === 'cancelled' ? { ...record.value, state: 'cancelled', completedAt: job.updatedAt } : record.value;
+  }
   return {
     async submit(actor, projectId, { snapshotId, entry, contract, idempotencyKey }) {
       text(idempotencyKey);
@@ -18,7 +22,7 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
         const id = digest({ projectId, kind: 'compile', idempotencyKey });
         const payload = { snapshotId, entry, contract }, requestHash = digest(payload);
         const old = await tx.read('builds', id);
-        if (old) { requireThat(old.value.requestHash === requestHash, 'idempotency_conflict'); return old.value; }
+        if (old) { requireThat(old.value.requestHash === requestHash, 'idempotency_conflict'); return visible(tx, old); }
         const active = (await tx.read('active-builds', projectId))?.value;
         if (active) {
           const job = (await tx.read('workflow-jobs', active.id))?.value;
@@ -41,7 +45,7 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
     },
     async get(actor, projectId, id) {
       await identity.authorize(actor, 'artifact.read', { projectId });
-      return (await find(store, projectId, id)).value;
+      return visible(store, await find(store, projectId, id));
     },
     async artifact(actor, projectId, id) {
       await identity.authorize(actor, 'artifact.read', { projectId });

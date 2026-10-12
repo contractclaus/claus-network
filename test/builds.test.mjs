@@ -56,6 +56,8 @@ test('cancelling queued compilation releases project admission without executing
   const build = await f.builds.submit(f.actor, f.projectId, f.input);
   await assert.rejects(f.builds.submit(f.actor, f.projectId, { ...f.input, idempotencyKey: 'two' }), { code: 'build_in_progress' });
   await f.jobs.cancel(f.actor, f.projectId, build.id);
+  assert.equal((await f.builds.get(f.actor, f.projectId, build.id)).state, 'cancelled');
+  assert.equal((await f.builds.submit(f.actor, f.projectId, f.input)).state, 'cancelled');
   const next = await f.builds.submit(f.actor, f.projectId, { ...f.input, idempotencyKey: 'two' });
   assert.notEqual(next.id, build.id);
   const result = await f.builds.runOne(async () => ({ status: 'rejected', errors: [{ code: 'syntax' }] }));

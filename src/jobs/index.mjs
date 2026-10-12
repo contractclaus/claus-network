@@ -3,9 +3,9 @@ import { copy, digest, integer, requireThat, text } from '../shared/index.mjs';
 
 // A lease protects local commits. The effect key protects the external action.
 // After an uncertain send, only reconciliation may run, even after a restart.
-export function createJobs({ store, identity, now = () => Date.now() }) {
+export function createJobs({ store, identity, now = () => Date.now(), onCancel = async () => {} }) {
   const publicJob = record => {
-    const { lease, payload, ...visible } = record.value;
+    const { lease, payload, authority, ...visible } = record.value;
     return { ...visible, revision: record.revision };
   };
   async function owned(reader, projectId, id) {
@@ -49,6 +49,7 @@ export function createJobs({ store, identity, now = () => Date.now() }) {
         if (record.value.state === 'cancelled') return publicJob(record);
         requireThat(record.value.effect === 'not_started', 'effect_requires_reconciliation');
         requireThat(!['complete', 'failed'].includes(record.value.state), 'job_terminal');
+        await onCancel(tx, copy(record.value));
         const next = await tx.write('workflow-jobs', id, { ...record.value, state: 'cancelled',
           lease: null, updatedAt: now() }, record.revision);
         await tx.event({ type: 'job.cancelled', jobId: id, projectId, at: now() });
@@ -61,7 +62,12 @@ export function createJobs({ store, identity, now = () => Date.now() }) {
       integer(leaseMs, 1000, 300000);
       requireThat(Array.isArray(kinds) && kinds.length > 0, 'invalid_job_kinds');
       return store.transaction(async tx => {
-        const records = await tx.list('workflow-jobs', { after, limit: 1000 });
+        // Persist the scan position so terminal history cannot starve newer work.
+        const scanKey = digest([...kinds].sort());
+        const scan = after ? null : await tx.read('job-scan-cursors', scanKey);
+        const records = await tx.list('workflow-jobs', { after: after || scan?.value.after || '', limit: 1000 });
+        const nextCursor = records.length === 1000 ? records.at(-1).id : '';
+        if (!after) await tx.write('job-scan-cursors', scanKey, { after: nextCursor }, scan?.revision ?? 0);
         for (const record of records) {
           const value = record.value;
           if (!kinds.includes(value.kind) || !['queued', 'running', 'waiting'].includes(value.state) ||
@@ -72,7 +78,7 @@ export function createJobs({ store, identity, now = () => Date.now() }) {
           await tx.write('workflow-jobs', value.id, next, record.revision);
           return { id: value.id, token, job: copy(next), mode: value.effect === 'not_started' ? 'dispatch' : 'reconcile' };
         }
-        return { idle: true, nextCursor: records.length === 1000 ? records.at(-1).id : null };
+        return { idle: true, nextCursor: nextCursor || null };
       });
     },
     async beginEffect(claim, authorizeEffect) {
@@ -86,6 +92,9 @@ export function createJobs({ store, identity, now = () => Date.now() }) {
           effectKey: value.effectKey, at: now() });
         return copy(value);
       });
+    },
+    async assertCurrent(claim, reader = store) {
+      return copy((await leased(reader, claim)).value);
     },
     async finish(claim, { state, result = null, retryAt = null }, commit = async () => {}) {
       requireThat(['complete', 'failed', 'waiting', 'blocked'].includes(state), 'invalid_job_result');

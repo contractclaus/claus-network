@@ -2,7 +2,7 @@
 
 Project identity, delegated agents, immutable source records and controlled contract changes.
 
-The initial API and MCP are live at https://claus-network-api.vercel.app. The current release supports project registration, source publication and bounded Solidity compilation. Sponsored public review admission and contract execution are not yet enabled. See [release status](docs/release-status.md).
+The initial API and MCP are live at https://claus-network-api.vercel.app. The current release supports project registration, source publication, bounded Solidity compilation and sponsored IMD review for explicitly admitted pilots. Contract execution is not yet enabled. See [release status](docs/release-status.md).
 
 ## Use
 

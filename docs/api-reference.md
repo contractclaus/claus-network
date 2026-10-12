@@ -23,6 +23,13 @@ The [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) i
 | `build_artifact` | GET | `/v1/projects/{projectId}/builds/{buildId}/artifact` | Bearer credential |
 | `job_get` | GET | `/v1/projects/{projectId}/jobs/{jobId}` | Bearer credential |
 | `job_cancel` | DELETE | `/v1/projects/{projectId}/jobs/{jobId}` | Bearer credential |
+| `review_create` | POST | `/v1/projects/{projectId}/reviews` | Bearer credential |
+| `review_pilot_get` | GET | `/v1/admin/review-pilots/{projectId}` | Network owner session |
+| `review_pilot_set` | PUT | `/v1/admin/review-pilots/{projectId}` | Network owner session |
+| `review_get` | GET | `/v1/projects/{projectId}/reviews/{caseId}` | Bearer credential |
+| `review_accept` | POST | `/v1/projects/{projectId}/reviews/{caseId}/accept` | Bearer credential |
+| `review_artifact` | GET | `/v1/projects/{projectId}/reviews/{caseId}/artifact` | Bearer credential |
+| `review_publish` | PUT | `/v1/projects/{projectId}/reviews/{caseId}/publication` | Bearer credential |
 | `source_publish` | PUT | `/v1/projects/{projectId}/sources/{snapshotId}/publication` | Bearer credential |
 | `project_publish` | PUT | `/v1/projects/{projectId}/publication` | Bearer credential |
 | `project_export` | POST | `/v1/projects/{projectId}/exports` | Bearer credential |
