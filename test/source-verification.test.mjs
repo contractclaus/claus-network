@@ -82,9 +82,11 @@ for (const chainId of [1, 11155111]) test('chain ' + chainId + ': terminal explo
   time += 60000; await verifier.step(input); assert.equal(submitted, 1);
   time++; status = 'Pending in queue'; const retry = await verifier.step(input);
   assert.equal(submitted, 2); assert.equal(retry.etherscanGuid, 'guid-2');
+  assert.equal(retry.etherscanError, undefined);
   time += 120000; await verifier.step(input); assert.equal(submitted, 2);
   status = 'Max rate limit reached'; await verifier.step(input); assert.equal(submitted, 2);
-  status = 'Pass - Verified'; await verifier.step(input); assert.equal(submitted, 2);
+  status = 'Pass - Verified'; const passed = await verifier.step(input); assert.equal(submitted, 2);
+  assert.equal(passed.etherscanError, undefined); assert.equal(passed.state, 'pending');
   indexed = true; assert.equal((await verifier.step(input)).state, 'verified');
   assert.equal((await store.list('chain-verification-attempts')).length, 1);
 });
@@ -94,6 +96,21 @@ test('Sourcify HTML service failure keeps the retryable provider error', async t
   const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key',
     fetcher: async () => new Response('<html>Bad Gateway</html>', { status: 502 }) });
   await assert.rejects(verifier.step(input), { code: 'verification_service_unavailable' });
+});
+
+test('Sourcify already-verified response is remembered without treating it as exact proof', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let posts = 0, exact = false;
+  const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key', fetcher: async (url, options = {}) => {
+    if (new URL(url).hostname === 'sourcify.dev') {
+      if (options.method === 'POST') { posts++; return Response.json({ customCode: 'already_verified' }, { status: 409 }); }
+      return Response.json({ runtimeMatch: 'exact_match', creationMatch: exact ? 'exact_match' : 'match' });
+    }
+    return Response.json({ status: '1', result: [{ SourceCode: '{}', ContractName: 'Example' }] });
+  } });
+  for (let i = 0; i < 4; i++) assert.equal((await verifier.step(input)).state, 'pending');
+  assert.equal(posts, 1); exact = true;
+  assert.equal((await verifier.step(input)).state, 'verified'); assert.equal(posts, 1);
 });
 
 test('a status transport failure resumes the saved GUID without another submission', async t => {
@@ -112,4 +129,58 @@ test('a status transport failure resumes the saved GUID without another submissi
   } });
   await assert.rejects(verifier.step(input), { code: 'verification_service_unavailable' });
   await verifier.step(input); assert.equal(posts, 1); assert.equal(polls, 2);
+});
+
+for (const failure of ['terminal', 'http', 'refused']) test('explorer submissions are capped after three ' + failure + ' failures and external verification still completes', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let time = 100000, posts = 0, indexed = false;
+  const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key', now: () => time,
+    fetcher: async (url, options = {}) => {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'sourcify.dev') return Response.json(options.method === 'POST'
+        ? { verificationId: 'source' } : { runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
+      switch (parsed.searchParams.get('action')) {
+        case 'getsourcecode': return Response.json({ status: '1', result: [{ SourceCode: indexed ? '{}' : '', ContractName: 'Example' }] });
+        case 'verifysourcecode': posts++;
+          if (failure === 'http') return new Response('unavailable', { status: 503 });
+          return Response.json(failure === 'refused' ? { status: '0', result: 'Unable to verify' } : { status: '1', result: 'guid-' + posts });
+        default: return Response.json({ status: '0', result: 'Fail - Unable to verify' });
+      }
+    } });
+  let result;
+  for (let i = 0; i < 20; i++) {
+    try { result = await verifier.step(input); }
+    catch (e) { assert.equal(failure, 'http'); assert.equal(e.code, 'verification_service_unavailable'); }
+    time += 90000;
+  }
+  assert.equal(posts, 3); assert.equal(result.etherscanSubmissionCount, 3);
+  assert.equal(result.etherscanState, 'operator_action_required');
+  assert.equal(result.etherscanRetryExhausted, true); assert.equal(result.state, 'pending');
+  assert.equal((await store.list('chain-verification-attempts')).length, failure === 'terminal' ? 3 : 0);
+  indexed = true; result = await verifier.step(input);
+  assert.equal(result.state, 'verified'); assert.equal(result.etherscanState, 'verified');
+  assert.equal(result.etherscanRetryExhausted, false); assert.equal(posts, 3);
+});
+
+test('concurrent verifier steps cannot exceed the reserved submission cap', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let posts = 0, time = 100000;
+  const verifier = createSourceVerification({ store, etherscanKey: 'local-test-key', now: () => time,
+    fetcher: async (url, options = {}) => {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'sourcify.dev') return Response.json(options.method === 'POST'
+        ? { verificationId: 'source' } : { runtimeMatch: 'exact_match', creationMatch: 'exact_match' });
+      switch (parsed.searchParams.get('action')) {
+        case 'getsourcecode': return Response.json({ status: '1', result: [{ SourceCode: '' }] });
+        case 'verifysourcecode': posts++; return Response.json({ status: '1', result: 'guid-' + posts });
+        default: return Response.json({ status: '0', result: 'Fail - Unable to verify' });
+      }
+    } });
+  for (let round = 0; round < 6; round++) {
+    const results = await Promise.allSettled(Array.from({ length: 5 }, () => verifier.step(input)));
+    for (const r of results) if (r.status === 'rejected') assert.equal(r.reason.code, 'verification_step_stale');
+    time += 90000;
+  }
+  assert.equal(posts, 3);
+  assert.equal((await store.list('chain-verification-attempts')).length, 3);
 });
