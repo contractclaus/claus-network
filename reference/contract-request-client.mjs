@@ -4,6 +4,7 @@ import { canonical, digest, requireThat, shape } from '../src/shared/index.mjs';
 export const requesterAbi = parseAbi([
   'function inbox() view returns (address)',
   'function controller() view returns (address)',
+  'function CALLBACK_GAS() view returns (uint32)',
   'function submit(bytes32 binding,bytes32 capability,uint64 deadline,bytes input) returns (bytes32)'
 ]);
 const requestedAbi = parseAbi([
@@ -39,9 +40,11 @@ export async function prepareContractRequest({ api, chain, projectId, bindingId,
   }
   const read = functionName => chain.readContract({ address: pin.requester, abi: requesterAbi, functionName, blockNumber: finalized.number });
   requireThat(sameAddress(await read('inbox'), pin.inbox) && sameAddress(await read('controller'), pin.controller), 'requester_authority_mismatch');
+  const callbackGas = Number(await read('CALLBACK_GAS'));
+  requireThat(callbackGas === 1000000, 'unsupported_requester_callback');
   const args = [binding.onchainBinding, capability, BigInt(deadline), encodedInput];
   await chain.simulateContract({ account: pin.controller, address: pin.requester, abi: requesterAbi, functionName: 'submit', args });
-  return { projectId, bindingId, pin: structuredClone(pin), inputHash: digest(input), deadline,
+  return { projectId, bindingId, pin: structuredClone(pin), inputHash: digest(input), deadline, callbackGas,
     transaction: { chainId: pin.chainId, from: pin.controller, to: pin.requester,
       data: encodeFunctionData({ abi: requesterAbi, functionName: 'submit', args }), value: '0' } };
 }
@@ -65,7 +68,10 @@ export async function locateContractRequest({ chain, prepared, transactionHash }
     catch { continue; }
     const a = event.args;
     if (!sameAddress(a.requester, prepared.pin.requester) || a.binding !== '0x' + prepared.bindingId.slice(7)) continue;
-    requireThat(a.capability === capability && Number(a.deadline) === prepared.deadline && a.callbackGas === 200000, 'request_event_mismatch');
+    // Earlier saved preparations used the immutable 200k callback client.
+    // Keep their receipts readable; fresh preparations pin the new budget.
+    requireThat(a.capability === capability && Number(a.deadline) === prepared.deadline &&
+      a.callbackGas === (prepared.callbackGas ?? 200000), 'request_event_mismatch');
     const bytes = Buffer.from(a.input.slice(2), 'hex');
     const input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
     requireThat(digest(input) === prepared.inputHash, 'request_event_mismatch');

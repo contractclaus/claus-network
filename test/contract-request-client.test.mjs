@@ -40,6 +40,7 @@ test('the public client prepares a real requester call and resumes the same rece
     deadline: Math.floor(now / 1000) + 3600, now };
   const nonce = await chain.getTransactionCount({ address: account.address });
   const prepared = await prepareContractRequest(options);
+  assert.equal(prepared.callbackGas, 1000000);
   assert.equal(await chain.getTransactionCount({ address: account.address }), nonce, 'preparation never sends');
   binding.revokedAt = now;
   await assert.rejects(prepareContractRequest(options), { code: 'binding_inactive' });
@@ -57,5 +58,7 @@ test('the public client prepares a real requester call and resumes the same rece
   assert.equal(resumed.finalized, true); assert.equal(resumed.requestId, first.requestId);
   assert.equal(await chain.getTransactionCount({ address: account.address }), nonce + 1);
   await assert.rejects(locateContractRequest({ chain, prepared: { ...prepared, inputHash: digest('different') }, transactionHash: hash }),
+    { code: 'request_event_mismatch' });
+  await assert.rejects(locateContractRequest({ chain, prepared: { ...prepared, callbackGas: 200000 }, transactionHash: hash }),
     { code: 'request_event_mismatch' });
 });

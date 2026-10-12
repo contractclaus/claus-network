@@ -1,6 +1,6 @@
 # Contract requests
 
-Since API 0.10.1, the network implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The first finalized request received a genuine Claus approval; callback and delayed execution acceptance are still pending. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
+Since API 0.10.1, the network implements an asynchronous contract-request profile. On 12 October 2026, its verified Inbox and separate dispatcher were activated for one explicitly admitted Claus-owned Sepolia project. The first finalized request received a genuine Claus approval. Its original 200,000-gas reference receiver failed to accept the callback; the stored Inbox result and queued upgrade remain intact. Receipt recovery is in progress. This is not public enrollment. Existing API clients can continue to submit proposals directly. See the [activation receipt](reference-intake-activation.json).
 
 ## Flow
 
@@ -43,7 +43,7 @@ const prepared = await prepareContractRequest({
 });
 ```
 
-Preparation rereads the binding, checks both finalized runtimes and the requester controller, then simulates the call. It returns `prepared.transaction` with the exact chain, sender, recipient, data and zero value. It does not sign, fund or send. Use your existing durable wallet tooling to select gas and nonce, sign and submit once. Preserve the signed transaction hash before broadcast. A lost response requires reconciliation of that hash, not another call to `submit`.
+Preparation rereads the binding, checks both finalized runtimes and the requester controller, reads its 1,000,000-gas callback budget, then simulates the call. The returned preparation binds that budget. Earlier saved 200,000-gas preparations remain readable, but the legacy receiver is not used for fresh requests. It returns `prepared.transaction` with the exact chain, sender, recipient, data and zero value. It does not sign, fund or send. Use your existing durable wallet tooling to select gas and nonce, sign and submit once. Preserve the signed transaction hash before broadcast. A lost response requires reconciliation of that hash, not another call to `submit`.
 
 Save `prepared` alongside that original hash. Read its actual event to locate the network request:
 
@@ -76,8 +76,18 @@ The hosted worker, exact API deployment pin, seven-day one-project budget and In
 
 The admitted capability lists exact pilot project IDs. A project outside that list cannot create a binding or start a queued proposal. Removing a project also prevents a newly signed delivery from being broadcast; an already broadcast transaction retains its original hash and accounting. Intake health requires the admitted worker release and exact inbox generation, so a stale worker cannot report the new deployment as ready.
 
-Source 0.9.3 isolates withdrawn projects and old inbox bindings in the scanner. A pending wallet slot or exhausted signing budget defers new deliveries without preventing existing transactions from being reconciled. The optional `ClausRequestClient` is an operator-owned reference: only its controller submits or cancels, and only its pinned inbox can record a decision. It holds no funds and does not execute the decision. The client has local tests; it is not part of the independent inbox audit.
+Source 0.9.3 isolates withdrawn projects and old inbox bindings in the scanner. A pending wallet slot or exhausted signing budget defers new deliveries without preventing existing transactions from being reconciled. The optional `ClausRequestClient` is an operator-owned reference: only its controller submits or cancels, and its pinned inbox supplies the canonical decision. It holds no funds and does not execute the decision. The client has local tests; it is not part of the independent inbox audit.
 
 A requester can cancel while a request is pending, including after offchain work has started. Cancellation does not refund spent sponsor funds, restore the binding request count, or erase an existing offchain proposal. A cancellation ordered before resolution can prevent an onchain result and waste the bounded resolution gas. The first pilot accepts this limitation with one explicitly admitted project, one request per binding and a finite dispatcher grant; it is not open, unlimited free inference.
 
 Source 0.9.4 stops waiting when the linked proposal fails, is blocked or is cancelled without a decision, or when the request deadline has elapsed. These states are returned as errors, never invented Claus decisions. The independently tracked proposal remains intact. Expired credentials are rejected per request and cannot stall the shared scanner.
+
+## Recover a result after callback failure
+
+Callback gas is fixed when a request is created. More gas on a retry transaction cannot raise that stored callback budget. The original reference used 200,000 gas, which is insufficient for its receipt writes under current Sepolia costs. The replacement source uses the Inbox limit of 1,000,000 gas.
+
+The replacement `ClausRequestClient` also exposes `syncResult(id, resultBytes)`. Anyone may submit the exact stored bytes for a request owned by that client. It checks the canonical Inbox requester, result hash and completed/failed state before recording a receipt. Pulling first does not break a later callback: matching receipts are idempotent.
+
+The controller alone may call `recoverResult(id, resultBytes)` to copy a result from an earlier client with the same controller and Inbox. It verifies the original client's request and the Inbox's immutable result, then emits `ResultRecovered` with the original requester. It does not create another request, review, decision or upgrade. The old client's failed callback remains part of the history.
+
+These client changes have local contract and EVM coverage; the replacement is not part of the earlier independent Inbox audit. Check the release receipts for its actual deployment and recovery status.

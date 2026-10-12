@@ -44,4 +44,61 @@ contract ClausRequestClientTest is Test {
         assertEq(resultHash, keccak256(result)); assertEq(evidenceHash, evidence);
         vm.expectRevert(ClausRequestInbox.InvalidResult.selector); inbox.deliverCallback(id, result);
     }
+
+    function testCallbackUsesTheInboxGasLimit() public {
+        bytes32 id = submit();
+        (,,uint32 callbackGas,,,,) = inbox.requests(id);
+        assertEq(callbackGas, inbox.MAX_CALLBACK_GAS());
+        assertEq(callbackGas, client.CALLBACK_GAS());
+    }
+
+    function testPullChecksTheStoredResultAndDoesNotBreakLaterDelivery() public {
+        bytes32 id = submit();
+        bytes memory result = hex"123456";
+        bytes32 evidence = keccak256("exact-result");
+        vm.expectRevert(ClausRequestClient.InvalidReceipt.selector);
+        client.syncResult(id, result);
+        vm.prank(dispatcher); inbox.resolve(id, true, evidence, result);
+        vm.expectRevert(ClausRequestClient.InvalidReceipt.selector);
+        client.syncResult(id, hex"9999");
+        client.syncResult(id, result);
+        client.syncResult(id, result);
+        assertTrue(inbox.deliverCallback(id, result));
+        (bool requested, bool received, uint8 state, bytes32 resultHash, bytes32 evidenceHash) = client.receipts(id);
+        assertTrue(requested && received); assertEq(state, 2);
+        assertEq(resultHash, keccak256(result)); assertEq(evidenceHash, evidence);
+    }
+
+    function testControllerCanRecoverExactLegacyResultWithoutAnotherRequest() public {
+        bytes32 id = submit();
+        bytes memory result = hex"123456";
+        bytes32 evidence = keccak256("legacy-result");
+        vm.prank(dispatcher); inbox.resolve(id, false, evidence, result);
+        ClausRequestClient replacement = new ClausRequestClient(inbox, controller);
+        vm.expectRevert(ClausRequestClient.Unauthorized.selector);
+        replacement.recoverResult(id, result);
+        vm.prank(controller); vm.expectRevert(ClausRequestClient.InvalidReceipt.selector);
+        replacement.recoverResult(id, hex"9999");
+        vm.prank(controller); replacement.recoverResult(id, result);
+        vm.prank(controller); replacement.recoverResult(id, result);
+        (bool requested, bool received, uint8 state, bytes32 resultHash, bytes32 evidenceHash) = replacement.receipts(id);
+        assertTrue(requested && received); assertEq(state, 3);
+        assertEq(resultHash, keccak256(result)); assertEq(evidenceHash, evidence);
+        assertEq(inbox.nextNonce(address(client)), 1);
+        assertEq(inbox.nextNonce(address(replacement)), 0);
+        (,bool legacyReceived,,,) = client.receipts(id);
+        assertFalse(legacyReceived);
+    }
+
+    function testRecoveryCannotImportAnotherControllersResult() public {
+        bytes32 id = submit();
+        bytes memory result = hex"123456";
+        vm.prank(dispatcher); inbox.resolve(id, true, keccak256("result"), result);
+        address anotherController = address(0xBEEF);
+        ClausRequestClient replacement = new ClausRequestClient(inbox, anotherController);
+        vm.prank(anotherController); vm.expectRevert(ClausRequestClient.Unauthorized.selector);
+        replacement.recoverResult(id, result);
+        vm.expectRevert(ClausRequestClient.InvalidReceipt.selector);
+        replacement.syncResult(id, result);
+    }
 }
