@@ -10,6 +10,7 @@ async function fixture(t) {
   const f = { time: 1800000000000, enabled: true, allowedProjects: ['project-a'], revoked: false, pending: true, submissions: 0, proposals: new Map() };
   f.store = openStore(':memory:'); t.after(() => f.store.close());
   const identity = { async authorize(actor, _action, { projectId }) {
+    requireThat(!f.authExpired, 'unauthenticated');
     requireThat((actor === 'owner' || actor === 'agent' && !f.revoked) && projectId === 'project-a', 'scope_denied');
   } };
   const profile = { chainId: 11155111, inbox: address('a'), codeHash: word('1'), capability: word('2') };
@@ -136,4 +137,43 @@ test('withdrawing a project admission blocks a new binding and queued proposal w
   assert.equal(f.submissions, 0);
   assert.equal((await f.api.request('owner', 'project-a', request.id)).state, 'blocked');
   assert.equal((await f.api.binding('owner', 'project-a', f.binding.id)).used, 1);
+});
+
+test('a terminal proposal without a decision closes intake without fabricating approval or retrying it', async t => {
+  for (const state of ['failed', 'blocked', 'cancelled']) {
+    const f = await fixture(t), request = await f.ingest();
+    await f.api.run();
+    const proposal = f.proposals.get(intakeProposalId('project-a', request.id));
+    proposal.state = state; f.advance();
+    const result = await f.api.run();
+    assert.equal(result.state, 'blocked');
+    const saved = await f.api.request('owner', 'project-a', request.id);
+    assert.equal(saved.state, 'blocked'); assert.equal(saved.result, null);
+    assert.equal(saved.error, 'proposal_' + state);
+    f.advance(); assert.equal((await f.api.run()).idle, true);
+    assert.equal(f.submissions, 1);
+    assert.equal(proposal.state, state);
+  }
+});
+
+test('an elapsed request deadline stops waiting but preserves the already submitted proposal', async t => {
+  const f = await fixture(t), request = await f.ingest();
+  await f.api.run();
+  f.time = f.observation.deadline * 1000 + 1;
+  assert.equal((await f.api.run()).state, 'blocked');
+  const saved = await f.api.request('owner', 'project-a', request.id);
+  assert.equal(saved.error, 'contract_request_closed'); assert.equal(saved.result, null);
+  assert.equal(f.submissions, 1); assert.equal(f.proposals.size, 1);
+  f.decide(request); f.advance(); assert.equal((await f.api.run()).idle, true);
+});
+
+test('an expired credential stops queued work without repeated authorization retries', async t => {
+  const f = await fixture(t), request = await f.ingest();
+  f.authExpired = true;
+  assert.equal((await f.api.run()).state, 'blocked');
+  f.authExpired = false;
+  const saved = await f.api.request('owner', 'project-a', request.id);
+  assert.equal(saved.error, 'unauthenticated'); assert.equal(saved.result, null);
+  f.advance(); assert.equal((await f.api.run()).idle, true);
+  assert.equal(f.submissions, 0);
 });

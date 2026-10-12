@@ -34,6 +34,30 @@ export async function boundedResponse(response, maximum = 1048576) {
   return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks));
 }
 
+// The Markdown endpoint can be unavailable while the completed, accepted
+// audit is already readable through the provider's structured submissions API.
+// Preserve that distinction and every finding; never invent a clean report.
+function acceptedAuditReport(job, submissions) {
+  requireThat(job.template === 'audit' && submissions.jobId === job.id &&
+    Array.isArray(submissions.submissions) && submissions.submissions.length <= 50 &&
+    /^[0-9a-f]{40}$/.test(submissions.baseCommit), 'provider_invalid_audit_submission');
+  const judges = submissions.submissions.filter(s => s.nodeKey === 'audit_judge' && s.accepted === true);
+  requireThat(judges.length === 1 && job.nodes?.some(n => n.key === 'audit_judge' && n.state === 'accepted'),
+    'provider_audit_not_accepted');
+  const judge = judges[0];
+  requireThat(judge.role === 'review' && judge.outcome === 'completed' && !judge.safetyRefusal &&
+    judge.verificationErrors === 0 && judge.baseCommit === submissions.baseCommit &&
+    /^[0-9a-f]{64}$/.test(judge.hash) && typeof judge.summary === 'string' && judge.summary.length > 0 &&
+    Array.isArray(judge.findings) && judge.findings.length <= 200 && judge.findings.every(f =>
+      f && ['critical', 'high', 'medium', 'low', 'info', 'informational'].includes(f.severity) &&
+      typeof f.title === 'string' && typeof f.description === 'string'), 'provider_invalid_audit_submission');
+  const report = '# IMD accepted audit submission\n\n' +
+    'Rendered from the provider\'s accepted audit_judge submission because its Markdown report is temporarily unavailable.\n\n' +
+    judge.summary + '\n\n## Complete provider findings\n\n' + JSON.stringify(judge.findings, null, 2);
+  requireThat(Buffer.byteLength(report) <= 1048576, 'provider_response_too_large');
+  return { report, submissionHash: judge.hash };
+}
+
 export function createImdReviewProvider({ store, sealer, resolveInput, fetch: fetcher = globalThis.fetch, now = () => Date.now() }) {
   async function call(path, { body, token, method = 'GET', statuses = [200], headers = {}, json = true } = {}) {
     let response;
@@ -42,7 +66,10 @@ export function createImdReviewProvider({ store, sealer, resolveInput, fetch: fe
         headers: { accept: json ? 'application/json' : 'text/markdown', ...(body ? { 'content-type': 'application/json' } : {}),
           ...(token ? { authorization: 'Bearer ' + token } : {}), ...headers }, ...(body ? { body: JSON.stringify(body) } : {}) });
     } catch { throw Object.assign(Error('provider_outcome_unknown'), { code: 'provider_outcome_unknown' }); }
-    requireThat(statuses.includes(response.status), 'provider_request_rejected');
+    if (!statuses.includes(response.status)) {
+      await response.body?.cancel().catch(() => {});
+      throw Object.assign(Error('provider_request_rejected'), { code: 'provider_request_rejected', httpStatus: response.status });
+    }
     const raw = await boundedResponse(response);
     if (!json) return raw;
     requireThat(/^application\/json(?:;|$)/i.test(response.headers.get('content-type') ?? ''), 'provider_invalid_response');
@@ -130,9 +157,18 @@ export function createImdReviewProvider({ store, sealer, resolveInput, fetch: fe
       const job = await call('/jobs/' + id(jobId));
       requireThat(job.id === jobId && typeof job.state === 'string', 'provider_invalid_job');
       if (job.state !== 'completed') return { complete: false, state: job.state };
-      const report = await call('/jobs/' + id(jobId) + '/report.md', { json: false });
+      let report, reportSource;
       const submissions = await call('/jobs/' + id(jobId) + '/submissions');
-      return { complete: true, jobId, report, reportHash: digest(report), submissions, job };
+      try { report = await call('/jobs/' + id(jobId) + '/report.md', { json: false }); }
+      catch (error) {
+        if (error.code !== 'provider_request_rejected' || ![429, 502, 503, 504].includes(error.httpStatus)) throw error;
+        const accepted = acceptedAuditReport(job, submissions);
+        report = accepted.report;
+        reportSource = { kind: 'accepted-audit-submission', submissionHash: accepted.submissionHash,
+          url: IMD_REVIEW.origin + '/jobs/' + jobId + '/submissions', markdownStatus: error.httpStatus };
+      }
+      return { complete: true, jobId, report, reportHash: digest(report), submissions, job,
+        ...(reportSource ? { reportSource } : {}) };
     }
   };
 }

@@ -35,7 +35,7 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
         ingested++;
       } catch (error) {
         if (!['contract_intake_disabled', 'contract_binding_inactive', 'contract_binding_exhausted', 'contract_request_closed',
-          'scope_denied', 'invalid_contract_input', 'contract_request_mismatch', 'invalid_input',
+          'scope_denied', 'unauthenticated', 'invalid_contract_input', 'contract_request_mismatch', 'invalid_input',
           'inbox_request_closed', 'unknown_field', 'invalid_shape', 'invalid_identifier'].includes(error.code)) throw error;
         await store.transaction(async tx => {
           const key = digest({ inbox: profile.inbox, transactionHash: event.transactionHash, logIndex: event.logIndex });

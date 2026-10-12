@@ -1,0 +1,130 @@
+{
+  "at": "2026-10-12T08:17:45.664Z",
+  "status": "accepted-for-sepolia",
+  "projectId": "prj_6fa11c38-ca5c-4cde-abe6-84a1a1ab70dd",
+  "caseId": "sha256:e53f1d600e8d2a96f887802d660ae49637dfb00c711c1b1ffb207b1fd8fe6327",
+  "providerJobId": "3bb5efb6-d031-49c1-a37f-b07bc1320bd6",
+  "commit": "197f8cebde57eaaecde89f0b65823f015fd55fe7",
+  "buildHash": "sha256:bec7e177c6539ac5b5eb328e1db38639f009f182c128a81c59d0d039a954e0e9",
+  "reviewArtifactHash": "sha256:63302b75ac4af71dd8b2f3592a5e496d4724134dc09c4925e3d57e01ac2dbf93",
+  "reportSource": {
+    "kind": "accepted-audit-submission",
+    "markdownStatus": 503,
+    "submissionHash": "dda9f6c5ce027421b7fd408784f1f74aab32c4c46b39a46ed0d73e0496fbad23",
+    "url": "https://api.imd.fun/jobs/3bb5efb6-d031-49c1-a37f-b07bc1320bd6/submissions"
+  },
+  "acceptedSubmissionHash": "dda9f6c5ce027421b7fd408784f1f74aab32c4c46b39a46ed0d73e0496fbad23",
+  "severity": {
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 3,
+    "info": 6
+  },
+  "scope": "Exact immutable ClausRequestInbox deployment and bounded owner-operated Sepolia contract-intake pilot only. Not approval of every repository contract, general enrollment, a token launch, mainnet or customer custody.",
+  "mainnetApproved": false,
+  "publicEnrollmentApproved": false,
+  "independentMarketReviewComplete": false,
+  "findings": [
+    {
+      "id": 1,
+      "severity": "medium",
+      "title": "ClausMarketPolicy.applyUpgrade is unreachable from ClausApprovalExecutor, so the documented changeable module and fee configuration are frozen at construction",
+      "path": "market-contracts/src/ClausMarketPolicy.sol",
+      "line": 30,
+      "disposition": "corrected outside inbox deployment",
+      "reason": "The unreachable market-only policy shell is removed from production sources. The hook now uses the actual executor-registered ClausReadonlyProject. The local canonical-policy integration exercises the actual approval executor, delay, fee change, replay and revocation. This is not a new independent market audit or a market release."
+    },
+    {
+      "id": 2,
+      "severity": "low",
+      "title": "Module admission accepts an EIP-7702 delegated EOA, so the per-evaluation code-hash check does not freeze module behavior and the holder can change or break admission without any approval",
+      "path": "contracts/src/ClausApprovalExecutor.sol",
+      "line": 127,
+      "disposition": "restricted admission",
+      "reason": "The exact compiled and runtime-pinned static module profile excludes proxies and delegated EOA modules. The chain kernel alone does not enforce this full restriction; general module enrollment and mainnet require separate admission and defense-in-depth review."
+    },
+    {
+      "id": 3,
+      "severity": "low",
+      "title": "ClausNativeVault's fixed 250k policy gas budget cannot evaluate configurations that ClausReadonlyProject legitimately accepts, so an approved admission change above about 3 KB silently closes all depo",
+      "path": "contracts/src/ClausNativeVault.sol",
+      "line": 15,
+      "disposition": "restricted configuration",
+      "reason": "The existing owner-operated vault admits the separately reviewed module and exact 64-byte configuration. Large configurations remain outside this pilot. Principal withdrawal does not call the policy."
+    },
+    {
+      "id": 4,
+      "severity": "low",
+      "title": "ClausRequestInbox.cancel has no cutoff, so a requester can void a sponsored request after the dispatcher has already done the work and before resolve lands",
+      "path": "contracts/src/ClausRequestInbox.sol",
+      "line": 72,
+      "disposition": "accepted bounded cancellation cost",
+      "reason": "Keep the requester cancellation right. Cancellation ordered before resolution can waste spent offchain work and resolution gas. It does not refund sponsor spending or binding request counts and does not undo already submitted proposals. The first intake pilot permits only the named owner-operated project, one request per binding, and a fixed 0.0002-Sepolia-ETH cumulative dispatcher budget, with current-state checks before sending. No open public enrollment or unlimited sponsorship."
+    },
+    {
+      "id": 5,
+      "severity": "info",
+      "title": "Owner-signed session renewal is relayable by anyone and resets spent to zero while the live generation still has budget, so 'total' is a per-generation budget, not a lifetime cap",
+      "path": "contracts/src/ClausProjectWallet.sol",
+      "line": 94,
+      "disposition": "separate documented wallet limitation",
+      "reason": "Session totals are per signed generation. Existing reference sessions are separately identified and no future renewal is pre-signed. This inbox deployment grants no new wallet session."
+    },
+    {
+      "id": 6,
+      "severity": "info",
+      "title": "Recovery owner can extend the upgrade pause indefinitely by re-scheduling signer recovery, and completion is permissionless (documented trust assumption)",
+      "path": "contracts/src/ClausApprovalExecutor.sol",
+      "line": 218,
+      "disposition": "documented recovery authority",
+      "reason": "The recovery owner can prolong the upgrade pause and completion after the delay is permissionless. This is an explicit privileged trust assumption. Reads and direct vault withdrawals remain independent."
+    },
+    {
+      "id": 7,
+      "severity": "info",
+      "title": "cancelSignerRecovery keeps the same signer key, so approvals pre-signed for the predictable post-cancel generation remain valid (documented trust assumption)",
+      "path": "contracts/src/ClausApprovalExecutor.sol",
+      "line": 224,
+      "disposition": "documented key rotation requirement",
+      "reason": "Cancelling recovery resumes the same key; it does not revoke a compromised signer. Recovery from compromise requires rotation to a different key. No key recovery is performed here."
+    },
+    {
+      "id": 8,
+      "severity": "info",
+      "title": "ClausMarketHook cannot be deployed for a native-currency (address(0)) quote, which the 'direct-native' profile name suggests may be intended",
+      "path": "market-contracts/src/ClausMarketHook.sol",
+      "line": 34,
+      "disposition": "explicit market asset scope",
+      "reason": "The undeployed market candidate uses ERC20/ERC20 quotes, including planned CLAUS pairing. Native ETH as the quote is unsupported; the provider profile name does not change this constraint."
+    },
+    {
+      "id": 9,
+      "severity": "info",
+      "title": "ClausMarketHook.beforeInitialize requires the initializer to call PoolManager.initialize directly; initializing through a router or position manager permanently strands the mined hook",
+      "path": "market-contracts/src/ClausMarketHook.sol",
+      "line": 53,
+      "disposition": "exact initializer integration",
+      "reason": "The undeployed market graph binds the predicted one-use initializer address and calls PoolManager directly. The local exact factory/runtime test exercises this caller. No arbitrary router initializer is admitted."
+    },
+    {
+      "id": 10,
+      "severity": "info",
+      "title": "contracts/SOURCE_MANIFEST.json pins every source and dependency file except src/ClausRequestInbox.sol and its test",
+      "path": "contracts/SOURCE_MANIFEST.json",
+      "line": 4,
+      "disposition": "manifest corrected",
+      "reason": "The public source manifest generator now includes all contract source and test files, including unchanged ClausRequestInbox and its test. The paid review and deployment retain their original pinned commit and exact compiler artifact; the manifest repair does not substitute audited code."
+    }
+  ],
+  "requiredPilotLimits": {
+    "projectIds": [
+      "prj_6a2a275a-abc7-4e29-b91e-4e004ebb58ef"
+    ],
+    "maximumRequestsPerBinding": 1,
+    "maximumDispatcherTotalWei": "200000000000000",
+    "chainId": 11155111
+  },
+  "activationPending": true,
+  "publicDistributionNote": "External launch integration reference omitted from this public copy. Original assessment and all findings are retained in the audit records."
+}

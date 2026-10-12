@@ -117,9 +117,10 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
       if (claim.idle) return claim;
       const request = (await owned(store, 'contract-requests', claim.job.projectId, claim.job.payload.requestId)).value;
       const binding = (await owned(store, 'contract-bindings', request.projectId, request.bindingId)).value;
-      const update = (state, result) => async tx => {
+      const update = (state, result, error) => async tx => {
         const row = await owned(tx, 'contract-requests', request.projectId, request.id);
-        await tx.write('contract-requests', request.id, { ...row.value, state, result, updatedAt: now() }, row.revision);
+        await tx.write('contract-requests', request.id, { ...row.value, state, result,
+          ...(error ? { error } : {}), updatedAt: now() }, row.revision);
       };
       let proposal = await readProposal(request.projectId, request.proposalId);
       if (!proposal) {
@@ -140,15 +141,23 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
           if (error.code === 'lease_lost') return { stale: true };
           // A transport failure might have created the proposal. Keep the
           // original request; the next run looks it up before any admission.
-          const denied = ['contract_intake_disabled', 'contract_binding_inactive', 'scope_denied',
+          const denied = ['contract_intake_disabled', 'contract_binding_inactive', 'scope_denied', 'unauthenticated',
             'contract_request_closed'].includes(error.code);
           return jobs.finish(claim, { state: denied ? 'blocked' : 'waiting',
             ...(denied ? {} : { retryAt: now() + 60000 }), result: { requestId: request.id, error: denied ? error.code : 'proposal_pending' } },
-          update(denied ? 'blocked' : 'waiting', null));
+          update(denied ? 'blocked' : 'waiting', null, denied ? error.code : undefined));
         }
       }
       requireThat(proposal.id === request.proposalId && proposal.projectId === request.projectId &&
         proposal.requestHash === digest(request.observation.input), 'contract_proposal_mismatch');
+      // The request can stop waiting without cancelling or replacing its
+      // independently tracked proposal. A failure is never a Claus decision.
+      if (!proposal.decision) {
+        const error = ['failed', 'blocked', 'cancelled'].includes(proposal.state) ? 'proposal_' + proposal.state :
+          request.observation.deadline * 1000 <= now() ? 'contract_request_closed' : null;
+        if (error) return jobs.finish(claim, { state: 'blocked', result: { requestId: request.id,
+          proposalId: proposal.id, error } }, update('blocked', null, error));
+      }
       if (!proposal.decision) return jobs.finish(claim, { state: 'waiting', retryAt: now() + 60000,
         result: { requestId: request.id, proposalId: proposal.id } }, update('waiting', null));
       requireThat(['approve', 'reject'].includes(proposal.decision.decision), 'invalid_contract_decision');

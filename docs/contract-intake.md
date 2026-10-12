@@ -1,10 +1,10 @@
 # Contract requests
 
-The 0.9.2 source implements an asynchronous contract-request profile. Its API and worker are prepared; no public inbox or dispatcher is activated. Existing API clients continue to submit proposals directly.
+The 0.9.4 source implements an asynchronous contract-request profile. Its API and worker are prepared; no public inbox or dispatcher is activated. Existing API clients continue to submit proposals directly.
 
 ## Flow
 
-1. An authorized project owner or agent creates a binding through `contract_binding_create`, using API, SDK or CLI. It names one requester contract, an expiry and a maximum request count. The host pins the inbox, its deployed code, chain and capability. Required scopes are `contract.request` and `proposal.create`.
+1. An authorized project owner or agent creates a binding through `contract_binding_create`, using API, SDK or CLI. It names one requester contract, an expiry and a maximum request count. The host pins the inbox, its deployed code, chain and capability. Binding creation requires `contract.request` and `proposal.create`. The complete protected-change workflow additionally needs `proposal.execute`, `proposal.read`, `review.read` and `artifact.read`, together with current project and sponsor admission. Granting a binding alone does not grant these other capabilities.
 2. That contract calls `ClausRequestInbox.request` with the returned `onchainBinding`, capability, deadline, callback gas and UTF-8 JSON input. The initial input contains exactly `moduleId` and `configuration`. It requests a configuration change to a previously reviewed module, not an arbitrary call, purchase or new deployment.
 3. A worker reads finalized canonical events, checks current grants and creates the existing proposal workflow under a deterministic ID. Unknown bindings create no project work. A replay or lost response keeps the same proposal.
 4. The existing review and Claus decision process runs. The returned result explicitly says `proposal-decision`. An approval result does not say that its subsequent timelocked execution is complete.
@@ -26,8 +26,12 @@ The scanner preserves its canonical cursor across restarts, and the delivery coo
 
 Before activation, the new inbox needs independent review, source-verified deployment, a bounded dispatcher deployment, a genuine Claus-approved end-to-end run, and explicit capability admission. None of the prepared endpoints, fixture receipts or a database flag alone supplies these requirements. Check [release status](release-status.md).
 
-The hosted worker entry and public API deployment-pin loader are implemented, but no live pin, budget or inbox admission has been installed. The independent inbox review is paid under its original order; its result is still pending.
+The hosted worker entry and public API deployment-pin loader are implemented, but no live pin, budget or inbox admission has been installed. The original independent inbox review is complete. The [assessment](reference-inbox-review.json) retains all ten repository findings and accepts only the exact Inbox and bounded owner-operated Sepolia pilot. The provider Markdown endpoint returned 503, so the worker retained the officially accepted judge submission, its complete findings and its provenance. No replacement order or payment was created.
 
 The admitted capability lists exact pilot project IDs. A project outside that list cannot create a binding or start a queued proposal. Removing a project also prevents a newly signed delivery from being broadcast; an already broadcast transaction retains its original hash and accounting. Intake health requires the admitted worker release and exact inbox generation, so a stale worker cannot report the new deployment as ready.
 
 Source 0.9.3 isolates withdrawn projects and old inbox bindings in the scanner. A pending wallet slot or exhausted signing budget defers new deliveries without preventing existing transactions from being reconciled. The optional `ClausRequestClient` is an operator-owned reference: only its controller submits or cancels, and only its pinned inbox can record a decision. It holds no funds and does not execute the decision. The client has local tests; it is not part of the independent inbox audit.
+
+A requester can cancel while a request is pending, including after offchain work has started. Cancellation does not refund spent sponsor funds, restore the binding request count, or erase an existing offchain proposal. A cancellation ordered before resolution can prevent an onchain result and waste the bounded resolution gas. The first pilot accepts this limitation with one explicitly admitted project, one request per binding and a finite dispatcher grant; it is not open, unlimited free inference.
+
+Source 0.9.4 stops waiting when the linked proposal fails, is blocked or is cancelled without a decision, or when the request deadline has elapsed. These states are returned as errors, never invented Claus decisions. The independently tracked proposal remains intact. Expired credentials are rejected per request and cannot stall the shared scanner.

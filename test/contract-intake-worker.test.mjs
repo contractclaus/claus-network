@@ -125,3 +125,14 @@ test('fresh work waiting for funds or a wallet slot cannot starve existing trans
     assert.equal((await f.store.read('contract-requests', 'a-new')).value.delivery, undefined);
   }
 });
+
+test('an expired binding credential cannot stall unrelated events or the scanner cursor', async t => {
+  const f = await fixture(t);
+  f.failures.known = 'unauthenticated';
+  await f.store.transaction(tx => tx.write('contract-bindings', 'other', { ...f.binding, id: 'other' }, 0));
+  f.events.push({ bindingId: 'other', transactionHash: 'other', logIndex: 2 });
+  const result = await f.worker.tick();
+  assert.equal(result.ingested, 1); assert.equal(result.afterBlock, 200);
+  assert.equal((await f.store.list('contract-intake-rejections'))[0].value.code, 'unauthenticated');
+  assert.equal((await f.create().tick()).ingested, 0);
+});

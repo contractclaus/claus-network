@@ -5,7 +5,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | State |
 | --- | --- |
 | Owner login, project identity and delegated agents | Live |
-| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.9.3 |
+| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.9.4 |
 | Source snapshots and explicit publication | Live |
 | Bounded Solidity compilation | Live; scheduled isolated compiler |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
@@ -24,7 +24,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Independent pilot | Procedure prepared; no independent participant has completed it |
 | GitBook publication | Optional mirror of public source docs; account connection still required |
 
-API deployment: `dpl_HHSEk3sAdPC45YNfhjWztzzXxyPU`, release `0dc1ea8529b29bcdbde4363536b7ca2247efe01272f78c22007f1c991deb941f`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
+API deployment: `dpl_2fcmstZoB1TaoquvdyCGyadztsvJ`, release `97013a3a9ce2d4978e41689bf4a47f83f68c797e69e3426c3363e4b81caeda1d`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 
@@ -46,8 +46,10 @@ Both operator database snapshots were restored exactly into disposable schemas. 
 
 The agent review-context release `dpl_B8t89cuyE1EEMLzWEooEZbYqXrDE` matched all 156 source files, preserved configuration 451 and passed 614 tests. It binds the registered downstream vault to a policy review; neither this code change nor the API 0.8 release grants mainnet authority.
 
-API 0.9.3 adds the gated host configuration and bounded dispatcher implementation. Public intake remains disabled. Its local reference passed with two intentionally lost broadcast responses; cumulative gas accounting, revocation, concurrent workers and callback failure were checked. The paid independent inbox report remains pending under its original order. Claus knowledge configuration 454 records the verified API release, completed M1 reference and updated external integration discovery. Identity, settings and policy were preserved; no X post was triggered.
+API 0.9.3 adds the gated host configuration and bounded dispatcher implementation. Public intake remains disabled. Its local reference passed with two intentionally lost broadcast responses; cumulative gas accounting, revocation, concurrent workers and callback failure were checked. The original paid Inbox review is complete. Its [assessment](reference-inbox-review.json) retains all repository findings and admits only the exact immutable Inbox for a bounded owner-operated Sepolia reference. Source verification and runtime activation are tracked separately. Claus knowledge configuration 454 records the verified API release, completed M1 reference and updated external integration discovery. Identity, settings and policy were preserved; no X post was triggered.
 
 The original balance-lens change is finalized. The [reference receipt](reference-lens.json) binds the genuine Claus decision, exact execution transaction and finalized balance readback. The original public project is available in the network explorer.
 
 The 0.9.3 release also prevents withdrawn project rights, stale inbox bindings and a busy or exhausted dispatcher from blocking unrelated requests or existing transaction reconciliation. All 335 enabled source tests passed (eight environment-specific skips), and the local-chain intake test passed separately. The reference requester contract passed two Solidity tests; it is separate from the paid inbox audit.
+
+API 0.9.4 also closes requests whose underlying proposal terminated without a decision, stops deadline-expired waiting, and isolates expired credentials from the shared event scanner. Failures never become fabricated decisions. All 344 enabled source tests passed with eight environment skips; the actual local-EVM intake test passed separately. The review worker can reconcile an official accepted judge submission when the Markdown endpoint is temporarily unavailable, retaining the complete findings and provenance.
