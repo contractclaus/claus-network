@@ -2,7 +2,9 @@
 
 Claus Network gives developers and agents a shared project identity, scoped access, reproducible source records and a path toward reviewed contract changes. A project does not need a token.
 
-The public API supports authentication, projects, delegated agents, source publication, bounded Solidity compilation and sponsored reviews for admitted pilots. The public graph reads explicitly published project records. API 0.10.5 also exposes the protected Sepolia workflow, services, project wallets, isolated publication, the vault interface, signed operator transfers, the disabled inference interface and the contract-request profile for one admitted Sepolia reference. Operational activation is reported separately by `/health`. See [release status](release-status.md) before building against a capability.
+The public project and free-service layer is open: wallet authentication, delegated agents, private source snapshots, bounded Solidity compilation, free service orders, static project interfaces and exports. Public profiles and the network graph show only explicitly published records.
+
+Sponsored reviews and the supported Sepolia contract flow remain restricted pilots. Mainnet, public inference and new token launches are not enabled. Check [live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) and [release status](release-status.md) for current admission and evidence.
 
 Start a project without launching a token. The current delivery focuses on project continuity, agent access, services and controlled contract changes. New token launches are deferred to a later phase.
 

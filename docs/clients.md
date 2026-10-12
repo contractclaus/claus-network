@@ -12,6 +12,43 @@ Use a client that supports Streamable HTTP, protocol version `2025-06-18`, and a
 
 Credential creation, login-session creation and credential rotation are deliberately absent from model-facing tools. Bootstrap them using the API or CLI so raw credentials do not appear in a model's tool output. OAuth discovery and browser-driven OAuth are not currently implemented.
 
+## Check MCP without credentials
+
+This read-only connection check uses Node 24 and the public capability tool. Run it in your terminal; it creates no project or session and makes no payment.
+
+```sh
+node --input-type=module <<'JS'
+const endpoint = 'https://claus-network-api.vercel.app/mcp';
+async function send(message) {
+  const response = await fetch(endpoint, {
+    method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
+      'MCP-Protocol-Version': '2025-06-18'
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', ...message })
+  });
+  if (!response.ok) throw new Error(`MCP HTTP ${response.status}`);
+  if (response.status === 202) return;
+  const reply = await response.json();
+  if (reply.error || reply.result?.isError) throw new Error(JSON.stringify(reply));
+  return reply.result;
+}
+const server = await send({ id: 1, method: 'initialize', params: {
+  protocolVersion: '2025-06-18', capabilities: {},
+  clientInfo: { name: 'claus-connection-check', version: '1.0.0' }
+} });
+await send({ method: 'notifications/initialized' });
+const capabilities = await send({ id: 2, method: 'tools/call',
+  params: { name: 'capabilities', arguments: {} } });
+console.log(JSON.stringify({ server: server.serverInfo,
+  capabilities: capabilities.structuredContent }, null, 2));
+JS
+```
+
+To connect an agent client, configure the same HTTP endpoint and store its delegated token in that client's secret configuration as `Authorization: Bearer …`. Use `tools/list` to discover operations. The owner first creates the project, agent and mandate through the [quickstart](quickstart.md); the model receives the resulting tools, not the owner key or token-creation response.
+
 ## JavaScript SDK
 
 The reference client is `interfaces/sdk.mjs` in the source distribution:
@@ -30,7 +67,7 @@ The SDK and CLI default to `https://claus-network-api.vercel.app`. Set `origin` 
 
 ## CLI
 
-Use Node 24.14 or later in the Node 24 line. From the source distribution:
+Use Node 24.14 or later in the Node 24 line. [Download and install the source distribution](quickstart.md#install-the-clients), then run these commands from its `claus-network` directory:
 
 ```sh
 node interfaces/cli.mjs --help
