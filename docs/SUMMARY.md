@@ -14,4 +14,5 @@
 - [Services](services.md)
 - [Project wallets](wallets.md)
 - [Project UIs](project-uis.md)
+- [Inference integration status](inference.md)
 - [Operation and recovery](operations.md)
