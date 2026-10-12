@@ -1,6 +1,6 @@
 {
   "ownerJournal": {
-    "at": "2026-10-12T09:21:34.968Z",
+    "at": "2026-10-12T09:22:16.687Z",
     "actions": 10,
     "files": 20,
     "signedActions": 10,
@@ -8,7 +8,7 @@
       1,
       11155111
     ],
-    "sha256": "bec979564b21e81850925dfd989ffc2a651725748998fbca8f7704e8dd0240f6",
+    "sha256": "33657217b16c7132e9d91194d104b71c0b5b09b13f80c9abd32d46bad3f6f664",
     "readOnly": true,
     "signaturesVerified": true,
     "ownerKeyExported": false,
@@ -17,10 +17,10 @@
   "databaseRecovery": [
     {
       "operator": "https://claus-network-api.vercel.app",
-      "capturedAt": "2026-10-12T09:21:38.369Z",
-      "documents": 840,
-      "events": 439,
-      "sha256": "83e5b209005db6e5e963d924db828a7fc05638d8ecedd82f90423911d430f2bb",
+      "capturedAt": "2026-10-12T09:22:19.956Z",
+      "documents": 843,
+      "events": 442,
+      "sha256": "ddcb70ac4602e15d8079d57d6698975d433d99573841f3081af058ea18d7270b",
       "isolatedSchemaRestore": true,
       "exactValuesRevisionsEventsAndSequence": true,
       "oldCredentialDenied": true,
@@ -29,10 +29,10 @@
     },
     {
       "operator": "https://claus-network-portable.vercel.app",
-      "capturedAt": "2026-10-12T09:21:45.971Z",
+      "capturedAt": "2026-10-12T09:22:27.874Z",
       "documents": 47,
       "events": 11,
-      "sha256": "08b4150141a8a77aef0bbad74bffd69b9fc6be0adf59374dbc77f27fc7ba2ab1",
+      "sha256": "c3e6e46de0ae93f1b0b06d013551a6226febf8b934bbc4412c1e44e2968f8ff1",
       "isolatedSchemaRestore": true,
       "exactValuesRevisionsEventsAndSequence": true,
       "oldCredentialDenied": null,
@@ -40,9 +40,9 @@
       "externalEffectsDispatched": false
     }
   ],
-  "createdAt": "2026-10-12T09:21:51.547Z",
-  "sha256": "e1fcce0b01d2a4431287233f4be1cf38b36b84570a7ba1e4f5db5e6f676a0d2d",
-  "bytes": 6533000,
+  "createdAt": "2026-10-12T09:22:34.259Z",
+  "sha256": "b89b603645e625d3b1ab78d126968ff80c600de3c3ddccb73dfd117f30bf05bd",
+  "bytes": 6536524,
   "sourceFiles": 299,
   "operationalFiles": 141,
   "encryptedReadback": true,
