@@ -1,13 +1,13 @@
 # Reviews and contract changes
 
-The intended chain is source → build → independent review → Claus decision → execution → verification. The review API is available to sponsor-approved pilots. Release 0.4 implements the [protected Sepolia workflow](testnet.md); activation and live evidence are tracked separately in [release status](release-status.md).
+The workflow is source → build → independent review → Claus decision → execution → verification. Eligible public projects can request sponsored reviews within the current finite allocation. The protected readonly profile is available on [Sepolia](testnet.md) and [Ethereum](mainnet.md); actual release evidence and remaining exclusions are recorded in [release status](release-status.md).
 
 ## Submit a review
 
 1. Create and explicitly publish a source snapshot, then compile it.
 2. Call `review_create` with the completed `buildId`, public GitHub `repoUrl`, exact 40-character `baseCommit` and a stable `idempotencyKey`.
 3. Poll `review_get`. The worker compares every source file at that commit with the snapshot before requesting a quote.
-4. When `state` is `quoted`, inspect `quote.maximum`. Pilot projects pay zero; the sponsor reserves the actual provider ceiling. Call `review_accept` with the returned `quoteId` and a new stable acceptance key before the quote expires.
+4. When `state` is `quoted`, inspect `quote.maximum`. Eligible sponsored projects pay zero; the sponsor reserves the actual provider ceiling. Call `review_accept` with the returned `quoteId` and a new stable acceptance key before the quote expires.
 5. Poll the same case. `review_artifact` returns the completed report. `review_publish` explicitly adds its reference to the public project profile; it does not grant approval.
 
 Required project permissions are `artifact.read`, `review.quote`, `review.admit` and `review.read`. Publication additionally requires `project.publish`. The source must remain public and the submitting credential valid until purchase. A workflow status of `failed` or `blocked` contains the specific reason. Status reads never buy another review.
@@ -20,7 +20,7 @@ An IMD audit currently costs at most 0.5 IMD within the supported profile. Price
 
 ## Sponsor access
 
-Registration is open; sponsorship is separate. The network owner's authenticated EOA session uses `review_pilot_get` and `review_pilot_set` to grant, change or revoke a project's eligibility. Grants expire within 30 days and use revision checks. The maximum per review cannot exceed the supported 0.5 IMD profile. Current admission allows two purchases per project and eight globally per UTC day, with at most one active paid review per project and eight globally. Fresh wallets do not create sponsor rights.
+Registration is open; sponsorship is separate and requires an active public sponsor policy with available funding and quota. The network owner manages versioned public admission through the documented policy operations. Legacy `review_pilot_get` and `review_pilot_set` grants remain separate. The maximum per review cannot exceed 0.5 IMD. Current admission allows two purchases per project and eight globally per UTC day, with at most one active paid review per project and eight globally. A new wallet does not create a guaranteed subsidy.
 
 Project owners cannot grant themselves sponsorship, modify the sponsor balance or submit arbitrary transactions. The review wallet has finite funding and a finite Permit2 allowance, with no automatic refill. Its key is held by a separate worker; the API and compiler have no signing key.
 
@@ -53,7 +53,7 @@ The [deployment manifest](deployments.json) records the verified Sepolia executo
 The retained earlier zero-delay replacement is pinned to commit `bc642d36d5eafffcd04859574219acfa7a3bb27d`. Its [independent assessment](reference-zero-delay-review.json) records every finding and the accepted Sepolia scope. The [activation receipt](reference-zero-delay.json) distinguishes deployed code, source verification and capability adoption. A nonzero `readyAt` alone does not prove an approval is still valid: nonce cancellation, current authority, signer generation, expiry and exact code must also be checked.
 
 
-New admitted Sepolia registrations now use the bounded-result executor from commit `af8cf6370d5b3893fa5b38df251d4b27b5db5f8d`, which preserves zero-delay support and bounds return data before allocation. Its [kernel receipt](reference-public-kernel.json) records independent review, verified code and actual adoption. Existing bindings remain unchanged; broad public admission is still separately disabled.
+New admitted Sepolia registrations now use the bounded-result executor from commit `af8cf6370d5b3893fa5b38df251d4b27b5db5f8d`, which preserves zero-delay support and bounds return data before allocation. Its [kernel receipt](reference-public-kernel.json) records independent review, verified code and actual adoption. Existing bindings remain unchanged. Public admission now has a separate finite operating policy; see the completed references and live capabilities in [release status](release-status.md).
 
 
 ### Public admission failure handling

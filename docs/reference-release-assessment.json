@@ -1,0 +1,594 @@
+{
+  "checkedAt": "2026-10-12T23:33:02.355Z",
+  "runtimeAssessment": {
+    "assessedAt": "2026-10-12T20:46:43.306344+00:00",
+    "status": "accepted-with-documented-operational-limitations",
+    "sourceCommit": "db3c4f22f67c4a6baab8c14657afb4c95a1f3d98",
+    "jobId": "d135fe68-67bc-4576-99c0-b488ce28334d",
+    "reportHash": "sha256:4f2736a7347f13cc4f12a99808068939f25ef7e0d70661db743e9111a73d0d34",
+    "reportBytesSha256": "d8546848bfa0b78e06aed09fe343118ed960cbe61147976ce97e5a24568ed070",
+    "acceptedJudgeSubmission": "42e63b44614c3abb366849927e267c7f1d6d9501255975c9483c69c700f2fdcd",
+    "severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 3,
+      "info": 1
+    },
+    "findings": [
+      {
+        "severity": "low",
+        "title": "A known rate-limit reply on checkverifystatus freezes the whole row for one hour, unlike the 60 s exponential backoff the same message gets on listing and submission",
+        "path": "adapters/source-verification.mjs",
+        "line": 126,
+        "description": "The diff classifies 'invalid api key', 'rate limit', 'daily limit' and 'invalid action' as transient explorer refusals on the verifysourcecode path (line 99) and schedules them on the etherscanRefusals backoff that starts at 60 s. The identical text returned by checkverifystatus does not match the pending regex (line 112) or the terminal regex (line 117) and falls into the new else branch, which sets nextCheckAt one hour ahead. Because the early return at line 32 gates the entire step, that hour also suppresses the Sourcify match read and the Etherscan listing read, so a single rate-limit reply on the GUID poll (issued in the same tick as the listing read and the POST, on a key shared by the chain-worker and both collaboration-worker verifiers) delays completion of the module-deploy / project-register job by up to an hour. At 12da8a6 such a row was re-polled on the next 30 s tick. docs/testnet.md reserves the hourly cadence for 'unrecognized GUID statuses'; a rate-limit message is one the same file explicitly recognizes. Merged from audit_permissions 44c8432a, audit_flow 33a381e6, audit_economics d6a868a2. Fix: apply the line 99 refusal regex to status.result before the else branch and schedule those replies with the etherscanRefusals exponential backoff; keep the fixed hourly interval for genuinely unrecognized statuses such as 'Unknown UID'.",
+        "reproduction": "In-memory store (openStore(':memory:')), now=100000, stub fetcher: Sourcify POST -> {verificationId:'source'}, Sourcify GET -> {runtimeMatch:'exact_match',creationMatch:'exact_match'}; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]}; verifysourcecode -> {status:'1',result:'guid-1'}; checkverifystatus -> {status:'0',result:'Max rate limit reached'}. step(input) once: result.etherscanGuid === 'guid-1' and result.nextCheckAt - now === 3600000. Then switch checkverifystatus to 'Pass - Verified' and getsourcecode to SourceCode '{}' and call step every 30 s for 59.5 minutes: zero Sourcify, listing, POST or status requests are made and state stays 'pending'; only the step at now+3600000 returns 'verified'. Control: same stub but verifysourcecode -> {status:'0',result:'Max rate limit reached'}: result.nextCheckAt - now === 60000. Expected: the recognized rate-limit message on the status poll schedules the next poll on the same 60 s exponential backoff and does not block the Sourcify/listing reads. Actual: fixed 3,600,000 ms hold on the entire row. Reproduced with test/scratch/judge-probe.test.mjs (test C) at db3c4f2.",
+        "snippet": "          } else value.nextCheckAt = now() + 3600000;",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted bounded operational delay for this release. A rate-limit response during GUID polling can postpone all source checks for one hour. It retains the original GUID and cannot approve code or send a transaction. No completion-time SLA is claimed; documentation now states this case explicitly."
+      },
+      {
+        "severity": "low",
+        "title": "A refused source listing overwrites etherscanVerified/etherscanMatch before the refusal check and returns early, persisting etherscanVerified=false and etherscanMatch=null beside a stale etherscanStat",
+        "path": "adapters/source-verification.mjs",
+        "line": 58,
+        "description": "Lines 58-59 derive etherscanVerified and etherscanMatch from `entry` before line 60 decides whether the reply was a listing at all. When getsourcecode is refused (status '0', e.g. 'Max rate limit reached' or 'Invalid API Key') `entry` is null, so a previously observed verified listing is overwritten with etherscanVerified=false and etherscanMatch=null, and the new early-return branch at lines 60-65 saves and returns without running the derived-field block at lines 129-134. Before this diff the same overwrite happened but the step always continued to lines 129-134, so etherscanState was recomputed together with the listing fields and the row stayed internally consistent. After this diff the persisted row, the value returned to chain-executor / vault-executor / wallet-executor (stored as `verification: proof` on chain-modules, chain-registrations, project-vaults, wallet-actions) and every early return at line 32 during the backoff window (60 s up to one hour) carry etherscanState:'verified', etherscanVerified:false, etherscanMatch:null and an etherscanError at the same time, and a previously recorded 'exact' match is erased by a reply that contained no listing. A brand-new row whose first listing is refused is likewise persisted and returned with no etherscanState, etherscanRetryExhausted, explorerUrl or sourcifyUrl, fields the pre-change code always populated. The same stale-derived-field pattern exists on the line 71 save before the POST (after a third transport-failed POST the row carries etherscanSubmissionCount 3 with the previous step's etherscanRetryExhausted false / etherscanState 'pending' for 60 s). Merged from audit_permissions 10bc9919, audit_math 0cf11592, audit_economics 76e54f14. Fix: move lines 58-59 below the `if (!entry)` block so a refused read does not rewrite listing facts, and recompute etherscanState and the url fields before every save/return (for example by extracting the lines 129-133 tail into a helper used by all exits).",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify POST -> {verificationId:'source'}, Sourcify GET -> {runtimeMatch:'exact_match',creationMatch:'match'} (not exact, so state stays 'pending'); getsourcecode -> {status:'1',result:[{SourceCode:'{}',ContractName:'Example',SimilarMatch:''}]} on the first step and {status:'0',result:'Max rate limit reached'} afterwards. Step 1: result has etherscanState 'verified', etherscanVerified true, etherscanMatch 'exact', state 'pending'. Step 2 at now+30000: expected either the listing fields unchanged (no listing was received) or etherscanState recomputed to 'pending' with them. Actual, both in the returned value and in store.read('chain-verifications', id).value: {etherscanState:'verified', etherscanVerified:false, etherscanMatch:null, etherscanError:'Max rate limit reached', nextCheckAt:now+60000}; a step at now+60000 returns the same contradictory object from line 32. First-contact variant: new row, getsourcecode -> {status:'0',result:'Invalid API Key'}: persisted keys are address,chainId,checkedAt,creationMatch,etherscanError,etherscanMatch,etherscanRefusals,etherscanSubmissionCount,etherscanVerified,id,inputHash,nextCheckAt,runtimeMatch,sourcifyAlreadyVerified,sourcifyId,state with no etherscanState, explorerUrl, sourcifyUrl or etherscanRetryExhausted. Reproduced with test/scratch/judge-probe.test.mjs (tests B and B2) at db3c4f2.",
+        "snippet": "      value.etherscanVerified = !!entry?.SourceCode && entry.ContractName === artifact.contract;\n      value.etherscanMatch = value.etherscanVerified ? entry.SimilarMatch ? 'similar' : 'exact' : null;\n      if (!entry) {",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted pending-diagnostic inconsistency for this release. Only the aggregate verification.state gates chain/wallet/vault completion, confirmed in all immediate callers. A refused listing can leave stale per-provider labels or omit links while aggregate state remains pending. Consumers must use aggregate state and require exact evidence for completion; no false aggregate verification or signing path is introduced."
+      },
+      {
+        "severity": "low",
+        "title": "etherscanRefusals is only reset by an accepted POST, so isolated refusals over a row's lifetime ratchet the backoff to the one-hour cap instead of restarting at one minute",
+        "path": "adapters/source-verification.mjs",
+        "line": 62,
+        "description": "The new etherscanRefusals counter drives the backoff min(1h, 60s * 2^(refusals-1)) on both the getsourcecode refusal path (lines 62-63) and the POST refusal path (lines 101-102). The only reset is line 93, when a verifysourcecode POST is accepted. A successful listing (entry present at line 60), a successful or pending status poll (line 112) and the final save never reset it, so the counter counts refusals over the row's whole lifetime rather than the current streak. Any row that will not POST again (a row holding a pending GUID, a row whose Etherscan listing is already verified but is still waiting for an exact Sourcify creation match, an exhausted row) accumulates every transient explorer blip; after seven, each further single refusal parks the row for a full hour and, because line 32 returns before the Sourcify and Etherscan reads, both providers are skipped for that hour. A row that collected seven listing refusals during a key outage and then recovers has its first POST refusal ('Unable to locate ContractCode' is normal for a freshly deployed address) scheduled one hour out instead of one minute. docs/testnet.md describes retries that 'back off from one minute to one hour', which implies a fresh streak starts at one minute. Impact is delay of module state 'verified' (and so prepareRegistration, which requires it) by up to one hour per transient refusal; no cap slot or GUID is lost. Merged from audit_permissions 762ad851, audit_flow 9997ac5d, audit_math bd51fdea, audit_economics 30612c27. Fix: reset etherscanRefusals to 0 whenever an Etherscan reply is not a refusal (entry present at line 60; recognized pending/pass status at line 112), or derive the backoff from refusals since the last success.",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify exact on both matches; verifysourcecode -> {status:'1',result:'guid-1'}; checkverifystatus -> {status:'0',result:'Pending in queue'}; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]} unless a refuse flag is set, then {status:'0',result:'Max rate limit reached'}. Step once (GUID accepted, etherscanRefusals 0). Then for day 1..8: five healthy steps 30 s apart (etherscanError undefined each time), advance 86,400,000 ms, one refused step, record nextCheckAt - now, advance to nextCheckAt+1. Expected: each isolated refusal, preceded by a day of healthy polls, backs off 60,000 ms. Actual: 60000,120000,240000,480000,960000,1920000,3600000,3600000 with stored etherscanRefusals 1,2,3,4,5,6,7,7. Variant: seven consecutive listing refusals (each step at nextCheckAt+1) -> etherscanRefusals 7; advance 24 h; listing now healthy and verifysourcecode -> {status:'0',result:'Unable to locate ContractCode at 0x1111'}: etherscanSubmissionCount is correctly released to 0 but nextCheckAt - now === 3600000 (expected 60000). Reproduced with test/scratch/judge-probe.test.mjs (test A) at db3c4f2.",
+        "snippet": "        value.etherscanRefusals = Math.min((value.etherscanRefusals ?? 0) + 1, 7);\n        value.nextCheckAt = now() + Math.min(3600000, 60000 * 2 ** (value.etherscanRefusals - 1));",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted conservative retry latency for this release. Refusals accumulate until an accepted POST; healthy reads do not reset the counter. Later isolated refusals may therefore back off for one hour. Original jobs, caps and GUIDs remain intact. Documentation states this rather than promising a per-streak reset."
+      },
+      {
+        "severity": "info",
+        "title": "An exhausted row whose hourly listing read is refused is re-read after 1, 2, 4 ... minutes instead of hourly as documented",
+        "path": "adapters/source-verification.mjs",
+        "line": 63,
+        "description": "Line 131 gives an exhausted row (etherscanRetryExhausted true, etherscanState 'operator_action_required') an hourly cadence, and docs/testnet.md in this diff states that exhausted rows are checked at most hourly. The refused-listing branch at lines 60-65 runs first and returns early with its own schedule computed from etherscanRefusals, which for a row without earlier refusals is 60 s. So when the hourly getsourcecode read of an exhausted row is rate-limited or key-refused, the row is read again after 1, 2, 4, 8, 16 and 32 minutes (each read costing a Sourcify GET and an Etherscan call against an already refusing key) before settling back to hourly. No cap slot is consumed, no POST is made and no state is corrupted; the effect is extra traffic and a documented cadence that is not kept. Merged from audit_flow 8c7593d3, audit_math fddd448b, audit_economics d7bd7fa8. Fix: in the `!entry` branch use Math.max(backoff, 3600000) when value.etherscanRetryExhausted is already true (and arguably when a GUID is in an unrecognized state).",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify exact on both matches; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]}; verifysourcecode -> {status:'1',result:'guid-N'}; checkverifystatus -> {status:'0',result:'Fail - Unable to verify'}. Three steps 90 s apart reach etherscanState 'operator_action_required', etherscanRetryExhausted true, nextCheckAt now+3600000. Advance to nextCheckAt+1, switch getsourcecode to {status:'0',result:'Max rate limit reached'}, step once: result.etherscanRetryExhausted === true and result.nextCheckAt - now === 60000 (expected 3600000). Stepping every 30 s for the next 10 minutes issues 3 further getsourcecode requests (at +1, +3 and +7 minutes). Reproduced with test/scratch/judge-probe.test.mjs (test D) at db3c4f2.",
+        "snippet": "        value.nextCheckAt = now() + Math.min(3600000, 60000 * 2 ** (value.etherscanRefusals - 1));",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted bounded read-traffic exception for this release. A refused listing can change an exhausted row from hourly reads to the one-minute-to-one-hour backoff. It creates no new POST, slot, payment or transaction. The former unconditional at-most-hourly documentation is corrected."
+      }
+    ],
+    "coreReview": {
+      "caseId": "sha256:7ef2a4f1c8c0d730f54049223b6b6d0ab47dbc192e495595386003b04ae22dbd",
+      "providerJobId": "93f20ace-67f2-489e-affa-f10b94e1f359",
+      "reviewArtifactHash": "sha256:1070004295d421d61d37039a5bc59b06185ad35b025ec3b435af2de0f1e9aa0b",
+      "contractCommit": "af8cf6370d5b3893fa5b38df251d4b27b5db5f8d",
+      "buildHash": "sha256:ff51e0cbe2db258277f6e98fbf34403c2aed6fe65ef7469d1115e196cd874acb"
+    },
+    "reusedEvidence": [
+      "consolidated0125-final-assessment.json",
+      "consolidated0128-final-assessment.json",
+      "verification0129-checks.log",
+      "runtime0129-source-readback.json",
+      "recovery0125-source-gate.txt",
+      "recovery0125-chain1-test.txt"
+    ],
+    "limitations": [
+      "Explicit historical RPC support is an operator prerequisite, sampled before deployment; no automatic failover or permanent provider guarantee.",
+      "Single-attempt bounded dispatch and finite expiring financial allocations remain.",
+      "No customer custody, public wallets, token launch or public inference.",
+      "Operator references are not independent customer adoption.",
+      "Accepted bounded operational delay for this release. A rate-limit response during GUID polling can postpone all source checks for one hour. It retains the original GUID and cannot approve code or send a transaction. No completion-time SLA is claimed; documentation now states this case explicitly.",
+      "Accepted pending-diagnostic inconsistency for this release. Only the aggregate verification.state gates chain/wallet/vault completion, confirmed in all immediate callers. A refused listing can leave stale per-provider labels or omit links while aggregate state remains pending. Consumers must use aggregate state and require exact evidence for completion; no false aggregate verification or signing path is introduced.",
+      "Accepted conservative retry latency for this release. Refusals accumulate until an accepted POST; healthy reads do not reset the counter. Later isolated refusals may therefore back off for one hour. Original jobs, caps and GUIDs remain intact. Documentation states this rather than promising a per-streak reset.",
+      "Accepted bounded read-traffic exception for this release. A refused listing can change an exhausted row from hourly reads to the one-minute-to-one-hour backoff. It creates no new POST, slot, payment or transaction. The former unconditional at-most-hourly documentation is corrected."
+    ],
+    "operatorAssessment": true,
+    "financialAuthority": "Separate retained owner grants; this technical assessment creates no spending authority.",
+    "scope": "Existing finite sponsored review and noncustodial claus-readonly-v1 on Sepolia and Ethereum; Sepolia-only Inbox. No expansion of funds or authority.",
+    "acceptanceBasis": "All four independently reproduced findings are low/informational and explicitly nonblocking. Exact-code aggregate verification gates remain fail-closed; retained operational delays and diagnostic limitations are disclosed. No runtime source change or duplicate paid review."
+  },
+  "publicAdmission": {
+    "assessedAt": "2026-10-12T20:46:43.306344+00:00",
+    "status": "accepted-for-public-sepolia",
+    "sourceCommit": "db3c4f22f67c4a6baab8c14657afb4c95a1f3d98",
+    "jobId": "d135fe68-67bc-4576-99c0-b488ce28334d",
+    "reportHash": "sha256:4f2736a7347f13cc4f12a99808068939f25ef7e0d70661db743e9111a73d0d34",
+    "reportBytesSha256": "d8546848bfa0b78e06aed09fe343118ed960cbe61147976ce97e5a24568ed070",
+    "acceptedJudgeSubmission": "42e63b44614c3abb366849927e267c7f1d6d9501255975c9483c69c700f2fdcd",
+    "severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 3,
+      "info": 1
+    },
+    "findings": [
+      {
+        "severity": "low",
+        "title": "A known rate-limit reply on checkverifystatus freezes the whole row for one hour, unlike the 60 s exponential backoff the same message gets on listing and submission",
+        "path": "adapters/source-verification.mjs",
+        "line": 126,
+        "description": "The diff classifies 'invalid api key', 'rate limit', 'daily limit' and 'invalid action' as transient explorer refusals on the verifysourcecode path (line 99) and schedules them on the etherscanRefusals backoff that starts at 60 s. The identical text returned by checkverifystatus does not match the pending regex (line 112) or the terminal regex (line 117) and falls into the new else branch, which sets nextCheckAt one hour ahead. Because the early return at line 32 gates the entire step, that hour also suppresses the Sourcify match read and the Etherscan listing read, so a single rate-limit reply on the GUID poll (issued in the same tick as the listing read and the POST, on a key shared by the chain-worker and both collaboration-worker verifiers) delays completion of the module-deploy / project-register job by up to an hour. At 12da8a6 such a row was re-polled on the next 30 s tick. docs/testnet.md reserves the hourly cadence for 'unrecognized GUID statuses'; a rate-limit message is one the same file explicitly recognizes. Merged from audit_permissions 44c8432a, audit_flow 33a381e6, audit_economics d6a868a2. Fix: apply the line 99 refusal regex to status.result before the else branch and schedule those replies with the etherscanRefusals exponential backoff; keep the fixed hourly interval for genuinely unrecognized statuses such as 'Unknown UID'.",
+        "reproduction": "In-memory store (openStore(':memory:')), now=100000, stub fetcher: Sourcify POST -> {verificationId:'source'}, Sourcify GET -> {runtimeMatch:'exact_match',creationMatch:'exact_match'}; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]}; verifysourcecode -> {status:'1',result:'guid-1'}; checkverifystatus -> {status:'0',result:'Max rate limit reached'}. step(input) once: result.etherscanGuid === 'guid-1' and result.nextCheckAt - now === 3600000. Then switch checkverifystatus to 'Pass - Verified' and getsourcecode to SourceCode '{}' and call step every 30 s for 59.5 minutes: zero Sourcify, listing, POST or status requests are made and state stays 'pending'; only the step at now+3600000 returns 'verified'. Control: same stub but verifysourcecode -> {status:'0',result:'Max rate limit reached'}: result.nextCheckAt - now === 60000. Expected: the recognized rate-limit message on the status poll schedules the next poll on the same 60 s exponential backoff and does not block the Sourcify/listing reads. Actual: fixed 3,600,000 ms hold on the entire row. Reproduced with test/scratch/judge-probe.test.mjs (test C) at db3c4f2.",
+        "snippet": "          } else value.nextCheckAt = now() + 3600000;",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted bounded operational delay for this release. A rate-limit response during GUID polling can postpone all source checks for one hour. It retains the original GUID and cannot approve code or send a transaction. No completion-time SLA is claimed; documentation now states this case explicitly."
+      },
+      {
+        "severity": "low",
+        "title": "A refused source listing overwrites etherscanVerified/etherscanMatch before the refusal check and returns early, persisting etherscanVerified=false and etherscanMatch=null beside a stale etherscanStat",
+        "path": "adapters/source-verification.mjs",
+        "line": 58,
+        "description": "Lines 58-59 derive etherscanVerified and etherscanMatch from `entry` before line 60 decides whether the reply was a listing at all. When getsourcecode is refused (status '0', e.g. 'Max rate limit reached' or 'Invalid API Key') `entry` is null, so a previously observed verified listing is overwritten with etherscanVerified=false and etherscanMatch=null, and the new early-return branch at lines 60-65 saves and returns without running the derived-field block at lines 129-134. Before this diff the same overwrite happened but the step always continued to lines 129-134, so etherscanState was recomputed together with the listing fields and the row stayed internally consistent. After this diff the persisted row, the value returned to chain-executor / vault-executor / wallet-executor (stored as `verification: proof` on chain-modules, chain-registrations, project-vaults, wallet-actions) and every early return at line 32 during the backoff window (60 s up to one hour) carry etherscanState:'verified', etherscanVerified:false, etherscanMatch:null and an etherscanError at the same time, and a previously recorded 'exact' match is erased by a reply that contained no listing. A brand-new row whose first listing is refused is likewise persisted and returned with no etherscanState, etherscanRetryExhausted, explorerUrl or sourcifyUrl, fields the pre-change code always populated. The same stale-derived-field pattern exists on the line 71 save before the POST (after a third transport-failed POST the row carries etherscanSubmissionCount 3 with the previous step's etherscanRetryExhausted false / etherscanState 'pending' for 60 s). Merged from audit_permissions 10bc9919, audit_math 0cf11592, audit_economics 76e54f14. Fix: move lines 58-59 below the `if (!entry)` block so a refused read does not rewrite listing facts, and recompute etherscanState and the url fields before every save/return (for example by extracting the lines 129-133 tail into a helper used by all exits).",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify POST -> {verificationId:'source'}, Sourcify GET -> {runtimeMatch:'exact_match',creationMatch:'match'} (not exact, so state stays 'pending'); getsourcecode -> {status:'1',result:[{SourceCode:'{}',ContractName:'Example',SimilarMatch:''}]} on the first step and {status:'0',result:'Max rate limit reached'} afterwards. Step 1: result has etherscanState 'verified', etherscanVerified true, etherscanMatch 'exact', state 'pending'. Step 2 at now+30000: expected either the listing fields unchanged (no listing was received) or etherscanState recomputed to 'pending' with them. Actual, both in the returned value and in store.read('chain-verifications', id).value: {etherscanState:'verified', etherscanVerified:false, etherscanMatch:null, etherscanError:'Max rate limit reached', nextCheckAt:now+60000}; a step at now+60000 returns the same contradictory object from line 32. First-contact variant: new row, getsourcecode -> {status:'0',result:'Invalid API Key'}: persisted keys are address,chainId,checkedAt,creationMatch,etherscanError,etherscanMatch,etherscanRefusals,etherscanSubmissionCount,etherscanVerified,id,inputHash,nextCheckAt,runtimeMatch,sourcifyAlreadyVerified,sourcifyId,state with no etherscanState, explorerUrl, sourcifyUrl or etherscanRetryExhausted. Reproduced with test/scratch/judge-probe.test.mjs (tests B and B2) at db3c4f2.",
+        "snippet": "      value.etherscanVerified = !!entry?.SourceCode && entry.ContractName === artifact.contract;\n      value.etherscanMatch = value.etherscanVerified ? entry.SimilarMatch ? 'similar' : 'exact' : null;\n      if (!entry) {",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted pending-diagnostic inconsistency for this release. Only the aggregate verification.state gates chain/wallet/vault completion, confirmed in all immediate callers. A refused listing can leave stale per-provider labels or omit links while aggregate state remains pending. Consumers must use aggregate state and require exact evidence for completion; no false aggregate verification or signing path is introduced."
+      },
+      {
+        "severity": "low",
+        "title": "etherscanRefusals is only reset by an accepted POST, so isolated refusals over a row's lifetime ratchet the backoff to the one-hour cap instead of restarting at one minute",
+        "path": "adapters/source-verification.mjs",
+        "line": 62,
+        "description": "The new etherscanRefusals counter drives the backoff min(1h, 60s * 2^(refusals-1)) on both the getsourcecode refusal path (lines 62-63) and the POST refusal path (lines 101-102). The only reset is line 93, when a verifysourcecode POST is accepted. A successful listing (entry present at line 60), a successful or pending status poll (line 112) and the final save never reset it, so the counter counts refusals over the row's whole lifetime rather than the current streak. Any row that will not POST again (a row holding a pending GUID, a row whose Etherscan listing is already verified but is still waiting for an exact Sourcify creation match, an exhausted row) accumulates every transient explorer blip; after seven, each further single refusal parks the row for a full hour and, because line 32 returns before the Sourcify and Etherscan reads, both providers are skipped for that hour. A row that collected seven listing refusals during a key outage and then recovers has its first POST refusal ('Unable to locate ContractCode' is normal for a freshly deployed address) scheduled one hour out instead of one minute. docs/testnet.md describes retries that 'back off from one minute to one hour', which implies a fresh streak starts at one minute. Impact is delay of module state 'verified' (and so prepareRegistration, which requires it) by up to one hour per transient refusal; no cap slot or GUID is lost. Merged from audit_permissions 762ad851, audit_flow 9997ac5d, audit_math bd51fdea, audit_economics 30612c27. Fix: reset etherscanRefusals to 0 whenever an Etherscan reply is not a refusal (entry present at line 60; recognized pending/pass status at line 112), or derive the backoff from refusals since the last success.",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify exact on both matches; verifysourcecode -> {status:'1',result:'guid-1'}; checkverifystatus -> {status:'0',result:'Pending in queue'}; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]} unless a refuse flag is set, then {status:'0',result:'Max rate limit reached'}. Step once (GUID accepted, etherscanRefusals 0). Then for day 1..8: five healthy steps 30 s apart (etherscanError undefined each time), advance 86,400,000 ms, one refused step, record nextCheckAt - now, advance to nextCheckAt+1. Expected: each isolated refusal, preceded by a day of healthy polls, backs off 60,000 ms. Actual: 60000,120000,240000,480000,960000,1920000,3600000,3600000 with stored etherscanRefusals 1,2,3,4,5,6,7,7. Variant: seven consecutive listing refusals (each step at nextCheckAt+1) -> etherscanRefusals 7; advance 24 h; listing now healthy and verifysourcecode -> {status:'0',result:'Unable to locate ContractCode at 0x1111'}: etherscanSubmissionCount is correctly released to 0 but nextCheckAt - now === 3600000 (expected 60000). Reproduced with test/scratch/judge-probe.test.mjs (test A) at db3c4f2.",
+        "snippet": "        value.etherscanRefusals = Math.min((value.etherscanRefusals ?? 0) + 1, 7);\n        value.nextCheckAt = now() + Math.min(3600000, 60000 * 2 ** (value.etherscanRefusals - 1));",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted conservative retry latency for this release. Refusals accumulate until an accepted POST; healthy reads do not reset the counter. Later isolated refusals may therefore back off for one hour. Original jobs, caps and GUIDs remain intact. Documentation states this rather than promising a per-streak reset."
+      },
+      {
+        "severity": "info",
+        "title": "An exhausted row whose hourly listing read is refused is re-read after 1, 2, 4 ... minutes instead of hourly as documented",
+        "path": "adapters/source-verification.mjs",
+        "line": 63,
+        "description": "Line 131 gives an exhausted row (etherscanRetryExhausted true, etherscanState 'operator_action_required') an hourly cadence, and docs/testnet.md in this diff states that exhausted rows are checked at most hourly. The refused-listing branch at lines 60-65 runs first and returns early with its own schedule computed from etherscanRefusals, which for a row without earlier refusals is 60 s. So when the hourly getsourcecode read of an exhausted row is rate-limited or key-refused, the row is read again after 1, 2, 4, 8, 16 and 32 minutes (each read costing a Sourcify GET and an Etherscan call against an already refusing key) before settling back to hourly. No cap slot is consumed, no POST is made and no state is corrupted; the effect is extra traffic and a documented cadence that is not kept. Merged from audit_flow 8c7593d3, audit_math fddd448b, audit_economics d7bd7fa8. Fix: in the `!entry` branch use Math.max(backoff, 3600000) when value.etherscanRetryExhausted is already true (and arguably when a GUID is in an unrecognized state).",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify exact on both matches; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]}; verifysourcecode -> {status:'1',result:'guid-N'}; checkverifystatus -> {status:'0',result:'Fail - Unable to verify'}. Three steps 90 s apart reach etherscanState 'operator_action_required', etherscanRetryExhausted true, nextCheckAt now+3600000. Advance to nextCheckAt+1, switch getsourcecode to {status:'0',result:'Max rate limit reached'}, step once: result.etherscanRetryExhausted === true and result.nextCheckAt - now === 60000 (expected 3600000). Stepping every 30 s for the next 10 minutes issues 3 further getsourcecode requests (at +1, +3 and +7 minutes). Reproduced with test/scratch/judge-probe.test.mjs (test D) at db3c4f2.",
+        "snippet": "        value.nextCheckAt = now() + Math.min(3600000, 60000 * 2 ** (value.etherscanRefusals - 1));",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted bounded read-traffic exception for this release. A refused listing can change an exhausted row from hourly reads to the one-minute-to-one-hour backoff. It creates no new POST, slot, payment or transaction. The former unconditional at-most-hourly documentation is corrected."
+      }
+    ],
+    "coreReview": {
+      "caseId": "sha256:7ef2a4f1c8c0d730f54049223b6b6d0ab47dbc192e495595386003b04ae22dbd",
+      "providerJobId": "93f20ace-67f2-489e-affa-f10b94e1f359",
+      "reviewArtifactHash": "sha256:1070004295d421d61d37039a5bc59b06185ad35b025ec3b435af2de0f1e9aa0b",
+      "contractCommit": "af8cf6370d5b3893fa5b38df251d4b27b5db5f8d",
+      "buildHash": "sha256:ff51e0cbe2db258277f6e98fbf34403c2aed6fe65ef7469d1115e196cd874acb"
+    },
+    "reusedEvidence": [
+      "consolidated0125-final-assessment.json",
+      "consolidated0128-final-assessment.json",
+      "verification0129-checks.log",
+      "runtime0129-source-readback.json",
+      "recovery0125-source-gate.txt",
+      "recovery0125-chain1-test.txt"
+    ],
+    "limitations": [
+      "Explicit historical RPC support is an operator prerequisite, sampled before deployment; no automatic failover or permanent provider guarantee.",
+      "Single-attempt bounded dispatch and finite expiring financial allocations remain.",
+      "No customer custody, public wallets, token launch or public inference.",
+      "Operator references are not independent customer adoption.",
+      "Accepted bounded operational delay for this release. A rate-limit response during GUID polling can postpone all source checks for one hour. It retains the original GUID and cannot approve code or send a transaction. No completion-time SLA is claimed; documentation now states this case explicitly.",
+      "Accepted pending-diagnostic inconsistency for this release. Only the aggregate verification.state gates chain/wallet/vault completion, confirmed in all immediate callers. A refused listing can leave stale per-provider labels or omit links while aggregate state remains pending. Consumers must use aggregate state and require exact evidence for completion; no false aggregate verification or signing path is introduced.",
+      "Accepted conservative retry latency for this release. Refusals accumulate until an accepted POST; healthy reads do not reset the counter. Later isolated refusals may therefore back off for one hour. Original jobs, caps and GUIDs remain intact. Documentation states this rather than promising a per-streak reset.",
+      "Accepted bounded read-traffic exception for this release. A refused listing can change an exhausted row from hourly reads to the one-minute-to-one-hour backoff. It creates no new POST, slot, payment or transaction. The former unconditional at-most-hourly documentation is corrected."
+    ],
+    "operatorAssessment": true,
+    "financialAuthority": "Separate retained owner grants; this technical assessment creates no spending authority.",
+    "scope": "Finite sponsored public review, noncustodial claus-readonly-v1 execution and bounded Sepolia Inbox delivery. Activation still requires exact deployed sources, current RPC and recovery, existing sponsor/gas grants and live reference.",
+    "acceptanceBasis": "All four independently reproduced findings are low/informational and explicitly nonblocking. Exact-code aggregate verification gates remain fail-closed; retained operational delays and diagnostic limitations are disclosed. No runtime source change or duplicate paid review.",
+    "chainId": 11155111
+  },
+  "mainnetScope": {
+    "assessedAt": "2026-10-12T20:46:43.306344+00:00",
+    "status": "accepted-for-mainnet-readonly",
+    "sourceCommit": "db3c4f22f67c4a6baab8c14657afb4c95a1f3d98",
+    "jobId": "d135fe68-67bc-4576-99c0-b488ce28334d",
+    "reportHash": "sha256:4f2736a7347f13cc4f12a99808068939f25ef7e0d70661db743e9111a73d0d34",
+    "reportBytesSha256": "d8546848bfa0b78e06aed09fe343118ed960cbe61147976ce97e5a24568ed070",
+    "acceptedJudgeSubmission": "42e63b44614c3abb366849927e267c7f1d6d9501255975c9483c69c700f2fdcd",
+    "severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 3,
+      "info": 1
+    },
+    "findings": [
+      {
+        "severity": "low",
+        "title": "A known rate-limit reply on checkverifystatus freezes the whole row for one hour, unlike the 60 s exponential backoff the same message gets on listing and submission",
+        "path": "adapters/source-verification.mjs",
+        "line": 126,
+        "description": "The diff classifies 'invalid api key', 'rate limit', 'daily limit' and 'invalid action' as transient explorer refusals on the verifysourcecode path (line 99) and schedules them on the etherscanRefusals backoff that starts at 60 s. The identical text returned by checkverifystatus does not match the pending regex (line 112) or the terminal regex (line 117) and falls into the new else branch, which sets nextCheckAt one hour ahead. Because the early return at line 32 gates the entire step, that hour also suppresses the Sourcify match read and the Etherscan listing read, so a single rate-limit reply on the GUID poll (issued in the same tick as the listing read and the POST, on a key shared by the chain-worker and both collaboration-worker verifiers) delays completion of the module-deploy / project-register job by up to an hour. At 12da8a6 such a row was re-polled on the next 30 s tick. docs/testnet.md reserves the hourly cadence for 'unrecognized GUID statuses'; a rate-limit message is one the same file explicitly recognizes. Merged from audit_permissions 44c8432a, audit_flow 33a381e6, audit_economics d6a868a2. Fix: apply the line 99 refusal regex to status.result before the else branch and schedule those replies with the etherscanRefusals exponential backoff; keep the fixed hourly interval for genuinely unrecognized statuses such as 'Unknown UID'.",
+        "reproduction": "In-memory store (openStore(':memory:')), now=100000, stub fetcher: Sourcify POST -> {verificationId:'source'}, Sourcify GET -> {runtimeMatch:'exact_match',creationMatch:'exact_match'}; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]}; verifysourcecode -> {status:'1',result:'guid-1'}; checkverifystatus -> {status:'0',result:'Max rate limit reached'}. step(input) once: result.etherscanGuid === 'guid-1' and result.nextCheckAt - now === 3600000. Then switch checkverifystatus to 'Pass - Verified' and getsourcecode to SourceCode '{}' and call step every 30 s for 59.5 minutes: zero Sourcify, listing, POST or status requests are made and state stays 'pending'; only the step at now+3600000 returns 'verified'. Control: same stub but verifysourcecode -> {status:'0',result:'Max rate limit reached'}: result.nextCheckAt - now === 60000. Expected: the recognized rate-limit message on the status poll schedules the next poll on the same 60 s exponential backoff and does not block the Sourcify/listing reads. Actual: fixed 3,600,000 ms hold on the entire row. Reproduced with test/scratch/judge-probe.test.mjs (test C) at db3c4f2.",
+        "snippet": "          } else value.nextCheckAt = now() + 3600000;",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted bounded operational delay for this release. A rate-limit response during GUID polling can postpone all source checks for one hour. It retains the original GUID and cannot approve code or send a transaction. No completion-time SLA is claimed; documentation now states this case explicitly."
+      },
+      {
+        "severity": "low",
+        "title": "A refused source listing overwrites etherscanVerified/etherscanMatch before the refusal check and returns early, persisting etherscanVerified=false and etherscanMatch=null beside a stale etherscanStat",
+        "path": "adapters/source-verification.mjs",
+        "line": 58,
+        "description": "Lines 58-59 derive etherscanVerified and etherscanMatch from `entry` before line 60 decides whether the reply was a listing at all. When getsourcecode is refused (status '0', e.g. 'Max rate limit reached' or 'Invalid API Key') `entry` is null, so a previously observed verified listing is overwritten with etherscanVerified=false and etherscanMatch=null, and the new early-return branch at lines 60-65 saves and returns without running the derived-field block at lines 129-134. Before this diff the same overwrite happened but the step always continued to lines 129-134, so etherscanState was recomputed together with the listing fields and the row stayed internally consistent. After this diff the persisted row, the value returned to chain-executor / vault-executor / wallet-executor (stored as `verification: proof` on chain-modules, chain-registrations, project-vaults, wallet-actions) and every early return at line 32 during the backoff window (60 s up to one hour) carry etherscanState:'verified', etherscanVerified:false, etherscanMatch:null and an etherscanError at the same time, and a previously recorded 'exact' match is erased by a reply that contained no listing. A brand-new row whose first listing is refused is likewise persisted and returned with no etherscanState, etherscanRetryExhausted, explorerUrl or sourcifyUrl, fields the pre-change code always populated. The same stale-derived-field pattern exists on the line 71 save before the POST (after a third transport-failed POST the row carries etherscanSubmissionCount 3 with the previous step's etherscanRetryExhausted false / etherscanState 'pending' for 60 s). Merged from audit_permissions 10bc9919, audit_math 0cf11592, audit_economics 76e54f14. Fix: move lines 58-59 below the `if (!entry)` block so a refused read does not rewrite listing facts, and recompute etherscanState and the url fields before every save/return (for example by extracting the lines 129-133 tail into a helper used by all exits).",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify POST -> {verificationId:'source'}, Sourcify GET -> {runtimeMatch:'exact_match',creationMatch:'match'} (not exact, so state stays 'pending'); getsourcecode -> {status:'1',result:[{SourceCode:'{}',ContractName:'Example',SimilarMatch:''}]} on the first step and {status:'0',result:'Max rate limit reached'} afterwards. Step 1: result has etherscanState 'verified', etherscanVerified true, etherscanMatch 'exact', state 'pending'. Step 2 at now+30000: expected either the listing fields unchanged (no listing was received) or etherscanState recomputed to 'pending' with them. Actual, both in the returned value and in store.read('chain-verifications', id).value: {etherscanState:'verified', etherscanVerified:false, etherscanMatch:null, etherscanError:'Max rate limit reached', nextCheckAt:now+60000}; a step at now+60000 returns the same contradictory object from line 32. First-contact variant: new row, getsourcecode -> {status:'0',result:'Invalid API Key'}: persisted keys are address,chainId,checkedAt,creationMatch,etherscanError,etherscanMatch,etherscanRefusals,etherscanSubmissionCount,etherscanVerified,id,inputHash,nextCheckAt,runtimeMatch,sourcifyAlreadyVerified,sourcifyId,state with no etherscanState, explorerUrl, sourcifyUrl or etherscanRetryExhausted. Reproduced with test/scratch/judge-probe.test.mjs (tests B and B2) at db3c4f2.",
+        "snippet": "      value.etherscanVerified = !!entry?.SourceCode && entry.ContractName === artifact.contract;\n      value.etherscanMatch = value.etherscanVerified ? entry.SimilarMatch ? 'similar' : 'exact' : null;\n      if (!entry) {",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted pending-diagnostic inconsistency for this release. Only the aggregate verification.state gates chain/wallet/vault completion, confirmed in all immediate callers. A refused listing can leave stale per-provider labels or omit links while aggregate state remains pending. Consumers must use aggregate state and require exact evidence for completion; no false aggregate verification or signing path is introduced."
+      },
+      {
+        "severity": "low",
+        "title": "etherscanRefusals is only reset by an accepted POST, so isolated refusals over a row's lifetime ratchet the backoff to the one-hour cap instead of restarting at one minute",
+        "path": "adapters/source-verification.mjs",
+        "line": 62,
+        "description": "The new etherscanRefusals counter drives the backoff min(1h, 60s * 2^(refusals-1)) on both the getsourcecode refusal path (lines 62-63) and the POST refusal path (lines 101-102). The only reset is line 93, when a verifysourcecode POST is accepted. A successful listing (entry present at line 60), a successful or pending status poll (line 112) and the final save never reset it, so the counter counts refusals over the row's whole lifetime rather than the current streak. Any row that will not POST again (a row holding a pending GUID, a row whose Etherscan listing is already verified but is still waiting for an exact Sourcify creation match, an exhausted row) accumulates every transient explorer blip; after seven, each further single refusal parks the row for a full hour and, because line 32 returns before the Sourcify and Etherscan reads, both providers are skipped for that hour. A row that collected seven listing refusals during a key outage and then recovers has its first POST refusal ('Unable to locate ContractCode' is normal for a freshly deployed address) scheduled one hour out instead of one minute. docs/testnet.md describes retries that 'back off from one minute to one hour', which implies a fresh streak starts at one minute. Impact is delay of module state 'verified' (and so prepareRegistration, which requires it) by up to one hour per transient refusal; no cap slot or GUID is lost. Merged from audit_permissions 762ad851, audit_flow 9997ac5d, audit_math bd51fdea, audit_economics 30612c27. Fix: reset etherscanRefusals to 0 whenever an Etherscan reply is not a refusal (entry present at line 60; recognized pending/pass status at line 112), or derive the backoff from refusals since the last success.",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify exact on both matches; verifysourcecode -> {status:'1',result:'guid-1'}; checkverifystatus -> {status:'0',result:'Pending in queue'}; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]} unless a refuse flag is set, then {status:'0',result:'Max rate limit reached'}. Step once (GUID accepted, etherscanRefusals 0). Then for day 1..8: five healthy steps 30 s apart (etherscanError undefined each time), advance 86,400,000 ms, one refused step, record nextCheckAt - now, advance to nextCheckAt+1. Expected: each isolated refusal, preceded by a day of healthy polls, backs off 60,000 ms. Actual: 60000,120000,240000,480000,960000,1920000,3600000,3600000 with stored etherscanRefusals 1,2,3,4,5,6,7,7. Variant: seven consecutive listing refusals (each step at nextCheckAt+1) -> etherscanRefusals 7; advance 24 h; listing now healthy and verifysourcecode -> {status:'0',result:'Unable to locate ContractCode at 0x1111'}: etherscanSubmissionCount is correctly released to 0 but nextCheckAt - now === 3600000 (expected 60000). Reproduced with test/scratch/judge-probe.test.mjs (test A) at db3c4f2.",
+        "snippet": "        value.etherscanRefusals = Math.min((value.etherscanRefusals ?? 0) + 1, 7);\n        value.nextCheckAt = now() + Math.min(3600000, 60000 * 2 ** (value.etherscanRefusals - 1));",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted conservative retry latency for this release. Refusals accumulate until an accepted POST; healthy reads do not reset the counter. Later isolated refusals may therefore back off for one hour. Original jobs, caps and GUIDs remain intact. Documentation states this rather than promising a per-streak reset."
+      },
+      {
+        "severity": "info",
+        "title": "An exhausted row whose hourly listing read is refused is re-read after 1, 2, 4 ... minutes instead of hourly as documented",
+        "path": "adapters/source-verification.mjs",
+        "line": 63,
+        "description": "Line 131 gives an exhausted row (etherscanRetryExhausted true, etherscanState 'operator_action_required') an hourly cadence, and docs/testnet.md in this diff states that exhausted rows are checked at most hourly. The refused-listing branch at lines 60-65 runs first and returns early with its own schedule computed from etherscanRefusals, which for a row without earlier refusals is 60 s. So when the hourly getsourcecode read of an exhausted row is rate-limited or key-refused, the row is read again after 1, 2, 4, 8, 16 and 32 minutes (each read costing a Sourcify GET and an Etherscan call against an already refusing key) before settling back to hourly. No cap slot is consumed, no POST is made and no state is corrupted; the effect is extra traffic and a documented cadence that is not kept. Merged from audit_flow 8c7593d3, audit_math fddd448b, audit_economics d7bd7fa8. Fix: in the `!entry` branch use Math.max(backoff, 3600000) when value.etherscanRetryExhausted is already true (and arguably when a GUID is in an unrecognized state).",
+        "reproduction": "In-memory store, now=100000, stub fetcher: Sourcify exact on both matches; getsourcecode -> {status:'1',result:[{SourceCode:'',ContractName:'Example'}]}; verifysourcecode -> {status:'1',result:'guid-N'}; checkverifystatus -> {status:'0',result:'Fail - Unable to verify'}. Three steps 90 s apart reach etherscanState 'operator_action_required', etherscanRetryExhausted true, nextCheckAt now+3600000. Advance to nextCheckAt+1, switch getsourcecode to {status:'0',result:'Max rate limit reached'}, step once: result.etherscanRetryExhausted === true and result.nextCheckAt - now === 60000 (expected 3600000). Stepping every 30 s for the next 10 minutes issues 3 further getsourcecode requests (at +1, +3 and +7 minutes). Reproduced with test/scratch/judge-probe.test.mjs (test D) at db3c4f2.",
+        "snippet": "        value.nextCheckAt = now() + Math.min(3600000, 60000 * 2 ** (value.etherscanRefusals - 1));",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted bounded read-traffic exception for this release. A refused listing can change an exhausted row from hourly reads to the one-minute-to-one-hour backoff. It creates no new POST, slot, payment or transaction. The former unconditional at-most-hourly documentation is corrected."
+      }
+    ],
+    "coreReview": {
+      "caseId": "sha256:7ef2a4f1c8c0d730f54049223b6b6d0ab47dbc192e495595386003b04ae22dbd",
+      "providerJobId": "93f20ace-67f2-489e-affa-f10b94e1f359",
+      "reviewArtifactHash": "sha256:1070004295d421d61d37039a5bc59b06185ad35b025ec3b435af2de0f1e9aa0b",
+      "contractCommit": "af8cf6370d5b3893fa5b38df251d4b27b5db5f8d",
+      "buildHash": "sha256:ff51e0cbe2db258277f6e98fbf34403c2aed6fe65ef7469d1115e196cd874acb"
+    },
+    "reusedEvidence": [
+      "consolidated0125-final-assessment.json",
+      "consolidated0128-final-assessment.json",
+      "verification0129-checks.log",
+      "runtime0129-source-readback.json",
+      "recovery0125-source-gate.txt",
+      "recovery0125-chain1-test.txt"
+    ],
+    "limitations": [
+      "Explicit historical RPC support is an operator prerequisite, sampled before deployment; no automatic failover or permanent provider guarantee.",
+      "Single-attempt bounded dispatch and finite expiring financial allocations remain.",
+      "No customer custody, public wallets, token launch or public inference.",
+      "Operator references are not independent customer adoption.",
+      "Accepted bounded operational delay for this release. A rate-limit response during GUID polling can postpone all source checks for one hour. It retains the original GUID and cannot approve code or send a transaction. No completion-time SLA is claimed; documentation now states this case explicitly.",
+      "Accepted pending-diagnostic inconsistency for this release. Only the aggregate verification.state gates chain/wallet/vault completion, confirmed in all immediate callers. A refused listing can leave stale per-provider labels or omit links while aggregate state remains pending. Consumers must use aggregate state and require exact evidence for completion; no false aggregate verification or signing path is introduced.",
+      "Accepted conservative retry latency for this release. Refusals accumulate until an accepted POST; healthy reads do not reset the counter. Later isolated refusals may therefore back off for one hour. Original jobs, caps and GUIDs remain intact. Documentation states this rather than promising a per-streak reset.",
+      "Accepted bounded read-traffic exception for this release. A refused listing can change an exhausted row from hourly reads to the one-minute-to-one-hour backoff. It creates no new POST, slot, payment or transaction. The former unconditional at-most-hourly documentation is corrected."
+    ],
+    "operatorAssessment": true,
+    "financialAuthority": "Separate retained owner grants; this technical assessment creates no spending authority.",
+    "scope": "Equivalent noncustodial claus-readonly-v1 profile on Ethereum. No Mainnet Inbox. Activation still requires completed Sepolia reference, exact owner-authorized plan, finite funding, finalized verified deployment and exact runtime roles.",
+    "acceptanceBasis": "All four independently reproduced findings are low/informational and explicitly nonblocking. Exact-code aggregate verification gates remain fail-closed; retained operational delays and diagnostic limitations are disclosed. No runtime source change or duplicate paid review.",
+    "chainId": 1,
+    "contractCommit": "af8cf6370d5b3893fa5b38df251d4b27b5db5f8d",
+    "buildHash": "sha256:ff51e0cbe2db258277f6e98fbf34403c2aed6fe65ef7469d1115e196cd874acb"
+  },
+  "referenceReview": {
+    "at": "2026-10-12T19:32:52.266720+00:00",
+    "providerJobId": "7d21225e-0c5f-4927-b066-f4a1c0a19d35",
+    "sourceCommit": "0acc594a430b6aca1838337389723726000538ea",
+    "acceptedJudgeSubmission": "91a1fd506b991c9cfe59d89aa55275ac2e2e47c5d44ca302f0707b57efdade3a",
+    "severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 4,
+      "info": 10
+    },
+    "module": "src/ClausContentDigest.sol",
+    "moduleFindings": [],
+    "findings": [
+      {
+        "severity": "low",
+        "title": "Vault POLICY_GAS cannot evaluate an admission project whose configuration is 3,520 bytes or longer, so every deposit is denied even when the policy admits it",
+        "path": "src/ClausNativeVault.sol",
+        "line": 15,
+        "description": "ClausNativeVault._admitted forwards a fixed 250,000 gas to the admission project (ClausNativeVault.sol:70). ClausReadonlyProject.evaluate first copies its stored configuration into memory to build the module calldata (ClausReadonlyProject.sol:39), one cold SLOAD (2,100 gas) per 32-byte word, and then forwards a hard-coded 200,000 gas to the module (ClausReadonlyProject.sol:45). The kernel accepts configurations up to 8,192 bytes (ClausReadonlyProject.sol:67) and the executor accepts the same bound at registration and execution (ClausApprovalExecutor.sol:130, :158). From 110 words (3,520 bytes) the configuration read alone exhausts the vault's stipend, the staticcall runs out of gas, success is false and deposit() reverts DepositDenied. The shipped ClausVaultAdmission requires a 64-byte configuration, so the current deployment is unaffected; the defect is the unenforced gap between the configuration bound the approval path accepts and what the immutable vault can fund. A Claus-approved admission change to a module with a longer configuration (or one that itself needs more than roughly 200k gas) closes new deposits for the whole vault until a further approved upgrade. Withdrawals are unaffected (fail-closed), so no principal is at risk. Merged from two specialist reports (economics and math); the math report's threshold is the exact one. Fix preserving the design: raise POLICY_GAS so the kernel can read its maximum 8,192-byte configuration and still forward 200,000 gas to the module (about 850,000 covers it; verified with a copy of the vault using 850,000), or document and enforce in the admission approval policy that vault admission projects may not carry configurations above about 3 KB.",
+        "reproduction": "State: OpenAdmission module whose evaluate returns abi.encode(true, type(uint256).max); ClausReadonlyProject policy = new ClausReadonlyProject(id, module, new bytes(3520)); ClausNativeVault vault = new ClausNativeVault(address(policy)). Input: policy.evaluate(abi.encode(alice, 1 ether, 1 ether)) called directly returns (true, max). alice calls vault.deposit{value: 1 ether}(). Expected: deposit admitted, principal[alice] == 1 ether. Actual: revert DepositDenied(). Verified boundary: configurations of 64 and 3,488 bytes admit; 3,520, 4,096 and 8,192 bytes deny. A copy of the vault with POLICY_GAS = 850_000 admits an 8,192-byte configuration. Run forge test --match-path test/scratch/<proof file> on the attached proof: both tests fail with DepositDenied on the current code.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "low",
+        "title": "Session authorizations carry no nonce and cannot be cancelled individually; whoever submits first picks which same-generation owner signature wins",
+        "path": "src/ClausProjectWallet.sol",
+        "line": 90,
+        "description": "authorizeSession is permissionless to submit and the only replay guard on an owner-signed SessionAuthorization is generation == stored generation + 1. There is no per-authorization nonce and no owner function that invalidates one specific signed-but-unsubmitted authorization; the only remedy is revokeSession, which permanently retires the session ID (ClausProjectWallet.sol:104). If the owner has signed more than one authorization for the same ID at the same generation (a first draft with a larger budget superseded by a smaller one), whoever holds the discarded signature can submit it first, up to its deadline. The intended authorization then fails InvalidSession and the session runs under the discarded limits until the owner notices and revokes. Impact is bounded by what the owner signed, so this is low. The executor offers cancelRegistration for the analogous case; the wallet has no equivalent. Minimal fix that preserves the relayer design: add a nonce to SessionAuthorization, mark it consumed on submission, and add an owner-only cancelSessionAuthorization(nonce). Alternatively require msg.sender == owner for authorizeSession.",
+        "reproduction": "State: wallet with owner O holding 10 ether, session ID S unused. O signs A1 = SessionAuthorization(S, signer A, asset 0, recipient 0xAAAA, perPayment 10e18, total 10e18, validAfter now, validUntil now+1d, generation 1, deadline now+1d) and then A2 with signer B, recipient 0xBBBB, perPayment 1e18, total 1e18, generation 1, intending A2 to replace A1. Input: 0xDEAD calls authorizeSession(A1, sigA1): succeeds. authorizeSession(A2, sigA2) reverts InvalidSession. A submits Payment(S, 1, 0, 0xAAAA, 10e18, quoteHash, nonce 1, deadline now+1h): pay succeeds and 0xAAAA receives 10 ether. Expected: O can invalidate A1 before submission or A2 supersedes it. Actual: first submission wins; O's only remedy is revokeSession(S), which also kills the intended session. Verified in test/scratch/Leads.t.sol testDiscardedSameGenerationAuthorizationWins.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "low",
+        "title": "Session renewal resets the spent budget to zero and can be applied by any holder of the owner-signed renewal",
+        "path": "src/ClausProjectWallet.sol",
+        "line": 94,
+        "description": "authorizeSession writes spent = 0 for every generation and is callable by any address. Payment nonces and quote hashes are lifetime-scoped per session ID (README), but the total limit is per generation. If the owner pre-signs a renewal (generation N+1) and hands it to the provider, the provider can exhaust generation N's total, submit the renewal itself and immediately draw generation N+1's full total; the owner's exposure is the sum of every total it has signed and it has no control over when the switch happens. There is no way to express 'extend validity with the remaining budget'. Not a loss beyond signed amounts, but the asymmetry between lifetime nonces and per-generation totals is undocumented and the README's per-session total limit reads as a lifetime cap. Fix within the design: document that totals are per generation, and/or let only the owner submit renewals (msg.sender == owner), or carry spent over on renewal.",
+        "reproduction": "State: wallet funded with 10 ETH; owner signs SessionAuthorization gen 1 (perPayment 1 ETH, total 2 ETH, valid 1 day) and gen 2 with identical limits. Input: provider submits gen 1; pays nonces 1 and 2 (2 ETH); a third payment reverts InvalidPayment. Then address 0xDEAD submits the gen-2 authorization. Expected (lifetime cap reading): spent stays 2 ETH, further payments revert. Actual: sessions[id].spent == 0, generation == 2, nonces 3 and 4 pay 2 more ETH; recipient balance 4 ETH. Verified in test/scratch/Leads.t.sol testRenewalResetsSpentImmediately.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "low",
+        "title": "Recovery cancellation re-validates approvals pre-signed by the same Claus key for a predictable future generation",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 226,
+        "description": "cancelSignerRecovery() advances clausGeneration but keeps clausSigner unchanged. The generation sequence is fully predictable (schedule = +1, cancel = +1), so any Approval the current Claus key signed in advance with clausGeneration = current + 2 becomes valid the moment the recovery owner schedules and then cancels a recovery. AUDIT_RESPONSE states that cancellation invalidates signatures produced during the pause, and README/AUDIT_RESPONSE disclose that cancellation retains trust in the same key; this records the concrete bypass of the first claim as a verified property so the operational rule (never cancel after a suspected compromise, only rotate) is explicit. Mitigation preserving the design: have cancelSignerRecovery() advance to a generation that is not predictable (for example mix block data or a random salt into the generation), or require a fresh signer on cancellation.",
+        "reproduction": "State: executor with clausGeneration = 1, project registered and enabled with minDelaySeconds 0. Input 1: Claus key signs Approval a with a.clausGeneration = 3 (other fields valid). queue(a, sig) reverts InvalidApproval. Input 2: recoveryOwner calls scheduleSignerRecovery(0xBEEF) (generation 2) then cancelSignerRecovery() (generation 3). Input 3: anyone calls queue(a, sig) then execute(a, \"second\", sig). Expected (if cancellation invalidated pre-signed material): InvalidApproval. Actual: both succeed and target.implementation() == second. Verified in test/scratch/Leads.t.sol testPreSignedFutureGenerationExecutesAfterCancel.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "cancelSignerRecovery with no pending recovery invalidates every queued approval network-wide",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 224,
+        "description": "cancelSignerRecovery() does not require pendingSigner != address(0); it always increments clausGeneration. The recovery owner can therefore, at any time and without scheduling anything, invalidate all outstanding Claus-signed approvals for every project on the executor, with only a SignerRecoveryCancelled event. AUDIT_RESPONSE discloses this (the recovery owner can invalidate generations without a pending recovery). Recorded as a verified trust assumption: the recovery owner holds a global, instant, repeatable upgrade veto. A minimal change preserving the design is to revert when nothing is pending, so the veto must go through scheduleSignerRecovery and be visible as a recovery event.",
+        "reproduction": "State: approval a (clausGeneration 1) queued and ready; pendingSigner == address(0). Input: recoveryOwner calls cancelSignerRecovery(). Expected (if cancellation only applied to a pending recovery): revert or no state change. Actual: clausGeneration becomes 2 and execute(a, ...) reverts InvalidApproval. Verified in test/scratch/Leads.t.sol testCancelWithoutPendingInvalidatesQueued.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "finishSignerRecovery is permissionless, so a cancel at or after the deadline can be front-run and the rotation is irreversible",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 232,
+        "description": "Any address may call finishSignerRecovery once recoveryReadyAt has passed. If the recovery owner decides to cancel at or after the deadline, a third party (including the pending signer) can finalize first; cancelSignerRecovery then runs against an empty pending slot and the new signer stays in control. AUDIT_RESPONSE documents this as a retained timelock property, so it is recorded as a verified trust assumption: the recovery owner must cancel strictly before recoveryReadyAt. If a reaction window is wanted, restrict finishSignerRecovery to recoveryOwner or pendingSigner, or add a short grace period after readiness during which only recoveryOwner may finalize or cancel.",
+        "reproduction": "State: executor with recoveryDelay = 1 day; recoveryOwner calls scheduleSignerRecovery(0xBEEF). Warp 1 day. Input: 0xDEAD calls finishSignerRecovery(): succeeds, clausSigner == 0xBEEF. recoveryOwner then calls cancelSignerRecovery(): succeeds but clausSigner remains 0xBEEF. Expected by a recovery owner who intended to cancel: old signer stays. Actual: rotation finalized by an unprivileged caller. Verified in test/scratch/Leads.t.sol testFinishIsPermissionlessAndCancelAfterIsMoot.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "A renewal with a future validAfter can be submitted early and freezes the live generation",
+        "path": "src/ClausProjectWallet.sol",
+        "line": 89,
+        "description": "authorizeSession only requires validUntil to be in the future and within 30 days; validAfter may be far ahead. Submitting such a renewal replaces the live generation immediately, so the running session stops paying until the renewal's validAfter. Whoever holds the renewal signature (provider, relayer, anyone who saw it in the mempool) can therefore end the current generation early. No funds are at risk; it is a liveness asymmetry between the generation check (exact +1) and the time checks (no requirement that the renewal is already valid or that the previous generation has ended). Fix: require s.validAfter <= block.timestamp, or validAfter >= the previous generation's validUntil, at submission.",
+        "reproduction": "State: gen 1 live (validAfter = now, validUntil = now + 1d). Input: 0xDEAD submits owner-signed gen 2 with validAfter = now + 7d, validUntil = now + 14d, deadline = validUntil. Expected: renewal rejected or deferred until gen 1 ends. Actual: accepted; pay() with generation 1 reverts InvalidPayment (generation mismatch) and pay() with generation 2 reverts InvalidPayment (validAfter not reached). Verified in test/scratch/Leads.t.sol testEarlyRenewalFreezesLiveSession.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "Project owner transfer proposals never expire and suspend upgrades indefinitely",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 195,
+        "description": "pendingProjectOwners[id] has no deadline. A proposal made and forgotten can be accepted at any later time by the proposed address, which then wipes the mandate and takes ownership; for as long as it is pending, _validate rejects every approval, so a forgotten proposal is also an indefinite upgrade pause. README documents that stale proposals must be cancelled explicitly; the contract offers no time bound. Minimal fix preserving the design: store a proposal timestamp and reject acceptance after a bounded window.",
+        "reproduction": "State: owner calls proposeProjectOwner(id, 0xCAFE). Input: 5 years later 0xCAFE calls acceptProjectOwner(id). Expected (bounded proposal): OwnerOnly or an expiry revert. Actual: projects[id].owner == 0xCAFE, enabled == false, mandateHash == 0. Verified in test/scratch/Leads.t.sol testStaleProposalAcceptedYearsLater.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "revokeSession permanently retires session IDs that were never authorized, with no error",
+        "path": "src/ClausProjectWallet.sol",
+        "line": 104,
+        "description": "revokeSession does not check that sessions[sessionId].signer != address(0). Calling it with a mistyped or not-yet-submitted ID sets revokedSessions and generation 1, after which no authorization for that ID (any generation) can ever be submitted. Owner-only, so not exploitable by third parties, but an owner who revokes an ID it has signed but not yet distributed, or mistypes an ID, burns it irrevocably with no signal. Minimal fix: revert when the session was never authorized, or emit a distinct event.",
+        "reproduction": "State: fresh wallet, SESSION never authorized. Input: owner calls revokeSession(SESSION); then anyone submits a valid owner-signed authorization for SESSION with generation 1, and again with generation 2. Expected: at least one accepted or the revoke rejected. Actual: both revert InvalidSession. Verified in test/scratch/Leads.t.sol testRevokeUnknownIdBurnsIt.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "Signature verification switches to ERC-1271 as soon as a signing EOA carries EIP-7702 code: a delegate without isValidSignature breaks the key, a permissive one accepts any bytes",
+        "path": "src/ClausProjectWallet.sol",
+        "line": 93,
+        "description": "The vendored OpenZeppelin 5.6.0 SignatureChecker picks the ECDSA path only when signer.code.length == 0. An EIP-7702 delegation designator gives the EOA 23 bytes of code, after which authorizeSession (wallet owner), registerProject (project owner, ClausApprovalExecutor.sol:134) and queue/execute (clausSigner, lines 144 and 159) are decided by the delegate's isValidSignature instead of the key. Two failure states follow: a delegate without ERC-1271 makes every signature from that key fail (sessions can no longer be authorized; approvals can no longer be queued or executed until the delegation is cleared), while msg.sender-based powers (revokeSession, ownerCall) keep working; and a delegate whose isValidSignature returns the magic value unconditionally makes garbage signatures pass. README already states that signing EOAs must remain ordinary EOAs or use deliberately reviewed ERC-1271 verification, so this is a documented assumption; it is listed because the failing state is concrete and the pinned code has no on-chain guard for it. Merged from two specialist reports (permissions and flow). A minimal hardening that keeps ERC-1271 support for contract owners chosen at deployment is to snapshot owner.code.length == 0 at construction and use ECDSA.recover directly for such owners.",
+        "reproduction": "State: wallet with owner O = vm.addr(OWNER_KEY); O signs a valid SessionAuthorization. Input 1: vm.etch O with 0xef0100 || address(D) where D has no isValidSignature; anyone submits the authorization. Expected (EOA semantics): session authorized. Actual: InvalidSignature; revokeSession from O still succeeds. Input 2: etch O with 0xef0100 || address(P) where P.isValidSignature always returns 0x1626ba7e; call authorizeSession(s, hex\"00\"). Expected: a one-byte signature never authorizes a session. Actual: accepted, sessions[s.sessionId].signer set. Verified in test/scratch/Leads.t.sol testDelegatedOwner7702.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "Vault receive() routes through deposit(), so a 2300-gas push (transfer/send) to the vault always fails",
+        "path": "src/ClausNativeVault.sol",
+        "line": 44,
+        "description": "receive() calls deposit(), which performs storage reads, two storage writes and a 250,000-gas staticcall to the admission policy. A contract (multisig, payment splitter, escrow) that funds the vault with payable(vault).transfer(x) or send(x) supplies only 2,300 gas, so the deposit path always runs out of gas; transfer() reverts the sender and send() returns false. No value is lost and nothing is misattributed, but the plain-ETH entry point advertised by receive() is unusable from the two most common Solidity send primitives. Merged from two specialist reports (economics and flow). Either document that depositors must use call{value} or deposit(), or drop the receive() path so plain sends fail with a clear error instead of an out-of-gas.",
+        "reproduction": "State: vault = new ClausNativeVault(policy) with an admitting policy (ClausVaultAdmission behind a ClausReadonlyProject, configuration abi.encode(true, 100 ether)). Input: a helper contract executes payable(address(vault)).transfer(1 ether). Expected (by the sender): principal credited. Actual: the call reverts inside deposit(); send(1 ether) from the same contract returns false and vault.totalPrincipal() stays 0, while a full-gas call{value: 1 ether}(\"\") succeeds. Verified in test/scratch/Leads.t.sol testVaultTransferAndSendFail.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "ClausReadonlyProject.evaluate reverts an oversized input with OversizedConfiguration, misreporting which bound failed",
+        "path": "src/ClausReadonlyProject.sol",
+        "line": 37,
+        "description": "The input bound in evaluate() reuses the OversizedConfiguration error that _apply() uses for the stored configuration (ClausReadonlyProject.sol:67). A caller sending an input larger than 8,192 bytes is told the project's configuration is oversized, which is false: the configuration is fixed by the executor and bounded at install. Integrators keying on the error selector cannot distinguish a bad input from a bad project. Merged from three specialist reports (economics, permissions, math). Introduce a dedicated OversizedInput error for this check.",
+        "reproduction": "State: any ClausReadonlyProject (for example registered with a 5-byte configuration). Input: project.evaluate(new bytes(8193)). Expected: a revert that identifies the input as oversized. Actual: revert OversizedConfiguration() although the stored configuration is 5 bytes; evaluate(new bytes(8192)) proceeds to the module. Verified in test/scratch/Leads.t.sol testOversizedInputErrorName.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "registerProject does not reject the executor itself as implementation; the registration fails late inside CREATE with the project's InvalidModule",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 129,
+        "description": "registerProject validates the module only by code presence and code hash. A Registration with implementation == address(executor) and codeHash == executor.codehash passes every registerProject check and the owner-signature check, then reverts inside new ClausReadonlyProject(...) because _apply rejects module == executor (ClausReadonlyProject.sol:66). The call fails with ClausReadonlyProject.InvalidModule rather than InvalidRegistration, after paying for signature recovery and the start of contract creation. _validate already rejects implementation == address(this) for approvals (line 250); registration lacks the symmetric check. No state is corrupted and the nonce is not consumed, so the impact is a confusing error and wasted gas. Fix: add r.implementation == address(this) to the InvalidRegistration condition.",
+        "reproduction": "Input: Registration r with projectId = projectKey(owner, salt), implementation = address(executor), codeHash = address(executor).codehash, initCallHash = keccak256(\"\"), nonzero mandateHash/policyVersion, minDelaySeconds 0, nonce 7, expiresAt = now + 1 day, signed by owner; registerProject(r, \"\", sig). Expected: revert InvalidRegistration() before any creation work. Actual: revert ClausReadonlyProject.InvalidModule() from the constructor; registrationNonces[owner][7] remains false afterwards. Verified in test/scratch/Leads.t.sol testRegisterExecutorAsImplementationFailsLate.",
+        "citation": "resolved",
+        "blocking": false
+      },
+      {
+        "severity": "info",
+        "title": "Constructor accepts the same address for clausSigner and recoveryOwner, collapsing the recovery safeguard into one key",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 103,
+        "description": "The recovery design assumes an independent key that can pause and replace a compromised Claus signer. Nothing in the constructor enforces signer != recovery, so a deployment with one key for both roles passes validation and the recovery delay then protects nothing: whoever holds that key both signs approvals and controls rotation. AUDIT_RESPONSE states production deployment uses distinct addresses, so this is an unenforced deployment assumption rather than a live defect. Adding signer == recovery to the revert condition closes it at zero cost.",
+        "reproduction": "Input: new ClausApprovalExecutor(K, K, 1 days) with any non-zero K (0x1234 in the test). Expected: InvalidRecovery. Actual: deploys, and clausSigner() == recoveryOwner() == K. Verified in test/scratch/Leads.t.sol testSameSignerAndRecoveryAccepted.",
+        "citation": "resolved",
+        "blocking": false
+      }
+    ],
+    "scope": "ContentDigest readonly reference. Wallet/vault findings do not expand admission. Existing core recovery assumptions remain. No new contract mutation is authorized by this record.",
+    "decision": "Await actual Claus decision; this operator assessment does not approve a proposal."
+  },
+  "mainnetReferenceReview": {
+    "at": "2026-10-12T19:57:15.072363+00:00",
+    "providerJobId": "0f8fef62-1c4e-4bed-a6a3-80f5002209ad",
+    "sourceCommit": "0acc594a430b6aca1838337389723726000538ea",
+    "acceptedJudgeSubmission": "fa3d376b37b61f7c03154fb8c7fb3eaa66974327948d3395ede96ebb47a8bb8a",
+    "reportHash": "sha256:9b773320df6fa75a9ba9f0e3524f5a656f685232415522f683774d23eb042dc0",
+    "severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 2,
+      "info": 7
+    },
+    "module": "src/ClausContentDigest.sol",
+    "moduleFindings": [],
+    "findings": [
+      {
+        "severity": "low",
+        "title": "Anyone holding a pre-signed session renewal can replace a live generation early: payments stop until validAfter, or the spent budget resets",
+        "path": "src/ClausProjectWallet.sol",
+        "line": 90,
+        "description": "authorizeSession is permissionless (any address may relay the owner's signature) and its only ordering check on a renewal is s.generation == sessions[id].generation + 1. It never compares s.validAfter with block.timestamp and never requires the stored generation to be expired or exhausted, and line 94 overwrites the Session with spent = 0. The README describes pre-signed future renewals (generation N+1 of the same session ID) as a supported pattern, so the provider, the relayer or anyone who sees such a signature can submit it while generation N is live. Two consequences, both from the same missing check: (1) if the renewal's validAfter is in the future, sessions[id] is replaced immediately, generation-N payments revert InvalidPayment (p.generation != s.generation) and generation-N+1 payments revert InvalidPayment until validAfter, so the session is unpayable for the gap and the owner's intended lifetime of generation N is cut short without owner action; (2) if validAfter is already in the past, spent is reset to zero and the recipient can draw total(N) + total(N+1) inside period N instead of total(N+1) after period N. No funds beyond what the owner signed can move (asset, recipient, perPayment and total stay owner-bound), so severity is low; impact is denial of service of a live session and loss of the owner's intended sequencing. Verified unchanged: nonces and quote hashes stay scoped per session ID across generations, and revoked IDs cannot be renewed. Minimal fix preserving the design: only let a live, unexhausted generation be replaced by the owner, e.g. add `(msg.sender != owner && sessions[s.sessionId].signer != address(0) && block.timestamp < sessions[s.sessionId].validUntil)` to the revert condition; or reject submissions while block.timestamp < s.validAfter and require s.validAfter >= sessions[id].validUntil for generation > 1. Merged from audit_flow (early-submission DoS) and audit_economics (budget reset); both are the same missing guard.",
+        "reproduction": "State: wallet funded with 10 ETH at time T; owner authorized generation 1 of session S (signer K, recipient R, asset 0, perPayment 1 ETH, total 2 ETH, validAfter T, validUntil T+1d). Owner pre-signs generation 2 of S (validAfter T+1d, validUntil T+2d, deadline T+1d+1h). Input A: at time T, address 0xBAD calls authorizeSession(gen2, ownerSig). Expected: rejected (or only the owner may replace a live generation), so a generation-1 Payment{S, gen 1, 1 ETH, nonce 1, deadline T+1h} signed by K still succeeds. Actual: the call succeeds, sessions[S].generation becomes 2 with validAfter T+1d, and the generation-1 payment reverts InvalidPayment; a generation-2 payment also reverts InvalidPayment until T+1d. Input B (same mechanism, past validAfter): gen2 identical to gen1 except generation 2, validUntil/deadline T+2d; after two 1 ETH payments exhaust gen1 (R holds 2 ETH, spent == total), R calls authorizeSession(gen2, sig) at T. Expected: InvalidSession. Actual: success, spent resets to 0 and two further payments (nonces 3, 4) succeed, so R holds 4 ETH at T. Both specialist proofs fail on current code: Proof_1a600aa67f76 fails with InvalidPayment, Proof_50d24c7f6373 fails with 'next call did not revert as expected'. The attached test is the first one.",
+        "proof": "// SPDX-License-Identifier: MIT\npragma solidity 0.8.27;\n\nimport {Test} from \"forge-std/Test.sol\";\nimport {ClausProjectWallet} from \"src/ClausProjectWallet.sol\";\n\n/// A pre-signed renewal (generation 2) whose validAfter lies in the future can be\n/// submitted by any third party while generation 1 is still live. authorizeSession\n/// never checks s.validAfter against block.timestamp and never checks that the live\n/// generation has expired, so the submission replaces the live session immediately:\n/// generation-1 payments stop working and generation-2 payments cannot start until\n/// validAfter. Expected: the live generation keeps paying until its validUntil.\ncontract WalletEarlyRenewalTest is Test {\n    uint256 constant OWNER_KEY = 0xB0B;\n    uint256 constant SESSION_KEY = 0xA11CE;\n    bytes32 constant SESSION = keccak256(\"provider-payment-session\");\n    address constant RECIPIENT = address(0xBEEF);\n    ClausProjectWallet wallet;\n\n    function setUp() public {\n        vm.warp(1800000000);\n        wallet = new ClausProjectWallet(vm.addr(OWNER_KEY));\n        vm.deal(address(wallet), 10 ether);\n    }\n\n    function sig(uint256 key, bytes32 hash) internal pure returns (bytes memory) {\n        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, hash);\n        return abi.encodePacked(r, s, v);\n    }\n\n    function testThirdPartyCannotCutOffLiveGenerationWithPreSignedRenewal() public {\n        uint64 start = uint64(block.timestamp);\n        // Generation 1: live now, for one day.\n        ClausProjectWallet.SessionAuthorization memory gen1 = ClausProjectWallet.SessionAuthorization(\n            SESSION, vm.addr(SESSION_KEY), address(0), RECIPIENT, 1 ether, 2 ether, start, start + 1 days, 1, start + 1 hours\n        );\n        wallet.authorizeSession(gen1, sig(OWNER_KEY, wallet.sessionDigest(gen1)));\n\n        // Owner pre-signs generation 2 to take over once generation 1 ends (validAfter = gen1.validUntil).\n        ClausProjectWallet.SessionAuthorization memory gen2 = ClausProjectWallet.SessionAuthorization(\n            SESSION, vm.addr(SESSION_KEY), address(0), RECIPIENT, 1 ether, 2 ether,\n            start + 1 days, start + 2 days, 2, start + 1 days + 1 hours\n        );\n        bytes memory renewal = sig(OWNER_KEY, wallet.sessionDigest(gen2));\n\n        // A third party submits the renewal immediately, long before generation 1 expires.\n        // On fixed code this call is rejected; the outcome is ignored so the assertion below decides.\n        vm.prank(address(0xBAD));\n        (bool submitted,) = address(wallet).call(abi.encodeCall(wallet.authorizeSession, (gen2, renewal)));\n        submitted;\n\n        // Expected: generation 1 is still payable until start + 1 days.\n        // Actual on current code: the live session was replaced; pay() reverts InvalidPayment.\n        ClausProjectWallet.Payment memory p = ClausProjectWallet.Payment(\n            SESSION, 1, address(0), RECIPIENT, 1 ether, keccak256(\"quote-1\"), 1, start + 1 hours\n        );\n        wallet.pay(p, sig(SESSION_KEY, wallet.paymentDigest(p)));\n        assertEq(RECIPIENT.balance, 1 ether);\n    }\n}",
+        "snippet": "            || s.deadline < block.timestamp || s.deadline > s.validUntil || s.generation != sessions[s.sessionId].generation + 1) {",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Outside this readonly release: no public wallet/session renewal is enabled. Retain the finding for a separately reviewed wallet release."
+      },
+      {
+        "severity": "low",
+        "title": "POLICY_GAS of 250,000 cannot evaluate an admission project whose configuration exceeds about 3.3 KB, so an approved policy change can silently deny every deposit",
+        "path": "src/ClausNativeVault.sol",
+        "line": 15,
+        "description": "ClausNativeVault._admitted forwards a fixed 250,000 gas to the admission project. ClausReadonlyProject.evaluate first copies the whole stored `configuration` into memory (abi.encodeCall at src/ClausReadonlyProject.sol:39, one cold SLOAD of 2,100 gas per 32-byte slot) and only then forwards up to 200,000 gas to the module. ClausReadonlyProject permits configurations up to 8,192 bytes (src/ClausReadonlyProject.sol:67) and the README says a later admission change follows the project's Claus approval path, so an admission module with a larger configuration (allowlist, tiered ceilings) is inside the documented upgrade path. Once the configuration exceeds roughly 3,328 to 3,584 bytes the 250,000 budget is exhausted before or inside the inner staticcall, the outer staticcall returns success = false, and deposit() reverts DepositDenied for every caller and amount. The failure is invisible at approval time: the policy evaluates correctly when called directly, the executor accepts the upgrade, and only the vault's deposit path breaks. Withdrawals are unaffected (fail-closed), so no principal is at risk; the impact is a complete, unannounced denial of new deposits until another approved policy change shrinks the configuration. The shipped ClausVaultAdmission uses 64 bytes and is not affected today. Minimal fix: size POLICY_GAS for the largest configuration the project may hold (about 540k gas for 257 cold slots plus the 200k module budget; 1,000,000 admits an 8,192-byte configuration, verified), or document a hard upper bound on admission-policy configuration size and have the reviewer policy reject larger ones.",
+        "reproduction": "State: a ClausReadonlyProject whose module returns abi.encode(true, type(uint256).max) for any non-empty configuration, with stored configuration new bytes(4096); a ClausNativeVault constructed with that project. Input: any account calls vault.deposit{value: 1 ether}(). Expected: policy.evaluate(abi.encode(account, 1 ether, 1 ether)) returns abi.encode(true, max) when called directly (verified), so the deposit is admitted and principal[account] == 1 ether. Actual: deposit reverts DepositDenied() because the 250,000-gas staticcall runs out of gas while evaluate reads the 129-slot configuration. Measured on current code: configurations of 64, 3072 and 3328 bytes are admitted; 3584, 4096 and 8192 bytes are denied. With POLICY_GAS = 1,000,000 an 8,192-byte configuration is admitted. The attached test fails on current code with DepositDenied().",
+        "proof": "// SPDX-License-Identifier: MIT\npragma solidity 0.8.27;\nimport {Test} from \"forge-std/Test.sol\";\nimport {ClausReadonlyProject} from \"src/ClausReadonlyProject.sol\";\nimport {ClausNativeVault} from \"src/ClausNativeVault.sol\";\n\n/// Admission module with a larger configuration (for example an allowlist). It\n/// returns the canonical (bool,uint256) result the vault expects and admits everyone.\ncontract WideConfigAdmission {\n    function evaluate(bytes calldata configuration, bytes calldata input) external pure returns (bytes memory) {\n        if (configuration.length == 0 || input.length != 96) revert();\n        return abi.encode(true, type(uint256).max);\n    }\n}\n\ncontract VaultPolicyGasProofTest is Test {\n    receive() external payable {}\n\n    function testDepositAdmittedWhenPolicyConfigurationIsWithinProjectBounds() public {\n        WideConfigAdmission module = new WideConfigAdmission();\n        // 4096 bytes is within the 8192-byte configuration bound ClausReadonlyProject enforces.\n        ClausReadonlyProject policy = new ClausReadonlyProject(bytes32(\"wide\"), address(module), new bytes(4096));\n        // The policy answers correctly when called directly.\n        assertEq(policy.evaluate(abi.encode(address(this), uint256(1 ether), uint256(1 ether))),\n            abi.encode(true, type(uint256).max));\n        ClausNativeVault vault = new ClausNativeVault(address(policy));\n        // Expected: the policy admits, so the deposit succeeds.\n        // Actual on current code: POLICY_GAS (250_000) is exhausted reading the\n        // configuration from storage, the staticcall fails and deposit reverts DepositDenied.\n        vault.deposit{value: 1 ether}();\n        assertEq(vault.principal(address(this)), 1 ether);\n    }\n}",
+        "snippet": "    uint256 public constant POLICY_GAS = 250_000;",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Outside this readonly release: no public vault or deposits are enabled. The existing restricted vault uses a 64-byte configuration."
+      },
+      {
+        "severity": "info",
+        "title": "receive() forwards to deposit(), which needs about 270k gas, so transfer()/send() deposits always fail",
+        "path": "src/ClausNativeVault.sol",
+        "line": 44,
+        "description": "receive() calls deposit(), which performs the 250,000-gas policy STATICCALL plus two storage writes. A contract that pushes ETH with address.transfer or address.send (2,300 gas stipend), or a wallet that estimates a plain transfer at 21,000 gas, always fails. This is fail-closed: no ETH is lost and no principal is credited (verified). Integrators and multisigs that forward limited gas will see every plain-transfer deposit bounce with the misleading DepositDenied error. Fix: document the minimum gas for deposits, or make receive() revert with an explicit error so callers are directed to deposit() with sufficient gas. Merged from audit_economics and audit_math.",
+        "reproduction": "State: vault with ClausVaultAdmission configuration (true, 100 ether). A contract executes payable(vault).transfer(1 ether): expected a 1 ether deposit, actual revert. The same contract executes payable(vault).send(1 ether): returns false and the ETH stays with the sender. The same contract executes vault.call{value: 1 ether}('') with full gas: principal[sender] == 1 ether. Verified in test/scratch/JudgeChecks.t.sol::testTransferAndSendDepositsRevert.",
+        "snippet": "    receive() external payable { deposit(); }",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Outside this readonly release: no public vault deposits."
+      },
+      {
+        "severity": "info",
+        "title": "Zero-delay projects have no owner reaction window: one Claus signature queues and executes a module replacement in a single transaction (documented trust assumption)",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 146,
+        "description": "Recorded as a verified trust assumption, not a permission bypass: README Status and AUDIT_RESPONSE state the owner removed the one-hour floor on 12 October 2026. For a project registered with minDelaySeconds = 0, queue() sets readyAt[hash] = max(block.timestamp, notBefore) and execute() passes the readyAt check in the same block. Both are callable by anyone who holds a valid Claus signature, and the project owner does not co-sign individual approvals. Consequently, for every enabled zero-delay project, custody of the single Claus signing key (DEPLOYMENTS.json approvalSigner for both executors) is sufficient to install any module whose bytecode exists on chain, immediately; setAuthority, cancelApproval and proposeProjectOwner help only if they land before the attacker's queue+execute, which is a pure mempool race. For the ClausNativeVault composition the worst outcome is a policy that denies all deposits; for other consumers it means arbitrary read-only results until the owner notices. Projects wanting a reaction window must register with a nonzero delay (it can be raised via setPolicy but never lowered, verified at line 209). Also note the network API's advertised five-day cap is not enforced on chain; registrations up to 365 days are accepted. Verified properties: 365-day cap, inability to lower the delay, nonce consumption and readyAt deletion on execute, generation checks. Merged from audit_flow and audit_permissions.",
+        "reproduction": "State: executor deployed; project P registered with minDelaySeconds = 0, enabled, generations 1/1/1; Claus signs Approval A for P (nonce 1, notBefore = now, expiresAt = now + 7 days). Input: address 0xBAD calls queue(A, sig) then execute(A, config, sig) in the same block. Expected under a timelock design: NotReady until an owner reaction window elapses. Actual: readyAt[hash] == block.timestamp, execute succeeds, target.version() becomes 2 and target.implementation() is the new module. Verified in test/scratch/JudgeChecks.t.sol::testRecoveryOwnerCancelWithoutPendingKillsQueuedApprovalAndZeroDelaySameTx and by the shipped test testZeroDelayExecutesExactApprovalAtTheSameTimestampOnlyOnce.",
+        "snippet": "            uint256 earliest = block.timestamp + projects[a.projectId].minDelaySeconds;\n            uint256 ready = earliest > a.notBefore ? earliest : a.notBefore;\n            if (ready >= a.expiresAt) revert InvalidApproval();\n            readyAt[hash] = ready;",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Explicit owner-selected zero-delay trust boundary. Projects can opt for a nonzero minimum; the owner explicitly removed the mandatory floor."
+      },
+      {
+        "severity": "info",
+        "title": "Recovery owner can invalidate every queued approval at any time via cancelSignerRecovery with nothing pending, and recovery finalization is permissionless (documented trust assumption)",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 224,
+        "description": "Recorded as a verified privileged power (AUDIT_RESPONSE: 'The recovery owner can pause upgrades indefinitely or invalidate generations without a pending recovery'), with actor and preconditions made explicit. cancelSignerRecovery has no pendingSigner != 0 precondition, so the immutable recovery owner (line 79; a single address in both Sepolia deployments) can increment clausGeneration at any moment with no delay, which makes every signed-but-unexecuted approval for every project invalid (a.clausGeneration != clausGeneration at line 246), including approvals already queued and inside their execution window. scheduleSignerRecovery can be re-issued indefinitely to keep pendingSigner nonzero, which pauses all upgrades. finishSignerRecovery may be called by anyone once recoveryReadyAt passes, so cancellation after the deadline is a race, and a compromised recovery owner can rotate the signer to an attacker key after recoveryDelay (48 hours in DEPLOYMENTS.json). None of this reaches project owners' funds (the executor is non-custodial) or installed modules (evaluate keeps working); the impact is upgrade liveness and signer authority. The SignerRecoveryCancelled event carries no generation, so indexers must read state to learn the current one. Documented residual: cancellation retains trust in the same key, so approvals pre-signed for future generation numbers become usable when those generations are reached; only rotation to a different signer removes that. If the owner wants the lever narrowed, cancelSignerRecovery could require pendingSigner != address(0) and the event could include the new generation. Merged from audit_flow and audit_permissions.",
+        "reproduction": "State: executor with recoveryOwner R, a registered zero-delay project, a Claus-signed approval A queued (readyAt reached, pendingSigner == address(0)). Input: R calls cancelSignerRecovery(). Expected if it were a pure cancel: no effect because nothing is pending. Actual: clausGeneration goes from 1 to 2 and execute(A, config, sig) reverts InvalidApproval; queue for any other generation-1 approval also reverts. Second input: R calls scheduleSignerRecovery(X); after recoveryDelay any address calls finishSignerRecovery(); clausSigner becomes X with no further check. Verified in test/scratch/JudgeChecks.t.sol::testRecoveryOwnerCancelWithoutPendingKillsQueuedApprovalAndZeroDelaySameTx.",
+        "snippet": "    function cancelSignerRecovery() external {\n        if (msg.sender != recoveryOwner) revert OwnerOnly();\n        ++clausGeneration;",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Existing disclosed recovery authority. Rotate a compromised key rather than cancelling recovery and trusting the same key; no change to privileged authority is introduced."
+      },
+      {
+        "severity": "info",
+        "title": "Dead lower-bound delay check in registerProject because MIN_UPGRADE_DELAY is zero",
+        "path": "src/ClausApprovalExecutor.sol",
+        "line": 132,
+        "description": "MIN_UPGRADE_DELAY is the constant 0 (line 22) and r.minDelaySeconds is uint64, so `r.minDelaySeconds < MIN_UPGRADE_DELAY` can never be true and is compiled away. It matches the 12 October 2026 policy and weakens nothing (the upper bound and all other guards are live), but it reads as if a floor existed, and the AUDIT_RESPONSE table still describes a one-hour floor for earlier candidates. A future edit that raises the constant must also re-check setPolicy, which only enforces the per-project accepted floor (line 209). Fix: delete the term, or keep the constant as the single place a future floor is re-introduced and say so in the comment, together with a test that a registration below the floor reverts. Merged from audit_flow, audit_economics, audit_math and the side note in audit_permissions.",
+        "reproduction": "Input: a Registration with minDelaySeconds = 0 and otherwise valid fields. Expected if a floor existed: InvalidRegistration. Actual: accepted and projects[id].minDelaySeconds == 0 (shipped test testRegistrationCanBeCancelledAndFreshZeroDelayRegistrationWorks and test/scratch/JudgeChecks.t.sol register with delay 0). No uint64 value satisfies `< 0`, so no input is rejected by this clause.",
+        "snippet": "            || r.minDelaySeconds < MIN_UPGRADE_DELAY || r.minDelaySeconds > MAX_DELAY",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Intentional zero minimum, not a runtime defect. Historical reports retain their original policies."
+      },
+      {
+        "severity": "info",
+        "title": "evaluate() reports an oversized caller input with the OversizedConfiguration error",
+        "path": "src/ClausReadonlyProject.sol",
+        "line": 37,
+        "description": "The input-length guard reuses OversizedConfiguration, the same custom error _apply (line 67) raises for an oversized stored configuration. A consumer or indexer that classifies failures by selector cannot distinguish a bad caller input (retryable with a smaller input) from a broken installed configuration (requires a Claus-approved upgrade). Functional behaviour is correct; only the diagnostic is wrong. Fix: add a distinct OversizedInput error here, leaving OversizedConfiguration for _apply. Merged from audit_flow, audit_economics and audit_math.",
+        "reproduction": "Deploy ClausReadonlyProject(bytes32('x'), <any module>, hex'01'). Call evaluate(new bytes(8193)). Expected: a revert that identifies the input as oversized. Actual: revert OversizedConfiguration() although configuration.length is unchanged and within bounds. Verified in test/scratch/JudgeChecks.t.sol::testOversizedInputUsesConfigurationError with vm.expectRevert(ClausReadonlyProject.OversizedConfiguration.selector).",
+        "snippet": "        if (input.length > 8192) revert OversizedConfiguration();",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted diagnostic ambiguity; input remains bounded and the call rejects oversized input."
+      },
+      {
+        "severity": "info",
+        "title": "Project evaluate() outcome depends on caller-supplied gas; the 200,000 module budget is not asserted",
+        "path": "src/ClausReadonlyProject.sol",
+        "line": 45,
+        "description": "The STATICCALL requests a fixed 200,000 gas but the EVM forwards min(200000, 63/64 of remaining gas). When an external caller gives evaluate less than roughly 203,000 gas plus overhead, the module silently receives less than the documented budget and a legitimate module fails with ModuleCallFailed, indistinguishable from a faulty module. The function is view, so no state is affected, and the vault path is deterministic because ClausNativeVault always supplies exactly 250,000. For direct integrators the advertised 200,000 budget is a soft guarantee. Fix: before the staticcall, require gasleft() to cover 200_000 * 64 / 63 plus the post-call overhead and revert with a distinct InsufficientGas error.",
+        "reproduction": "Module whose evaluate burns about 150,000 gas and returns abi.encode(uint256). p = new ClausReadonlyProject(bytes32('x'), module, ''). p.evaluate{gas: 5_000_000}('') returns 32 bytes. p.evaluate{gas: 120_000}('') reverts ModuleCallFailed(). Same contract, state and input; different outcome keyed only on caller gas. Verified in test/scratch/JudgeChecks.t.sol::testEvaluateDependsOnCallerGas.",
+        "snippet": "            success := staticcall(200000, module, add(callData, 32), mload(callData), 0, 0)",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Accepted call-gas dependency: 200,000 is an upper forwarding bound, not a minimum-gas guarantee. Callers must supply sufficient gas; static calls cannot alter state."
+      },
+      {
+        "severity": "info",
+        "title": "Ether forced into the native vault is permanently locked (documented design)",
+        "path": "src/ClausNativeVault.sol",
+        "line": 47,
+        "description": "By design (README: no admin sweep, forced ETH not attributed), recorded for completeness. Every inbound value path credits principal, and withdraw() is capped at principal[msg.sender], so ether that arrives without a call (SELFDESTRUCT beneficiary, block reward) raises address(vault).balance above totalPrincipal with no function able to move the difference. Depositors are unharmed (principal withdrawals stay fully backed; the shipped test testForcedEtherDoesNotCreateWithdrawalRights confirms no claim is created), but the amount is unrecoverable. If that is unwanted, a reviewed sweep of balance - totalPrincipal to a fixed recipient would be the minimal addition.",
+        "reproduction": "State: vault with totalPrincipal = 0. Input: a contract executes selfdestruct(payable(vault)) with 1 ether in its constructor. Expected if recoverable: some function returns the 1 ether. Actual: address(vault).balance == 1 ether, totalPrincipal == 0, withdraw(1 ether, recipient) reverts InvalidAmount for every caller, and no other function moves value. Verified in test/scratch/JudgeChecks.t.sol::testForcedEtherIsLocked.",
+        "snippet": "        if (amount == 0 || amount > principal[msg.sender] || recipient == address(0)\n            || recipient == address(this)) revert InvalidAmount();",
+        "citation": "resolved",
+        "blocking": false,
+        "operatorDisposition": "Outside this readonly release: no public vault, no admin sweep or changed principal accounting."
+      }
+    ],
+    "status": "reference-review-assessed-with-explicit-scope-limitations",
+    "notAClausDecision": true,
+    "notActivationAuthority": true
+  },
+  "agentSchema": {
+    "at": "2026-10-12T21:21:50.867Z",
+    "deployment": "dpl_Qt4cWRpxkT1mW8gM6krQZTsKJYcS",
+    "schemaSha256": "1bd91bbbc15dd0c8352d791ea02c90b9d29c040dcd1d2913e135f7f8635fa42c",
+    "exactSourceVerified": true,
+    "verifiedFiles": 156,
+    "configuration": 480,
+    "configurationUnchanged": true,
+    "sha256": "1bd91bbbc15dd0c8352d791ea02c90b9d29c040dcd1d2913e135f7f8635fa42c",
+    "localFocusedChecks": 11,
+    "scope": "Chain-bound readonly review instructions; consumer vault evidence restricted to Sepolia."
+  }
+}

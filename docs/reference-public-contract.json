@@ -1,0 +1,89 @@
+{
+  "checkedAt": "2026-10-12T21:21:30.825Z",
+  "origin": "https://claus-network-api.vercel.app",
+  "attribution": "Claus-operated technical reference, not independent adoption",
+  "chainId": 11155111,
+  "projectId": "prj_427a980b-7a20-4b12-b60c-658da1bbe9cd",
+  "slug": "public-contract-reference",
+  "url": "https://claus.si/p/public-contract-reference",
+  "sourceCommit": "0acc594a430b6aca1838337389723726000538ea",
+  "snapshotId": "sha256:d0e301096206a2f441a8072dcc1c4d3141c9fdb2729bb6f87437fb061fe369e3",
+  "buildId": "sha256:ba3e029d7bca01aceecfb11233c0994104c04c52e2a1ebdc97f7f684db717410",
+  "review": {
+    "caseId": "sha256:1938337e8da1bcf52cf841e9f34639263af5473ffa5cfa7cfe6dead1641a024c",
+    "artifactHash": "sha256:e03ad896c15c3dbf4cea42ec830e507dfc4bf072e6e59120b523c702e6ff95d8",
+    "providerJobId": "7d21225e-0c5f-4927-b066-f4a1c0a19d35"
+  },
+  "request": {
+    "id": "sha256:b5e9e8e71a0e744bb8ee3d41e009398db87f9d73974592787cf93ef4340a724b",
+    "proposalId": "sha256:95b9c5ef4ad83d104d13ac3c544e4e16cf63275bac8054f171fa49d54c917d9e",
+    "result": {
+      "decision": "approve",
+      "decisionHash": "sha256:ec880602d456633f3f2f7bdbc87aaae5c2230cfb468717153e3a5d732be86e78",
+      "kind": "proposal-decision",
+      "proposalId": "sha256:95b9c5ef4ad83d104d13ac3c544e4e16cf63275bac8054f171fa49d54c917d9e"
+    },
+    "delivery": {
+      "finalized": true,
+      "observedAt": 1791837882121,
+      "resolutionFinalized": true,
+      "resultHash": "sha256:b609e0b4ec8d79bd0ffcfff7ec4173bd134b86fa34967c8ec46d71a73cf13304",
+      "state": "delivered",
+      "transactionHash": "0x4a061dd8da938a2ee8d40c764c2d0cdfc83ed7269e859b55f9808dee95381b05"
+    }
+  },
+  "decision": {
+    "id": "sha256:95b9c5ef4ad83d104d13ac3c544e4e16cf63275bac8054f171fa49d54c917d9e",
+    "model": "gpt-6-astra",
+    "risks": [
+      "RPC observations are not cryptographic state proofs. The independent signer must validate current proposal bindings, authority, replay protection and timing.",
+      "A digest proves neither content truth nor authorization.",
+      "Executor recovery and signature-verification trust assumptions remain. This approval covers only non-custodial Sepolia STATICCALL use, not custody, mainnet or unregistered consumers, and is not a general safety guarantee."
+    ],
+    "reason": "The supplied compiler artifact, observed Sepolia runtime and proposed code hash agree. The exact configuration is a valid 32-byte namespace. The module returns an ABI-encoded content digest, rejects inputs over 8192 bytes, and has no storage, external dependencies or delegation. No material finding affects this module/configuration within the stated profile.",
+    "status": "Approved",
+    "decision": "approve",
+    "completedAt": "2026-10-12T20:00:39.546Z",
+    "decisionHash": "sha256:ec880602d456633f3f2f7bdbc87aaae5c2230cfb468717153e3a5d732be86e78",
+    "proposalHash": "sha256:09cc3a09db68254522414d4d291eee2b4904fd9ac7156b2d9b5f5d06d1b5cd5b",
+    "configurationRevision": 478
+  },
+  "deployment": {
+    "id": "sha256:95b9c5ef4ad83d104d13ac3c544e4e16cf63275bac8054f171fa49d54c917d9e",
+    "address": "0x8B013F67b798b8230010D3FB14518962029b278E",
+    "chainId": 11155111,
+    "version": 2,
+    "codeHash": "0xdcf8bca27e52269aa36704a800c4755657050d0b8390d196b9c979125e63b0fe",
+    "blockHash": "0x7bb08ebd54106b80d49e50e0fd406be5183f3928f19e30fcc5ecd42c65937d84",
+    "blockNumber": "11901186",
+    "explorerUrl": "https://sepolia.etherscan.io/tx/0x71f80be97c2d426da4103a90200911d36de23195155730bdd148ae499a4887cc",
+    "approvalHash": "0x8bc28ada3d550d36268dfc200bed8d963bc343dea861313a9553aac1f450a51d",
+    "verification": "verified",
+    "implementation": "0x112034caf7a404e693368b7e10f5dad5b2790f76",
+    "transactionHash": "0x71f80be97c2d426da4103a90200911d36de23195155730bdd148ae499a4887cc",
+    "sourceVerification": {
+      "id": "sha256:279e55ce8209c0a6a66a4420e3aefd3e9eaee604ae9025982201f5eee8ec6177",
+      "state": "verified",
+      "address": "0x8B013F67b798b8230010D3FB14518962029b278E",
+      "chainId": 11155111,
+      "checkedAt": 1791834188359,
+      "inputHash": "sha256:5dcb1ad201109734168cb2b16e992f0b7e50cd56b8a1bdb215d2d28805335940",
+      "sourcifyId": "38a13dbf-7409-4c19-8d5f-09f177503c4f",
+      "explorerUrl": "https://sepolia.etherscan.io/address/0x8B013F67b798b8230010D3FB14518962029b278E#code",
+      "sourcifyUrl": "https://repo.sourcify.dev/11155111/0x8B013F67b798b8230010D3FB14518962029b278E",
+      "runtimeMatch": "exact_match",
+      "creationMatch": "exact_match",
+      "etherscanGuid": "xkz436jcyqp5swwkv5hpnyxjh2infmxikmnfsd3hdyk8q4x4ii",
+      "etherscanMatch": "exact",
+      "etherscanVerified": true,
+      "etherscanAttemptAt": 1791834009007
+    }
+  },
+  "zeroDelay": true,
+  "callbackVerified": true,
+  "mandateRevoked": true,
+  "retiredCredentialDenied": true,
+  "onchainAuthorityRevoked": true,
+  "revocationTransaction": "0xcf7c2506c036ad9fa5eb4ba1475554858783d83baee980bba8872c960ec02f25",
+  "explorerVerified": true
+}
