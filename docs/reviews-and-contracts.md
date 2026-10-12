@@ -24,13 +24,15 @@ Project owners cannot grant themselves sponsorship, modify the sponsor balance o
 
 The initial [contract audit](https://api.imd.fun/jobs/016e8435-43ef-4f21-b18c-7dd290b796b2) covered commit `63e8dc823bd3ab242481b0b4b85f045e40fe369f`. Its specialists identified registration, delay and recovery issues. The fixes and retained assumptions are documented in [AUDIT_RESPONSE.md](https://github.com/contractclaus/claus-network-contracts/blob/aa865a79b447552d09d05244cfd958bb33254c12/AUDIT_RESPONSE.md).
 
-The corrected commit `aa865a79b447552d09d05244cfd958bb33254c12` has a separate [IMD review](https://api.imd.fun/jobs/bc2c40d4-b918-49c3-a376-c35a55c6c9a2). Its [0.5 IMD payment](https://etherscan.io/tx/0x8cd026b41094ae861b9115bd2f602594b18d4bdb32556321de8e5415f20d0d32) is confirmed. The next candidate, `2594aa2dd8285736c7b60fdf31e05095e6ff21dc`, addresses further specialist findings: recovery cancellation invalidates interim approvals, suspended signers cannot cancel project approvals, invalid module targets are rejected before queueing, and the previous implementation is checked against its stored code commitment. Its new review is submitted through the pilot API. The [source and response](https://github.com/contractclaus/claus-network-contracts/tree/2594aa2dd8285736c7b60fdf31e05095e6ff21dc) identify that exact candidate.
+The corrected commit `aa865a79b447552d09d05244cfd958bb33254c12` has a separate [IMD review](https://api.imd.fun/jobs/bc2c40d4-b918-49c3-a376-c35a55c6c9a2). Its [0.5 IMD payment](https://etherscan.io/tx/0x8cd026b41094ae861b9115bd2f602594b18d4bdb32556321de8e5415f20d0d32) is confirmed.
+
+The deployed executor uses commit `2594aa2dd8285736c7b60fdf31e05095e6ff21dc`. It addresses further specialist findings: recovery cancellation invalidates interim approvals, suspended signers cannot cancel project approvals, invalid module targets are rejected before queueing, and the previous implementation is checked against its stored code commitment. Its [completed IMD review](https://api.imd.fun/jobs/86d47bf6-5134-4652-b268-b488e4bbc1c0), submitted through the pilot API, has four low and six informational findings, with none rated medium or higher. Acceptance covers only the restricted noncustodial Sepolia profile and its [retained trust boundaries](testnet.md#retained-trust-boundaries). The [source and response](https://github.com/contractclaus/claus-network-contracts/tree/2594aa2dd8285736c7b60fdf31e05095e6ff21dc) identify that exact version.
 
 The first two operator-initiated audits are distinct from the public pilot workflow. None of these individual reports alone demonstrates a completed end-to-end pilot.
 
 ## Non-custodial contract profile
 
-The candidate `ClausApprovalExecutor` and `ClausReadonlyProject` support one narrowly defined profile. The project calls its selected module with `STATICCALL`. It does not delegate arbitrary storage writes, custody user deposits, implement a tradable token or manage a liquidity pool.
+`ClausApprovalExecutor` and `ClausReadonlyProject` support one narrowly defined profile. The project calls its selected module with `STATICCALL`. It does not delegate arbitrary storage writes, custody user deposits, implement a tradable token or manage a liquidity pool.
 
 A project owner registers an exact module and configuration. A later Claus approval binds the project, chain, executor, target, old version/code hash, new implementation/code hash, configuration, dependency snapshot, evidence, policy version/generation, authority generation, Claus signer generation, mandate, nonce, start time and expiry.
 
@@ -42,4 +44,4 @@ This profile does not establish that arbitrary future token, vault, credit or tr
 
 Every deployed release must identify its chain ID, address, creation transaction, constructor input, compiler/settings, exact source, runtime comparison and explorer verification result. Implementation/admin relationships must also be disclosed where applicable.
 
-No network contract deployment is claimed yet. A successful source match will be recorded separately from the review and approval. Source verification proves which code was deployed, not that the code is free of defects.
+The [deployment manifest](deployments.json) records the verified Sepolia executor and reference project wallet, including their creation transactions, constructor inputs and compiler settings. The protected-change workflow still requires its own decision, execution and finality evidence; see [release status](release-status.md). Source verification proves which code was deployed, not that the code is free of defects.
