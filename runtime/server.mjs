@@ -25,22 +25,24 @@ import {createReleases} from '../src/releases/index.mjs';
 import {createVaults} from '../src/vaults/index.mjs';
 import {createVaultRead} from '../adapters/vault-read.mjs';
 import {createInference} from '../src/inference/index.mjs';
+import {createContractIntake} from '../src/contract-intake/index.mjs';
 import {createProjectArchives} from '../src/portability/index.mjs';
 import {createProjectTransfers} from '../src/transfers/index.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={}}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={}}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  const identity=createIdentity({store,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
  let services,releases;
  const projects=createProjects({store,identity,now,publicDetails:async projectId=>({
   services:await services.publicForProject(projectId),releases:await releases.publicForProject(projectId)
  })});
- let reviewSystem,deployments,approvals,wallets,vaults,inference;
+ let reviewSystem,deployments,approvals,wallets,vaults,inference,intake;
  const jobs=createJobs({store,identity,now,onCancel:async(tx,job)=>{
   await reviewSystem.flow.onCancel(tx,job);await deployments.onCancel(tx,job);await approvals.onCancel(tx,job);await wallets.onCancel(tx,job);
   await vaults.onCancel(tx,job);
   await inference.onCancel(tx,job);
+  await intake.onCancel(tx,job);
  }});
  const artifacts=createArtifactStore({store});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now});
@@ -68,7 +70,15 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  inference=createInference({store,identity,jobs,artifacts,now,provider:inferencePorts.provider,
   verifyQuote:inferencePorts.verifyQuote,verifyReceipt:inferencePorts.verifyReceipt,
   enabled:async reader=>inferencePorts.enabled===true&&(await reader.read('network-capabilities','inference'))?.value.enabled===true});
- const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference});
+ intake=createContractIntake({store,identity,jobs,now,
+  chain:intakePorts.chain??{profile:async()=>{throw Object.assign(Error('contract_intake_disabled'),{code:'contract_intake_disabled'});}},
+  createProposal:(actor,projectId,input)=>approvals.create(actor,projectId,input),
+  readProposal:async(projectId,id)=>{
+   const proposal=(await store.read('chain-proposals',id))?.value;
+   requireThat(!proposal||proposal.projectId===projectId,'contract_proposal_mismatch');return proposal??null;
+  },
+  enabled:async reader=>intakePorts.enabled===true&&(await reader.read('network-capabilities','contract-intake'))?.value.enabled===true});
+ const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake});
  const admit=async({route,peer})=>store.transaction(async tx=>{
   const window=Math.floor(now()/300000);
   const group=route.startsWith('auth_')?'auth':'api';
@@ -81,7 +91,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   }
  });
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

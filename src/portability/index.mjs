@@ -13,6 +13,8 @@ const FIELDS = Object.freeze({
   'review-quotes': 'id projectId inputHash requestHash offer policyRefs feeTerms sponsored sponsorAccount projectAccount maximum',
   'review-jobs': 'id projectId quoteId inputHash requestHash work billing maximum policyRefs cancelledAt reason providerJobId completedAt artifactHash actual costReceiptId',
   'inference-requests': 'id projectId requestHash inputHash profileHash jobId work billing actual providerRequestId outputHash receiptHash createdAt',
+  'contract-bindings': 'id projectId requester expiresAt maxRequests chainId inbox codeHash capability configHash used revokedAt createdAt',
+  'contract-requests': 'id projectId bindingId jobId observation observationHash state proposalId result delivery createdAt updatedAt',
   'chain-modules': 'id projectId caseId buildId artifactHash state jobId chainId expiresAt createdAt updatedAt address transactionHash codeHash verification error',
   'chain-registrations': 'id projectId moduleId mandateId domain types primaryType message state createdAt jobId chainId address transactionHash codeHash verification binding error updatedAt',
   'chain-bindings': 'projectId registrationId moduleId chainId target executor owner projectKey profile minDelaySeconds transactionHash codeHash verification',

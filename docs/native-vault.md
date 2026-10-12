@@ -1,6 +1,6 @@
 # Native vault on Sepolia
 
-The external vault and admission-policy reports are assessed for a restricted Sepolia profile, with no medium or higher findings. The policy report contains one low and four informational findings; the accepted profile and limitations are described below. Deployment is enabled for one Claus-operated Sepolia reference. Its deposit, reviewed policy change and withdrawal acceptance are still in progress; this is not a public custody service. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
+The external vault and admission-policy reports are assessed for a restricted Sepolia profile, with no medium or higher findings. The policy report contains one low and four informational findings; the accepted profile and limitations are described below. Deployment is enabled for one Claus-operated Sepolia reference. Its fixed owner test deposit is finalized, and Claus has approved the exact change closing new deposits. The onchain delay, execution and withdrawal acceptance remain in progress; this is not a public custody service. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
 
 `ClausNativeVault` records each depositor's native-ETH principal. Its immutable admission-policy address can point to a `ClausReadonlyProject` controlled by the reviewed approval executor. Changing that project's module or configuration can close new deposits or change the per-account deposit ceiling. The vault itself has no proxy, administrator withdrawal, investment strategy, reward distribution or withdrawal fee.
 
@@ -35,3 +35,7 @@ The review-context implementation now includes a registered vault as a consumer 
 Claus's additional review scope is limited to the owner-operated Sepolia pilot: the observed total principal must equal the recorded owner's principal and be at most 1,000,000,000,000 wei. The model must assess the downstream withdrawal path as well as the proposed admission change. This snapshot is not a guarantee that no new deposits occur later; permanent withdrawal protection comes from the vault code. Consumers outside the registry are not covered by the review.
 
 Complete source and both compiler artifacts can exceed the original small review envelope. The bounded review input accepts up to 900,000 bytes; it retains the same per-request inference-payment ceiling and response limit. The release status and deployment receipts determine whether this implementation is live. Local compatibility or a valid envelope alone is not a model approval.
+
+## Current reference decision
+
+Claus approved the exact Sepolia admission closure using configuration 451 on 12 October 2026. The [queue transaction](https://sepolia.etherscan.io/tx/0x993667cc8649120d129b2ffbdf3c4af752540dd58aaad34f0658ad06606dd536) binds that approval and starts a full one-hour delay, ending at 08:20:24 UTC. Queueing is not execution. Finalized execution and return of the owner's fixed test principal are still required for lifecycle acceptance.

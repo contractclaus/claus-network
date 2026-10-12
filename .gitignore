@@ -5,3 +5,6 @@ public/
 *.sqlite*
 contracts/out/
 contracts/cache/
+market-contracts/out/
+market-contracts/cache/
+market-contracts/broadcast/

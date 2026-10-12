@@ -1,4 +1,4 @@
-export const API_VERSION='0.8.0';
+export const API_VERSION='0.9.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
@@ -70,6 +70,10 @@ export const ROUTES=Object.freeze([
  route('vault_get','GET','/v1/projects/{projectId}/vault',{projectId:string()}),
  route('vault_transaction','POST','/v1/projects/{projectId}/vault/transaction',{projectId:string(),kind:string(12),amountWei:string(78),recipient:string(42)},['projectId','kind','amountWei']),
  route('vault_balance','GET','/v1/projects/{projectId}/vault/balance',{projectId:string(),account:string(42)}),
+ route('contract_binding_create','POST','/v1/projects/{projectId}/contract-bindings',{projectId:string(),requester:string(42),expiresAt:integer,maxRequests:{type:'integer',minimum:1,maximum:100},idempotencyKey:string()}),
+ route('contract_binding_get','GET','/v1/projects/{projectId}/contract-bindings/{bindingId}',{projectId:string(),bindingId:string()}),
+ route('contract_binding_revoke','DELETE','/v1/projects/{projectId}/contract-bindings/{bindingId}',{projectId:string(),bindingId:string()}),
+ route('contract_request_get','GET','/v1/projects/{projectId}/contract-requests/{requestId}',{projectId:string(),requestId:string()}),
  route('inference_profile_set','PUT','/v1/admin/inference/profiles',{profile:object({
   id:string(),version:string(),enabled:boolean,providerId:string(),accountId:string(),model:string(),
   providers:{type:'array',items:string(),minItems:1,maxItems:32},asset:string(),fundingAccount:string(),

@@ -48,6 +48,7 @@ export default async function handler(req, res) {
         vaultExecution: vaults?.enabled === true ? vaultWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         portabilityExecution: portability?.enabled === true ? 'restricted_pilot' : 'not_enabled',
         inferenceExecution: 'not_enabled',
+        contractIntakeExecution: 'not_enabled',
         mainnetExecution: 'not_enabled' });
     } else {
       const headers = new Headers();

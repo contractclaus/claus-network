@@ -5,7 +5,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | State |
 | --- | --- |
 | Owner login, project identity and delegated agents | Live |
-| API, JavaScript SDK, CLI and HTTP MCP | Live; 85 operations in API 0.8.0 |
+| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.9.0 |
 | Source snapshots and explicit publication | Live |
 | Bounded Solidity compilation | Live; scheduled isolated compiler |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
@@ -14,14 +14,17 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Approval executor contract | Confirmed on Sepolia, source verified |
 | Service catalogue and isolated static publication | Active for admitted projects; the complete Claus-operated reference paid two services, changed agents, published its result and retired both payment sessions |
 | Project wallets | Active for admitted Sepolia projects; corrected review assessed and reference wallet source verified |
-| Native-principal vault | One Claus-operated Sepolia vault is deployed and source verified; fixed owner test principal deposited; reviewed policy-change and withdrawal acceptance pending |
+| Native-principal vault | One Claus-operated Sepolia vault is deployed and source verified; fixed owner test principal finalized; Claus approved the policy change; its real delay ends at 08:20:24 UTC; execution and withdrawal acceptance pending |
 | Production token launches and capital products | Not enabled |
 | Inference API and accounting | Interfaces and disabled implementation deployed; project allowances, durable requests and cost reconciliation tested without a live provider |
 | Public inference and holder credits | Not enabled; provider authorization and actual billing conformance still required |
 | Signed operator transfer | Live for admitted projects; hosted reference completed between separately configured Claus-operated instances |
-| GitBook publication | Prepared; account connection still required |
+| Contract request interfaces | Four API operations deployed; public inbox and signing dispatcher not activated |
+| Token launch | Not included in this public release |
+| Independent pilot | Procedure prepared; no independent participant has completed it |
+| GitBook publication | Optional mirror of public source docs; account connection still required |
 
-API deployment: `dpl_BaBB2Ftq3EEzpmf85Th581R74Npf`, release `cfc49ec8f5adcf70ec01b5a4b5fa3ca707f5c612a2c2dbbd9b6351c154303168`. All 90 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
+API deployment: `dpl_GqnfoDGVbqnxeBFnQQVZcfuFFf9N`, release `3a73bd8b02c6367d7fe52c29dce46e6d17e81e1e7f442c1c5ab23b2f585477de`. All 95 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 

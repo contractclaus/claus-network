@@ -1,6 +1,6 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference}){
+export function createService({identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake}){
  const operations={
   auth_challenge:(_,input)=>identity.challenge(input),
   auth_session:(_,input)=>identity.session(input),
@@ -64,6 +64,10 @@ export function createService({identity,projects,builds,jobs,reviews,deployments
   vault_get:(actor,input)=>vaults.get(actor,input.projectId),
   vault_transaction:(actor,input)=>vaults.transaction(actor,input.projectId,input),
   vault_balance:(actor,input)=>vaults.balance(actor,input.projectId,input.account),
+  contract_binding_create:(actor,{projectId,...input})=>intake.bind(actor,projectId,input),
+  contract_binding_get:(actor,input)=>intake.binding(actor,input.projectId,input.bindingId),
+  contract_binding_revoke:(actor,input)=>intake.revoke(actor,input.projectId,input.bindingId),
+  contract_request_get:(actor,input)=>intake.request(actor,input.projectId,input.requestId),
   inference_profile_set:(actor,input)=>inference.setProfile(actor,input),
   inference_allowance_set:(actor,input)=>inference.setAllowance(actor,input.projectId,input),
   inference_profile:(actor,input)=>inference.profile(actor,input.projectId,input.profileId),

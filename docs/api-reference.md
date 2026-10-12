@@ -1,6 +1,6 @@
 # API reference
 
-The live API is 0.8.0 with 85 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+The live API is 0.9.0 with 89 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -66,6 +66,10 @@ The live API is 0.8.0 with 85 operations. Endpoint availability and operational 
 | `vault_get` | GET | `/v1/projects/{projectId}/vault` | Bearer credential |
 | `vault_transaction` | POST | `/v1/projects/{projectId}/vault/transaction` | Bearer credential |
 | `vault_balance` | GET | `/v1/projects/{projectId}/vault/balance` | Bearer credential |
+| `contract_binding_create` | POST | `/v1/projects/{projectId}/contract-bindings` | Bearer credential |
+| `contract_binding_get` | GET | `/v1/projects/{projectId}/contract-bindings/{bindingId}` | Bearer credential |
+| `contract_binding_revoke` | DELETE | `/v1/projects/{projectId}/contract-bindings/{bindingId}` | Bearer credential |
+| `contract_request_get` | GET | `/v1/projects/{projectId}/contract-requests/{requestId}` | Bearer credential |
 | `inference_profile_set` | PUT | `/v1/admin/inference/profiles` | Network owner session |
 | `inference_allowance_set` | PUT | `/v1/admin/inference/allowances/{projectId}` | Network owner session |
 | `inference_profile` | GET | `/v1/projects/{projectId}/inference/profiles/{profileId}` | Bearer credential |

@@ -1,6 +1,12 @@
 {
   "modules": [
     {
+      "id": "contract-intake",
+      "path": "src/contract-intake/",
+      "imports": ["shared"],
+      "builtins": []
+    },
+    {
       "id": "inference",
       "path": "src/inference/",
       "imports": ["shared", "billing"],

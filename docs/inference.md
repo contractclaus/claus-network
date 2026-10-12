@@ -28,6 +28,10 @@ The first provider adapter must retain these boundaries:
 
 The prepared 0.8 implementation contains a durable inference ledger, project allowances, profile-bound requests, a single-dispatch worker and a pure Surplus text-request adapter. Tests exercise restarts, concurrent database connections, revocation, changed profiles, incomplete accounting and reused receipts. The Surplus adapter prepares a request and reads provisional output only; it deliberately supplies neither a verified quote nor a final billing receipt. It cannot activate a public provider by itself.
 
+The 0.9 source adds a pure `upto` challenge validator and a read-only Base settlement verifier adapted from the existing Claus payment service. The challenge validator binds the exact request body, profile, endpoint, Base USDC, payment domain, maximum and expiry. Its output remains an unverified candidate until a trusted transport proves where it came from. It never signs or falls back to an upfront `exact` payment. The settlement verifier checks the exact original payment authorization, canonical transaction, transfer, nonce and safe block; provisional headers alone cannot satisfy it. Tests use labelled synthetic chain responses. These adapters are not wired to a public provider or a production payer.
+
+Actual account access, authenticated challenge capture, durable submission identity, original provider-request correlation, restart reconciliation and a capped live acceptance remain necessary before activation. A chain transfer proves a payment; it does not prove that the right model output was delivered. Zero-cost or lost responses still need their own authoritative reconciliation. See [Surplus x402 documentation](https://www.surplusintelligence.ai/docs/payments/x402).
+
 ## Programmatic lifecycle
 
 The 0.8 interface adds seven operations. Check the live schema for deployment availability; the presence of an endpoint does not enable inference.

@@ -8,11 +8,12 @@ export const PROJECT_SCOPES = Object.freeze([
   'project.export', 'source.publish', 'budget.read', 'events.read', 'job.cancel',
   'service.manage', 'service.read', 'service.call', 'service.provide',
   'wallet.read', 'wallet.manage', 'wallet.pay', 'release.publish', 'resource.read',
-  'vault.read', 'vault.manage', 'wallet.revoke', 'service.settle', 'inference.read', 'inference.submit'
+  'vault.read', 'vault.manage', 'wallet.revoke', 'service.settle', 'inference.read', 'inference.submit',
+  'contract.read', 'contract.request', 'contract.revoke'
 ]);
 const FENCED_ACTIONS = new Set(['project.read', 'artifact.read', 'review.read', 'proposal.read', 'project.export',
   'budget.read', 'events.read', 'service.read', 'service.provide', 'service.settle', 'wallet.read', 'wallet.revoke',
-  'resource.read', 'vault.read', 'job.cancel', 'inference.read']);
+  'resource.read', 'vault.read', 'job.cancel', 'inference.read', 'contract.read', 'contract.revoke']);
 const WITHDRAWAL_ACTIONS = new Set(['project.publish', 'source.publish', 'release.publish']);
 const OWNER_TTL = 60 * 60 * 1000;
 const MAX_MANDATE_TTL = 30 * 24 * OWNER_TTL;
@@ -54,7 +55,8 @@ export function createIdentity({ store, verifySignature = async () => false,
       if (!project || project.archivedAt) return false;
       if (project.transfer && !FENCED_ACTIONS.has(action) && !(withdrawal && WITHDRAWAL_ACTIONS.has(action))) return false;
       if (who.kind === 'owner') return project.ownerId === who.principalId && PROJECT_SCOPES.includes(action);
-      const alias = action === 'wallet.revoke' ? 'wallet.manage' : action === 'service.settle' ? 'service.call' : action;
+      const alias = action === 'wallet.revoke' ? 'wallet.manage' : action === 'service.settle' ? 'service.call' :
+        action === 'contract.revoke' ? 'contract.request' : action;
       const scope = who.scopes.includes(action) ? action : alias;
       if (who.projectId !== projectId || !who.scopes.includes(scope)) return false;
       const mandate = (await reader.read('mandates', who.mandateId))?.value;
