@@ -185,7 +185,7 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
         // An externally resolved request has no local resolution receipt.
         if (action === 'resolve' && observed.resolved) return answer('pending');
         if (action === 'resolve' && resolution.expiresAt <= now()) return answer('closed');
-        if (expiresAt <= now()) return answer('pending');
+        if (expiresAt <= now()) return answer('failed', { reason: 'dispatch_subsidy_expired' });
         if (!allowSubmit || !await active(store, request)) return answer('pending');
         transaction = await transactions.prepare({ id: transactionId, to: intent.to, data: intent.data, authority, expiresAt });
       }
@@ -197,7 +197,12 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
           if (final.resolved && final.callbackDelivered) continue;
           if ((await chain.deliveryState(request)).callbackDelivered) return answer('pending');
         }
-        return answer(transaction.state === 'cancelled' ? 'closed' : 'failed');
+        if (transaction.state === 'cancelled') {
+          if (action === 'resolve' && ((await chain.deliveryState(request)).closed || resolution.expiresAt <= now()))
+            return answer('closed');
+          return answer('failed', { reason: 'dispatch_cancelled' });
+        }
+        return answer('failed', { reason: 'dispatch_transaction_reverted' });
       }
       if (transaction.state !== 'confirmed') return answer('pending');
       const observed = await chain.deliveryState(request, 'finalized');

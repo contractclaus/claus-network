@@ -23,7 +23,7 @@ async function fixture(t) {
   f.deliveryFailures = {};
   const delivery = { step: async input => { f.sends.push(input);
     const code = f.deliveryFailures[input.request.id]; if (code) throw Object.assign(Error(code), { code });
-    return { state: f.deliveryState,
+    return { state: f.deliveryState, reason: f.deliveryReason,
     resultHash: f.badHash ? digest('wrong') : digest(input.request.result), finalized: f.finalized ?? true,
     transactionHash: '0x' + '11'.repeat(32), privateCredential: 'must-not-be-stored' }; } };
   f.create = () => createContractIntakeWorker({ store, chain, intake, delivery, startBlock: 100, enabled: () => {
@@ -69,6 +69,9 @@ test('transient errors retain the cursor while deterministic rejections cannot p
 test('pending delivery keeps its identity after restart and revocation permits reconciliation only', async t => {
   const f = await fixture(t); await f.result();
   await f.worker.tick(); f.active = false; f.deliveryState = 'delivered';
+  const pending = await f.store.read('contract-requests', 'request');
+  assert(pending.value.delivery.retryAt > pending.value.delivery.observedAt);
+  await f.store.transaction(tx => tx.write('contract-requests', 'request', { ...pending.value, delivery: { ...pending.value.delivery, retryAt: 0 } }, pending.revision));
   const done = await f.create().tick();
   assert.equal(done.delivered, 1); assert.equal(f.scans, 1); assert.equal(f.runs, 1);
   assert.equal(f.sends[0].id, f.sends[1].id); assert.equal(f.sends[1].allowSubmit, false);
@@ -150,4 +153,15 @@ test('an expired binding credential cannot stall unrelated events or the scanner
   assert.equal(result.ingested, 1); assert.equal(result.afterBlock, 200);
   assert.equal((await f.store.list('contract-intake-rejections'))[0].value.code, 'unauthenticated');
   assert.equal((await f.create().tick()).ingested, 0);
+});
+
+test('a stopped subsidy preserves the delivery failure reason and is not polled forever', async t => {
+  const f = await fixture(t); await f.result();
+  f.deliveryState = 'failed'; f.deliveryReason = 'dispatch_subsidy_expired';
+  await f.worker.tick();
+  const row = await f.store.read('contract-requests', 'request');
+  assert.equal(row.value.state, 'result_ready');
+  assert.equal(row.value.delivery.reason, 'dispatch_subsidy_expired');
+  await f.create().tick();
+  assert.equal(f.sends.length, 1);
 });

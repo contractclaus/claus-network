@@ -80,7 +80,7 @@ test('unknown delivery retains its transaction and reservation after restart and
 
 test('authority lost after signing cancels the unsent delivery and returns only its reservation', async t => {
   const f = await fixture(t); f.denyAt(5);
-  assert.equal((await f.make().step(f.input)).state, 'closed');
+  assert.equal((await f.make().step(f.input)).state, 'failed');
   assert.equal(f.broadcasts(), 0); assert.equal((await f.ledger()).reserved, '0'); assert.equal((await f.ledger()).spent, '0');
 });
 
@@ -94,7 +94,7 @@ test('an already revoked project is skipped without failing the shared delivery 
 
 test('project admission is checked again after signing, while an old broadcast remains reconcilable', async t => {
   const before = await fixture(t); before.withdrawAdmissionAt(3);
-  assert.equal((await before.make().step(before.input)).state, 'closed');
+  assert.equal((await before.make().step(before.input)).state, 'failed');
   assert.equal(before.broadcasts(), 0);
   assert.equal((await before.ledger()).reserved, '0');
   const after = await fixture(t);
@@ -164,7 +164,7 @@ test('public callback budget uses current project admission without an operator-
   assert.equal(allowed.broadcasts(), 2);
   assert.equal((await allowed.ledger()).spent, '180000000000');
   const revoked = await fixture(t, false, true); revoked.withdrawAdmissionAt(3);
-  assert.equal((await revoked.make().step(revoked.input)).state, 'closed');
+  assert.equal((await revoked.make().step(revoked.input)).state, 'failed');
   assert.equal(revoked.broadcasts(), 0);
   assert.equal((await revoked.ledger()).reserved, '0');
   await assert.rejects(admitContractDispatchBudget(revoked.store, {...revoked.budget, id:'invalid-mode', admissionMode:'all'}), {code:'invalid_dispatch_budget'});
@@ -211,11 +211,13 @@ test('public dispatcher enforces each project share and makes chain reads outsid
   assert.equal(usage.spent, '90000000000'); assert.equal(usage.reserved, '0');
 });
 
-test('an expired subsidy leaves an open request pending without issuing another transaction', async t => {
+test('an expired subsidy stops sponsorship without declaring the onchain request closed', async t => {
   const f = await fixture(t);
   f.input.request.observation.deadline = Math.floor(f.budget.expiresAt / 1000) + 3600;
   f.advanceTo(f.budget.expiresAt + 1);
-  assert.equal((await f.make().step(f.input)).state, 'pending');
+  const stopped = await f.make().step(f.input);
+  assert.equal(stopped.state, 'failed');
+  assert.equal(stopped.reason, 'dispatch_subsidy_expired');
   assert.equal(f.broadcasts(), 0);
   assert.equal((await f.store.list('chain-transactions')).length, 0);
   f.advanceTo(f.input.request.observation.deadline * 1000 + 1);
@@ -241,4 +243,33 @@ test('an external callback seen after local cancellation waits for finality', as
   assert.equal((await f.make().step(f.input)).state, 'delivered');
   assert.equal(f.broadcasts(), 1);
   assert.equal((await f.ledger()).reserved, '0');
+});
+
+test('subsidy expiry cancels a prepared unsent transaction without marking its open request closed', async t => {
+  const f = await fixture(t);
+  f.input.request.observation.deadline = Math.floor(f.budget.expiresAt / 1000) + 3600;
+  f.input.request.observationHash = digest(f.input.request.observation);
+  const row = await f.store.read('contract-requests', f.input.request.id);
+  await f.store.transaction(tx => tx.write('contract-requests', f.input.request.id, f.input.request, row.revision));
+  let calls = 0;
+  f.client.getChainId = async () => { if (++calls === 2) throw Error('RPC unavailable after prepare'); return 11155111; };
+  await assert.rejects(f.make().step(f.input), /RPC unavailable after prepare/);
+  assert.equal((await f.store.list('chain-transactions'))[0].value.state, 'prepared');
+  f.advanceTo(f.budget.expiresAt + 1);
+  const result = await f.make().step(f.input);
+  assert.equal(result.state, 'failed'); assert.equal(result.reason, 'dispatch_cancelled');
+  assert.equal((await f.store.list('chain-transactions'))[0].value.state, 'cancelled');
+  assert.equal((await f.ledger()).reserved, '0'); assert.equal(f.broadcasts(), 0);
+});
+
+test('a resolved request with expired callback funding has a final delivery failure and no replacement spend', async t => {
+  const f = await fixture(t, true);
+  await f.make().step(f.input); f.confirm(); f.advanceTo(f.budget.expiresAt + 1);
+  const result = await f.make().step(f.input);
+  assert.equal(result.state, 'failed'); assert.equal(result.reason, 'dispatch_subsidy_expired');
+  const next = { ...f.budget, id: 'later-explicit-allocation', expiresAt: f.budget.expiresAt + 86400000 };
+  await admitContractDispatchBudget(f.store, next);
+  assert.equal((await f.make(next).step(f.input)).state, 'failed');
+  assert.equal((await f.store.read('contract-dispatch-budgets', next.id)).value.reserved, '0');
+  assert.equal(f.broadcasts(), 1); assert.equal((await f.store.list('chain-transactions')).length, 1);
 });

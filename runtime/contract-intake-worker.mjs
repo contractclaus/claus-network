@@ -61,6 +61,9 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
         const current = await tx.read('contract-requests', request.id);
         requireThat(digest(current.value.result) === outcome.resultHash, 'delivery_result_mismatch');
         const safe = { state: outcome.state, resultHash: outcome.resultHash, observedAt: now() };
+        if (outcome.state === 'pending') safe.retryAt = now() + 60000;
+        if (['dispatch_subsidy_expired', 'dispatch_cancelled', 'dispatch_transaction_reverted'].includes(outcome.reason))
+          safe.reason = outcome.reason;
         if (outcome.state === 'delivered') Object.assign(safe,
           { finalized: true, transactionHash: outcome.transactionHash });
         await tx.write('contract-requests', request.id, { ...current.value, delivery: safe }, current.revision);

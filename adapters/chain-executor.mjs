@@ -1,4 +1,4 @@
-import { encodeAbiParameters, encodeFunctionData, hashTypedData, keccak256, recoverTypedDataAddress } from 'viem';
+import { decodeFunctionData, encodeAbiParameters, encodeFunctionData, hashTypedData, keccak256, recoverTypedDataAddress } from 'viem';
 import { digest, requireThat } from '../src/shared/index.mjs';
 import { createReadonlyTransactions } from './sepolia-transactions.mjs';
 import { approvalMessage, approvalTypes, domain, validateModule, selectExecutorCapability } from './chain-read.mjs';
@@ -66,8 +66,18 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     const module = (await store.read('chain-modules',value.moduleId))?.value;
     const observed = BigInt(value.observedBlock ?? 0);
     const deployed = BigInt(module?.receipt?.blockNumber ?? observed);
-    const found = await recoverChainEvent({store,client,chainId,key:'registration:'+value.id,
+    const projectAt = blockNumber => client.readContract({ address: value.executor, abi: executorAbi,
+      functionName: 'projects', args: [value.message.projectId], blockNumber });
+    const found = await recoverChainEvent({store,client,chainId,key:'registration:v2:'+value.id,
       fromBlock:deployed < observed ? deployed : observed,
+      validateEmpty: async ({ fromBlock, toBlock }) => {
+        if (toBlock < deployed || /^0x0{40}$/i.test((await projectAt(toBlock))[1])) return;
+        // A state change inside an allegedly empty page means the RPC's log
+        // index is behind. Do not advance the cursor past that missing event.
+        const code = fromBlock > 0n ? await client.getCode({ address: value.executor, blockNumber: fromBlock - 1n }) : null;
+        const before = code && code !== '0x' ? await projectAt(fromBlock - 1n) : null;
+        requireThat(before && !/^0x0{40}$/i.test(before[1]), 'recovery_logs_inconsistent');
+      },
       query:{address:value.executor,event,args:{projectId:value.message.projectId}}});
     const logs=found.logs;
     if (!logs.length) {
@@ -86,11 +96,16 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     }
     requireThat(logs.length === 1 && logs[0].args.owner.toLowerCase() === value.message.owner.toLowerCase() &&
       logs[0].args.mandateHash === value.message.mandateHash, 'registered_project_mismatch');
-    // A project event alone does not identify this signed intent. Recovery
-    // supports a direct relay of the exact registration calldata.
+    // Compare ABI arguments, not raw bytes: Solidity permits trailing data
+    // and equivalent ABI layouts without changing the signed intent.
     const transaction = await client.getTransaction({ hash: logs[0].transactionHash });
+    let relayedData;
+    try {
+      const decoded = decodeFunctionData({ abi: executorAbi, data: transaction.input });
+      relayedData = encodeFunctionData({ abi: executorAbi, functionName: decoded.functionName, args: decoded.args });
+    } catch { /* A different call cannot establish this registration. */ }
     requireThat(transaction.to?.toLowerCase() === value.executor.toLowerCase() &&
-      transaction.input.toLowerCase() === data.toLowerCase(), 'registered_project_mismatch');
+      relayedData?.toLowerCase() === data.toLowerCase(), 'registered_project_mismatch');
     const receipt = await client.getTransactionReceipt({ hash: logs[0].transactionHash });
     requireThat(receipt.status === 'success' && receipt.blockHash === logs[0].blockHash &&
       (await client.getBlock({ blockNumber: receipt.blockNumber })).hash === receipt.blockHash, 'registration_receipt_mismatch');
@@ -135,15 +150,21 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
           await published(module, reader); return authorize(reader);
         } });
       if (terminal(tx) && !tx.relayed) tx = await relayedRegistration(value, data) ?? tx;
+      if (tx.state === 'cancelled' && value.message.expiresAt * 1000 <= now() &&
+        (await client.getBlock({ blockTag: 'finalized' })).timestamp < BigInt(value.message.expiresAt))
+        return { state: 'registering' };
       if (terminal(tx)) return terminal(tx);
       if (tx.state !== 'confirmed') return { state: 'registering', ...(tx.hash ? { transactionHash: tx.hash } : {}) };
-      const project = await read(value.executor, 'projects', [value.message.projectId]);
+      const blockNumber = BigInt(tx.receipt.blockNumber);
+      const registeredRead = (address, functionName, args = [], abi = executorAbi) =>
+        client.readContract({ address, abi, functionName, args, blockNumber });
+      const project = await registeredRead(value.executor, 'projects', [value.message.projectId]);
       requireThat(project[0].toLowerCase() === value.message.owner.toLowerCase() && project[2] === value.message.mandateHash && project[3] === value.message.policyVersion &&
         Number(project[4]) === value.message.minDelaySeconds,
-        'registered_project_mismatch');
+        'registration_state_unavailable');
       const target = project[1];
-      requireThat((await read(target, 'executor', [], targetAbi)).toLowerCase() === value.executor.toLowerCase() &&
-        await read(target, 'projectId', [], targetAbi) === value.message.projectId, 'registered_project_mismatch');
+      requireThat((await registeredRead(target, 'executor', [], targetAbi)).toLowerCase() === value.executor.toLowerCase() &&
+        await registeredRead(target, 'projectId', [], targetAbi) === value.message.projectId, 'registration_state_unavailable');
       const targetArtifact = await artifacts.get(cap.artifactProjectId, cap.targetArtifactHash);
       const constructorArguments = encodeAbiParameters([{ type: 'bytes32' }, { type: 'address' }, { type: 'bytes' }],
         [value.message.projectId, value.message.implementation, value.configuration]);
