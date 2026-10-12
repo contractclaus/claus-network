@@ -11,6 +11,7 @@ State transitions are short database transactions. Provider calls and compilatio
 - Cancel queued work through the job endpoint. A marked external effect requires reconciliation instead of deleting its record.
 - If a token is lost or its response was interrupted, recover with owner authentication and revoke the affected mandate or credential.
 - A temporary graph failure does not withdraw a project. Publication state comes from the registry.
+- A changed block hash in finalized event recovery blocks the affected registration or execution with `recovery_block_changed`. Its cursor, signed transaction and accounting remain intact for operator investigation. This is an explicit stop, not a refund or permission to resend under a new identity.
 
 Initial rate limits are separate from any future financial allowance. Authentication accepts at most 30 requests per peer per five minutes and 200 globally. Other admitted API requests accept at most 300 per peer and 3,000 globally per five minutes. MCP transport and tool admission both count. Errors are explicit; clients should back off.
 

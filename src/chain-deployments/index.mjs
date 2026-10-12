@@ -165,7 +165,7 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
         const done = result.state === 'verified';
         const blocked = result.state === 'blocked';
         const failed = result.state === 'failed';
-        return jobs.finish(claim, { state: done ? 'complete' : blocked ? 'blocked' : failed ? 'failed' : 'waiting',
+        return await jobs.finish(claim, { state: done ? 'complete' : blocked ? 'blocked' : failed ? 'failed' : 'waiting',
           retryAt: done || blocked || failed ? null : now() + 30000, result }, async tx => {
           const old = await find(tx, collection, value.projectId, id);
           await tx.write(collection, id, { ...old.value, ...result, updatedAt: now() }, old.revision);
@@ -178,7 +178,8 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
         });
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
-        if (claim.mode === 'dispatch' && ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled'].includes(error.code)) {
+        if (['registered_project_mismatch', 'registration_receipt_mismatch', 'recovery_block_changed', 'recovery_event_mismatch'].includes(error.code) ||
+          claim.mode === 'dispatch' && ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled'].includes(error.code)) {
           return jobs.finish(claim, { state: 'blocked', result: { error: error.code } }, async tx => {
             const old = await find(tx, collection, value.projectId, id);
             await tx.write(collection, id, { ...old.value, state: 'blocked', error: error.code, updatedAt: now() }, old.revision);

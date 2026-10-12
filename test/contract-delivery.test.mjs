@@ -10,7 +10,8 @@ import { admitContractDispatchBudget, revokeContractDispatchBudget, createContra
 async function fixture(t, callback = false, publicAdmission = false) {
   const store = openStore(':memory:'); t.after(() => store.close());
   const signer = privateKeyToAccount(generatePrivateKey());
-  const inbox = '0x' + '22'.repeat(20), codeHash = '0x' + '33'.repeat(32), now = Date.now();
+  const inbox = '0x' + '22'.repeat(20), codeHash = '0x' + '33'.repeat(32);
+  let now = Date.now();
   const budget = { id: 'fixture-budget', chainId: 11155111, dispatcher: signer.address.toLowerCase(), inbox,
     codeHash, projectIds: ['project-a'], expiresAt: now + 86400000, maximumTotal: '1000000000000',
     maximumTransaction: '200000000000', maximumGas: '1000000', maximumFeePerGas: '1000000' };
@@ -47,7 +48,7 @@ async function fixture(t, callback = false, publicAdmission = false) {
   const make = (selectedBudget = budget) => createContractDelivery({ store, client, signer, sealer: createSealer('11'.repeat(32)), chain, identity, budget: selectedBudget,
     admitted: async (_reader, projectId) => ['project-a', 'project-b'].includes(projectId) && ++admissionChecks < withdrawAdmissionAt, now: () => now });
   const input = { id: digest({ requestId: request.id, action: 'result-delivery' }), request, allowSubmit: true };
-  return { store, budget, make, input, client, chain, broadcasts: () => broadcasts, denyAt: n => { denyAt = n; },
+  return { store, budget, make, input, client, chain, advanceTo: time => { now = time; }, broadcasts: () => broadcasts, denyAt: n => { identityChecks = 0; denyAt = n; },
     externalCallback: () => { callbackDelivered = true; },
     withdrawAdmissionAt: n => { withdrawAdmissionAt = n; },
     ledger: async () => (await store.read('contract-dispatch-budgets', budget.id)).value,
@@ -208,4 +209,36 @@ test('public dispatcher enforces each project share and makes chain reads outsid
   assert.equal((await f.make().step(next)).state, 'delivered');
   const usage = (await f.store.read('contract-dispatch-projects', digest({ budgetId: f.budget.id, projectId: 'project-b' }))).value;
   assert.equal(usage.spent, '90000000000'); assert.equal(usage.reserved, '0');
+});
+
+test('an expired subsidy leaves an open request pending without issuing another transaction', async t => {
+  const f = await fixture(t);
+  f.input.request.observation.deadline = Math.floor(f.budget.expiresAt / 1000) + 3600;
+  f.advanceTo(f.budget.expiresAt + 1);
+  assert.equal((await f.make().step(f.input)).state, 'pending');
+  assert.equal(f.broadcasts(), 0);
+  assert.equal((await f.store.list('chain-transactions')).length, 0);
+  f.advanceTo(f.input.request.observation.deadline * 1000 + 1);
+  assert.equal((await f.make().step(f.input)).state, 'closed');
+});
+
+test('an external callback seen after local cancellation waits for finality', async t => {
+  const f = await fixture(t, true);
+  await f.make().step(f.input); f.confirm();
+  const state = f.chain.deliveryState;
+  f.denyAt(5);
+  let reads = 0, final = false;
+  f.chain.deliveryState = async (request, tag) => {
+    const value = await state(request, tag);
+    // The external callback races the final authorization check after signing.
+    return { ...value, callbackDelivered: tag === 'finalized' ? final : ++reads >= 4 };
+  };
+  assert.equal((await f.make().step(f.input)).state, 'pending');
+  const rows = await f.store.list('chain-transactions');
+  assert.equal(rows.find(x => x.id.endsWith(':callback')).value.state, 'cancelled');
+  assert.equal(f.broadcasts(), 1);
+  final = true;
+  assert.equal((await f.make().step(f.input)).state, 'delivered');
+  assert.equal(f.broadcasts(), 1);
+  assert.equal((await f.ledger()).reserved, '0');
 });

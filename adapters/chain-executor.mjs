@@ -59,18 +59,38 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     requireThat(value.enabled && digest(value) === digest({ ...cap, enabled: true }) &&
       value.executorPayer?.toLowerCase() === signer.address.toLowerCase(), 'executor_not_enabled');
   }
-  async function relayedRegistration(value) {
+  async function relayedRegistration(value, data) {
     const project = await read(value.executor, 'projects', [value.message.projectId]);
     if (/^0x0{40}$/i.test(project[1])) return null;
     const event = executorAbi.find(x => x.type === 'event' && x.name === 'ProjectRegistered');
     const module = (await store.read('chain-modules',value.moduleId))?.value;
+    const observed = BigInt(value.observedBlock ?? 0);
+    const deployed = BigInt(module?.receipt?.blockNumber ?? observed);
     const found = await recoverChainEvent({store,client,chainId,key:'registration:'+value.id,
-      fromBlock:value.observedBlock??module?.receipt?.blockNumber??0,
+      fromBlock:deployed < observed ? deployed : observed,
       query:{address:value.executor,event,args:{projectId:value.message.projectId}}});
     const logs=found.logs;
-    if(!logs.length)return {state:'submitted',relayed:true};
+    if (!logs.length) {
+      if (found.complete) {
+        // Latest state may already contain the relay while finality still
+        // precedes it. Only finalized absence can close an expired intent.
+        const head = found.finalizedBlock;
+        if (head.number >= deployed) {
+          const finalized = await client.readContract({ address: value.executor, abi: executorAbi,
+            functionName: 'projects', args: [value.message.projectId], blockNumber: head.number });
+          requireThat(/^0x0{40}$/i.test(finalized[1]), 'registered_project_mismatch');
+        }
+        if (head.timestamp >= BigInt(value.message.expiresAt)) return { state: 'cancelled', relayed: true };
+      }
+      return { state: 'submitted', relayed: true };
+    }
     requireThat(logs.length === 1 && logs[0].args.owner.toLowerCase() === value.message.owner.toLowerCase() &&
       logs[0].args.mandateHash === value.message.mandateHash, 'registered_project_mismatch');
+    // A project event alone does not identify this signed intent. Recovery
+    // supports a direct relay of the exact registration calldata.
+    const transaction = await client.getTransaction({ hash: logs[0].transactionHash });
+    requireThat(transaction.to?.toLowerCase() === value.executor.toLowerCase() &&
+      transaction.input.toLowerCase() === data.toLowerCase(), 'registered_project_mismatch');
     const receipt = await client.getTransactionReceipt({ hash: logs[0].transactionHash });
     requireThat(receipt.status === 'success' && receipt.blockHash === logs[0].blockHash &&
       (await client.getBlock({ blockNumber: receipt.blockNumber })).hash === receipt.blockHash, 'registration_receipt_mismatch');
@@ -103,7 +123,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       requireThat(await chain.verifyRegistration(value, signature), 'invalid_signature');
       const data = encodeFunctionData({ abi: executorAbi, functionName: 'registerProject', args: [value.message, value.configuration, signature] });
       const pending = await store.read('chain-transactions', 'register:' + value.id);
-      let tx = !pending ? await relayedRegistration(value) : null;
+      let tx = !pending ? await relayedRegistration(value, data) : null;
       tx ??= await transact({ id: 'register:' + value.id, to: value.executor, data,
         authority: { kind, projectId: value.projectId, registrationId: value.id }, expiresAt: value.message.expiresAt * 1000,
         authorize: async reader => {
@@ -114,9 +134,9 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
           const module = (await reader.read('chain-modules', value.moduleId))?.value;
           await published(module, reader); return authorize(reader);
         } });
-      if (terminal(tx)) tx = await relayedRegistration(value) ?? tx;
+      if (terminal(tx) && !tx.relayed) tx = await relayedRegistration(value, data) ?? tx;
       if (terminal(tx)) return terminal(tx);
-      if (tx.state !== 'confirmed') return { state: 'registering', transactionHash: tx.hash };
+      if (tx.state !== 'confirmed') return { state: 'registering', ...(tx.hash ? { transactionHash: tx.hash } : {}) };
       const project = await read(value.executor, 'projects', [value.message.projectId]);
       requireThat(project[0].toLowerCase() === value.message.owner.toLowerCase() && project[2] === value.message.mandateHash && project[3] === value.message.policyVersion &&
         Number(project[4]) === value.message.minDelaySeconds,
