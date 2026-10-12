@@ -18,9 +18,9 @@ This page describes the deployed scope on 12 October 2026. Check the live [healt
 | Project hosting, customer wallets, service marketplace | Planned |
 | Public inference and holder credits | Planned |
 
-Current API deployment: `dpl_GPHtv2XB86zt3TpZjU4cQZSdauNn`.
+Last verified API deployment before the 0.4 activation: `dpl_GPHtv2XB86zt3TpZjU4cQZSdauNn`.
 
-Release input digest: `3b74929056a67550a32f0c159cae4a3267cb61c2ab23a98d4a1373fb2e7e5c0c`.
+Its release input digest is `3b74929056a67550a32f0c159cae4a3267cb61c2ab23a98d4a1373fb2e7e5c0c`. Release 0.4 contains 41 documented operations and separate Claus-controller and Sepolia-executor workers. Local tests cover real EVM signatures, delayed execution, on-chain revocation and cancellation. Its public contract profile stays disabled until the new candidate's independent review, deployment and source verification have been checked.
 
 The published `claus-approval-contracts` project belongs to Claus. It is not evidence of independent customer adoption. Compilation, a review report, approval, execution and source verification are different states; none should be inferred from another.
 

@@ -1,6 +1,6 @@
 # Reviews and contract changes
 
-The intended chain is source → build → independent review → Claus decision → execution → verification. The review API is available to sponsor-approved pilots. Contract execution and automatic Claus decisions are not yet enabled.
+The intended chain is source → build → independent review → Claus decision → execution → verification. The review API is available to sponsor-approved pilots. Release 0.4 implements the [protected Sepolia workflow](testnet.md); activation and live evidence are tracked separately in [release status](release-status.md).
 
 ## Submit a review
 
@@ -24,7 +24,9 @@ Project owners cannot grant themselves sponsorship, modify the sponsor balance o
 
 The initial [contract audit](https://api.imd.fun/jobs/016e8435-43ef-4f21-b18c-7dd290b796b2) covered commit `63e8dc823bd3ab242481b0b4b85f045e40fe369f`. Its specialists identified registration, delay and recovery issues. The fixes and retained assumptions are documented in [AUDIT_RESPONSE.md](https://github.com/contractclaus/claus-network-contracts/blob/aa865a79b447552d09d05244cfd958bb33254c12/AUDIT_RESPONSE.md).
 
-The corrected commit `aa865a79b447552d09d05244cfd958bb33254c12` is under a separate [IMD review](https://api.imd.fun/jobs/bc2c40d4-b918-49c3-a376-c35a55c6c9a2). Its [0.5 IMD payment](https://etherscan.io/tx/0x8cd026b41094ae861b9115bd2f602594b18d4bdb32556321de8e5415f20d0d32) is confirmed. These two operator-initiated audits are distinct from the new public pilot workflow. Neither is described as a completed end-to-end pilot.
+The corrected commit `aa865a79b447552d09d05244cfd958bb33254c12` has a separate [IMD review](https://api.imd.fun/jobs/bc2c40d4-b918-49c3-a376-c35a55c6c9a2). Its [0.5 IMD payment](https://etherscan.io/tx/0x8cd026b41094ae861b9115bd2f602594b18d4bdb32556321de8e5415f20d0d32) is confirmed. The next candidate, `2594aa2dd8285736c7b60fdf31e05095e6ff21dc`, addresses further specialist findings: recovery cancellation invalidates interim approvals, suspended signers cannot cancel project approvals, invalid module targets are rejected before queueing, and the previous implementation is checked against its stored code commitment. Its new review is submitted through the pilot API. The [source and response](https://github.com/contractclaus/claus-network-contracts/tree/2594aa2dd8285736c7b60fdf31e05095e6ff21dc) identify that exact candidate.
+
+The first two operator-initiated audits are distinct from the public pilot workflow. None of these individual reports alone demonstrates a completed end-to-end pilot.
 
 ## Non-custodial contract profile
 

@@ -124,6 +124,22 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "chain-deployments",
+      "path": "src/chain-deployments/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "approvals",
+      "path": "src/approvals/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [

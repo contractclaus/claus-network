@@ -9,4 +9,5 @@
 - [MCP, SDK and CLI](clients.md)
 - [Explorer and publication](explorer.md)
 - [Reviews and contract changes](reviews-and-contracts.md)
+- [Protected testnet changes](testnet.md)
 - [Operation and recovery](operations.md)

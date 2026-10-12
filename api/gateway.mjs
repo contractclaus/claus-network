@@ -26,10 +26,14 @@ export default async function handler(req, res) {
       const worker = (await store.read('worker-health', 'review'))?.value;
       const enabled = review?.enabled === true;
       const recent = worker?.observedAt > Date.now() - 300000;
+      const chain = (await store.read('network-capabilities', 'chain'))?.value;
+      const controller = (await store.read('worker-health', 'controller'))?.value;
+      const executor = (await store.read('worker-health', 'executor'))?.value;
       response = Response.json({ service: 'Claus Network', status: 'ok',
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
         reviewExecution: enabled ? recent ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
+        testnetExecution: chain?.enabled === true ? controller?.observedAt > Date.now() - 300000 && executor?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         mainnetExecution: 'not_enabled' });
     } else {
       const headers = new Headers();

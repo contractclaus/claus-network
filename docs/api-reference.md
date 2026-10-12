@@ -30,6 +30,15 @@ The [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) i
 | `review_accept` | POST | `/v1/projects/{projectId}/reviews/{caseId}/accept` | Bearer credential |
 | `review_artifact` | GET | `/v1/projects/{projectId}/reviews/{caseId}/artifact` | Bearer credential |
 | `review_publish` | PUT | `/v1/projects/{projectId}/reviews/{caseId}/publication` | Bearer credential |
+| `module_deploy` | POST | `/v1/projects/{projectId}/modules` | Bearer credential |
+| `module_get` | GET | `/v1/projects/{projectId}/modules/{moduleId}` | Bearer credential |
+| `registration_prepare` | POST | `/v1/projects/{projectId}/chain/registrations/prepare` | Bearer credential |
+| `registration_submit` | POST | `/v1/projects/{projectId}/chain/registrations/{registrationId}/submit` | Bearer credential |
+| `registration_get` | GET | `/v1/projects/{projectId}/chain/registrations/{registrationId}` | Bearer credential |
+| `chain_binding` | GET | `/v1/projects/{projectId}/chain` | Bearer credential |
+| `proposal_create` | POST | `/v1/projects/{projectId}/proposals` | Bearer credential |
+| `proposal_get` | GET | `/v1/projects/{projectId}/proposals/{proposalId}` | Bearer credential |
+| `proposal_publish` | PUT | `/v1/projects/{projectId}/proposals/{proposalId}/publication` | Bearer credential |
 | `source_publish` | PUT | `/v1/projects/{projectId}/sources/{snapshotId}/publication` | Bearer credential |
 | `project_publish` | PUT | `/v1/projects/{projectId}/publication` | Bearer credential |
 | `project_export` | POST | `/v1/projects/{projectId}/exports` | Bearer credential |

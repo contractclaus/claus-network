@@ -2,7 +2,7 @@ import {createServer} from 'node:http';
 import {pathToFileURL} from 'node:url';
 import {Pool,neonConfig} from '@neondatabase/serverless';
 import ws from 'ws';
-import {verifyMessage} from 'viem';
+import {verifyMessage,createPublicClient,http as rpcHttp} from 'viem';
 import {createIdentity} from '../src/identity/index.mjs';
 import {createProjects} from '../src/projects/index.mjs';
 import {createJobs} from '../src/jobs/index.mjs';
@@ -15,17 +15,25 @@ import {createHttp} from '../interfaces/http.mjs';
 import {createMcp} from '../interfaces/mcp.mjs';
 import {digest,requireThat} from '../src/shared/index.mjs';
 import {createReviewSystem} from './reviews.mjs';
+import {createChainRead} from '../adapters/chain-read.mjs';
+import {createChainDeployments} from '../src/chain-deployments/index.mjs';
+import {createApprovals} from '../src/approvals/index.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={}}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={}}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  const identity=createIdentity({store,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
  const projects=createProjects({store,identity,now});
- let reviewSystem;
- const jobs=createJobs({store,identity,now,onCancel:(tx,job)=>reviewSystem.flow.onCancel(tx,job)});
+ let reviewSystem,deployments,approvals;
+ const jobs=createJobs({store,identity,now,onCancel:async(tx,job)=>{
+  await reviewSystem.flow.onCancel(tx,job);await deployments.onCancel(tx,job);await approvals.onCancel(tx,job);
+ }});
  const artifacts=createArtifactStore({store});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now});
  reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,...reviewPorts});
- const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow});
+ const chain=chainPorts.chain??createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})});
+ deployments=createChainDeployments({store,identity,builds,reviews:reviewSystem.flow,jobs,artifacts,chain,now});
+ approvals=createApprovals({store,identity,projects,reviews:reviewSystem.flow,deployments,jobs,artifacts,chain,now});
+ const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals});
  const admit=async({route,peer})=>store.transaction(async tx=>{
   const window=Math.floor(now()/300000);
   const group=route.startsWith('auth_')?'auth':'api';
@@ -38,7 +46,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   }
  });
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {identity,projects,jobs,builds,reviewSystem,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{
