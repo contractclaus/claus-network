@@ -53,7 +53,7 @@ export function createWallets({ store, identity, jobs, services, chain, now = ()
       return visible((await get(store, 'wallet-actions', projectId, actionId)).value);
     },
     async revokeRequest(actor, projectId, sessionId) {
-      await identity.authorize(actor, 'wallet.manage', { projectId });
+      await identity.authorize(actor, 'wallet.revoke', { projectId });
       const wallet = (await get(store, 'project-wallets', projectId, projectId)).value;
       requireThat(wallet.state === 'verified', 'wallet_not_verified');
       return chain.revoke(wallet, sessionId);

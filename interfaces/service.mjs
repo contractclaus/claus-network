@@ -1,6 +1,6 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults}){
+export function createService({identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers}){
  const operations={
   auth_challenge:(_,input)=>identity.challenge(input),
   auth_session:(_,input)=>identity.session(input),
@@ -71,6 +71,12 @@ export function createService({identity,projects,builds,jobs,reviews,deployments
   source_publish:(actor,input)=>projects.publishSource(actor,input.projectId,input),
   project_publish:(actor,input)=>projects.publish(actor,input.projectId,input),
   project_export:(actor,input)=>projects.export(actor,input.projectId,input),
+  project_transfer_prepare:(actor,input)=>transfers.prepare(actor,input.projectId,input),
+  project_transfer_page:(actor,input)=>transfers.page(actor,input.projectId,input),
+  project_import_begin:(actor,input)=>transfers.beginImport(actor,input.header),
+  project_import_page:(actor,input)=>transfers.receive(actor,input),
+  project_import_commit:(actor,input)=>transfers.commit(actor,input.archiveId),
+  project_import_history:(actor,input)=>transfers.history(actor,input.projectId,input),
   public_project:(_,input)=>projects.publicProject(input.slug),
   public_source:(_,input)=>projects.publicSource(input.sourceId),
   network_graph:(_,input)=>projects.graph(input)

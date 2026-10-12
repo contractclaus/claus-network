@@ -3,6 +3,7 @@ import ws from 'ws';
 import { openPostgresStore } from '../src/postgres/index.mjs';
 import { createApplication } from '../runtime/server.mjs';
 import { requestUrl } from '../runtime/request-url.mjs';
+import { operatorConfig } from '../runtime/operator-config.mjs';
 
 neonConfig.webSocketConstructor = ws;
 let loaded;
@@ -11,7 +12,8 @@ function application() {
     if (!process.env.CLAUS_NETWORK_DATABASE_URL || !process.env.CLAUS_NETWORK_ORIGIN) throw Error('runtime_unconfigured');
     const pool = new Pool({ connectionString: process.env.CLAUS_NETWORK_DATABASE_URL, max: 3, connectionTimeoutMillis: 8000 });
     const store = await openPostgresStore({ pool });
-    return { store, app: createApplication({ store, origin: process.env.CLAUS_NETWORK_ORIGIN, rateSalt: process.env.CLAUS_NETWORK_RATE_SALT }) };
+    return { store, app: createApplication({ store, origin: process.env.CLAUS_NETWORK_ORIGIN,
+      rateSalt: process.env.CLAUS_NETWORK_RATE_SALT, operatorPorts: operatorConfig() }) };
   })().catch(error => { loaded = null; throw error; });
   return loaded;
 }
@@ -35,6 +37,7 @@ export default async function handler(req, res) {
       const walletWorker = (await store.read('worker-health', 'wallets'))?.value;
       const vaults = (await store.read('network-capabilities', 'vaults'))?.value;
       const vaultWorker = (await store.read('worker-health', 'vaults'))?.value;
+      const portability = (await store.read('network-capabilities', 'portability'))?.value;
       response = Response.json({ service: 'Claus Network', status: 'ok',
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
@@ -43,6 +46,7 @@ export default async function handler(req, res) {
         collaborationExecution: collaboration?.enabled === true ? serviceWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         walletExecution: wallets?.enabled === true ? walletWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         vaultExecution: vaults?.enabled === true ? vaultWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
+        portabilityExecution: portability?.enabled === true ? 'restricted_pilot' : 'not_enabled',
         mainnetExecution: 'not_enabled' });
     } else {
       const headers = new Headers();

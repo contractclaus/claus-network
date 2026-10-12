@@ -11,7 +11,11 @@ export function createClient({origin,token,fetch:request=globalThis.fetch}){
   async call(name,input={}){
    const route=ROUTES.find(r=>r.name===name);if(!route)throw Error('Unknown operation');
    const remaining={...input};
-   const path=route.path.replace(/\{(\w+)\}/g,(_,key)=>{if(typeof remaining[key]!=='string')throw Error('Missing path parameter');const value=remaining[key];delete remaining[key];return encodeURIComponent(value);});
+   const path=route.path.replace(/\{(\w+)\}/g,(_,key)=>{
+    const value=remaining[key],numeric=route.inputSchema.properties[key]?.type==='integer';
+    if(numeric?!Number.isSafeInteger(value)||value<0:typeof value!=='string'||!value)throw Error('Missing or invalid path parameter');
+    delete remaining[key];return encodeURIComponent(String(value));
+   });
    const url=new URL(path,base);const headers={accept:'application/json'};
    if(!route.public&&token)headers.authorization='Bearer '+token;
    let body;

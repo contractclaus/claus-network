@@ -71,7 +71,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
     async publish(actor, projectId, { proposalId, published, expectedRevision }) {
       requireThat(typeof published === 'boolean' && Number.isSafeInteger(expectedRevision) && expectedRevision >= 0, 'invalid_publication');
       return store.transaction(async tx => {
-        await identity.authorize(actor, 'project.publish', { projectId }, tx);
+        await identity.authorize(actor, 'project.publish', { projectId, withdrawal: !published }, tx);
         const value = (await find(tx, projectId, proposalId)).value;
         requireThat(value.decision, 'decision_not_complete');
         const publication = await tx.read('proposal-publications', proposalId);

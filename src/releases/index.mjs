@@ -1,7 +1,8 @@
 import { canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
 
-export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, now = () => Date.now() }) {
-  const origin='https://claus-network-sites.vercel.app';
+export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, now = () => Date.now(),
+  origin = 'https://claus-network-sites.vercel.app' }) {
+  requireThat(new URL(origin).origin === origin && new URL(origin).protocol === 'https:', 'invalid_release_origin');
   async function owned(actor,projectId,id,reader=store){
     await identity.authorize(actor,'resource.read',{projectId},reader);
     const row=await reader.read('project-releases',text(id));
@@ -41,7 +42,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
       if(published)integer(expiresAt,now()+60000,now()+30*86400000);
       else integer(expiresAt);
       return store.transaction(async tx=>{
-        await identity.authorize(actor,'release.publish',{projectId},tx);
+        await identity.authorize(actor,'release.publish',{projectId,withdrawal:!published},tx);
         if(published)await admit(projectId,tx);
         const release=(await tx.read('project-releases',text(releaseId)))?.value;
         requireThat(release?.projectId===projectId,'not_found');

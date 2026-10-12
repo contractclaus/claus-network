@@ -1,4 +1,4 @@
-export const API_VERSION='0.6.1';
+export const API_VERSION='0.7.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
@@ -77,6 +77,12 @@ export const ROUTES=Object.freeze([
  route('source_publish','PUT','/v1/projects/{projectId}/sources/{snapshotId}/publication',{projectId:string(),snapshotId:string(),published:boolean,expectedRevision:integer}),
  route('project_publish','PUT','/v1/projects/{projectId}/publication',{projectId:string(),published:boolean,expectedRevision:integer,description:{type:'string',maxLength:500}},['projectId','published','expectedRevision']),
  route('project_export','POST','/v1/projects/{projectId}/exports',{projectId:string(),snapshotId:string()}),
+ route('project_transfer_prepare','POST','/v1/projects/{projectId}/transfers',{projectId:string(),destination:string(256),expectedProjectRevision:integer,idempotencyKey:string()}),
+ route('project_transfer_page','GET','/v1/projects/{projectId}/transfers/{archiveId}/pages/{page}',{projectId:string(),archiveId:string(),page:integer}),
+ route('project_import_begin','POST','/v1/imports',{header:true}),
+ route('project_import_page','PUT','/v1/imports/{archiveId}/pages/{page}',{archiveId:string(),page:integer,records:{type:'array',minItems:1,maxItems:100,items:true}}),
+ route('project_import_commit','POST','/v1/imports/{archiveId}/commit',{archiveId:string()}),
+ route('project_import_history','GET','/v1/projects/{projectId}/import-history',{projectId:string(),page:integer},['projectId']),
  route('public_project','GET','/v1/public/projects/{slug}',{slug:string(63)},undefined,true),
  route('public_source','GET','/v1/public/sources/{sourceId}',{sourceId:string()},undefined,true),
  route('network_graph','GET','/v1/public/graph',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true)

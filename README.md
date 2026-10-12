@@ -1,6 +1,6 @@
 # Claus Network
 
-Claus Network implementation. The initial project/source API and MCP are live at https://claus-network-api.vercel.app; OpenAPI is at `/openapi.json`. The [delivery record](DELIVERY.md) distinguishes deployed features from work in progress. The [network plan](../docs/ecosystem/NETWORK_PLAN.md) defines the complete target.
+Claus Network implementation. The initial project/source API and MCP are live at https://claus-network-api.vercel.app; OpenAPI is at `/openapi.json`. The [release status](docs/release-status.md) distinguishes deployed features from work in progress. This repository publishes the programmatic interfaces, worker implementations and reference contracts.
 
 ## Implemented and tested
 

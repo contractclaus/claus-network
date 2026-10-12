@@ -2,7 +2,7 @@ import { createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
 import { canonical, contentHash, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
 
 const SCHEMA = 'claus-project-archive/1';
-const MAX_BYTES = 64000000, MAX_RECORDS = 40000, PAGE_SIZE = 100;
+const MAX_BYTES = 64000000, MAX_RECORDS = 40000, PAGE_SIZE = 100, PAGE_BYTES = 200000;
 // An explicit inventory prevents new runtime tables, credentials or signed
 // transaction material from silently becoming part of an export.
 const FIELDS = Object.freeze({
@@ -29,6 +29,7 @@ const FIELDS = Object.freeze({
   'public-sources': 'projectId snapshotId published files',
   'service-publications': 'projectId published',
   'release-publications': 'projectId published expiresAt updatedAt',
+  'imported-history': 'projectId archiveId header pages',
   'workflow-jobs': 'id projectId kind requestHash state effect effectKey attempts availableAt createdAt updatedAt result'
 });
 const PRIVATE_FIELDS = new Set(['actor', 'authority', 'buyerActor', 'lease', 'leaseHash', 'signature',
@@ -78,8 +79,8 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
   return {
     // A snapshot only. It grants no destination authority and does not migrate
     // a live job. Handover is a separate, fenced protocol.
-    async export(actor, projectId) {
-      return store.transaction(async tx => {
+    async export(actor, projectId, { reader = null, transfer = null } = {}) {
+      const capture = async tx => {
         await identity.authorize(actor, 'project.export', { projectId }, tx);
         const project = await tx.read('projects', projectId);
         const owner = (await tx.read('principals', project.value.ownerId))?.value;
@@ -96,7 +97,9 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
         add('projects', { id: projectId, ...project });
         for (const [collection, fields] of Object.entries(FIELDS)) {
           await all(tx, collection, row => row.value.projectId === projectId, row => {
-            const value = collection === 'artifacts' || collection === 'snapshots'
+            // An imported header's Ed25519 signature is public attestation,
+            // not reusable wallet authority. Keep it for subsequent moves.
+            const value = ['artifacts', 'snapshots', 'imported-history'].includes(collection)
               ? select(row.value, fields) : redact(select(row.value, fields));
             add(collection, row, value, digest(value) === digest(row.value) ? 'complete' : 'safe-fields');
             if (collection === 'review-jobs') jobIds.add(row.id);
@@ -141,8 +144,17 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
         }
         records.sort((a, b) => a.collection.localeCompare(b.collection, 'en') || a.id.localeCompare(b.id, 'en'));
         const pages = [];
-        for (let i = 0; i < records.length; i += PAGE_SIZE) pages.push(records.slice(i, i + PAGE_SIZE));
-        const manifest = { schema: SCHEMA, purpose: 'snapshot-only', operatorId, keyId, projectId,
+        let page = [], pageBytes = 2;
+        for (const record of records) {
+          const size = Buffer.byteLength(canonical(record)) + 1;
+          if (page.length && (page.length === PAGE_SIZE || pageBytes + size > PAGE_BYTES)) {
+            pages.push(page); page = []; pageBytes = 2;
+          }
+          requireThat(size <= PAGE_BYTES, 'archive_record_too_large');
+          page.push(record); pageBytes += size;
+        }
+        if (page.length) pages.push(page);
+        const manifest = { schema: SCHEMA, purpose: transfer ? 'source-fenced-transfer' : 'snapshot-only', ...(transfer ? { transfer } : {}), operatorId, keyId, projectId,
           owner: { address: owner.address.toLowerCase(), chainId: owner.chainId }, createdAt: now(),
           highWatermark, recordCount: records.length, contentBytes: bytes,
           pages: pages.map(digest), coverage: [...Object.keys(FIELDS), 'projects', 'cost-receipts',
@@ -153,7 +165,8 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
               disposition: 'retain-at-source; reconcile original identity; never re-purchase' })) };
         const signature = sign(null, Buffer.from(canonical(manifest)), key).toString('base64');
         return { id: digest(manifest), manifest, signature, pages };
-      });
+      };
+      return reader ? capture(reader) : store.transaction(capture);
     }
   };
 }
@@ -161,23 +174,8 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
 export function verifyProjectArchive(archive, { trustedOperators, expectedOwner }) {
   shape(archive, ['id', 'manifest', 'signature', 'pages']);
   const { manifest, pages } = archive;
-  shape(manifest, ['schema', 'purpose', 'operatorId', 'keyId', 'projectId', 'owner', 'createdAt',
-    'highWatermark', 'recordCount', 'contentBytes', 'pages', 'coverage', 'omitted', 'pendingEffects']);
-  requireThat(manifest.schema === SCHEMA && manifest.purpose === 'snapshot-only', 'unsupported_archive');
-  origin(manifest.operatorId); contentHash(manifest.keyId); contentHash(archive.id); text(manifest.projectId);
-  const trusted = trustedOperators?.[manifest.operatorId]?.[manifest.keyId];
-  requireThat(trusted, 'untrusted_archive_operator');
-  const key = publicKey(trusted);
-  requireThat(archiveKeyId(key) === manifest.keyId, 'archive_key_mismatch');
-  requireThat(typeof archive.signature === 'string' && /^[A-Za-z0-9+/]{86}==$/.test(archive.signature), 'invalid_archive_signature');
-  requireThat(digest(manifest) === archive.id && verify(null, Buffer.from(canonical(manifest)), key,
-    Buffer.from(archive.signature, 'base64')), 'invalid_archive_signature');
-  shape(manifest.owner, ['address', 'chainId']);
-  requireThat(expectedOwner && manifest.owner.address === expectedOwner.address?.toLowerCase() &&
-    manifest.owner.chainId === expectedOwner.chainId, 'archive_owner_mismatch');
-  integer(manifest.createdAt); integer(manifest.highWatermark); integer(manifest.recordCount, 1, MAX_RECORDS);
-  integer(manifest.contentBytes, 1, MAX_BYTES);
-  requireThat(Array.isArray(pages) && pages.length === manifest.pages.length && pages.length <= MAX_RECORDS / PAGE_SIZE,
+  verifyArchiveHeader(archive, { trustedOperators, expectedOwner });
+  requireThat(Array.isArray(pages) && pages.length === manifest.pages.length && pages.length <= 1000,
     'archive_pages_mismatch');
   const records = [], seen = new Set(); let bytes = 0;
   for (let i = 0; i < pages.length; i++) {
@@ -202,4 +200,33 @@ export function verifyProjectArchive(archive, { trustedOperators, expectedOwner 
   requireThat(project.length === 1 && project[0].id === manifest.projectId && project[0].value.id === manifest.projectId,
     'archive_project_mismatch');
   return { id: archive.id, manifest: copy(manifest), records, authority: 'historical-only' };
+}
+
+export function verifyArchiveHeader(archive, { trustedOperators, expectedOwner }) {
+  const { manifest } = archive;
+  requireThat(manifest && typeof manifest === 'object', 'invalid_shape');
+  shape(manifest, ['schema', 'purpose', 'operatorId', 'keyId', 'projectId', 'owner', 'createdAt',
+    'highWatermark', 'recordCount', 'contentBytes', 'pages', 'coverage', 'omitted', 'pendingEffects', ...(manifest.purpose === 'source-fenced-transfer' ? ['transfer'] : [])]);
+  requireThat(manifest.schema === SCHEMA && ['snapshot-only', 'source-fenced-transfer'].includes(manifest.purpose), 'unsupported_archive');
+  origin(manifest.operatorId); contentHash(manifest.keyId); contentHash(archive.id); text(manifest.projectId);
+  const trusted = trustedOperators?.[manifest.operatorId]?.[manifest.keyId];
+  requireThat(trusted, 'untrusted_archive_operator');
+  const key = publicKey(trusted);
+  requireThat(archiveKeyId(key) === manifest.keyId, 'archive_key_mismatch');
+  requireThat(typeof archive.signature === 'string' && /^[A-Za-z0-9+/]{86}==$/.test(archive.signature), 'invalid_archive_signature');
+  requireThat(digest(manifest) === archive.id && verify(null, Buffer.from(canonical(manifest)), key,
+    Buffer.from(archive.signature, 'base64')), 'invalid_archive_signature');
+  shape(manifest.owner, ['address', 'chainId']);
+  requireThat(expectedOwner && manifest.owner.address === expectedOwner.address?.toLowerCase() &&
+    manifest.owner.chainId === expectedOwner.chainId, 'archive_owner_mismatch');
+  integer(manifest.createdAt); integer(manifest.highWatermark); integer(manifest.recordCount, 1, MAX_RECORDS);
+  integer(manifest.contentBytes, 1, MAX_BYTES);
+  if (manifest.purpose === 'source-fenced-transfer') {
+    shape(manifest.transfer, ['id', 'destination', 'fencedAt']);
+    contentHash(manifest.transfer.id); origin(manifest.transfer.destination); integer(manifest.transfer.fencedAt);
+    requireThat(manifest.transfer.destination !== manifest.operatorId, 'invalid_transfer_destination');
+  }
+  requireThat(Array.isArray(manifest.pages) && manifest.pages.length > 0 && manifest.pages.length <= 1000, 'archive_pages_mismatch');
+  manifest.pages.forEach(contentHash);
+  return manifest;
 }

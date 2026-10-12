@@ -1,0 +1,15 @@
+{
+  "status": "configuration prepared; hosted migration not yet accepted",
+  "operators": [
+    {
+      "operatorId": "https://claus-network-api.vercel.app",
+      "keyId": "sha256:45783ffa491db8bfc382b32247a8f08245babaef39260f1d47358ca3b2ecb158",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA91OURUkwFClQdYbFw/1JbZ8V/aPpJghROjhmAzWiQh8=\n-----END PUBLIC KEY-----\n"
+    },
+    {
+      "operatorId": "https://claus-network-portable.vercel.app",
+      "keyId": "sha256:49d5aa182d3b304f1a8488dde0734301caddb1bfafbec745e82c5d83ea6866be",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA77PVUgXNSvmnkcamHGdIhUl8kRt/m09uL9xjkXpk+Vg=\n-----END PUBLIC KEY-----\n"
+    }
+  ]
+}

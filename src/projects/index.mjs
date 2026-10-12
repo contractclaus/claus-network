@@ -66,7 +66,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     async publishSource(actor, projectId, { snapshotId, expectedRevision, published }) {
       requireThat(typeof published === 'boolean', 'invalid_publication'); integer(expectedRevision);
       return store.transaction(async tx => {
-        await identity.authorize(actor, 'source.publish', { projectId }, tx);
+        await identity.authorize(actor, 'source.publish', { projectId, withdrawal: !published }, tx);
         const version = await snapshot(tx, projectId, snapshotId), key = projectRef(projectId, snapshotId);
         const old = await tx.read('public-sources', key);
         requireThat((old?.revision ?? 0) === expectedRevision, 'revision_conflict');
@@ -88,7 +88,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     async publish(actor, projectId, { published, expectedRevision, description = '' }) {
       requireThat(typeof published === 'boolean', 'invalid_publication'); integer(expectedRevision); prose(description, 500);
       return store.transaction(async tx => {
-        await identity.authorize(actor, 'project.publish', { projectId }, tx);
+        await identity.authorize(actor, 'project.publish', { projectId, withdrawal: !published }, tx);
         const project = (await tx.read('projects', projectId)).value;
         const old = await tx.read('public-projects', project.slug);
         requireThat((old?.revision ?? 0) === expectedRevision, 'revision_conflict');

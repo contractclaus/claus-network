@@ -1,12 +1,14 @@
-const apiOrigin='https://claus-network-api.vercel.app';
 const contentTypes={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',
   json:'application/json; charset=utf-8',svg:'image/svg+xml'};
-export async function render(request,{fetcher=fetch}={}){
+export async function render(request,{fetcher=fetch,apiOrigin='https://claus-network-api.vercel.app',
+  siteOrigin='https://claus-network-sites.vercel.app',frameOrigin='https://claus.si'}={}){
+  for(const origin of [apiOrigin,siteOrigin,frameOrigin])if(new URL(origin).origin!==origin||new URL(origin).protocol!=='https:')throw Error('invalid_host_configuration');
+  if(siteOrigin===apiOrigin||siteOrigin===frameOrigin)throw Error('release_origin_not_isolated');
   const url=new URL(request.url),match=/^\/r\/([0-9a-f]{64})\/([a-zA-Z0-9_/-]+\.(html|css|js|json|svg))$/.exec(url.pathname);
   const headers={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
     'permissions-policy':'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
     'access-control-allow-origin':'*','cross-origin-resource-policy':'cross-origin',
-    'content-security-policy':"sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' https://claus-network-sites.vercel.app; style-src 'unsafe-inline' https://claus-network-sites.vercel.app; img-src data: https://claus-network-sites.vercel.app; connect-src 'none'; worker-src 'none'; font-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors https://claus.si"};
+    'content-security-policy':`sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' ${siteOrigin}; style-src 'unsafe-inline' ${siteOrigin}; img-src data: ${siteOrigin}; connect-src 'none'; worker-src 'none'; font-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors ${frameOrigin}`};
   if(!match||url.search||!['GET','HEAD'].includes(request.method))return new Response('Not found',{status:404,headers});
   try{
     const response=await fetcher(apiOrigin+'/v1/public/releases/sha256%3A'+match[1],{redirect:'error',signal:AbortSignal.timeout(10000)});

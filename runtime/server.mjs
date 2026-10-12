@@ -24,8 +24,11 @@ import {createWalletRead} from '../adapters/wallet-read.mjs';
 import {createReleases} from '../src/releases/index.mjs';
 import {createVaults} from '../src/vaults/index.mjs';
 import {createVaultRead} from '../adapters/vault-read.mjs';
+import {createProjectArchives} from '../src/portability/index.mjs';
+import {createProjectTransfers} from '../src/transfers/index.mjs';
+import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={}}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={}}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  const identity=createIdentity({store,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
  let services,releases;
@@ -52,10 +55,15 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  services=createServices({store,identity,artifacts,admit:collaborationAdmission,now});
  wallets=createWallets({store,identity,jobs,services,now,chain:chainPorts.wallet??createWalletRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})}),now})});
- releases=createReleases({store,identity,projects,artifacts,admit:collaborationAdmission,now});
+ requireThat(!operatorPorts.siteOrigin || operatorPorts.siteOrigin !== origin, 'release_origin_not_isolated');
+ releases=createReleases({store,identity,projects,artifacts,admit:collaborationAdmission,now,origin:operatorPorts.siteOrigin});
  vaults=createVaults({store,identity,jobs,now,chain:chainPorts.vault??createVaultRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})})});
- const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults});
+ const archives=operatorPorts.signingKey?createProjectArchives({store,identity,now,...operatorPorts}):null;
+ const portabilityAdmission=async reader=>requireThat((await reader.read('network-capabilities','portability'))?.value.enabled===true,'portability_not_enabled');
+ const transfers=createProjectTransfers({store,identity,artifacts,archives,now,admitImport:portabilityAdmission,
+  admit:async(projectId,reader)=>{await portabilityAdmission(reader);await collaborationAdmission(projectId,reader);},...operatorPorts});
+ const service=createService({identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers});
  const admit=async({route,peer})=>store.transaction(async tx=>{
   const window=Math.floor(now()/300000);
   const group=route.startsWith('auth_')?'auth':'api';
@@ -68,7 +76,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   }
  });
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{
@@ -93,7 +101,7 @@ async function main(){
   requireThat(process.env.CLAUS_NETWORK_LOCAL==='1','database_required');
   store=openStore(process.env.CLAUS_NETWORK_LOCAL_FILE??'network-local.sqlite');
  }
- const application=createApplication({store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT});
+ const application=createApplication({store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig()});
  const server=await listen(application,{port:Number(process.env.PORT??8787)});
  console.log('Claus Network listening on '+server.address().address+':'+server.address().port);
  for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(async()=>{await store.close();process.exit(0);}));

@@ -41,6 +41,28 @@ test('service manifests are immutable, private until published, and data validat
   assert.throws(()=>schemaDefinition({type:'string',maxLength:12,$ref:'https://example.com/schema'}),{code:'invalid_service_schema'});
   await assert.rejects(f.services.compatibility(v.id,{manifestHash:'wrong',suite:'claus-pull-service-v1',runId:'one',passed:true}),{code:'service_version_conflict'});
 });
+test('a transferred provider accepts no new sales while existing paid work can finish',async t=>{
+  const f=await fixture(t),v=await f.available('100');
+  const quote=await f.services.quote(f.buyer.actor,f.buyer.id,{serviceId:v.id,input:{value:'paid'},idempotencyKey:'before'});
+  const order=await f.services.accept(f.buyer.actor,f.buyer.id,quote.id);
+  await f.store.transaction(async tx=>{
+    const old=await tx.read('projects',f.provider.id);
+    await tx.write('projects',f.provider.id,{...old.value,transfer:{destination:'https://other.example'}},old.revision);
+  });
+  assert.equal((await f.services.discovery()).services.length,0);
+  await assert.rejects(f.services.quote(f.buyer.actor,f.buyer.id,{serviceId:v.id,input:{value:'new'},idempotencyKey:'after'}),{code:'service_not_available'});
+  await assert.rejects(f.services.paymentRequest(f.buyer.actor,f.buyer.id,order.id),{code:'service_not_available'});
+  // A payment already sent before the fence is still reconciled once.
+  await f.services.paymentConfirmed(order.id,{quoteHash:order.quoteHash,chainId:11155111,transactionHash:'0x'+'12'.repeat(32),amountWei:'100',recipient:f.provider.key.address});
+  const claim=await f.services.claim(f.provider.actor,f.provider.id,order.id);
+  assert.equal(claim.input.value,'paid');
+  const delivered=await f.services.deliver(f.provider.actor,f.provider.id,{orderId:order.id,lease:claim.lease,output:{value:'finished'}});
+  await f.store.transaction(async tx=>{
+    const old=await tx.read('projects',f.buyer.id);
+    await tx.write('projects',f.buyer.id,{...old.value,transfer:{destination:'https://other.example'}},old.revision);
+  });
+  assert.equal((await f.services.acceptResult(f.buyer.actor,f.buyer.id,{orderId:order.id,outputHash:delivered.outputHash,accepted:true})).acceptance,'accepted');
+});
 test('two independent project clients exchange schema-bound results and accept them separately from delivery',async t=>{
   const f=await fixture(t),v=await f.available();
   const quote=await f.services.quote(f.buyer.actor,f.buyer.id,{serviceId:v.id,input:{value:'private input'},idempotencyKey:'one'});

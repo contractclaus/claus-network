@@ -170,14 +170,27 @@
     {
       "id": "portability",
       "path": "src/portability/",
-      "imports": ["shared"],
-      "builtins": ["node:crypto"]
+      "imports": [
+        "shared"
+      ],
+      "builtins": [
+        "node:crypto"
+      ]
     },
     {
       "id": "vaults",
       "path": "src/vaults/",
       "imports": [
         "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "transfers",
+      "path": "src/transfers/",
+      "imports": [
+        "shared",
+        "portability"
       ],
       "builtins": []
     }

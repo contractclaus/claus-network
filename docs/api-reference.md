@@ -1,6 +1,6 @@
 # API reference
 
-This reference covers API 0.6. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source reference includes the 0.7 transfer candidate. The live API is 0.6.1 until a later release is recorded. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -73,6 +73,12 @@ This reference covers API 0.6. Check the [release status](release-status.md) for
 | `source_publish` | PUT | `/v1/projects/{projectId}/sources/{snapshotId}/publication` | Bearer credential |
 | `project_publish` | PUT | `/v1/projects/{projectId}/publication` | Bearer credential |
 | `project_export` | POST | `/v1/projects/{projectId}/exports` | Bearer credential |
+| `project_transfer_prepare` | POST | `/v1/projects/{projectId}/transfers` | Owner session; admitted project |
+| `project_transfer_page` | GET | `/v1/projects/{projectId}/transfers/{archiveId}/pages/{page}` | Export capability |
+| `project_import_begin` | POST | `/v1/imports` | Matching owner session |
+| `project_import_page` | PUT | `/v1/imports/{archiveId}/pages/{page}` | Matching owner session |
+| `project_import_commit` | POST | `/v1/imports/{archiveId}/commit` | Matching owner session |
+| `project_import_history` | GET | `/v1/projects/{projectId}/import-history` | Artifact read capability |
 | `public_project` | GET | `/v1/public/projects/{slug}` | Public |
 | `public_source` | GET | `/v1/public/sources/{sourceId}` | Public |
 | `network_graph` | GET | `/v1/public/graph` | Public |

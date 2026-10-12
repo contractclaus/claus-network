@@ -8,7 +8,14 @@ const errors={unauthenticated:401,invalid_signature:401,challenge_expired:401,sc
  wallets_not_enabled:409,collaboration_not_enabled:409,wallet_not_verified:409,wallet_profile_changed:409,session_payment_denied:403,
  session_stale:409,session_retired:409,session_expired:409,payment_expired:409,payment_not_pending:409,payment_already_pending:409,
  payment_already_complete:409,unsupported_payment_asset:400,vaults_not_enabled:409,vault_not_verified:409,
- vault_profile_changed:409,policy_not_verified:409,vault_deployment_expired:409,vault_code_changed:409,project_binding_changed:409};
+ vault_profile_changed:409,policy_not_verified:409,vault_deployment_expired:409,vault_code_changed:409,project_binding_changed:409,
+ portability_not_enabled:409,project_transferred:409,transfer_conflict:409,import_conflict:409,project_id_taken:409,
+ transfer_too_large:413,archive_pages_missing:409,archive_page_corrupt:400,archive_source_corrupt:400,
+ transfer_destination_mismatch:400,transfer_fence_mismatch:400,archive_owner_mismatch:403,untrusted_archive_operator:403,
+ invalid_archive_signature:400,archive_key_mismatch:400,archive_pages_mismatch:400,unsupported_archive:400,
+ dependency_code_missing:409,dependency_indirection_unsupported:400,dependency_delegation_unsupported:400,
+ dependency_proxy_unsupported:400,dependency_evidence_mismatch:409,dependency_code_changed:409,evidence_block_changed:409,
+ build_evidence_mismatch:409};
 export const errorStatus=error=>errors[error.code]??(/^(invalid_|unknown_|missing_|duplicate_|value_|file_|snapshot_|document_)/.test(error.code??'')?400:503);
 export const errorBody=error=>({error:error.code&&errorStatus(error)!==503?error.code:'service_unavailable',retryable:errorStatus(error)>=500,
  ...(errorStatus(error)===400&&typeof error.field==='string'&&error.field.length<200?{field:error.field}:{})});
@@ -36,7 +43,13 @@ export function createHttp({service,origin='https://claus.si',admit=async()=>{}}
    if(!matched)return json({error:'not_found',retryable:false},404);
    await admit({route:matched.name,peer:context.peer??'unknown'});
    const match=url.pathname.match(matched.pattern),input={};
-   for(let i=0;i<matched.names.length;i++)input[matched.names[i]]=decodeURIComponent(match[i+1]);
+   for(let i=0;i<matched.names.length;i++){
+    const name=matched.names[i],value=decodeURIComponent(match[i+1]);
+    if(matched.inputSchema.properties[name]?.type==='integer'){
+     if(!/^(0|[1-9][0-9]*)$/.test(value))throw Object.assign(Error('invalid_path_parameter'),{code:'invalid_input',field:name});
+     input[name]=Number(value);
+    }else input[name]=value;
+   }
    if(request.method==='GET'){
     for(const [name,value] of url.searchParams){
      if(Object.hasOwn(input,name))throw Object.assign(Error('duplicate_field'),{code:'invalid_input'});

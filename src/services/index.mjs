@@ -7,6 +7,10 @@ export function createServices({ store, identity, artifacts, admit = async () =>
   async function service(reader, id) {
     const row = await reader.read('service-versions', text(id)); requireThat(row, 'service_not_found'); return row;
   }
+  async function availableProject(reader, projectId) {
+    const project = (await reader.read('projects', projectId))?.value;
+    return !!project && !project.transfer;
+  }
   async function order(reader, projectId, id) {
     const row = await reader.read('service-orders', text(id));
     requireThat(row?.value.projectId === projectId, 'not_found'); return row;
@@ -50,6 +54,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
     async probe(serviceId) {
       return store.transaction(async tx => {
         const version = (await service(tx, serviceId)).value;
+        requireThat(await availableProject(tx, version.projectId), 'service_not_available');
         requireThat(version.state === 'proposed', 'service_not_proposed');
         const id = digest({ kind: 'service-conformance', serviceId, manifestHash: version.manifestHash });
         const old = await tx.read('service-orders', id); if (old) return publicOrder(old.value);
@@ -90,7 +95,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
     async publish(actor, projectId, { serviceId, published, expectedRevision }) {
       requireThat(typeof published === 'boolean', 'invalid_publication'); integer(expectedRevision);
       return store.transaction(async tx => {
-        await scoped(actor, 'project.publish', projectId, tx); const row = await service(tx, serviceId);
+        await identity.authorize(actor, 'project.publish', { projectId, withdrawal: !published }, tx); const row = await service(tx, serviceId);
         requireThat(row.value.projectId === projectId, 'not_found');
         if (published) requireThat(row.value.state === 'available' && row.value.manifest.validUntil > now(), 'service_not_available');
         const result = await tx.write('service-publications', serviceId, { published, projectId }, expectedRevision);
@@ -100,6 +105,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
       });
     },
     async publicForProject(projectId) {
+      if (!await availableProject(store, projectId)) return [];
       const rows=await store.list('project-public-services',{prefix:projectId+':',limit:100}),result=[];
       for(const row of rows)if(row.value.published){
         const value=(await service(store,row.value.serviceId)).value,m=value.manifest;
@@ -113,7 +119,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
       const result = [];
       for (const row of rows) if (row.value.published) {
         const value = (await service(store, row.id)).value;
-        if (value.state === 'available' && value.manifest.validUntil > now()) result.push(value);
+        if (value.state === 'available' && value.manifest.validUntil > now() && await availableProject(store, value.projectId)) result.push(value);
       }
       return { services: result, nextCursor: rows.length === limit ? rows.at(-1).id : null };
     },
@@ -135,7 +141,8 @@ export function createServices({ store, identity, artifacts, admit = async () =>
         if (old) { requireThat(old.value.requestHash === requestHash, 'idempotency_conflict'); return old.value; }
         const version = (await service(tx, serviceId)).value;
         const publication = (await tx.read('service-publications', serviceId))?.value;
-        requireThat(publication?.published && version.state === 'available' && version.manifest.validUntil > now(), 'service_not_available');
+        requireThat(publication?.published && version.state === 'available' && version.manifest.validUntil > now() &&
+          await availableProject(tx, version.projectId), 'service_not_available');
         schemaValue(version.manifest.inputSchema, input);
         await capacity(tx, 'quotes', projectId + ':' + Math.floor(now() / 86400000), 64);
         const inputHash = await artifacts.put(tx, projectId, input);
@@ -155,7 +162,8 @@ export function createServices({ store, identity, artifacts, admit = async () =>
         requireThat(quote?.projectId === projectId, 'not_found');
         const old = await tx.read('service-orders', quoteId); if (old) return publicOrder(old.value);
         const version = (await service(tx, quote.serviceId)).value;
-        requireThat(version.state === 'available' && version.manifestHash === quote.manifestHash && quote.expiresAt > now(), 'quote_expired');
+        requireThat(version.state === 'available' && version.manifestHash === quote.manifestHash && quote.expiresAt > now() &&
+          await availableProject(tx, version.projectId), 'quote_expired');
         await capacity(tx, 'orders', projectId + ':' + Math.floor(now() / 86400000), 16);
         const free = quote.maximumWei === '0';
         const value = { id: quoteId, projectId, providerProjectId: quote.providerProjectId, serviceId: quote.serviceId,
@@ -205,6 +213,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
       await scoped(actor, 'service.call', projectId, reader);
       const value = (await order(reader, projectId, orderId)).value;
       requireThat(value.state === 'awaiting_payment' && value.deadline > now(), 'payment_not_pending');
+      requireThat(await availableProject(reader, value.providerProjectId), 'service_not_available');
       const quote = (await reader.read('service-quotes', orderId)).value;
       return { order: publicOrder(value), quote };
     },
@@ -225,7 +234,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
         const version = (await service(tx, value.serviceId)).value;
         const probe = value.purpose === 'conformance';
         if (value.deadline <= now() || version.state !== (probe ? 'proposed' : 'available') ||
-            (!probe && !await identity.allowed(value.buyerActor, 'service.call', { projectId: value.projectId }, tx))) {
+            (!probe && !await identity.allowed(value.buyerActor, 'service.settle', { projectId: value.projectId }, tx))) {
           await tx.write('service-orders', orderId, { ...value, state: 'cancelled' }, row.revision);
           return { id: orderId, state: 'cancelled' };
         }
@@ -258,7 +267,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
     async acceptResult(actor, projectId, { orderId, outputHash, accepted }) {
       requireThat(typeof accepted === 'boolean', 'invalid_acceptance');
       return store.transaction(async tx => {
-        await scoped(actor, 'service.call', projectId, tx); const row = await order(tx, projectId, orderId);
+        await scoped(actor, 'service.settle', projectId, tx); const row = await order(tx, projectId, orderId);
         requireThat(row.value.state === 'delivered' && row.value.outputHash === outputHash, 'result_mismatch');
         const acceptance = accepted ? 'accepted' : 'disputed';
         requireThat(row.value.acceptance === 'pending' || row.value.acceptance === acceptance, 'acceptance_conflict');
@@ -267,7 +276,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
     },
     async cancel(actor, projectId, orderId) {
       return store.transaction(async tx => {
-        await scoped(actor, 'service.call', projectId, tx); const row = await order(tx, projectId, orderId);
+        await scoped(actor, 'service.settle', projectId, tx); const row = await order(tx, projectId, orderId);
         requireThat(row.value.purpose !== 'conformance', 'scope_denied');
         requireThat(['awaiting_payment', 'queued', 'cancelled'].includes(row.value.state), 'effect_requires_reconciliation');
         const value = { ...row.value, state: 'cancelled' }; await tx.write('service-orders', orderId, value, row.revision); return publicOrder(value);

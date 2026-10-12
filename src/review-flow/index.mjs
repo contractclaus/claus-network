@@ -93,7 +93,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
     async publish(actor, projectId, { caseId, published, expectedRevision }) {
       requireThat(typeof published === 'boolean' && Number.isSafeInteger(expectedRevision) && expectedRevision >= 0, 'invalid_publication');
       return store.transaction(async tx => {
-        await identity.authorize(actor, 'project.publish', { projectId }, tx);
+        await identity.authorize(actor, 'project.publish', { projectId, withdrawal: !published }, tx);
         const value = (await getCase(tx, projectId, caseId)).value;
         requireThat(value.state === 'reviewed' && value.artifactHash && value.providerJobId, 'review_not_complete');
         const old = await tx.read('review-publications', caseId);

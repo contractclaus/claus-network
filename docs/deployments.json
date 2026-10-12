@@ -59,6 +59,63 @@
         "creationMatch": "exact_match"
       },
       "checkedAt": "2026-10-12T05:49:32.172Z"
+    },
+    {
+      "chainId": 11155111,
+      "contract": "ClausProjectWallet",
+      "profile": "claus-project-wallet-v1",
+      "projectId": "prj_b2deb3cb-9404-425e-9fe2-08a4dc39862e",
+      "address": "0x182905eea41b06f63adef50cee6f104255474ecf",
+      "transactionHash": "0x966eb739b589e47a9eea63666766bed299d2b4de4518fc0808a9627189bc37f2",
+      "codeHash": "0xf160cde19bdf270620f4293f3f50dc2a01323c37d226cffdccc4b8b0818cd3e7",
+      "owner": "0xbb145ca83272c3806d4ddc75ca1d5514789cf1c5",
+      "constructorArguments": "0x000000000000000000000000bb145ca83272c3806d4ddc75ca1d5514789cf1c5",
+      "sourceCommit": "95c68480195116f1b5040e1c0f358c7c72e78052",
+      "buildHash": "sha256:997bf58d4d2ace85fa14278017f80cf8cc2b2e7b528f4f4e79aca670be8eeae5",
+      "reviewArtifactHash": "sha256:d7885727686041acebf299b2dcbbb8666fbd6f2b5b86a08810f7c31ddccd3386",
+      "compiler": "0.8.27+commit.40a35a09.Emscripten.clang",
+      "settings": {
+        "evmVersion": "cancun",
+        "metadata": {
+          "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "outputSelection": {
+          "*": {
+            "*": [
+              "abi",
+              "evm.bytecode",
+              "evm.deployedBytecode",
+              "metadata",
+              "storageLayout"
+            ]
+          }
+        },
+        "remappings": [
+          "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/"
+        ],
+        "viaIR": true
+      },
+      "verification": {
+        "id": "sha256:c75dc737bc2f0644016d2559b59fb6902b742adecb21062b640124a035b9180b",
+        "state": "verified",
+        "address": "0x182905eea41b06f63adef50cee6f104255474ecf",
+        "chainId": 11155111,
+        "checkedAt": 1791785930072,
+        "inputHash": "sha256:e05469bb7d21832bcf44bb1c191d59b363dd50007b7f6bd18c3c9ce9eacac53e",
+        "sourcifyId": "eca358c8-3216-4c5b-afdb-712ff31f53a4",
+        "explorerUrl": "https://sepolia.etherscan.io/address/0x182905eea41b06f63adef50cee6f104255474ecf#code",
+        "sourcifyUrl": "https://repo.sourcify.dev/11155111/0x182905eea41b06f63adef50cee6f104255474ecf",
+        "runtimeMatch": "exact_match",
+        "creationMatch": "exact_match",
+        "etherscanGuid": "ak8snysuiefea4nksi1mahgnsbzpf2ydcxm8zbyniyqaycurza",
+        "etherscanMatch": "exact",
+        "etherscanVerified": true,
+        "etherscanAttemptAt": 1791785871035
+      }
     }
   ]
 }
