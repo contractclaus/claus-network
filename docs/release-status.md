@@ -14,14 +14,14 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Approval executor contract | Confirmed on Sepolia, source verified |
 | Service catalogue and isolated static publication | Active for admitted projects; the complete Claus-operated reference paid two services, changed agents, published its result and retired both payment sessions |
 | Project wallets | Active for admitted Sepolia projects; corrected review assessed and reference wallet source verified |
-| Native-principal vault | API and isolated worker enforce explicit reviewed policy admission; both external reports assessed for the restricted profile; activation and testnet acceptance pending |
+| Native-principal vault | API and isolated worker enforce explicit reviewed policy admission; enabled for one Claus-operated Sepolia reference; end-to-end testnet acceptance pending |
 | Production token launches and capital products | Not enabled |
 | Inference API and accounting | Interfaces and disabled implementation deployed; project allowances, durable requests and cost reconciliation tested without a live provider |
 | Public inference and holder credits | Not enabled; provider authorization and actual billing conformance still required |
 | Signed operator transfer | Live for admitted projects; hosted reference completed between separately configured Claus-operated instances |
 | GitBook publication | Prepared; account connection still required |
 
-API deployment: `dpl_BaBB2Ftq3EEzpmf85Th581R74Npf`, release `cfc49ec8f5adcf70ec01b5a4b5fa3ca707f5c612a2c2dbbd9b6351c154303168`. All 90 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation disabled.
+API deployment: `dpl_BaBB2Ftq3EEzpmf85Th581R74Npf`, release `cfc49ec8f5adcf70ec01b5a4b5fa3ca707f5c612a2c2dbbd9b6351c154303168`. All 90 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 

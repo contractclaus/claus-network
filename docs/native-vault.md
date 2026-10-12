@@ -1,6 +1,6 @@
 # Native vault candidate
 
-The external vault and admission-policy reports are assessed for a restricted Sepolia profile, with no medium or higher findings. The policy report contains one low and four informational findings; the accepted profile and limitations are described below. The profile is not activated. Its API and isolated worker are deployed, with new vault deployments disabled. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
+The external vault and admission-policy reports are assessed for a restricted Sepolia profile, with no medium or higher findings. The policy report contains one low and four informational findings; the accepted profile and limitations are described below. Deployment is enabled for one Claus-operated Sepolia reference. Its deposit, reviewed policy change and withdrawal acceptance are still in progress; this is not a public custody service. Its source is published in the [contracts repository](https://github.com/contractclaus/claus-network-contracts).
 
 `ClausNativeVault` records each depositor's native-ETH principal. Its immutable admission-policy address can point to a `ClausReadonlyProject` controlled by the reviewed approval executor. Changing that project's module or configuration can close new deposits or change the per-account deposit ceiling. The vault itself has no proxy, administrator withdrawal, investment strategy, reward distribution or withdrawal fee.
 
