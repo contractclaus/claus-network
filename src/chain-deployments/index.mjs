@@ -126,7 +126,8 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
         const registrations = await tx.list('chain-registrations', { projectId, limit: 17 });
         requireThat(!registrations.some(row => row.id !== registrationId &&
           ['queued', 'registering', 'verifying'].includes(row.value.state)), 'registration_in_progress');
-        requireThat(prepared.message.expiresAt * 1000 > now(), 'registration_expired');
+        // Expired signatures can still identify an already mined relay.
+        // The executor reconciles them without submitting a new transaction.
         if (await tx.read('public-chain-projects', projectId))
           requireThat((await identity.credential(actor, tx)).kind === 'agent', 'durable_agent_required');
         const job = await jobs.enqueue(tx, { projectId, kind: 'project-register', payload: { registrationId },

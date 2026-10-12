@@ -122,8 +122,9 @@ test('API project, real signatures and zero-delay execution work across isolated
   const signature = await owner.signTypedData({ domain: registration.domain, types: registration.types,
     primaryType: registration.primaryType, message: registration.message });
   if (process.env.CLAUS_TEST_RELAY === '1') {
-    relayedRegistrationHash = await wallet.writeContract({ chain: null, address: executorAddress, abi: executorSource.abi,
-      functionName: 'registerProject', args: [registration.message, registration.configuration, signature] });
+    const data = encodeFunctionData({ abi: executorSource.abi, functionName: 'registerProject',
+      args: [registration.message, registration.configuration, signature] });
+    relayedRegistrationHash = await wallet.sendTransaction({ chain: null, to: executorAddress, data: data + '00'.repeat(32) });
     await advance();
   }
   await app.deployments.submitRegistration(actor, project.id, { registrationId: registration.id, signature });

@@ -85,6 +85,7 @@ test('concurrent registration preparation reuses one bounded intent and legacy a
   await assert.rejects(deployments.prepareRegistration('owner',projectId,{...input,configuration:'0x02'}),{code:'registration_in_progress'});
   const legacy={...calls[0],id:digest('legacy'),configuration:'0x03'};
   await store.transaction(tx=>tx.write('chain-registrations',legacy.id,legacy,0));
+  clock += 3601000; // A late API submission must still be able to recover a mined relay.
   await deployments.submitRegistration('owner',projectId,{registrationId:calls[0].id,signature:'fixture'});
   await assert.rejects(deployments.submitRegistration('owner',projectId,{registrationId:legacy.id,signature:'fixture'}),{code:'registration_in_progress'});
   assert.equal(enqueued,1);
