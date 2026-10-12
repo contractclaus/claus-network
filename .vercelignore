@@ -1,0 +1,8 @@
+node_modules
+.git
+test
+contracts
+public
+*.sqlite*
+.env*
+DELIVERY.md

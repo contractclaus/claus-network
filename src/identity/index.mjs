@@ -1,0 +1,216 @@
+import { randomBytes, randomUUID } from 'node:crypto';
+import { copy, digest, integer, requireThat, text } from '../shared/index.mjs';
+
+export const PROJECT_SCOPES = Object.freeze([
+  'project.read', 'project.update', 'artifact.read', 'artifact.write',
+  'snapshot.create', 'build.compile', 'review.quote', 'review.admit', 'review.read',
+  'proposal.create', 'proposal.read', 'proposal.execute', 'project.publish',
+  'project.export', 'source.publish', 'budget.read', 'events.read', 'job.cancel'
+]);
+const OWNER_TTL = 60 * 60 * 1000;
+const MAX_MANDATE_TTL = 30 * 24 * OWNER_TTL;
+const bounded = (value, max) => { text(value); requireThat(value.length <= max, 'value_too_long'); return value; };
+const opaque = prefix => prefix + randomUUID();
+const token = () => 'cln_' + randomBytes(32).toString('base64url');
+const publicCredential = value => {
+  const { id, principalId, projectId, mandateId, scopes, createdAt, expiresAt, revokedAt, kind } = value;
+  return { id, principalId, projectId, mandateId, scopes, createdAt, expiresAt, revokedAt, kind };
+};
+
+export function createIdentity({ store, verifySignature = async () => false,
+  domain = 'claus.si', chainId = 1, now = () => Date.now() }) {
+  requireThat(/^[a-z0-9.-]+(?::[0-9]+)?$/.test(domain), 'invalid_domain');
+  integer(chainId, 1);
+  async function capacity(tx, kind, subject, maximum) {
+    const key = digest({ kind, subject }), old = await tx.read('identity-capacity', key);
+    const count = old?.value.count ?? 0;
+    requireThat(count < maximum, 'capacity_reached');
+    await tx.write('identity-capacity', key, { kind, count: count + 1 }, old?.revision ?? 0);
+  }
+  async function credential(actor, reader = store) {
+    text(actor);
+    const value = (await reader.read('credentials', actor))?.value;
+    requireThat(value && !value.revokedAt && value.expiresAt > now(), 'unauthenticated');
+    return value;
+  }
+  async function owner(actor, projectId, reader = store) {
+    const who = await credential(actor, reader);
+    requireThat(who.kind === 'owner', 'scope_denied');
+    const project = (await reader.read('projects', text(projectId)))?.value;
+    requireThat(project && project.ownerId === who.principalId, 'not_found');
+    return { who, project };
+  }
+  async function allowed(actor, action, { projectId } = {}, reader = store) {
+    try {
+      const who = await credential(actor, reader);
+      const project = (await reader.read('projects', text(projectId)))?.value;
+      if (!project || project.archivedAt) return false;
+      if (who.kind === 'owner') return project.ownerId === who.principalId && PROJECT_SCOPES.includes(action);
+      if (who.projectId !== projectId || !who.scopes.includes(action)) return false;
+      const mandate = (await reader.read('mandates', who.mandateId))?.value;
+      return !!mandate && !mandate.revokedAt && mandate.expiresAt > now() &&
+        mandate.projectId === projectId && mandate.principalId === who.principalId &&
+        mandate.ownerId === project.ownerId && mandate.scopes.includes(action);
+    } catch (error) {
+      if (['unauthenticated', 'not_found', 'invalid_identifier'].includes(error.code)) return false;
+      throw error;
+    }
+  }
+  async function authorize(actor, action, scope, reader = store) {
+    requireThat(await allowed(actor, action, scope, reader), 'scope_denied');
+  }
+  const api = {
+    allowed, authorize, credential,
+    async challenge({ address }) {
+      requireThat(/^0x[0-9a-fA-F]{40}$/.test(address), 'invalid_address');
+      address = address.toLowerCase();
+      const id = opaque('auth_'), issuedAt = now(), expiresAt = issuedAt + 5 * 60 * 1000;
+      const nonce = randomBytes(16).toString('hex');
+      const message = `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nSign in to Claus Network. This does not authorize a blockchain transaction.\n\nURI: https://${domain}/network\nVersion: 1\nChain ID: ${chainId}\nNonce: ${nonce}\nIssued At: ${new Date(issuedAt).toISOString()}\nExpiration Time: ${new Date(expiresAt).toISOString()}\nRequest ID: ${id}`;
+      await store.transaction(tx => tx.write('auth-challenges', id, { id, address, message, chainId, expiresAt, consumedAt: null }, 0));
+      return { id, message, chainId, expiresAt };
+    },
+    async session({ challengeId, signature }) {
+      requireThat(/^0x[0-9a-fA-F]{130}$/.test(signature), 'invalid_signature');
+      const challenge = (await store.read('auth-challenges', text(challengeId)))?.value;
+      requireThat(challenge && !challenge.consumedAt && challenge.expiresAt > now(), 'challenge_expired');
+      requireThat(await verifySignature({ address: challenge.address, message: challenge.message, signature, chainId }) === true, 'invalid_signature');
+      const rawToken = token(), id = digest(rawToken);
+      return store.transaction(async tx => {
+        const current = await tx.read('auth-challenges', challengeId);
+        requireThat(current && !current.value.consumedAt && current.value.expiresAt > now(), 'challenge_expired');
+        requireThat(current.value.message === challenge.message, 'challenge_mismatch');
+        const principalId = 'usr_' + digest({ address: challenge.address, chainId }).slice(7);
+        if (!await tx.read('principals', principalId)) await tx.write('principals', principalId,
+          { id: principalId, address: challenge.address, chainId, kind: 'human', createdAt: now() }, 0);
+        const value = { id, kind: 'owner', principalId, projectId: null, mandateId: null,
+          scopes: [], createdAt: now(), expiresAt: now() + OWNER_TTL, revokedAt: null };
+        await tx.write('credentials', id, value, 0);
+        await tx.write('auth-challenges', challengeId, { ...current.value, consumedAt: now() }, current.revision);
+        return { token: rawToken, credential: publicCredential(value) };
+      });
+    },
+    async authenticate(rawToken) {
+      requireThat(typeof rawToken === 'string' && /^cln_[A-Za-z0-9_-]{43}$/.test(rawToken), 'unauthenticated');
+      const actor = digest(rawToken);
+      await credential(actor);
+      return actor;
+    },
+    async me(actor) {
+      const who = await credential(actor);
+      return { credential: publicCredential(who), principal: (await store.read('principals', who.principalId))?.value };
+    },
+    async createProject(actor, { slug, name, idempotencyKey }) {
+      requireThat(typeof slug === 'string' && /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/.test(slug), 'invalid_slug');
+      bounded(name, 80); text(idempotencyKey);
+      return store.transaction(async tx => {
+        const who = await credential(actor, tx);
+        requireThat(who.kind === 'owner', 'scope_denied');
+        const requestHash = digest({ slug, name }), key = digest({ principalId: who.principalId, idempotencyKey });
+        const old = (await tx.read('project-requests', key))?.value;
+        if (old) {
+          requireThat(old.hash === requestHash, 'idempotency_conflict');
+          return (await tx.read('projects', old.projectId)).value;
+        }
+        requireThat(!await tx.read('project-slugs', slug), 'slug_taken');
+        await capacity(tx, 'projects', who.principalId, 10);
+        const id = opaque('prj_'), value = { id, slug, name, ownerId: who.principalId, createdAt: now(), archivedAt: null };
+        await tx.write('projects', id, value, 0);
+        await tx.write('project-slugs', slug, { projectId: id }, 0);
+        await tx.write('project-requests', key, { hash: requestHash, projectId: id }, 0);
+        await tx.write('memberships', who.principalId + ':' + id, { projectId: id, principalId: who.principalId }, 0);
+        await tx.event({ type: 'project.created', projectId: id, at: now() });
+        return value;
+      });
+    },
+    async project(actor, projectId) {
+      await authorize(actor, 'project.read', { projectId });
+      const result = await store.read('projects', projectId);
+      return { ...result.value, revision: result.revision };
+    },
+    async projects(actor, options = {}) {
+      const who = await credential(actor);
+      const links = await store.list('memberships', { ...options, prefix: who.principalId + ':' });
+      const values = [];
+      for (const link of links) if (await allowed(actor, 'project.read', { projectId: link.value.projectId }))
+        values.push((await store.read('projects', link.value.projectId)).value);
+      return { items: values, nextCursor: links.length === (options.limit ?? 100) ? links.at(-1).id : null };
+    },
+    async createAgent(actor, projectId, { name }) {
+      bounded(name, 80);
+      return store.transaction(async tx => {
+        await owner(actor, projectId, tx);
+        await capacity(tx, 'agents', projectId, 32);
+        const id = opaque('agent_'), value = { id, name, projectId, kind: 'agent', createdAt: now() };
+        await tx.write('principals', id, value, 0);
+        await tx.write('memberships', id + ':' + projectId, { projectId, principalId: id }, 0);
+        await tx.event({ type: 'agent.created', projectId, agentId: id, at: now() });
+        return value;
+      });
+    },
+    async grant(actor, projectId, { principalId, scopes, expiresAt }) {
+      requireThat(Array.isArray(scopes) && scopes.length > 0 && scopes.length <= PROJECT_SCOPES.length &&
+        scopes.every(s => PROJECT_SCOPES.includes(s)) && new Set(scopes).size === scopes.length, 'invalid_scopes');
+      integer(expiresAt, now() + 1000, now() + MAX_MANDATE_TTL);
+      return store.transaction(async tx => {
+        const { who } = await owner(actor, projectId, tx);
+        const agent = (await tx.read('principals', text(principalId)))?.value;
+        requireThat(agent?.kind === 'agent' && agent.projectId === projectId, 'not_found');
+        await capacity(tx, 'mandates-per-day', projectId + ':' + Math.floor(now() / 86400000), 64);
+        const id = opaque('mnd_'), value = { id, projectId, principalId, ownerId: who.principalId,
+          scopes: copy(scopes), expiresAt, revokedAt: null, createdAt: now() };
+        await tx.write('mandates', id, value, 0);
+        await tx.event({ type: 'mandate.granted', projectId, mandateId: id, at: now() });
+        return value;
+      });
+    },
+    async issueCredential(actor, { mandateId }) {
+      const rawToken = token(), id = digest(rawToken);
+      return store.transaction(async tx => {
+        const mandate = (await tx.read('mandates', text(mandateId)))?.value;
+        requireThat(mandate && !mandate.revokedAt && mandate.expiresAt > now(), 'not_found');
+        await owner(actor, mandate.projectId, tx);
+        await capacity(tx, 'credentials-per-day', mandate.projectId + ':' + Math.floor(now() / 86400000), 128);
+        const value = { id, kind: 'agent', principalId: mandate.principalId, projectId: mandate.projectId,
+          mandateId, scopes: mandate.scopes, createdAt: now(), expiresAt: mandate.expiresAt, revokedAt: null };
+        await tx.write('credentials', id, value, 0);
+        await tx.event({ type: 'credential.issued', projectId: value.projectId, credentialId: id, at: now() });
+        return { token: rawToken, credential: publicCredential(value) };
+      });
+    },
+    async rotate(actor, credentialId) {
+      const rawToken = token(), id = digest(rawToken);
+      return store.transaction(async tx => {
+        const old = await tx.read('credentials', text(credentialId));
+        requireThat(old && !old.value.revokedAt && old.value.expiresAt > now(), 'not_found');
+        const caller = await credential(actor, tx);
+        if (caller.id !== credentialId) await owner(actor, old.value.projectId, tx);
+        if (old.value.kind === 'agent') {
+          const mandate = (await tx.read('mandates', old.value.mandateId))?.value;
+          requireThat(mandate && !mandate.revokedAt && mandate.expiresAt > now(), 'mandate_revoked');
+        }
+        const value = { ...old.value, id, createdAt: now() };
+        await tx.write('credentials', id, value, 0);
+        await tx.write('credentials', credentialId, { ...old.value, revokedAt: now() }, old.revision);
+        await tx.event({ type: 'credential.rotated', projectId: value.projectId, credentialId, replacementId: id, at: now() });
+        return { token: rawToken, credential: publicCredential(value) };
+      });
+    },
+    async revoke(actor, kind, id) {
+      requireThat(['mandate', 'credential'].includes(kind), 'invalid_kind');
+      return store.transaction(async tx => {
+        const collection = kind === 'mandate' ? 'mandates' : 'credentials';
+        const old = await tx.read(collection, text(id));
+        requireThat(old, 'not_found');
+        if (kind === 'credential' && actor === id) await credential(actor, tx);
+        else await owner(actor, old.value.projectId, tx);
+        if (!old.value.revokedAt) {
+          await tx.write(collection, id, { ...old.value, revokedAt: now() }, old.revision);
+          await tx.event({ type: kind + '.revoked', projectId: old.value.projectId, id, at: now() });
+        }
+        return { id, revoked: true, alreadySentEffectsReversible: false };
+      });
+    }
+  };
+  return api;
+}

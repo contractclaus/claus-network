@@ -1,0 +1,131 @@
+{
+  "modules": [
+    {
+      "id": "shared",
+      "path": "src/shared/",
+      "imports": [],
+      "builtins": [
+        "node:crypto"
+      ]
+    },
+    {
+      "id": "storage",
+      "path": "src/storage/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": [
+        "node:sqlite",
+        "node:timers/promises"
+      ]
+    },
+    {
+      "id": "policies",
+      "path": "src/policies/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "billing",
+      "path": "src/billing/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "upgrades",
+      "path": "src/upgrades/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "reviews",
+      "path": "src/reviews/",
+      "imports": [
+        "shared",
+        "billing"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "composition",
+      "path": "src/index.mjs",
+      "imports": [
+        "shared",
+        "storage",
+        "policies",
+        "billing",
+        "upgrades",
+        "reviews"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "postgres",
+      "path": "src/postgres/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "identity",
+      "path": "src/identity/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": [
+        "node:crypto"
+      ]
+    },
+    {
+      "id": "projects",
+      "path": "src/projects/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "jobs",
+      "path": "src/jobs/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": [
+        "node:crypto"
+      ]
+    },
+    {
+      "id": "artifact-store",
+      "path": "src/artifact-store/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "builds",
+      "path": "src/builds/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    }
+  ],
+  "planned": [
+    "wallets",
+    "providers",
+    "holder-benefits",
+    "liquidity",
+    "explorer",
+    "http",
+    "mcp"
+  ],
+  "rule": "Cross-module imports use index.mjs only. Storage and policy access are injected ports. Planned modules are not implemented or enabled."
+}

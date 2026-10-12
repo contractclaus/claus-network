@@ -1,0 +1,38 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node scripts/prepare-public.mjs",
+  "outputDirectory": "public",
+  "functions": {
+    "api/gateway.mjs": {
+      "maxDuration": 60
+    },
+    "api/compile.mjs": {
+      "maxDuration": 120,
+      "includeFiles": "adapters/compiler-worker.mjs"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/gateway"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/api/gateway"
+    },
+    {
+      "source": "/mcp",
+      "destination": "/api/gateway"
+    },
+    {
+      "source": "/v1/:path*",
+      "destination": "/api/gateway?__claus_route=/v1/:path*"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/compile",
+      "schedule": "* * * * *"
+    }
+  ]
+}

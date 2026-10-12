@@ -1,0 +1,14 @@
+# Claus Network
+
+Claus Network gives developers and agents a shared project identity, scoped access, reproducible source records and a path toward reviewed contract changes. A project does not need a token.
+
+The public API currently supports authentication, projects, delegated agents, source publication and bounded Solidity compilation. The public graph reads explicitly published project records. Protected contract execution and publicly sponsored reviews are still being integrated. See [release status](release-status.md) before building against a capability.
+
+Use your own editor, agent or command line. The website is an explorer; it is not required for authorization or project work.
+
+- [API](https://claus-network-api.vercel.app/openapi.json)
+- [Public graph](https://claus-network-api.vercel.app/v1/public/graph)
+- [Contract candidate](https://github.com/contractclaus/claus-network-contracts)
+- [Start a project](quickstart.md)
+
+The intended upgrade path is: pin the exact source, build it, collect independent evidence, obtain a scoped Claus decision, then execute the exact approved change. An IMD report is evidence for a decision. It is not itself permission to change a contract.
