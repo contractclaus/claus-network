@@ -5,12 +5,12 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | State |
 | --- | --- |
 | Owner login, project identity and delegated agents | Live |
-| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.9.0 |
+| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.9.1 |
 | Source snapshots and explicit publication | Live |
 | Bounded Solidity compilation | Live; scheduled isolated compiler |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
 | Sponsored IMD reviews | Live for explicitly admitted pilots |
-| Claus decision and protected execution workers | Active for the restricted Sepolia profile; v2 rejected for missing evidence; Claus approved v3 with the corrected evidence; onchain execution and finality remain pending |
+| Claus decision and protected execution workers | Active for the restricted Sepolia profile; v2 rejected for missing evidence; Claus approved v3 with the corrected evidence; onchain execution is confirmed; finality and readback remain pending |
 | Approval executor contract | Confirmed on Sepolia, source verified |
 | Service catalogue and isolated static publication | Active for admitted projects; the complete Claus-operated reference paid two services, changed agents, published its result and retired both payment sessions |
 | Project wallets | Active for admitted Sepolia projects; corrected review assessed and reference wallet source verified |
@@ -24,7 +24,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Independent pilot | Procedure prepared; no independent participant has completed it |
 | GitBook publication | Optional mirror of public source docs; account connection still required |
 
-API deployment: `dpl_GqnfoDGVbqnxeBFnQQVZcfuFFf9N`, release `3a73bd8b02c6367d7fe52c29dce46e6d17e81e1e7f442c1c5ab23b2f585477de`. All 95 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
+API deployment: `dpl_E9U7qKjrnhT6CG9bjMmQ1j1UtwHM`, release `225c7c0f0ba7dfa8be057ba8b91316659c249b08079687524939b339a99ee08a`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 
@@ -45,3 +45,5 @@ The [collaboration receipt](reference-collaboration.json) records the two paid o
 Both operator database snapshots were restored exactly into disposable schemas. The remotely stored encrypted bundle was read back, decrypted and compared with its source. The replaced agent remained denied on the restored source snapshot. See the [recovery procedure](operations.md#restore-procedure) and [receipt](reference-recovery.json). No live production failover or continuous-backup guarantee is claimed.
 
 The agent review-context release `dpl_B8t89cuyE1EEMLzWEooEZbYqXrDE` matched all 156 source files, preserved configuration 451 and passed 614 tests. It binds the registered downstream vault to a policy review; neither this code change nor the API 0.8 release grants mainnet authority.
+
+API 0.9.1 adds the gated host configuration and bounded dispatcher implementation. Public intake remains disabled. Its local reference passed with two intentionally lost broadcast responses; cumulative gas accounting, revocation, concurrent workers and callback failure were checked. The paid independent inbox report remains pending under its original order. Claus knowledge configuration 452 records the earlier 0.9 release; this source release has not yet been adopted as new knowledge.

@@ -4,6 +4,7 @@ import { openPostgresStore } from '../src/postgres/index.mjs';
 import { createApplication } from '../runtime/server.mjs';
 import { requestUrl } from '../runtime/request-url.mjs';
 import { operatorConfig } from '../runtime/operator-config.mjs';
+import { contractIntakePorts } from '../runtime/contract-intake-config.mjs';
 
 neonConfig.webSocketConstructor = ws;
 let loaded;
@@ -12,14 +13,15 @@ function application() {
     if (!process.env.CLAUS_NETWORK_DATABASE_URL || !process.env.CLAUS_NETWORK_ORIGIN) throw Error('runtime_unconfigured');
     const pool = new Pool({ connectionString: process.env.CLAUS_NETWORK_DATABASE_URL, max: 3, connectionTimeoutMillis: 8000 });
     const store = await openPostgresStore({ pool });
-    return { store, app: createApplication({ store, origin: process.env.CLAUS_NETWORK_ORIGIN,
-      rateSalt: process.env.CLAUS_NETWORK_RATE_SALT, operatorPorts: operatorConfig() }) };
+    const intakePorts = contractIntakePorts();
+    return { store, intakePorts, app: createApplication({ store, origin: process.env.CLAUS_NETWORK_ORIGIN,
+      rateSalt: process.env.CLAUS_NETWORK_RATE_SALT, operatorPorts: operatorConfig(), intakePorts }) };
   })().catch(error => { loaded = null; throw error; });
   return loaded;
 }
 export default async function handler(req, res) {
   try {
-    const { app, store } = await application();
+    const { app, store, intakePorts } = await application();
     const url = requestUrl(req.url, process.env.CLAUS_NETWORK_ORIGIN);
     let response;
     if (url.pathname === '/health') {
@@ -38,6 +40,8 @@ export default async function handler(req, res) {
       const vaults = (await store.read('network-capabilities', 'vaults'))?.value;
       const vaultWorker = (await store.read('worker-health', 'vaults'))?.value;
       const portability = (await store.read('network-capabilities', 'portability'))?.value;
+      const intakeActive = intakePorts.enabled === true && await intakePorts.verifyAdmission(store);
+      const intakeWorker = (await store.read('worker-health', 'contract-intake'))?.value;
       response = Response.json({ service: 'Claus Network', status: 'ok',
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
@@ -48,7 +52,7 @@ export default async function handler(req, res) {
         vaultExecution: vaults?.enabled === true ? vaultWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         portabilityExecution: portability?.enabled === true ? 'restricted_pilot' : 'not_enabled',
         inferenceExecution: 'not_enabled',
-        contractIntakeExecution: 'not_enabled',
+        contractIntakeExecution: intakeActive ? intakeWorker?.observedAt > Date.now() - 300000 && intakeWorker?.state === 'active' ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         mainnetExecution: 'not_enabled' });
     } else {
       const headers = new Headers();

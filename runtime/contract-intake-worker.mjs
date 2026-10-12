@@ -2,7 +2,8 @@ import { digest, requireThat } from '../src/shared/index.mjs';
 
 // Transport-neutral worker. Production must provide an admitted, budgeted
 // dispatcher with durable same-ID transactions. Neither API credentials nor
-// this worker contain a signing key. It is not wired into hosted cron yet.
+// this worker contain a signing key. The separate hosted entry requires an
+// explicit deployment pin, reviewed admission and bounded spending grant.
 export function createContractIntakeWorker({ store, intake, chain, delivery, startBlock,
   enabled = async () => false, now = () => Date.now() }) {
   requireThat(Number.isSafeInteger(startBlock) && startBlock >= 1, 'invalid_start_block');

@@ -1,6 +1,6 @@
 # Contract requests
 
-The 0.9 source implements an asynchronous contract-request profile. Its API and worker are prepared; no public inbox or dispatcher is activated. Existing API clients continue to submit proposals directly.
+The 0.9.1 source implements an asynchronous contract-request profile. Its API and worker are prepared; no public inbox or dispatcher is activated. Existing API clients continue to submit proposals directly.
 
 ## Flow
 
@@ -20,8 +20,10 @@ The inbox is immutable. The dispatcher is fixed at deployment and can resolve on
 
 ## Evidence and remaining release work
 
-Solidity tests cover cancellation, expiry, callback failure/retry, reentrancy, replay and size/gas boundaries. The local EVM integration deploys actual bytecode, reads a finalized event, creates one proposal and delivers its result to a real receiver. That local test uses a labelled synthetic decision; it is not a real Claus review or an independent audit.
+Solidity tests cover cancellation, expiry, callback failure/retry, reentrancy, replay and size/gas boundaries. The local EVM integration deploys actual bytecode, reads a finalized event, creates one proposal and delivers its result to a real receiver through the budgeted dispatcher. Both lost broadcast responses are recovered after restart using the original transactions. That local test uses a labelled synthetic decision; it is not a real Claus review or an independent audit.
 
-The scanner preserves its canonical cursor across restarts, and the delivery coordinator preserves the original delivery ID. Turning off intake stops new submissions while still allowing existing deliveries to be reconciled. The dispatch port must independently enforce the exact inbox, result, current grant, fixed gas budget and original transaction identity.
+The scanner preserves its canonical cursor across restarts, and the delivery coordinator preserves the original delivery ID. Turning off intake stops new submissions while still allowing existing deliveries to be reconciled. The separate dispatcher enforces the exact inbox, result, current grant, a cumulative gas budget and original transaction identity. Reservation and wallet locking are atomic. Budget is released only on final settlement or cancellation before broadcast; revocation still permits read-only reconciliation. One automated callback attempt is sponsored, and a failed callback can subsequently be retried onchain by its caller.
 
 Before activation, the new inbox needs independent review, source-verified deployment, a bounded dispatcher deployment, a genuine Claus-approved end-to-end run, and explicit capability admission. None of the prepared endpoints, fixture receipts or a database flag alone supplies these requirements. Check [release status](release-status.md).
+
+The hosted worker entry and public API deployment-pin loader are implemented, but no live pin, budget or inbox admission has been installed. The independent inbox review is paid under its original order; its result is still pending.

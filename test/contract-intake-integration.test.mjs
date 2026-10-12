@@ -8,6 +8,8 @@ import { createContractIntake } from '../src/contract-intake/index.mjs';
 import { openStore } from '../src/storage/index.mjs';
 import { createJobs } from '../src/jobs/index.mjs';
 import { digest } from '../src/shared/index.mjs';
+import { createContractDelivery, admitContractDispatchBudget } from '../adapters/contract-delivery.mjs';
+import { createSealer } from '../adapters/secrets.mjs';
 
 test('a real local contract event becomes one proposal and an authenticated result callback',
   { skip: !process.env.CLAUS_TEST_CHAIN, timeout: 60000 }, async t => {
@@ -65,11 +67,32 @@ test('a real local contract event becomes one proposal and an authenticated resu
   const saved = (await store.read('contract-requests', request.id)).value;
   const prepared = await chain.resolution(saved);
   assert.equal(prepared.from, signer.address); assert.equal(prepared.value, '0');
-  const resolvedHash = await wallet.sendTransaction({ chain: null, to: prepared.to, data: prepared.data, value: 0n });
-  assert.equal((await client.waitForTransactionReceipt({ hash: resolvedHash })).status, 'success');
-  const cbHash = await wallet.sendTransaction({ chain: null, to: prepared.callback.to, data: prepared.callback.data,
-    value: 0n, gas: 750000n });
-  assert.equal((await client.waitForTransactionReceipt({ hash: cbHash })).status, 'success');
+  const budget = { id: 'local-fixture-budget', chainId: 11155111, dispatcher: signer.address.toLowerCase(),
+    inbox: inbox.toLowerCase(), codeHash, projectIds: ['project-a'], expiresAt: time + 86400000,
+    maximumTotal: '20000000000000000', maximumTransaction: '10000000000000000',
+    maximumGas: '2000000', maximumFeePerGas: '50000000000' };
+  await admitContractDispatchBudget(store, budget);
+  let broadcasts = 0;
+  const uncertainClient = { ...client, sendRawTransaction: async input => {
+    broadcasts++; await client.sendRawTransaction(input); throw Error('lost response after send');
+  } };
+  const makeDelivery = () => createContractDelivery({ store, client: uncertainClient, signer,
+    sealer: createSealer('11'.repeat(32)), chain, identity, budget, now: () => time });
+  const deliveryInput = { id: digest({ requestId: saved.id, action: 'result-delivery' }), request: saved, allowSubmit: true };
+  assert.equal((await makeDelivery().step(deliveryInput)).state, 'pending');
+  assert.equal(broadcasts, 1);
+  await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
+  time = Number((await client.getBlock()).timestamp) * 1000;
+  assert.equal((await makeDelivery().step(deliveryInput)).state, 'pending');
+  assert.equal(broadcasts, 2);
+  await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
+  time = Number((await client.getBlock()).timestamp) * 1000;
+  const delivered = await makeDelivery().step(deliveryInput);
+  assert.equal(delivered.state, 'delivered'); assert.equal(delivered.finalized, true);
+  assert.equal((await makeDelivery().step(deliveryInput)).transactionHash, delivered.transactionHash);
+  assert.equal(broadcasts, 2, 'restarts and lost sends never replace either transaction');
+  const ledger = (await store.read('contract-dispatch-budgets', budget.id)).value;
+  assert.equal(ledger.reserved, '0'); assert(BigInt(ledger.spent) > 0n);
   assert.equal(await client.readContract({ address: receiver, abi: receiverArtifact.abi, functionName: 'deliveries' }), 1n);
   const event = decodeEventLog({ abi: inboxAbi, data: log.data, topics: log.topics });
   assert.equal((await client.readContract({ address: inbox, abi: inboxAbi, functionName: 'requests', args: [event.args.id] }))[4], true);

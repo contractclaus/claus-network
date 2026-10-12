@@ -17,7 +17,15 @@ const view = value => {
 // Only the isolated Sepolia executor receives this key. One unresolved
 // transaction retains the wallet slot, including across worker restarts.
 export function createSepoliaTransactions({ store, client, signer, sealer,
-  authorize = async () => false, confirmations = 3, now = () => Date.now() }) {
+  authorize = async () => false, confirmations = 3, now = () => Date.now(),
+  limits = {}, finalized = false, onReserve = async () => {}, onFinalize = async () => {} }) {
+  // A caller can only narrow these host limits. Accounting callbacks run in
+  // the same transaction as the wallet slot and signed intent.
+  const maxGas = BigInt(limits.gas ?? MAX_GAS);
+  const maxFee = BigInt(limits.feePerGas ?? MAX_FEE);
+  const maxCost = BigInt(limits.cost ?? MAX_COST);
+  requireThat(maxGas > 0n && maxGas <= MAX_GAS && maxFee > 0n && maxFee <= MAX_FEE &&
+    maxCost > 0n && maxCost <= MAX_COST, 'invalid_transaction_limits');
   const walletId = CHAIN + ':' + signer.address.toLowerCase();
   async function chain() { requireThat(await client.getChainId() === CHAIN, 'wrong_chain'); }
   async function record(id) {
@@ -47,9 +55,9 @@ export function createSepoliaTransactions({ store, client, signer, sealer,
         client.getBalance({ address: signer.address })
       ]);
       const gas = estimated * 125n / 100n + 10000n;
-      requireThat(gas <= MAX_GAS && fees.maxFeePerGas > 0n && fees.maxFeePerGas <= MAX_FEE &&
+      requireThat(gas <= maxGas && fees.maxFeePerGas > 0n && fees.maxFeePerGas <= maxFee &&
         fees.maxPriorityFeePerGas >= 0n && fees.maxPriorityFeePerGas <= fees.maxFeePerGas &&
-        gas * fees.maxFeePerGas <= MAX_COST && gas * fees.maxFeePerGas <= balance, 'transaction_cost_limit');
+        gas * fees.maxFeePerGas <= maxCost && gas * fees.maxFeePerGas <= balance, 'transaction_cost_limit');
       return store.transaction(async tx => {
         const existing = await tx.read('chain-transactions', id);
         if (existing) { requireThat(existing.value.intentHash === intentHash, 'idempotency_conflict'); return view(existing.value); }
@@ -57,6 +65,7 @@ export function createSepoliaTransactions({ store, client, signer, sealer,
         const lock = await tx.read('chain-wallet-slots', walletId);
         requireThat(!lock?.value.id, 'wallet_busy');
         const effectiveNonce = Math.max(nonce, lock?.value.minimumNonce ?? 0);
+        await onReserve(tx, { id, intent, maximum: (gas * fees.maxFeePerGas).toString() });
         // Signing is local and has no external effect. The bytes and nonce are
         // durably committed before any broadcast is possible.
         const unsigned = { chainId: CHAIN, type: 'eip1559', ...(to ? { to } : {}), data, value: 0n,
@@ -87,6 +96,7 @@ export function createSepoliaTransactions({ store, client, signer, sealer,
         }
         if (!allowed) {
           const { sealedRaw, ...rest } = row.value;
+          await onFinalize(tx, { id, state: 'cancelled', actual: '0' });
           await tx.write('chain-transactions', id, { ...rest, state: 'cancelled', completedAt: now() }, row.revision);
           await release(tx, id); return null;
         }
@@ -114,6 +124,7 @@ export function createSepoliaTransactions({ store, client, signer, sealer,
       const [head, block, sent] = await Promise.all([client.getBlockNumber(),
         client.getBlock({ blockNumber: receipt.blockNumber }), client.getTransaction({ hash: value.hash })]);
       if (head - receipt.blockNumber + 1n < BigInt(confirmations)) return view(value);
+      if (finalized && (await client.getBlock({ blockTag: 'finalized' })).number < receipt.blockNumber) return view(value);
       requireThat(block.hash === receipt.blockHash && receipt.transactionHash === value.hash &&
         sent.from.toLowerCase() === signer.address.toLowerCase() && sent.nonce === value.nonce &&
         (sent.to?.toLowerCase() ?? null) === (value.intent.to?.toLowerCase() ?? null) &&
@@ -125,6 +136,10 @@ export function createSepoliaTransactions({ store, client, signer, sealer,
         const next = { ...rest, state: receipt.status === 'success' ? 'confirmed' : 'reverted', completedAt: now(),
           receipt: json({ transactionHash: receipt.transactionHash, blockNumber: receipt.blockNumber, blockHash: receipt.blockHash,
             contractAddress: receipt.contractAddress, status: receipt.status, gasUsed: receipt.gasUsed, effectiveGasPrice: receipt.effectiveGasPrice }) };
+        requireThat(receipt.gasUsed <= BigInt(current.value.gas) &&
+          receipt.effectiveGasPrice <= BigInt(current.value.maxFeePerGas), 'transaction_cost_mismatch');
+        await onFinalize(tx, { id, state: next.state,
+          actual: (receipt.gasUsed * receipt.effectiveGasPrice).toString() });
         await tx.write('chain-transactions', id, next, current.revision); await release(tx, id, value.nonce);
         await tx.event({ type: 'chain.transaction_' + next.state, id, hash: next.hash, chainId: CHAIN, at: now() });
         return view(next);

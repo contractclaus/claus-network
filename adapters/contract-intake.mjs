@@ -94,6 +94,29 @@ export function createContractInboxRead({ client, inbox, codeHash, dispatcher })
         boundedNumber(deadline) === observation.deadline && boundedNumber(callbackGas) === observation.callbackGas &&
         deadline > head.timestamp;
     },
+    async deliveryState(request, blockTag = 'latest') {
+      requireThat(['latest', 'finalized'].includes(blockTag), 'invalid_block_tag');
+      const { observation, result } = request;
+      requireThat(request.state === 'result_ready' && lower(observation.inbox) === profile.inbox &&
+        observation.codeHash === codeHash && result?.kind === 'proposal-decision' &&
+        ['approve', 'reject'].includes(result.decision) && /^sha256:[0-9a-f]{64}$/.test(result.decisionHash),
+      'inbox_result_mismatch');
+      const block = await client.getBlock({ blockTag });
+      await verify(block.number);
+      requireThat((await client.getBlock({ blockNumber: BigInt(observation.blockNumber) })).hash ===
+        observation.blockHash, 'inbox_event_reorganized');
+      const [requester, deadline, callbackGas, status, callbackDelivered, resultHash, evidenceHash] =
+        await state(observation.requestId, block.number);
+      requireThat(lower(requester) === observation.requester && boundedNumber(deadline) === observation.deadline &&
+        boundedNumber(callbackGas) === observation.callbackGas, 'inbox_request_mismatch');
+      const resolved = [2, 3].includes(status);
+      if (resolved) requireThat(status === (result.decision === 'approve' ? 2 : 3) &&
+        resultHash === keccak256(stringToHex(canonical(result))) &&
+        evidenceHash === '0x' + result.decisionHash.slice(7), 'inbox_result_mismatch');
+      return { resolved, callbackDelivered, pending: status === 1 && deadline > block.timestamp,
+        closed: [4, 5].includes(status) || (status === 1 && deadline <= block.timestamp),
+        blockNumber: boundedNumber(block.number), blockHash: block.hash, finalized: blockTag === 'finalized' };
+    },
     async resolution(request) {
       requireThat(request.state === 'result_ready' && request.result?.kind === 'proposal-decision' &&
         ['approve', 'reject'].includes(request.result.decision), 'inbox_result_unavailable');
