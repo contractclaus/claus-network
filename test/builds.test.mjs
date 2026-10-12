@@ -63,3 +63,36 @@ test('cancelling queued compilation releases project admission without executing
   const result = await f.builds.runOne(async () => ({ status: 'rejected', errors: [{ code: 'syntax' }] }));
   assert.equal(result.state, 'failed');
 });
+
+test('compiler selection is durable and cannot be changed under an existing request key', async t => {
+  const f = await fixture(t), compilerProfile = 'solidity-0.8.26-static-v1';
+  const build = await f.builds.submit(f.actor, f.projectId, { ...f.input, compilerProfile });
+  assert.equal(build.compilerProfile, compilerProfile);
+  assert.notEqual(build.id, build.jobId);
+  assert.equal((await f.jobs.claim({ kinds: ['compile'], leaseMs: 120000 })).idle, true);
+  await assert.rejects(f.builds.submit(f.actor, f.projectId, f.input), { code: 'idempotency_conflict' });
+  const restarted = createApplication({ store: f.store, rateSalt: 'x'.repeat(32) });
+  await restarted.builds.runOne(async input => {
+    assert.equal(input.compilerProfile, compilerProfile);
+    return { status: 'compiled', profile: { profile: compilerProfile } };
+  });
+  assert.equal((await f.builds.artifact(f.actor, f.projectId, build.id)).profile.profile, compilerProfile);
+});
+
+test('new-profile cancellation is visible through the stable build ID and does not leak admission', async t => {
+  const f = await fixture(t);
+  const build = await f.builds.submit(f.actor, f.projectId, { ...f.input, compilerProfile: 'solidity-0.8.26-static-v1' });
+  await f.jobs.cancel(f.actor, f.projectId, build.jobId);
+  assert.equal((await f.builds.get(f.actor, f.projectId, build.id)).state, 'cancelled');
+  const next = await f.builds.submit(f.actor, f.projectId, { ...f.input, idempotencyKey: 'next' });
+  assert.notEqual(next.id, build.id);
+});
+
+test('explicit default compiler reuses old requests and unsupported compilers never enter the queue', async t => {
+  const f = await fixture(t);
+  await assert.rejects(f.builds.submit(f.actor, f.projectId, { ...f.input, compilerProfile: 'latest' }),
+    { code: 'unsupported_compiler_profile' });
+  const build = await f.builds.submit(f.actor, f.projectId, f.input);
+  assert.equal(build.compilerProfile, undefined);
+  assert.deepEqual(await f.builds.submit(f.actor, f.projectId, { ...f.input, compilerProfile: 'solidity-static-compile-v1' }), build);
+});

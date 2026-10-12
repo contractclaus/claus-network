@@ -1,16 +1,17 @@
 {
-  "at": "2026-10-12T08:11:07.024Z",
-  "scope": "Recovery exercise for the two Claus-operated reference instances; no production failover was performed",
-  "ciphertextSha256": "8aaaf100e3e165e2028be11e18d3f1724017a3a78c5a4bc3a669135733bc53f3",
+  "createdAt": "2026-10-12T08:24:27.470Z",
+  "sha256": "4d74a97eb9b81ab46301522e6b8270a0402184873e2fbd335e902ddf9227e622",
+  "sourceFiles": 282,
+  "operationalFiles": 109,
   "encryptedReadback": true,
   "decryptedReadback": true,
   "databaseRecovery": [
     {
       "operator": "https://claus-network-api.vercel.app",
-      "capturedAt": "2026-10-12T08:10:53.493Z",
-      "documents": 711,
-      "events": 385,
-      "sha256": "de4204e561ece4ce64f27a2c4ff71b8799892a7c83d2f1dd420615307427a3a2",
+      "capturedAt": "2026-10-12T08:24:15.100Z",
+      "documents": 719,
+      "events": 394,
+      "sha256": "cbd41fbd295149b9c06fd05b06c9997bddc5a1d1b093fe0aaf33d9bf7a22dc5c",
       "isolatedSchemaRestore": true,
       "exactValuesRevisionsEventsAndSequence": true,
       "oldCredentialDenied": true,
@@ -19,18 +20,15 @@
     },
     {
       "operator": "https://claus-network-portable.vercel.app",
-      "capturedAt": "2026-10-12T08:11:00.614Z",
+      "capturedAt": "2026-10-12T08:24:22.239Z",
       "documents": 47,
       "events": 11,
-      "sha256": "b546c2a8a28d543a3925ba87a039540e5a8eb5fc4cbe3203af4b7d8f0e28caf5",
+      "sha256": "a0a8dbf5df773380e51ffc2c23902493a7793c64fe544b70439b92820d349e48",
       "isolatedSchemaRestore": true,
       "exactValuesRevisionsEventsAndSequence": true,
       "oldCredentialDenied": null,
       "newCredentialReadable": null,
       "externalEffectsDispatched": false
     }
-  ],
-  "externalEffectsDispatched": false,
-  "independentDatabaseCheckpoints": true,
-  "continuousBackupOrZeroDataLossClaim": false
+  ]
 }

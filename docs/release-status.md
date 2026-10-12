@@ -5,7 +5,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Capability | State |
 | --- | --- |
 | Owner login, project identity and delegated agents | Live |
-| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.9.4 |
+| API, JavaScript SDK, CLI and HTTP MCP | Live; 89 operations in API 0.10.0 |
 | Source snapshots and explicit publication | Live |
 | Bounded Solidity compilation | Live; scheduled isolated compiler |
 | Automatic Home map and project pages | Live at [claus.si/Home](https://claus.si/Home) |
@@ -24,7 +24,7 @@ Status checked on 12 October 2026. The [live health response](https://claus-netw
 | Independent pilot | Procedure prepared; no independent participant has completed it |
 | GitBook publication | Optional mirror of public source docs; account connection still required |
 
-API deployment: `dpl_2fcmstZoB1TaoquvdyCGyadztsvJ`, release `97013a3a9ce2d4978e41689bf4a47f83f68c797e69e3426c3363e4b81caeda1d`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
+API deployment: `dpl_Ei5xdviRZpXBqZoPMdtqCbJwNMep`, release `e0b0651ee3525703e5426e152478935458e139c00484b85a04d5a9378f832c94`. All 99 uploaded files matched the prepared release. The isolated vault worker is `dpl_2aVtq5PXoQF6LHcJwbEd9vWzCwa3`, with 64 matched files and activation restricted to the owner-operated Sepolia reference.
 
 The project explorer includes published service versions and active interface releases. Web deployment `dpl_HMhZmD2ssfHUNXrqgJCHj9BghY8h` matched all 1,022 prepared source files. Only the project renderer changed from the preceding production version.
 
@@ -53,3 +53,5 @@ The original balance-lens change is finalized. The [reference receipt](reference
 The 0.9.3 release also prevents withdrawn project rights, stale inbox bindings and a busy or exhausted dispatcher from blocking unrelated requests or existing transaction reconciliation. All 335 enabled source tests passed (eight environment-specific skips), and the local-chain intake test passed separately. The reference requester contract passed two Solidity tests; it is separate from the paid inbox audit.
 
 API 0.9.4 also closes requests whose underlying proposal terminated without a decision, stops deadline-expired waiting, and isolates expired credentials from the shared event scanner. Failures never become fabricated decisions. All 344 enabled source tests passed with eight environment skips; the actual local-EVM intake test passed separately. The review worker can reconcile an official accepted judge submission when the Markdown endpoint is temporarily unavailable, retaining the complete findings and provenance.
+
+API 0.10 adds explicit Solidity 0.8.26 compilation and repository-relative source roots for the market candidate. Existing default compiler requests retain their original identity and artifact bytes. New-profile jobs use a separate worker queue; a worker running the previous version cannot silently compile them with the wrong version. The existing deployment admission still excludes these market builds. All 356 enabled source tests passed, with eight environment-specific skips.

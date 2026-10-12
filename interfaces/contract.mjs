@@ -1,4 +1,4 @@
-export const API_VERSION='0.9.4';
+export const API_VERSION='0.10.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};
@@ -20,7 +20,8 @@ export const ROUTES=Object.freeze([
  route('credential_revoke','DELETE','/v1/credentials/{credentialId}',{credentialId:string()}),
  route('snapshot_create','POST','/v1/projects/{projectId}/snapshots',{projectId:string(),files:{type:'array',items:file,minItems:1,maxItems:64},expectedProjectRevision:integer}),
  route('snapshot_get','GET','/v1/projects/{projectId}/snapshots/{snapshotId}',{projectId:string(),snapshotId:string()}),
- route('build_create','POST','/v1/projects/{projectId}/builds',{projectId:string(),snapshotId:string(),entry:string(180),contract:string(128),idempotencyKey:string()}),
+ route('build_create','POST','/v1/projects/{projectId}/builds',{projectId:string(),snapshotId:string(),entry:string(180),contract:string(128),idempotencyKey:string(),
+  compilerProfile:{type:'string',enum:['solidity-static-compile-v1','solidity-0.8.26-static-v1']},sourceRoot:string(160)},['projectId','snapshotId','entry','contract','idempotencyKey']),
  route('build_get','GET','/v1/projects/{projectId}/builds/{buildId}',{projectId:string(),buildId:string()}),
  route('build_artifact','GET','/v1/projects/{projectId}/builds/{buildId}/artifact',{projectId:string(),buildId:string()}),
  route('job_get','GET','/v1/projects/{projectId}/jobs/{jobId}',{projectId:string(),jobId:string()}),
