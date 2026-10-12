@@ -9,7 +9,7 @@ const word = n => '0x' + n.repeat(64), address = n => '0x' + n.repeat(40);
 async function fixture(t) {
   const f = { time: 1800000000000, enabled: true, allowedProjects: ['project-a'], revoked: false, pending: true, submissions: 0, proposals: new Map() };
   f.store = openStore(':memory:'); t.after(() => f.store.close());
-  const identity = { async authorize(actor, _action, { projectId }) {
+  const identity = { credential: async actor => ({ kind: actor, expiresAt: f.time + 2 * 86400000 }), async authorize(actor, _action, { projectId }) {
     requireThat(!f.authExpired, 'unauthenticated');
     requireThat((actor === 'owner' || actor === 'agent' && !f.revoked) && projectId === 'project-a', 'scope_denied');
   } };
@@ -176,4 +176,21 @@ test('an expired credential stops queued work without repeated authorization ret
   assert.equal(saved.error, 'unauthenticated'); assert.equal(saved.result, null);
   f.advance(); assert.equal((await f.api.run()).idle, true);
   assert.equal(f.submissions, 0);
+});
+
+
+test('public intake uses durable credentials and one outstanding request per project', async t => {
+  const f = await fixture(t);
+  await f.store.transaction(tx => tx.write('public-chain-projects', 'project-a', { projectId: 'project-a' }, 0));
+  await assert.rejects(f.api.bind('owner', 'project-a', { ...f.bindingBody, idempotencyKey: 'owner-session' }),
+    { code: 'durable_agent_required' });
+  await assert.rejects(f.api.bind('agent', 'project-a', { ...f.bindingBody, expiresAt: f.time + 3 * 86400000, idempotencyKey: 'too-long' }),
+    { code: 'binding_exceeds_authority' });
+  const first = await f.ingest(); f.observation.requestId = word('6');
+  await assert.rejects(f.ingest(), { code: 'contract_request_in_progress' });
+  assert.equal((await f.api.binding('agent', 'project-a', f.binding.id)).used, 1);
+  const prior = (await f.store.read('contract-requests', first.id)).value;
+  await f.jobs.cancel('agent', 'project-a', prior.jobId);
+  await Promise.all([f.ingest(), f.ingest()]);
+  assert.equal((await f.api.binding('agent', 'project-a', f.binding.id)).used, 2);
 });

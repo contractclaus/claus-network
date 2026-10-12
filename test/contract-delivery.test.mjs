@@ -14,7 +14,7 @@ async function fixture(t, callback = false, publicAdmission = false) {
   const budget = { id: 'fixture-budget', chainId: 11155111, dispatcher: signer.address.toLowerCase(), inbox,
     codeHash, projectIds: ['project-a'], expiresAt: now + 86400000, maximumTotal: '1000000000000',
     maximumTransaction: '200000000000', maximumGas: '1000000', maximumFeePerGas: '1000000' };
-  if (publicAdmission) { budget.projectIds = []; budget.admissionMode = 'public-readonly-v1'; }
+  if (publicAdmission) { budget.projectIds = []; budget.admissionMode = 'public-readonly-v1'; budget.maximumProject = '300000000000'; }
   await admitContractDispatchBudget(store, budget);
   const observation = { inbox, codeHash, requester: '0x' + '44'.repeat(20), deadline: Math.floor(now / 1000) + 3600 };
   const request = { id: digest({ fixture: 1 }), projectId: 'project-a', bindingId: 'binding-a', state: 'result_ready',
@@ -45,9 +45,9 @@ async function fixture(t, callback = false, publicAdmission = false) {
   const identity = { authorize: async () => { if (++identityChecks >= denyAt) throw Object.assign(Error('denied'), { code: 'scope_denied' }); } };
   let admissionChecks = 0, withdrawAdmissionAt = Infinity;
   const make = (selectedBudget = budget) => createContractDelivery({ store, client, signer, sealer: createSealer('11'.repeat(32)), chain, identity, budget: selectedBudget,
-    admitted: async (_reader, projectId) => projectId === 'project-a' && ++admissionChecks < withdrawAdmissionAt, now: () => now });
+    admitted: async (_reader, projectId) => ['project-a', 'project-b'].includes(projectId) && ++admissionChecks < withdrawAdmissionAt, now: () => now });
   const input = { id: digest({ requestId: request.id, action: 'result-delivery' }), request, allowSubmit: true };
-  return { store, budget, make, input, client, broadcasts: () => broadcasts, denyAt: n => { denyAt = n; },
+  return { store, budget, make, input, client, chain, broadcasts: () => broadcasts, denyAt: n => { denyAt = n; },
     withdrawAdmissionAt: n => { withdrawAdmissionAt = n; },
     ledger: async () => (await store.read('contract-dispatch-budgets', budget.id)).value,
     confirm: (deliverCallback = true, final = true) => {
@@ -159,7 +159,7 @@ test('public callback budget uses current project admission without an operator-
 test('selecting a new public budget reconciles a pending old transaction against its original ledger', async t => {
   const f = await fixture(t);
   await f.make().step(f.input);
-  const next = {...f.budget, id:'public-next', admissionMode:'public-readonly-v1', projectIds:[]};
+  const next = {...f.budget, id:'public-next', maximumProject:'300000000000', admissionMode:'public-readonly-v1', projectIds:[]};
   await admitContractDispatchBudget(f.store, next);
   await revokeContractDispatchBudget(f.store, f.budget.id);
   f.confirm();
@@ -168,4 +168,29 @@ test('selecting a new public budget reconciles a pending old transaction against
   assert.equal((await f.ledger()).reserved,'0');
   const fresh=(await f.store.read('contract-dispatch-budgets',next.id)).value;
   assert.equal(fresh.spent,'0');assert.equal(fresh.reserved,'0');assert.equal(f.broadcasts(),1);
+});
+
+
+test('public dispatcher enforces each project share and makes chain reads outside write transactions', async t => {
+  const f = await fixture(t, false, true);
+  const transaction = f.store.transaction.bind(f.store), read = f.chain.deliveryState;
+  let writing = false;
+  f.store.transaction = work => transaction(async tx => { writing = true; try { return await work(tx); } finally { writing = false; } });
+  f.chain.deliveryState = async (...args) => { assert.equal(writing, false, 'RPC must not hold the database write lock'); return read(...args); };
+  await f.store.transaction(tx => tx.write('contract-dispatch-projects', digest({ budgetId: f.budget.id, projectId: 'project-a' }),
+    { spent: f.budget.maximumProject, reserved: '0' }, 0));
+  await assert.rejects(f.make().step(f.input), { code: 'dispatch_project_budget_exhausted' });
+  assert.equal(f.broadcasts(), 0); assert.equal((await f.ledger()).reserved, '0');
+  const request = { ...f.input.request, id: digest('project-b-request'), projectId: 'project-b', bindingId: 'binding-b' };
+  await f.store.transaction(async tx => {
+    await tx.write('contract-requests', request.id, request, 0);
+    const binding = (await tx.read('contract-bindings', 'binding-a')).value;
+    await tx.write('contract-bindings', 'binding-b', { ...binding, projectId: 'project-b' }, 0);
+  });
+  const next = { ...f.input, id: digest({ requestId: request.id, action: 'result-delivery' }), request };
+  assert.equal((await f.make().step(next)).state, 'pending');
+  assert.equal(f.broadcasts(), 1); f.confirm();
+  assert.equal((await f.make().step(next)).state, 'delivered');
+  const usage = (await f.store.read('contract-dispatch-projects', digest({ budgetId: f.budget.id, projectId: 'project-b' }))).value;
+  assert.equal(usage.spent, '90000000000'); assert.equal(usage.reserved, '0');
 });

@@ -41,7 +41,8 @@ export function createReviewAdmission({ store, networkOwner, now }) {
       // must still atomically reserve real available funds for every review.
       return policies.activate({ actor, module: 'review.admission', version, expectedGeneration });
     },
-    async reserve(tx, projectId, maximum, config) {
+    async reserve(tx, projectId, maximum, config, jobId) {
+      requireThat(typeof jobId === 'string' && !await tx.read('public-review-reservations', jobId), 'idempotency_conflict');
       const project = (await tx.read('projects', projectId)).value;
       const ownerKey = digest({ ownerId: project.ownerId, day: Math.floor(now() / 86400000) });
       const ownerUsage = await tx.read('public-review-owner-admission', ownerKey);
@@ -51,6 +52,21 @@ export function createReviewAdmission({ store, networkOwner, now }) {
       requireThat(total <= amount(config.maximumLifetime), 'sponsor_exhausted');
       await tx.write('public-review-owner-admission', ownerKey, { count: (ownerUsage?.value.count ?? 0) + 1 }, ownerUsage?.revision ?? 0);
       await tx.write('public-review-exposure', 'lifetime', { maximum: total.toString() }, lifetime?.revision ?? 0);
+      await tx.write('public-review-reservations', jobId, { projectId, maximum, released: false }, 0);
+    },
+    async releaseUnsent(tx, jobId) {
+      const row = await tx.read('public-review-reservations', jobId);
+      if (!row || row.value.released) return;
+      const job = (await tx.read('review-jobs', jobId))?.value;
+      requireThat(job?.work === 'cancelled' && job.billing === 'void', 'effect_requires_reconciliation');
+      const lifetime = await tx.read('public-review-exposure', 'lifetime');
+      requireThat(amount(lifetime.value.maximum) >= amount(row.value.maximum), 'sponsor_exposure_mismatch');
+      await tx.write('public-review-exposure', 'lifetime', {
+        maximum: (amount(lifetime.value.maximum) - amount(row.value.maximum)).toString()
+      }, lifetime.revision);
+      await tx.write('public-review-reservations', jobId, { ...row.value, released: true }, row.revision);
+      // Daily counters measure attempts and remain consumed, preventing a
+      // cancel/re-submit loop from bypassing admission throttles.
     }
   };
 }

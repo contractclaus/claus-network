@@ -1,4 +1,4 @@
-export const API_VERSION='0.11.2';
+export const API_VERSION='0.11.3';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const boolean={type:'boolean'};

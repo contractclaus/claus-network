@@ -53,6 +53,7 @@ export function createImdPayment({ store, sealer, provider, signer, authorize = 
       requireThat(Number.isSafeInteger(accepted.maxTimeoutSeconds) && accepted.maxTimeoutSeconds > 0 &&
         accepted.maxTimeoutSeconds <= 300, 'invalid_payment_timeout');
       const deadline = Math.min(seconds() + accepted.maxTimeoutSeconds, q.expiresAt - 5);
+      requireThat(deadline > seconds() + 30, 'payment_window_expired');
       const record = await store.transaction(async tx => {
         requireThat(await authorize({ offerId, challenge: copy(challenge), payer, amount: q.payment.amount }, tx) === true, 'payment_not_authorized');
         const old = await tx.read('imd-payments', offerId);
@@ -99,7 +100,7 @@ export function createImdPayment({ store, sealer, provider, signer, authorize = 
       requireThat(existing, 'payment_missing');
       if (existing.value.state !== 'prepared') return summary(existing.value);
       const value = await update(offerId, 'prepared', async (old, tx) => {
-        requireThat(old.deadline > seconds(), 'payment_window_expired');
+        requireThat(old.deadline > seconds() + 15, 'payment_window_expired');
         requireThat(await authorize({ offerId, payer: old.payer, amount: old.amount, challengeHash: old.challengeHash, phase: 'submit' }, tx) === true, 'payment_not_authorized');
         return { ...old, state: 'submitting' };
       });

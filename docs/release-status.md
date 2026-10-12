@@ -75,3 +75,8 @@ The mandatory one-hour upgrade rule is removed for new admitted Sepolia registra
 
 
 [Public inference](inference.md) has prepared interfaces and accounting but no activated customer provider. [Independent pilot acceptance](external-pilot.md) requires a real participant. Existing Club, staking, NFT rights, published payment history and existing pool fees are unchanged by this network release.
+
+
+## 0.11.3 candidate: public admission review repairs
+
+The independent review of 0.11.2 identified intake-scan starvation, unreleased unsent review exposure, expired-pilot gas-accounting bypasses, missing project dispatcher limits and local-signing recovery gaps. The candidate adds bounded scan progress, cancellation accounting, public gas enrollment, decision/intake admission limits, durable delegated credentials and per-project dispatcher accounting. The full candidate gate passed 390 tests with ten optional environment skips; this paragraph does not activate public sponsorship or contracts. Existing 0.11.2 live references above remain authoritative until deployment and public-scope review complete. Mainnet remains disabled.

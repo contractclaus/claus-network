@@ -32,23 +32,43 @@ export function createContractInboxRead({ client, inbox, codeHash, dispatcher })
   }
   return {
     profile: async () => ({ ...profile }),
-    async scan({ afterBlock, blockHash = null, limit = 500 }) {
+    async scan({ afterBlock, blockHash = null, afterLogIndex = null, limit = 500 }) {
       requireThat(Number.isSafeInteger(afterBlock) && afterBlock >= 0 && Number.isSafeInteger(limit) &&
-        limit > 0 && limit <= 2000, 'invalid_scan_range');
+        limit > 0 && limit <= 2000 && (afterLogIndex === null || Number.isSafeInteger(afterLogIndex) && afterLogIndex >= 0), 'invalid_scan_range');
       const finalized = await client.getBlock({ blockTag: 'finalized' });
       await verify(finalized.number);
       if (blockHash) requireThat((await client.getBlock({ blockNumber: BigInt(afterBlock) })).hash === blockHash,
         'inbox_cursor_reorganized');
-      if (BigInt(afterBlock) >= finalized.number) return { events: [], cursor: { afterBlock, blockHash } };
-      const end = finalized.number < BigInt(afterBlock + limit) ? finalized.number : BigInt(afterBlock + limit);
-      const logs = await client.getLogs({ address: inbox,
-        event: inboxAbi.find(x => x.type === 'event' && x.name === 'Requested'),
-        fromBlock: BigInt(afterBlock + 1), toBlock: end, strict: true });
-      requireThat(logs.length <= 5000, 'inbox_scan_too_large');
-      const block = await client.getBlock({ blockNumber: end });
+      if (BigInt(afterBlock) > finalized.number || BigInt(afterBlock) === finalized.number && afterLogIndex === null)
+        return { events: [], cursor: { afterBlock, blockHash, ...(afterLogIndex === null ? {} : { afterLogIndex }) } };
+      const from = BigInt(afterBlock + (afterLogIndex === null ? 1 : 0));
+      let end = finalized.number < from + BigInt(limit - 1) ? finalized.number : from + BigInt(limit - 1);
+      let logs;
+      // Busy ranges shrink without skipping events. A single busy block uses
+      // a log-index cursor, so even a block larger than one page can progress.
+      while (true) {
+        try {
+          logs = await client.getLogs({ address: inbox,
+            event: inboxAbi.find(x => x.type === 'event' && x.name === 'Requested'),
+            fromBlock: from, toBlock: end, strict: true });
+        } catch (error) {
+          if (end === from) throw error;
+          end = from + (end - from) / 2n; continue;
+        }
+        if (logs.length <= 5000 || end === from) break;
+        end = from + (end - from) / 2n;
+      }
+      logs.sort((a, b) => Number(a.blockNumber - b.blockNumber) || a.logIndex - b.logIndex);
+      if (afterLogIndex !== null) logs = logs.filter(log => log.blockNumber > from || log.logIndex > afterLogIndex);
+      // Bound work per hosted invocation independently of the RPC range limit.
+      const remaining = logs.length > 32;
+      if (remaining) logs = logs.slice(0, 32);
+      const cursorBlock = remaining ? logs.at(-1).blockNumber : end;
+      const block = await client.getBlock({ blockNumber: cursorBlock });
       return { events: logs.map(log => ({ bindingId: 'sha256:' + log.args.binding.slice(2),
         transactionHash: log.transactionHash, logIndex: log.logIndex })),
-        cursor: { afterBlock: boundedNumber(end), blockHash: block.hash } };
+        cursor: { afterBlock: boundedNumber(cursorBlock), blockHash: block.hash,
+          ...(remaining ? { afterLogIndex: logs.at(-1).logIndex } : {}) } };
     },
     async observe(binding, pointer) {
       requireThat(lower(binding.inbox) === profile.inbox && binding.codeHash === codeHash &&

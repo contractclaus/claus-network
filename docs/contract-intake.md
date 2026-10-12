@@ -93,3 +93,8 @@ The controller alone may call `recoverResult(id, resultBytes)` to copy a result 
 These client changes have local contract and EVM coverage; the replacement is not part of the earlier independent Inbox audit. The [recovery receipt](reference-intake-recovery.json) records the finalized original-result recovery. This is a successful recovery path, not a successful legacy callback or a fresh live callback test.
 
 The original owner-operated reference completed through the canonical-result recovery path. Its legacy callback did not succeed. Local tests exercise the replacement client callback; a fresh live replacement-client callback is not claimed by this receipt.
+
+
+### Public admission limits
+
+The 0.11.3 public candidate requires a delegated agent credential for binding creation, with `contract.request` and `proposal.create` and an expiry covering the binding. Owner sessions remain suitable for granting/revoking that delegation. Each public project can have one queued or waiting intake request; a second receives `contract_request_in_progress` without consuming its binding quota. Completion, cancellation, rejection or expiry lets the next request enter. A binding can still impose a lower lifetime request cap. Public proposal caps and explicit dispatcher gas shares apply independently. Deferred delivery includes its reason and retry time; it does not imply a completed callback.

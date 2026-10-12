@@ -207,11 +207,12 @@ test('public sponsorship is separate, bounded across policy changes and never cr
   assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '5');
   const current = await f.flow.get(f.actor, f.projectId, item.id);
   await f.jobs.cancel(f.actor, f.projectId, current.executionJobId);
+  assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '0');
   await f.flow.admission.publish(f.actor, { version: 'public-2', config });
   await f.flow.admission.activate(f.actor, { version: 'public-2', expectedGeneration: 1 });
   const next = await f.flow.request(f.actor, f.projectId, { ...f.input, baseCommit: 'b'.repeat(40), idempotencyKey: 'next-source' });
   await f.flow.runQuote();
-  await assert.rejects(f.flow.accept(f.actor, f.projectId, { caseId: next.id, quoteId: next.id, idempotencyKey: 'over-limit' }), { code: 'sponsor_exhausted' });
+  await f.flow.accept(f.actor, f.projectId, { caseId: next.id, quoteId: next.id, idempotencyKey: 'released-capacity' });
   assert.equal((await f.store.list('review-pilots')).length, 0);
   assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '5');
 });
@@ -230,4 +231,30 @@ test('an explicit operator pilot quota keeps prior use and does not grant anothe
   const current = await f.flow.get(f.actor, f.projectId, item.id); await f.jobs.cancel(f.actor, f.projectId, current.executionJobId);
   const next = await f.flow.request(f.actor, f.projectId, { ...f.input, baseCommit:'b'.repeat(40), idempotencyKey:'another-source' }); await f.flow.runQuote();
   await assert.rejects(f.flow.accept(f.actor, f.projectId, { caseId:next.id,quoteId:next.id,idempotencyKey:'beyond-allocation' }), { code:'capacity_reached' });
+});
+
+test('local signing failures release unsent sponsor exposure both immediately and after restart', async t => {
+  for (const resumed of [false, true]) {
+    const f = await fixture(t, { networkOwner: true, publicOnly: true, validatePublicBuild: () => {} }); await f.publish();
+    const config = { enabled: true, expiresAt: Date.now() + 3600000, maximumPerReview: '5', maximumLifetime: '5',
+      perOwnerDay: 2, perProjectDay: 2, globalDay: 8, activeGlobal: 8 };
+    await f.flow.admission.publish(f.actor, { version: 'signing-test', config });
+    await f.flow.admission.activate(f.actor, { version: 'signing-test', expectedGeneration: 0 });
+    const item = await f.flow.request(f.actor, f.projectId, f.input); await f.flow.runQuote();
+    await f.flow.accept(f.actor, f.projectId, { caseId: item.id, quoteId: item.id, idempotencyKey: 'once' });
+    const payment = createImdPayment({ store: f.store, sealer: createSealer('11'.repeat(32)), signer: {}, provider: {} });
+    const failSigning = async () => {
+      await f.store.transaction(tx => tx.write('imd-payments', 'offer-1', { id: 'offer-1', offerId: 'offer-1',
+        state: 'signing_unknown', sealedIntent: 'local-only' }, 0));
+    };
+    if (resumed) await failSigning();
+    const result = await f.flow.runPaid({ createPayment: () => ({ ...payment,
+      prepare: async () => { await failSigning(); throw Object.assign(Error('local signing failure'), { code: 'payment_signing_unknown' }); } }) });
+    assert.equal(result.state, 'blocked');
+    assert.equal((await payment.status('offer-1')).state, 'cancelled');
+    assert.equal((await f.flow.admission.get(f.actor)).committedMaximum, '0');
+    const balance = await f.network.billing.balance({ actor: f.workerActor, account: 'sponsor:' + f.ownerAddress, asset: f.asset });
+    assert.equal(balance.reserved, '0'); assert.equal(balance.available, '50');
+    assert.equal((await f.flow.runPaid({ createPayment: () => payment })).idle, true);
+  }
 });

@@ -1,4 +1,5 @@
 import { canonical, digest, requireThat, text } from '../shared/index.mjs';
+import { publicDecisionCapacity } from './limits.mjs';
 
 export function createApprovals({ store, identity, projects, reviews, deployments, jobs, artifacts, chain, now = () => Date.now() }) {
   function executionEvidence(value) {
@@ -36,6 +37,14 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       await allowed(actor, projectId);
       const existing = await store.read('chain-proposals', id);
       if (existing) { requireThat(existing.value.requestHash === requestHash, 'idempotency_conflict'); return existing.value; }
+      await publicDecisionCapacity(store, projectId, now());
+      if (await store.read('public-chain-projects', projectId))
+        requireThat((await identity.credential(actor)).kind === 'agent', 'durable_agent_required');
+      const activeBeforeRead = await store.read('active-proposals', projectId);
+      if (activeBeforeRead) {
+        const prior = (await store.read('chain-proposals', activeBeforeRead.value.id))?.value;
+        requireThat(!prior || ['executed', 'rejected', 'failed', 'blocked', 'cancelled'].includes(prior.state), 'proposal_in_progress');
+      }
       const module = await deployments.module(actor, projectId, moduleId);
       requireThat(module.state === 'verified', 'module_not_verified');
       const binding = await deployments.binding(actor, projectId);
@@ -74,6 +83,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
           requireThat(!prior || ['executed', 'rejected', 'failed', 'blocked', 'cancelled'].includes(prior.state), 'proposal_in_progress');
         }
         const inputArtifactHash = await artifacts.put(tx, projectId, input);
+        await publicDecisionCapacity(tx, projectId, now(), true);
         const job = await jobs.enqueue(tx, { projectId, kind: 'claus-review', payload: { proposalId: id },
           authority: { actor }, idempotencyKey: id });
         const value = { id, projectId, requestHash, moduleId, caseId: module.caseId, proposal,
@@ -196,7 +206,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
             await tx.write('chain-proposals', value.id, { ...old.value, state: 'blocked', error: error.code }, old.revision);
           });
         }
-        return jobs.finish(claim, { state: 'waiting', retryAt: now() + 60000,
+        return jobs.finish(claim, { state: 'waiting', retryAt: now() + (['chain_gas_exhausted', 'transaction_cost_limit'].includes(error.code) ? 15 * 60000 : 60000),
           result: { error: error.code ?? 'execution_unavailable' } });
       }
     }

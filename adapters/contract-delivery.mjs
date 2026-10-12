@@ -9,6 +9,7 @@ const BUDGETS = 'contract-dispatch-budgets', RESERVATIONS = 'contract-dispatch-r
 export async function admitContractDispatchBudget(store, config) {
   shape(config, ['id', 'chainId', 'dispatcher', 'inbox', 'codeHash', 'projectIds', 'expiresAt',
     'maximumTotal', 'maximumTransaction', 'maximumGas', 'maximumFeePerGas',
+    ...(Object.hasOwn(config, 'maximumProject') ? ['maximumProject'] : []),
     ...(Object.hasOwn(config, 'admissionMode') ? ['admissionMode'] : [])]);
   const publicAdmission = config.admissionMode === 'public-readonly-v1';
   requireThat(!Object.hasOwn(config, 'admissionMode') || publicAdmission, 'invalid_dispatch_budget');
@@ -19,6 +20,8 @@ export async function admitContractDispatchBudget(store, config) {
     new Set(config.projectIds).size === config.projectIds.length, 'invalid_dispatch_budget');
   config.projectIds.forEach(value => text(value));
   const total = amount(config.maximumTotal), perTransaction = amount(config.maximumTransaction);
+  if (publicAdmission) requireThat(amount(config.maximumProject) > 0n && amount(config.maximumProject) <= total,
+    'invalid_dispatch_budget');
   requireThat(total > 0n && perTransaction > 0n && perTransaction <= total &&
     perTransaction <= 10000000000000000n && amount(config.maximumGas) > 0n &&
     amount(config.maximumGas) <= 30000000n && amount(config.maximumFeePerGas) > 0n &&
@@ -92,21 +95,41 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
     }
     return true;
   }
-  async function reserve(tx, { id, maximum }) {
+  async function reserve(tx, { id, intent, maximum }) {
     const row = await budgetRow(tx), value = row.value;
     requireThat(!value.revokedAt && budget.expiresAt > now(), 'transaction_not_authorized');
     requireThat(!await tx.read(RESERVATIONS, id), 'dispatch_reservation_exists');
     requireThat(amount(maximum) <= amount(budget.maximumTransaction) &&
       amount(value.spent) + amount(value.reserved) + amount(maximum) <= amount(budget.maximumTotal),
     'dispatch_budget_exhausted');
+    let projectId;
+    if (publicAdmission) {
+      const request = (await tx.read('contract-requests', intent.authority.requestId))?.value;
+      requireThat(request?.projectId, 'dispatch_request_missing'); projectId = request.projectId;
+      const key = digest({ budgetId: budget.id, projectId });
+      const row = await tx.read('contract-dispatch-projects', key), used = row?.value ?? { spent: '0', reserved: '0' };
+      requireThat(amount(used.spent) + amount(used.reserved) + amount(maximum) <= amount(budget.maximumProject),
+        'dispatch_project_budget_exhausted');
+      await tx.write('contract-dispatch-projects', key, { ...used, reserved: (amount(used.reserved) + amount(maximum)).toString() }, row?.revision ?? 0);
+    }
     await tx.write(BUDGETS, budget.id, { ...value, reserved: (amount(value.reserved) + amount(maximum)).toString() }, row.revision);
-    await tx.write(RESERVATIONS, id, { budgetId: budget.id, maximum, state: 'reserved', actual: null }, 0);
+    await tx.write(RESERVATIONS, id, { budgetId: budget.id, maximum, state: 'reserved', actual: null,
+      ...(projectId ? { projectId } : {}) }, 0);
   }
   async function finalize(tx, { id, state, actual }) {
     const row = await budgetRow(tx), item = await tx.read(RESERVATIONS, id);
     requireThat(item?.value.budgetId === budget.id && item.value.state === 'reserved' &&
       amount(actual) <= amount(item.value.maximum) && amount(row.value.reserved) >= amount(item.value.maximum),
     'dispatch_settlement_mismatch');
+    if (item.value.projectId) {
+      const key = digest({ budgetId: budget.id, projectId: item.value.projectId });
+      const row = await tx.read('contract-dispatch-projects', key);
+      requireThat(row && amount(row.value.reserved) >= amount(item.value.maximum), 'dispatch_settlement_mismatch');
+      await tx.write('contract-dispatch-projects', key, {
+        reserved: (amount(row.value.reserved) - amount(item.value.maximum)).toString(),
+        spent: (amount(row.value.spent) + amount(actual)).toString()
+      }, row.revision);
+    }
     await tx.write(BUDGETS, budget.id, { ...row.value,
       reserved: (amount(row.value.reserved) - amount(item.value.maximum)).toString(),
       spent: (amount(row.value.spent) + amount(actual)).toString() }, row.revision);
@@ -129,6 +152,9 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
       const transactionId = 'contract-delivery:' + id + ':' + action;
       const expiresAt = action === 'resolve' ? Math.min(resolution.expiresAt, budget.expiresAt) : budget.expiresAt;
       const authority = { kind: 'contract-result', requestId: request.id, resultHash, action, budgetId: budget.id, configHash };
+      // RPC calls stay outside the PostgreSQL transaction. The callback below
+      // rechecks current database authority, and the inbox enforces chain state.
+      const observedForSubmit = await chain.deliveryState(request);
       const transactions = createSepoliaTransactions({ store, client, signer, sealer, now, finalized: true,
         limits: { gas: budget.maximumGas, feePerGas: budget.maximumFeePerGas, cost: budget.maximumTransaction },
         onReserve: reserve, onFinalize: finalize,
@@ -137,7 +163,7 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
             candidate.value === '0' && candidate.expiresAt === expiresAt &&
             digest(candidate.authority) === digest(authority), 'dispatch_intent_mismatch');
           if (!allowSubmit || !await active(reader, request)) return false;
-          const observed = await chain.deliveryState(request);
+          const observed = observedForSubmit;
           return action === 'resolve' ? observed.pending : observed.resolved && !observed.callbackDelivered;
         } });
       let transaction = await transactions.status(transactionId);

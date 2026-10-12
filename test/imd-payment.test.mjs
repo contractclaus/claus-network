@@ -58,3 +58,15 @@ test('only provably unsent payment material can be cancelled and it cannot be re
   assert.equal((await store.read('imd-payments', 'unsent')).value.sealedMaterial, undefined);
   assert.equal((await api.status('uncertain')).state, 'submitting');
 });
+
+test('an unusably short payment window is rejected before signing or reserving a nonce', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  const now = Date.now(); let signatures = 0;
+  const payment = { amount: IMD_REVIEW.maximum };
+  const api = createImdPayment({ store, sealer: createSealer('11'.repeat(32)),
+    signer: { address: '0x' + '11'.repeat(20), signTypedData: async () => { signatures++; throw Error('must not sign'); } },
+    provider: { challenge: async () => ({ quote: { expiresAt: Math.floor(now / 1000) + 600, payment },
+      accepts: [{ ...payment, maxTimeoutSeconds: 20 }] }) }, now: () => now, authorize: async () => true });
+  await assert.rejects(api.prepare('short-window'), { code: 'payment_window_expired' });
+  assert.equal(signatures, 0); assert.equal(await api.status('short-window'), null);
+});

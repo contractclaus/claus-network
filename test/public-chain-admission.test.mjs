@@ -30,6 +30,21 @@ test('public chain scope pins reviewed artifacts and accounts gas without resett
     executorCodeHash: config.executorCodeHash, reviewArtifactHash: config.reviewArtifactHash,
     reviewedBuildHash: digest('executor')
   }, 0));
+  // An expired pilot cannot escape public gas accounting or migrate an old executor.
+  await store.transaction(async tx => {
+    await tx.write('review-pilots', 'p1', { enabled: true, expiresAt: time - 1 }, 0);
+    await tx.write('chain-bindings', 'p1', { executor: address }, 0);
+  });
+  const expiredPilotGas = maximum => store.transaction(tx => admission.reserveGas(tx,
+    { id: 'expired-pilot', maximum, intent: { authority: { projectId: 'p1' } } }));
+  await assert.rejects(expiredPilotGas('5'), { code: 'chain_admission_changed' });
+  assert.equal(await store.read('public-chain-projects', 'p1'), null);
+  await store.transaction(tx => tx.write('chain-bindings', 'p1', { executor }, 1));
+  await assert.rejects(expiredPilotGas('9'), { code: 'chain_gas_exhausted' });
+  assert.equal(await store.read('public-chain-projects', 'p1'), null);
+  await expiredPilotGas('5');
+  assert.equal((await store.read('public-chain-projects', 'p1')).value.reserved, '5');
+  await store.transaction(tx => admission.finalizeGas(tx, { id: 'expired-pilot', actual: '0' }));
   await store.transaction(tx => admission.reserveProject(tx, 'p1'));
   await assert.rejects(store.transaction(tx => admission.reserveProject(tx, 'p2')), { code: 'capacity_reached' });
   const reserve = (id, maximum) => store.transaction(tx => admission.reserveGas(tx, { id, maximum, intent: { authority: { projectId: 'p1' } } }));

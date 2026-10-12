@@ -43,9 +43,22 @@ test('scanner ignores unknown bindings and resumes its canonical cursor after re
   assert.deepEqual(f.calls.at(-1), { afterBlock: 200, blockHash: 'canonical' });
 });
 
+test('a failing scanner cannot prevent reconciliation of an already submitted result', async t => {
+  const f = await fixture(t); await f.result(); f.deliveryState = 'delivered';
+  const worker = createContractIntakeWorker({ store: f.store, startBlock: 1,
+    chain: { profile: async () => f.binding, scan: async () => { throw Object.assign(Error('logs unavailable'), { code: 'rpc_unavailable' }); } },
+    intake: { run: async () => ({ state: 'idle' }) },
+    delivery: { step: async ({ request }) => ({ state: 'delivered', resultHash: digest(request.result), finalized: true, transactionHash: '0x' + '11'.repeat(32) }) },
+    enabled: async () => true });
+  const result = await worker.tick(); assert.equal(result.scanError, 'rpc_unavailable'); assert.equal(result.delivered, 1);
+  assert.equal((await f.store.list('contract-intake-cursors')).length, 0);
+});
+
 test('transient errors retain the cursor while deterministic rejections cannot poison it', async t => {
   const f = await fixture(t); f.fail = 'rpc_unavailable';
-  await assert.rejects(f.worker.tick(), { code: 'rpc_unavailable' });
+  await f.result(); f.deliveryState = 'delivered';
+  const failed = await f.worker.tick();
+  assert.equal(failed.scanError, 'rpc_unavailable'); assert.equal(failed.delivered, 1);
   assert.equal((await f.store.list('contract-intake-cursors')).length, 0);
   f.fail = 'invalid_contract_input'; await f.worker.tick();
   assert.equal((await f.store.list('contract-intake-rejections')).length, 1);
@@ -122,7 +135,8 @@ test('fresh work waiting for funds or a wallet slot cannot starve existing trans
     const result = await f.worker.tick();
     assert.equal(result.delivered, 1); assert.equal(result.deferred, 1);
     assert.equal((await f.store.read('contract-requests', 'request')).value.delivery.state, 'delivered');
-    assert.equal((await f.store.read('contract-requests', 'a-new')).value.delivery, undefined);
+    assert.equal((await f.store.read('contract-requests', 'a-new')).value.delivery.reason, code);
+    const attempts = f.sends.length; await f.worker.tick(); assert.equal(f.sends.length, attempts);
   }
 });
 

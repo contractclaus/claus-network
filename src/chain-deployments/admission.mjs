@@ -49,6 +49,15 @@ export function createChainAdmission({ store, identity, now }) {
       assessment.reviewedBuildHash === review.input?.buildHash, 'chain_scope_not_reviewed');
     return config;
   }
+  async function reserveProject(tx, projectId) {
+    const config = await admitted(tx);
+    if (await tx.read('public-chain-projects', projectId)) return;
+    const old = await tx.read('public-chain-usage', 'global');
+    const used = old?.value ?? { projects: 0, reserved: '0', spent: '0' };
+    requireThat(used.projects < config.maximumProjects, 'capacity_reached');
+    await tx.write('public-chain-projects', projectId, { projectId, admittedAt: now(), reserved: '0', spent: '0' }, 0);
+    await tx.write('public-chain-usage', 'global', { ...used, projects: used.projects + 1 }, old?.revision ?? 0);
+  }
   return {
     active, admitted,
     async get(actor) { await owner(actor); return { policy: await active(), usage: (await store.read('public-chain-usage', 'global'))?.value ?? null }; },
@@ -57,18 +66,21 @@ export function createChainAdmission({ store, identity, now }) {
       return policies.publish({ actor, module: 'chain.admission', version: input.version, config: input.config });
     },
     activate: (actor, input) => policies.activate({ actor, module: 'chain.admission', version: input.version, expectedGeneration: input.expectedGeneration }),
-    async reserveProject(tx, projectId) {
-      const config = await admitted(tx);
-      if (await tx.read('public-chain-projects', projectId)) return;
-      const old = await tx.read('public-chain-usage', 'global');
-      const used = old?.value ?? { projects: 0, reserved: '0', spent: '0' };
-      requireThat(used.projects < config.maximumProjects, 'capacity_reached');
-      await tx.write('public-chain-projects', projectId, { projectId, admittedAt: now(), reserved: '0', spent: '0' }, 0);
-      await tx.write('public-chain-usage', 'global', { ...used, projects: used.projects + 1 }, old?.revision ?? 0);
-    },
+    reserveProject,
     async reserveGas(tx, { id, intent, maximum }) {
       const projectId = intent.authority.projectId ?? (await tx.read('chain-proposals', intent.authority.proposalId ?? 'none'))?.value.projectId;
-      if (!projectId || !await tx.read('public-chain-projects', projectId)) return;
+      requireThat(projectId, 'chain_project_missing');
+      if (!await tx.read('public-chain-projects', projectId)) {
+        const pilot = (await tx.read('review-pilots', projectId))?.value;
+        if (pilot?.enabled && pilot.expiresAt > now()) return;
+        const config = await admitted(tx);
+        const binding = (await tx.read('chain-bindings', projectId))?.value;
+        const registrationId = intent.authority.registrationId;
+        const registration = registrationId && (await tx.read('chain-registrations', registrationId))?.value;
+        requireThat((!binding || binding.executor?.toLowerCase() === config.executor.toLowerCase()) &&
+          (!registration || registration.executor?.toLowerCase() === config.executor.toLowerCase()), 'chain_admission_changed');
+        await reserveProject(tx, projectId);
+      }
       const config = await admitted(tx), n = amount(maximum);
       requireThat(n <= amount(config.maximumTransactionGasWei), 'chain_gas_exhausted');
       const key = digest({ id });

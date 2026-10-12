@@ -161,7 +161,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       requireThat(value.quoteId === quoteId && ['quoted', 'admitted', 'reviewed'].includes(value.state), 'quote_not_ready');
       return reviews.admit({ actor, projectId, quoteId, inputHash: value.inputHash, idempotencyKey });
     },
-    async beforeAdmission(tx, { actor, projectId, quote }) {
+    async beforeAdmission(tx, { actor, projectId, quote, jobId }) {
       const value = (await getCase(tx, projectId, quote.id)).value;
       await mayDispatch(tx, value, actor, 'review.admit');
       requireThat(value.state === 'quoted' && value.inputHash === quote.inputHash, 'quote_input_mismatch');
@@ -170,7 +170,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       if (pilot.kind === 'public') {
         requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
         validatePublicBuild(await artifacts.get(projectId, value.input.buildHash, tx));
-        await admission.reserve(tx, projectId, quote.offer.maximum, pilot);
+        await admission.reserve(tx, projectId, quote.offer.maximum, pilot, jobId);
       }
       const active = (await tx.read('active-paid-reviews', 'global'))?.value.ids ?? [];
       const live = [];
@@ -205,6 +205,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
     async onCancel(tx, job) {
       if (job.kind !== 'review-execute') return;
       await reviews.cancelUnsent(tx, { actor: workerActor, projectId: job.projectId, jobId: job.payload.reviewJobId });
+      await admission.releaseUnsent(tx, job.payload.reviewJobId);
     },
     async resolveInput(projectId, inputHash) {
       const input = (await store.read('review-inputs', digest({ projectId, inputHash })))?.value.input;
@@ -253,6 +254,10 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       const payment = createPayment(claim);
       try {
         let state = await payment.status(quote.offer.id);
+        // No material left the signing host in these states. Close a failed
+        // local attempt using the same fenced abandonment path after restart.
+        if (state && ['signing', 'signing_unknown', 'cancelled'].includes(state.state))
+          throw Object.assign(Error('payment_signing_unknown'), { code: 'payment_signing_unknown' });
         if (!state) {
           if (claim.mode === 'dispatch') await jobs.beginEffect(claim, (_job, tx) => mayDispatch(tx, value, claim.job.authority.actor, 'review.admit'));
           await mayDispatch(store, value, claim.job.authority.actor, 'review.admit');
@@ -290,12 +295,13 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
         const denied = ['scope_denied', 'unauthenticated', 'source_not_published', 'sponsor_not_enabled',
-          'payment_not_authorized', 'payment_window_expired', 'quote_expired'].includes(error.code);
+          'payment_not_authorized', 'payment_window_expired', 'payment_signing_unknown', 'quote_expired'].includes(error.code);
         if (denied && payment.abandonUnsent) {
           try {
             return await jobs.finish(claim, { state: 'blocked', result: { error: error.code } }, async tx => {
               requireThat(await payment.abandonUnsent(tx, quote.offer.id), 'effect_requires_reconciliation');
               await reviews.cancelUnsent(tx, { actor: workerActor, projectId: value.projectId, jobId: value.reviewJobId });
+              await admission.releaseUnsent(tx, value.reviewJobId);
             });
           } catch (recoveryError) {
             if (recoveryError.code === 'lease_lost') return { stale: true };

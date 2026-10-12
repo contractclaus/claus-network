@@ -20,6 +20,7 @@ const errors={unauthenticated:401,invalid_signature:401,challenge_expired:401,sc
  inference_allowance_below_exposure:409,inference_request_outside_profile:400,inference_quote_unverified:409,
  inference_quote_mismatch:409,inference_output_unavailable:409,
  contract_intake_disabled:409,contract_binding_inactive:409,contract_binding_exhausted:409,
+ durable_agent_required:403,binding_exceeds_authority:400,decision_capacity_reached:409,contract_request_in_progress:409,
  contract_request_closed:409,contract_event_changed:409,contract_request_mismatch:400,
  invalid_contract_input:400,invalid_address:400,invalid_word:400};
 export const errorStatus=error=>errors[error.code]??(/^(invalid_|unknown_|missing_|duplicate_|value_|file_|snapshot_|document_)/.test(error.code??'')?400:503);
@@ -27,7 +28,7 @@ export const errorBody=error=>{
  const status=errorStatus(error),code=error.code&&status!==503?error.code:'service_unavailable';
  const category=status===401?'authentication':status===403?'authorization':status===429?'capacity':
   status===400||status===413?'input':code==='funding_insufficient'?'funding':
-  code==='effect_requires_reconciliation'?'unknown_outcome':status>=500?'availability':'state';
+  code==='decision_capacity_reached'?'capacity':code==='effect_requires_reconciliation'?'unknown_outcome':status>=500?'availability':'state';
  return {error:code,category,retryable:status>=500||status===429,
   ...(status===429?{retryAfterSeconds:60}:{}),
   ...(status===400&&typeof error.field==='string'&&error.field.length<200?{field:error.field}:{})};

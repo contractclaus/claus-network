@@ -13,7 +13,11 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
     const pilot = (await reader.read('review-pilots', projectId))?.value;
     const capability = (await reader.read('network-capabilities', 'chain'))?.value;
     requireThat(capability?.enabled === true && capability.chainId === 11155111, 'chain_not_enabled');
-    if (!pilot?.enabled || pilot.expiresAt <= now() || await reader.read('public-chain-projects', projectId)) await admission.admitted(reader);
+    if (!pilot?.enabled || pilot.expiresAt <= now() || await reader.read('public-chain-projects', projectId)) {
+      const config = await admission.admitted(reader);
+      const binding = (await reader.read('chain-bindings', projectId))?.value;
+      requireThat(!binding || binding.executor?.toLowerCase() === config.executor.toLowerCase(), 'chain_admission_changed');
+    }
     return capability;
   }
   const api = {
@@ -43,6 +47,8 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
         const old = await tx.read('chain-modules', id); if (old) return old.value;
         const pilot = (await tx.read('review-pilots', projectId))?.value;
         if (!pilot?.enabled || pilot.expiresAt <= now() || await tx.read('public-chain-projects', projectId)) await admission.reserveProject(tx, projectId);
+        if (await tx.read('public-chain-projects', projectId))
+          requireThat((await identity.credential(actor, tx)).kind === 'agent', 'durable_agent_required');
         const job = await jobs.enqueue(tx, { projectId, kind: 'module-deploy', payload: { moduleId: id },
           authority: { actor }, idempotencyKey: id });
         const value = { id, projectId, caseId, buildId: build.id, artifactHash: build.artifactHash,
@@ -82,6 +88,8 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
         const old = await find(tx, 'chain-registrations', projectId, registrationId);
         if (old.value.state !== 'awaiting_signature') return old.value;
         requireThat(prepared.message.expiresAt * 1000 > now(), 'registration_expired');
+        if (await tx.read('public-chain-projects', projectId))
+          requireThat((await identity.credential(actor, tx)).kind === 'agent', 'durable_agent_required');
         const job = await jobs.enqueue(tx, { projectId, kind: 'project-register', payload: { registrationId },
           authority: { actor }, idempotencyKey: registrationId });
         await tx.write('chain-registration-signatures', registrationId, { signature }, 0);
@@ -136,7 +144,7 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
             await tx.write(collection, id, { ...old.value, state: 'blocked', error: error.code, updatedAt: now() }, old.revision);
           });
         }
-        return jobs.finish(claim, { state: 'waiting', retryAt: now() + 60000,
+        return jobs.finish(claim, { state: 'waiting', retryAt: now() + (['chain_gas_exhausted', 'transaction_cost_limit'].includes(error.code) ? 15 * 60000 : 60000),
           result: { error: error.code ?? 'chain_execution_unavailable' } });
       }
     }

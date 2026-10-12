@@ -49,6 +49,11 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
         await admitted(tx, config);
         const old = await tx.read('contract-bindings', id);
         if (old) { requireThat(old.value.configHash === digest(config), 'idempotency_conflict'); return bindingView(old); }
+        if (await tx.read('public-chain-projects', projectId)) {
+          const credential = await identity.credential(actor, tx);
+          requireThat(credential.kind === 'agent', 'durable_agent_required');
+          requireThat(body.expiresAt <= credential.expiresAt, 'binding_exceeds_authority');
+        }
         const capacity = await tx.read('contract-binding-capacity', projectId);
         requireThat((capacity?.value.count ?? 0) < 32, 'capacity_reached');
         await tx.write('contract-binding-capacity', projectId, { count: (capacity?.value.count ?? 0) + 1 }, capacity?.revision ?? 0);
@@ -105,12 +110,19 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
         const current = await owned(tx, 'contract-bindings', binding.projectId, bindingId);
         await admitted(tx, current.value);
         requireThat(current.value.used < current.value.maxRequests, 'contract_binding_exhausted');
+        const active = await tx.read('active-contract-request', binding.projectId);
+        if (active && await tx.read('public-chain-projects', binding.projectId)) {
+          const prior = (await tx.read('contract-requests', active.value.id))?.value;
+          requireThat(!prior || !['queued', 'waiting'].includes(prior.state) || prior.observation.deadline * 1000 <= now(),
+            'contract_request_in_progress');
+        }
         const job = await jobs.enqueue(tx, { projectId: binding.projectId, kind: 'contract-intake',
           payload: { requestId: id }, authority: { actor: binding.actor }, idempotencyKey: id });
         await tx.write('contract-bindings', bindingId, { ...current.value, used: current.value.used + 1 }, current.revision);
         await tx.write('contract-requests', id, { id, projectId: binding.projectId, bindingId, jobId: job.id,
           observation: copy(observation), observationHash: digest(observation), state: 'queued',
           proposalId: intakeProposalId(binding.projectId, id), result: null, createdAt: now() }, 0);
+        await tx.write('active-contract-request', binding.projectId, { id }, active?.revision ?? 0);
         await tx.event({ type: 'contract.request_received', projectId: binding.projectId, requestId: id, at: now() });
         return { id, state: 'queued' };
       });
@@ -145,7 +157,7 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
           // A transport failure might have created the proposal. Keep the
           // original request; the next run looks it up before any admission.
           const denied = ['contract_intake_disabled', 'contract_binding_inactive', 'scope_denied', 'unauthenticated',
-            'contract_request_closed'].includes(error.code);
+            'contract_request_closed', 'decision_capacity_reached', 'durable_agent_required'].includes(error.code);
           return jobs.finish(claim, { state: denied ? 'blocked' : 'waiting',
             ...(denied ? {} : { retryAt: now() + 60000 }), result: { requestId: request.id, error: denied ? error.code : 'proposal_pending' } },
           update(denied ? 'blocked' : 'waiting', null, denied ? error.code : undefined));
