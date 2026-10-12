@@ -28,6 +28,7 @@ for (const chainId of [1, 11155111]) test('chain ' + chainId + ': explorer routi
     if (action === 'verifysourcecode') {
       submitted++; assert.equal(options.method, 'POST');
       assert.equal(options.body.get('constructorArguments'), '1234');
+      assert.equal(options.body.get('constructorArguements'), '1234', 'legacy explorer backend must receive the same constructor bytes');
       assert.equal(options.body.get('contractname'), 'src/Example.sol:Example');
       assert.equal(options.body.get('compilerversion'), 'v0.8.27+commit.40a35a09');
       assert.equal(parsed.searchParams.has('sourceCode'), false);
