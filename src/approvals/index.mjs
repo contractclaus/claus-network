@@ -147,7 +147,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         if (claim.mode === 'dispatch') await jobs.beginEffect(claim, (_job, tx) => authorize(tx));
         const result = await controller.step({ value, input: await readInput(value), authorize });
         const done = ['approved', 'rejected', 'failed', 'blocked'].includes(result.state);
-        return jobs.finish(claim, { state: done ? result.state === 'blocked' ? 'blocked' : result.state === 'failed' ? 'failed' : 'complete' : 'waiting',
+        return await jobs.finish(claim, { state: done ? result.state === 'blocked' ? 'blocked' : result.state === 'failed' ? 'failed' : 'complete' : 'waiting',
           retryAt: done ? null : now() + 30000, result: { state: result.state } }, async tx => {
           const old = await find(tx, value.projectId, value.id);
           const next = { ...old.value, ...result, updatedAt: now() };
@@ -186,7 +186,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         if (claim.mode === 'dispatch') await jobs.beginEffect(claim, (_job, tx) => authorize(tx));
         const result = await executor.step({ value, authorize });
         const done = ['executed', 'failed', 'blocked'].includes(result.state);
-        return jobs.finish(claim, { state: done ? result.state === 'executed' ? 'complete' : result.state : 'waiting',
+        return await jobs.finish(claim, { state: done ? result.state === 'executed' ? 'complete' : result.state : 'waiting',
           retryAt: done ? null : Math.max(now() + 30000, result.readyAt ? result.readyAt * 1000 : 0), result: { state: result.state } }, async tx => {
           const old = await find(tx, value.projectId, value.id);
           const next = { ...old.value, ...result, updatedAt: now() };
@@ -202,7 +202,8 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         });
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
-        if (claim.mode === 'dispatch' && ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'vault_review_context_changed'].includes(error.code)) {
+        if (['recovery_block_changed', 'recovery_event_mismatch'].includes(error.code) ||
+          claim.mode === 'dispatch' && ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'vault_review_context_changed'].includes(error.code)) {
           return jobs.finish(claim, { state: 'blocked', result: { error: error.code } }, async tx => {
             const old = await find(tx, value.projectId, value.id);
             await tx.write('chain-proposals', value.id, { ...old.value, state: 'blocked', error: error.code }, old.revision);

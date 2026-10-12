@@ -25,3 +25,16 @@ test('event recovery advances bounded finalized ranges without declaring an inco
  const result=await recoverChainEvent(input);assert.equal(result.complete,true);assert.equal(result.logs[0].blockNumber,23000n);
  assert.equal(calls,4);assert.equal((await store.list('chain-event-recovery',{limit:10})).length,1);
 });
+
+test('a changed finalized block preserves the recovery cursor and refuses a new scan', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  let changed = false, scans = 0;
+  const client = { getBlock: async ({ blockNumber }) => ({ number: blockNumber ?? 100n, hash: changed ? 'changed' : 'original' }),
+    getLogs: async () => { scans++; return []; } };
+  const input = { store, client, chainId: 11155111, key: 'registration', query: { address: 'executor' }, fromBlock: 1n };
+  await recoverChainEvent(input);
+  const before = await store.list('chain-event-recovery'); changed = true;
+  await assert.rejects(recoverChainEvent(input), { code: 'recovery_block_changed' });
+  assert.deepEqual(await store.list('chain-event-recovery'), before);
+  assert.equal(scans, 1);
+});

@@ -127,6 +127,15 @@ test('API project, real signatures and zero-delay execution work across isolated
     await advance();
   }
   await app.deployments.submitRegistration(actor, project.id, { registrationId: registration.id, signature });
+  if (process.env.CLAUS_TEST_RELAY === '1' && chainId === 11155111) {
+    // Exercise the real window where latest contains a relay but finalized
+    // does not. The persisted job must wait without an undefined hash.
+    const waiting = await app.deployments.runOne(executor.deployment);
+    assert.equal(waiting.state, 'waiting');
+    assert.equal((await app.deployments.registration(actor, project.id, registration.id)).state, 'registering', JSON.stringify(waiting));
+    await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
+    await advance();
+  }
   await until(() => app.deployments.runOne(executor.deployment),
     () => app.deployments.registration(actor, project.id, registration.id), 'verified');
   if (chainId === 11155111) {
@@ -173,6 +182,7 @@ test('API project, real signatures and zero-delay execution work across isolated
       functionName: 'queue', args: [signed.message, signed.signature] });
     relayedExecutionHash = await wallet.writeContract({ chain: null, address: executorAddress, abi: executorSource.abi,
       functionName: 'execute', args: [signed.message, approved.proposal.configuration, signed.signature] });
+    if (chainId === 11155111) await client.request({ method: 'anvil_mine', params: ['0x60', '0x1'] });
     await advance();
   }
   const completed = await until(() => app.approvals.runExecution(executor.execution),
