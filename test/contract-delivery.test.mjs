@@ -7,13 +7,13 @@ import { digest } from '../src/shared/index.mjs';
 import { createSealer } from '../adapters/secrets.mjs';
 import { admitContractDispatchBudget, revokeContractDispatchBudget, createContractDelivery } from '../adapters/contract-delivery.mjs';
 
-async function fixture(t, callback = false, publicAdmission = false, chainId = 11155111) {
+async function fixture(t, callback = false, publicAdmission = false, chainId = 11155111, continuous = false) {
   const store = openStore(':memory:'); t.after(() => store.close());
   const signer = privateKeyToAccount(generatePrivateKey());
   const inbox = '0x' + '22'.repeat(20), codeHash = '0x' + '33'.repeat(32);
   let now = Date.now();
   const budget = { id: 'fixture-budget', chainId, dispatcher: signer.address.toLowerCase(), inbox,
-    codeHash, projectIds: ['project-a'], expiresAt: now + 86400000, maximumTotal: '1000000000000',
+    codeHash, projectIds: ['project-a'], expiresAt: continuous ? null : now + 86400000, maximumTotal: '1000000000000',
     maximumTransaction: '200000000000', maximumGas: '1000000', maximumFeePerGas: '1000000' };
   if (publicAdmission) { budget.projectIds = []; budget.admissionMode = 'public-readonly-v1'; budget.maximumProject = '300000000000'; }
   await admitContractDispatchBudget(store, budget);
@@ -23,7 +23,7 @@ async function fixture(t, callback = false, publicAdmission = false, chainId = 1
   await store.transaction(async tx => {
     await tx.write('contract-requests', request.id, request, 0);
     await tx.write('contract-bindings', request.bindingId, { ...observation, projectId: request.projectId,
-      actor: 'fixture-agent', expiresAt: budget.expiresAt, revokedAt: null }, 0);
+      actor: 'fixture-agent', expiresAt: now + 86400000, revokedAt: null }, 0);
   });
   let resolved = false, callbackDelivered = false, currentHeight = 99n, broadcasts = 0, identityChecks = 0, denyAt = Infinity;
   const sent = new Map(), receipts = new Map();
@@ -61,6 +61,19 @@ async function fixture(t, callback = false, publicAdmission = false, chainId = 1
       }
     } };
 }
+
+test('continuing dispatch budgets keep finite callback deadlines stable across recovery',async t=>{
+  const f=await fixture(t,true,true,1,true);
+  assert.equal((await f.make().step(f.input)).state,'pending');f.confirm();
+  assert.equal((await f.make().step(f.input)).state,'pending');
+  const id='contract-delivery:'+f.input.id+':callback';
+  const before=(await f.store.read('chain-transactions',id)).value;
+  assert(Number.isSafeInteger(before.intent.expiresAt));
+  f.advanceTo(Date.now()+10000);f.confirm();
+  assert.equal((await f.make().step(f.input)).state,'delivered');
+  assert.equal((await f.store.read('chain-transactions',id)).value.intent.expiresAt,before.intent.expiresAt);
+  assert.equal(f.broadcasts(),2);
+});
 
 test('unknown delivery retains its transaction and reservation after restart and revocation', async t => {
   const f = await fixture(t);

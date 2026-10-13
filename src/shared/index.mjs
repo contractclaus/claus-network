@@ -28,6 +28,15 @@ export function integer(value, min = 0, max = Number.MAX_SAFE_INTEGER) {
   return value;
 }
 
+// Explicit null is reserved for continuing operator policies and budgets.
+// User credentials, signed grants and individual transactions keep deadlines.
+export function operatingExpiry(value) {
+  return value === null ? null : integer(value, 1);
+}
+export function operatingWindowOpen(value, now) {
+  return value === null || Number.isSafeInteger(value) && value > now;
+}
+
 export function amount(value) {
   requireThat(typeof value === 'string' && /^(0|[1-9][0-9]{0,77})$/.test(value), 'invalid_amount');
   const n = BigInt(value);

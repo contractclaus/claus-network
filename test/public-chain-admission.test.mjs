@@ -71,4 +71,13 @@ test('public chain scope pins reviewed artifacts and accounts gas without resett
   // Expiry must not prevent reconciliation of a transaction already sent.
   await store.transaction(tx => admission.finalizeGas(tx, { id: 'tx2', actual: '4' }));
   assert.deepEqual((await admission.get('owner')).usage, { projects: 1, reserved: '0', spent: '7' });
+  await admission.publish('owner', { version: 'continuous', config: {...config, expiresAt: null} });
+  await admission.activate('owner', { version: 'continuous', expectedGeneration: 2 });
+  time += 365 * 86400000;
+  assert.equal((await admission.admitted()).expiresAt, null);
+  assert.equal((await admission.get('owner')).usage.spent, '7');
+  await assert.rejects(reserve('over-budget', '2'), { code: 'chain_gas_exhausted' });
+  await admission.publish('owner', { version: 'disabled', config: {...config, expiresAt: null, enabled: false} });
+  await admission.activate('owner', { version: 'disabled', expectedGeneration: 3 });
+  await assert.rejects(admission.admitted(), { code: 'chain_public_not_enabled' });
 });

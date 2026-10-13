@@ -1,4 +1,4 @@
-import { amount, digest, integer, requireThat, shape } from '../shared/index.mjs';
+import { operatingExpiry, operatingWindowOpen, amount, digest, integer, requireThat, shape } from '../shared/index.mjs';
 import { createPolicies } from '../policies/index.mjs';
 
 // Public sponsorship is distinct from free project access and from chain admission.
@@ -8,7 +8,7 @@ export function createReviewAdmission({ store, networkOwner, now }) {
     schemas: { 'review.admission': config => {
       shape(config, ['enabled', 'expiresAt', 'maximumPerReview', 'maximumLifetime', 'perOwnerDay', 'perProjectDay', 'globalDay', 'activeGlobal']);
       requireThat(typeof config.enabled === 'boolean', 'invalid_sponsorship');
-      integer(config.expiresAt, 1);
+      operatingExpiry(config.expiresAt);
       requireThat(amount(config.maximumPerReview) > 0n && amount(config.maximumPerReview) <= 500000000000000000n, 'sponsor_limit');
       requireThat(amount(config.maximumLifetime) >= amount(config.maximumPerReview), 'sponsor_limit');
       integer(config.perOwnerDay, 1, 2); integer(config.perProjectDay, 1, 2);
@@ -25,7 +25,7 @@ export function createReviewAdmission({ store, networkOwner, now }) {
       const pilot = (await reader.read('review-pilots', projectId))?.value;
       if (pilot?.enabled && pilot.expiresAt > now()) return { ...pilot, kind: 'pilot' };
       const policy = await active(reader);
-      requireThat(policy?.config.enabled && policy.config.expiresAt > now(), 'sponsor_not_enabled');
+      requireThat(policy?.config.enabled && operatingWindowOpen(policy.config.expiresAt, now()), 'sponsor_not_enabled');
       return { ...policy.config, kind: 'public', generation: policy.generation };
     },
     async get(actor) {
@@ -33,7 +33,7 @@ export function createReviewAdmission({ store, networkOwner, now }) {
       return { policy: await active(), committedMaximum: (await store.read('public-review-exposure', 'lifetime'))?.value.maximum ?? '0' };
     },
     async publish(actor, { version, config }) {
-      requireThat(config.expiresAt <= now() + 30 * 86400000, 'invalid_sponsorship');
+      requireThat(config.expiresAt === null || config.expiresAt <= now() + 30 * 86400000, 'invalid_sponsorship');
       return policies.publish({ actor, module: 'review.admission', version, config });
     },
     async activate(actor, { version, expectedGeneration }) {

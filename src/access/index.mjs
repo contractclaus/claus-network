@@ -87,7 +87,7 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       publicDataServices: { enabled: collaborationEnabled && !active.config.paused && active.config.publicDataServices === true,
         policy: 'public-data-v1', maximumLineageDepth: 3, explicitResultPublication: true },
       transfers: { enabled: (await cap('portability'))?.enabled === true, trustedDestinationRequired: true },
-      reviews: { admission: !reviewEnabled ? 'not_enabled' : reviews?.config.enabled && reviews.config.expiresAt > now() ? 'public_sponsored' : 'restricted_pilot', reservationRequired: true, projectPrice: '0', asset: 'IMD', chainId: 1 },
+      reviews: { admission: !reviewEnabled ? 'not_enabled' : reviews?.config.enabled && (reviews.config.expiresAt === null || reviews.config.expiresAt > now()) ? 'public_sponsored' : 'restricted_pilot', reservationRequired: true, projectPrice: '0', asset: 'IMD', chainId: 1 },
       chainProfiles: [{ chainId: 11155111, profile: 'claus-readonly-v1', admission: chainState },
         { chainId: 1, profile: 'claus-readonly-v1', admission: mainnetState }],
       signalProfiles: await signalDiscovery(), contractIntake: await intakeDiscovery(),

@@ -7,6 +7,8 @@ export async function publicDecisionCapacity(reader, projectId, now, reserve = f
   const pilot = (await reader.read('review-pilots', projectId))?.value;
   if (!await reader.read('public-chain-projects', projectId) && pilot?.enabled && pilot.expiresAt > now) return false;
   const day = Math.floor(now / 86400000);
+  const operation = (await reader.read('network-capabilities', 'continuous-operation'))?.value;
+  const continuous = operation?.enabled === true && operation.profile === 'claus-operation-v1' && operation.expiresAt === null;
   // Operator-only, expiring allocations can fund a bounded recovery attempt.
   // Counts are never reset. The global lifetime cap and separate model budget still bind.
   const allocation = (await reader.read('public-decision-allocations', digest({ projectId, day })))?.value;
@@ -21,18 +23,18 @@ export async function publicDecisionCapacity(reader, projectId, now, reserve = f
     Number.isSafeInteger(allocation.maximumProjectDay) && allocation.maximumProjectDay >= PUBLIC_DECISION_LIMITS.projectDay &&
     allocation.maximumProjectDay <= requestedLifetime;
   const projectDay = allocated ? allocation.maximumProjectDay : PUBLIC_DECISION_LIMITS.projectDay;
-  const projectLifetime = allocated ? requestedLifetime : PUBLIC_DECISION_LIMITS.projectLifetime;
+  const projectLifetime = continuous ? null : allocated ? requestedLifetime : PUBLIC_DECISION_LIMITS.projectLifetime;
   let canRetryNextDay = true;
   for (const [scope, subject, period, maximum] of [
     ['lifetime', projectId, null, projectLifetime],
-    ['lifetime', 'global', null, PUBLIC_DECISION_LIMITS.globalLifetime],
+    ['lifetime', 'global', null, continuous ? null : PUBLIC_DECISION_LIMITS.globalLifetime],
     ['day', projectId, day, projectDay],
     ['day', 'global', day, allocated ? requestedGlobalDay : PUBLIC_DECISION_LIMITS.globalDay]
   ]) {
     const key = digest({ scope, subject, period }), row = await reader.read('public-decision-admission', key);
     if (scope === 'lifetime' && subject === projectId)
-      canRetryNextDay = (row?.value.count ?? 0) < PUBLIC_DECISION_LIMITS.projectLifetime;
-    if ((row?.value.count ?? 0) >= maximum) throw Object.assign(new Error('decision_capacity_reached'),
+      canRetryNextDay = continuous || (row?.value.count ?? 0) < PUBLIC_DECISION_LIMITS.projectLifetime;
+    if (maximum !== null && (row?.value.count ?? 0) >= maximum) throw Object.assign(new Error('decision_capacity_reached'),
       { code: 'decision_capacity_reached', ...(scope === 'day' && canRetryNextDay ? { retryAt: (day + 1) * 86400000 } : {}) });
     if (reserve) await reader.write('public-decision-admission', key, { count: (row?.value.count ?? 0) + 1 }, row?.revision ?? 0);
   }
