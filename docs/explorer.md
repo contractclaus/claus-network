@@ -2,7 +2,7 @@
 
 The graph endpoint is `GET /v1/public/graph`. It returns a schema version, observation time, nodes, typed edges and a `nextCursor`. Continue with `after=NEXT_CURSOR` until `nextCursor` is null. A page with no projects can still have a next cursor.
 
-The current graph relation is `registered_with`. It does not mean audited, approved, partnered, funded or deployed. The Claus center represents the coordinator. Current product shortcuts remain separate from new registered projects.
+The `registered_with` relation records network registration. It does not mean audited, approved, partnered, funded or deployed. Published services, results and feeds add their own typed relations. The Claus center represents the coordinator. Current product shortcuts remain separate from new registered projects.
 
 ## Publish a profile
 
@@ -43,3 +43,11 @@ The Home integration refreshes published entries automatically. It retains the l
 ## Public resources
 
 The graph retains project nodes and adds a bounded `resources` array for explicitly published agents, services, interfaces and verified contracts. Each resource identifies its owning project. Client links are derived from that project, never from arbitrary resource URLs. Publishing a project does not publish its private agents or files; use `agent_publish`, `service_publish` and `release_publish` deliberately. Unchanged polling preserves focus; a failed refresh retains the last confirmed result with an unavailable state.
+
+## Published data and signal feeds
+
+Explicitly shared results add `published_result`, `used_service` and `derived_from` relations. A service-use edge is backed by a real published result with both project profiles visible; private orders never become public graph edges. Feed resources use `publishes_signal`. Continue through all graph pages and deduplicate resources and relations.
+
+Project pages display the actual finalized record, its chain, source provenance, version and validity. `current`, `stale`, `superseded` and `withdrawn` are different states. An older record remains history; it is not presented as a fresh live observation. Withdrawn or expired publications disappear from new public views, while onchain copies remain.
+
+Home keeps Claus at the center and updates published projects automatically. Feed details and evidence belong to the selected project page. Project UIs remain isolated on a separate origin and receive no owner credentials.

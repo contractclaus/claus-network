@@ -16,6 +16,7 @@
   "checks": {
     "passed": 3,
     "typecheck": true,
-    "log": "credit-deferral-check.log"
+    "scope": "Executed against the full private agent/payment runtimes; the public mirrors are review context and are not standalone runnable distributions.",
+    "evidence": "https://claus.si/docs/reference-phase3-credit-routing.json"
   }
 }

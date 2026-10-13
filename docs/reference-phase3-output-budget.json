@@ -1,0 +1,92 @@
+{
+  "scope": "Targeted checks ran against the complete private agent/payment runtimes.",
+  "checks": {
+    "at": "2026-10-13T15:46:14.806Z",
+    "passed": true,
+    "targetedTests": 2,
+    "actualPriorInputIdentical": true,
+    "previousMaximumOutputTokens": 4096,
+    "maximumOutputTokens": 16384,
+    "maximumQuoteMicroUSDC": "2000000",
+    "unsignedQuoteMicroUSDC": "526768",
+    "model": "gpt-6-astra",
+    "reasoning": {
+      "effort": "xhigh",
+      "context": "all_turns"
+    },
+    "paidModelCalls": 0,
+    "files": {
+      "agent/src/network-review-schema.ts": "bd3db2efc1ad4e0eb401f4880e9854a18cb36231b88f9910c995337a803dde5c",
+      "payments/src/credit-provider.js": "5f17cbc12179a38a75d5b48956c7cc4084f1abaa2bec15d5e1acd6a6a764fb45",
+      "payments/src/index.js": "f6d9ab8e3e4cc1a5fbb8c91dc91e000c20605a851b457fe8478b6b8050d35bcf"
+    },
+    "typecheck": true,
+    "sourceCommit": "182af1efac991d25ba228dfad7e8ad54fb51ed23"
+  },
+  "assessment": {
+    "status": "accepted-for-phase3",
+    "at": "2026-10-13T16:05:56.572Z",
+    "sourceCommit": "182af1efac991d25ba228dfad7e8ad54fb51ed23",
+    "jobId": "2a30a521-fd15-4eec-b384-3b9474cc186d",
+    "artifactHash": "sha256:336b2702dc80eaa6dd466e523c8e2d5b703f22e88f56d86a3b5df07c20db053d",
+    "reportHash": "sha256:d6331ab74011afcd08552d3a5378b895ff277d9f086297626d98f1c0e1d51f8a",
+    "checks": {
+      "at": "2026-10-13T15:46:14.806Z",
+      "passed": true,
+      "targetedTests": 2,
+      "actualPriorInputIdentical": true,
+      "previousMaximumOutputTokens": 4096,
+      "maximumOutputTokens": 16384,
+      "maximumQuoteMicroUSDC": "2000000",
+      "unsignedQuoteMicroUSDC": "526768",
+      "model": "gpt-6-astra",
+      "reasoning": {
+        "effort": "xhigh",
+        "context": "all_turns"
+      },
+      "paidModelCalls": 0,
+      "files": {
+        "agent/src/network-review-schema.ts": "bd3db2efc1ad4e0eb401f4880e9854a18cb36231b88f9910c995337a803dde5c",
+        "payments/src/credit-provider.js": "5f17cbc12179a38a75d5b48956c7cc4084f1abaa2bec15d5e1acd6a6a764fb45",
+        "payments/src/index.js": "f6d9ab8e3e4cc1a5fbb8c91dc91e000c20605a851b457fe8478b6b8050d35bcf"
+      },
+      "typecheck": true,
+      "sourceCommit": "182af1efac991d25ba228dfad7e8ad54fb51ed23"
+    },
+    "findings": [
+      {
+        "number": 1,
+        "severity": "low",
+        "title": "Introduced: agent hard-codes a 16384 output cap that an unpatched payer refuses; the ordering dependency is undocumented and each mis-ordered review fails terminally for its input hash",
+        "disposition": "Addressed in the deployment procedure: promote and verify the widened payment relay first; the agent promotion checks the exact live payment deployment/source. Rollback must restore the older agent before reverting the payment validator. No capability auto-fallback or smaller review is introduced."
+      },
+      {
+        "number": 2,
+        "severity": "info",
+        "title": "Unchanged mechanism, exposure widened: credit-lane telemetry reports effectiveMaxOutputTokens from the sent request and ignores the provider's x-si-adapted-params header",
+        "disposition": "Accepted telemetry limitation: effectiveMaxOutputTokens records the request sent, not proof of the provider internal cap. Completion and actual usage will be recorded from the genuine first calls; public documentation must not claim provider-adaptation verification."
+      },
+      {
+        "number": 3,
+        "severity": "info",
+        "title": "Unchanged limitation: the 600 s provider deadline is not widened with the 4x larger reasoning budget; a time-cut review still ends failed with its 2 USDC hold retained",
+        "disposition": "Accepted existing finite deadline and retained-uncertainty accounting. No timeout replay or hold release. Actual completion latency remains a live acceptance criterion."
+      },
+      {
+        "number": 4,
+        "severity": "info",
+        "title": "Unchanged limitation: the 2 USDC ceiling with no quote shrinking now applies to a 16384-token quote, narrowing the affordable input range by roughly 58261 microUSDC",
+        "disposition": "Accepted intended clean refusal under the unchanged 2-USDC maximum, with no shrinking, refill or disguised free allocation."
+      },
+      {
+        "number": 5,
+        "severity": "info",
+        "title": "Unchanged trust assumption, widened: the 16384 lane is selected by the caller-chosen Idempotency-Key pattern alone, so any INFERENCE_SECRET holder can obtain the widened budget",
+        "disposition": "Accepted trusted internal-secret boundary. This endpoint is not public inference; preserve the secret, finite per-call/lifetime limits and strict review-ID routing."
+      }
+    ],
+    "configurationCap": "Review output intentionally has a separate finite code-bound budget; conversational maxOutputTokens remains unchanged.",
+    "scope": "Exact three-file output-budget correction; runtime/API/intake source remains ea60511243d7478572bee344a00a52ff4e9b01b1.",
+    "liveAcceptancePending": true
+  }
+}

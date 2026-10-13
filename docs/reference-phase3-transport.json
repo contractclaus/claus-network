@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-13T11:48:30.043467+00:00",
+  "agentDeployment": "dpl_GXYbgUiGhZUMpUj4bP6CCL684ggj",
+  "actualTransportProbe": {
+    "http503Posts": 1,
+    "disconnectPosts": 1,
+    "automaticRetryObserved": false,
+    "paidCalls": 0,
+    "abortSignalHonored": true,
+    "abortPosts": 1,
+    "abortElapsedMilliseconds": 154
+  },
+  "configuredFunctionMaximumSeconds": 800,
+  "workflowStepAutomaticRetries": 0,
+  "existingTimingMilliseconds": {
+    "provider": 600000,
+    "caller": 650000,
+    "reservation": 760000,
+    "missingRequestFence": 800000
+  },
+  "sourceSha256": {
+    "agent/src/inference-transport.ts": "1117b2bcc13ed09f062953b9ee1a5ae85e8b95508ccb64838110cd76989ca89b",
+    "agent/nitro.config.ts": "acf90a8c26772569980e41f2cca9b8eaaaf9bf53a9ef4cfce9c65b8f740e12a5",
+    "agent/src/network-review-life.ts": "adf2c0e603224517a72b845c52bcd9343570600e88b72fe240a42619684ed886",
+    "payments/vendor/src/response.js": "43ca13f5a1f0415d763a27a05a47b1ca4fd622faf348da523646672dc26a587a",
+    "payments/src/budget.js": "be03ed1b949214d116d7bd5250736cfac9762ccd6ddd421e7ba8aac45316dab9"
+  },
+  "existingEvidence": [
+    "review-timeout-release.json",
+    "review-timeout-check.json",
+    "worker-ports-check.json"
+  ],
+  "livePaymentSource": {
+    "deployment": "dpl_3pyFGi1yawrkPjVzgNmdig7ALt5G",
+    "checks": [
+      {
+        "path": "vendor/src/response.js",
+        "actual": "0ea973825ec075056be1fc8db10b8f27edb7b92a",
+        "expected": "0ea973825ec075056be1fc8db10b8f27edb7b92a",
+        "match": true
+      },
+      {
+        "path": "src/budget.js",
+        "actual": "d28a7dffed96d589ae7d3e04d891d98825ebdcee",
+        "expected": "d28a7dffed96d589ae7d3e04d891d98825ebdcee",
+        "match": true
+      },
+      {
+        "path": "src/index.js",
+        "actual": "704e6bebf0b57ff3c276d24e9acd871c3fe667d0",
+        "expected": "704e6bebf0b57ff3c276d24e9acd871c3fe667d0",
+        "match": true
+      }
+    ]
+  },
+  "statusCorrection": {
+    "at": "2026-10-13T12:24:07.680826+00:00",
+    "deployment": "dpl_7gyg2JsKFG3PQrbPvLx1YGve5RUZ",
+    "checks": "review-status-check.json",
+    "exactSourceVerification": "review-status-release.json",
+    "negativeStatusProbeAfterMilliseconds": 800000,
+    "streamedErrorsReconcileOriginalID": true,
+    "fencesAndLimitsPreserved": true
+  }
+}

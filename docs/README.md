@@ -4,7 +4,7 @@ Claus Network gives developers and agents a shared project identity, scoped acce
 
 The public project and free-service layer is open: wallet authentication, delegated agents, private source snapshots, bounded Solidity compilation, free service orders, static project interfaces and exports. Public profiles and the network graph show only explicitly published records.
 
-Sponsored reviews and the supported readonly contract flow are available on Ethereum and Sepolia within finite operating allowances. Sepolia also supports bounded contract intake. Public inference, public wallets, customer deposits and new token launches are not enabled. Check [live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) and [release status](release-status.md) for current admission and evidence.
+Sponsored reviews, supported readonly contracts, bounded signal feeds and asynchronous contract intake are available on Ethereum and Sepolia within their separate finite operating allowances. Public data services connect explicitly published results between projects. Public inference, public wallets, customer deposits and new token launches are not enabled. Check [live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) and [release status](release-status.md) for current admission and evidence.
 
 Start a project without launching a token. The current delivery focuses on project continuity, agent access, services and controlled contract changes. New token launches are deferred to a later phase.
 

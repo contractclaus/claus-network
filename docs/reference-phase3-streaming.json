@@ -1,0 +1,60 @@
+{
+  "assessment": {
+    "status": "accepted-maintenance-correction",
+    "at": "2026-10-13T16:19:17.441Z",
+    "sourceCommit": "58b1f33cfbeb2bb3e5afd2ec77e812ab38138ab3",
+    "priorAgentSource": "182af1efac991d25ba228dfad7e8ad54fb51ed23",
+    "independentAuditOfThisSelection": false,
+    "reason": "Operator-authorized one-flag selection of the existing bounded native Responses stream parser. No new schema, parser, signer, payment rail, model, effort, limit or retry.",
+    "checks": {
+      "at": "2026-10-13T16:19:17.441Z",
+      "sourceCommit": "58b1f33cfbeb2bb3e5afd2ec77e812ab38138ab3",
+      "passed": true,
+      "targetedCases": 3,
+      "log": "streamed-review-check.log",
+      "changedSource": "integration/payment-review/src/index.js",
+      "sha256": "d5f0ed6a620405d10df5185d3da400a020a738ae7d08e37af470eb456466a8ff",
+      "priorParserAndAccountingUnchanged": true
+    },
+    "preserved": [
+      "All prior paid IDs and ambiguous holds",
+      "2-USDC per-call and 500-USDC lifetime limits",
+      "Full original evidence and complete JSON verdict requirements",
+      "Native response normalization and truncation checks"
+    ],
+    "limitations": [
+      "Streaming completion is not settlement; retain full risk reservation.",
+      "Existing 600-second provider deadline remains.",
+      "Current candidate provider499 record is not exact settlement evidence."
+    ],
+    "liveAcceptancePending": false,
+    "liveAcceptance": "https://claus.si/docs/reference-phase3.json",
+    "liveAcceptedAt": "2026-10-13T18:39:05.932Z"
+  },
+  "paymentRelease": {
+    "at": "2026-10-13T16:21:22.466Z",
+    "sourceCommit": "58b1f33cfbeb2bb3e5afd2ec77e812ab38138ab3",
+    "deployment": "dpl_5Lg7aayrk9diPtCtahhQRfJS2ttd",
+    "previousDeployment": "dpl_ADURnXASE8DcSXvmXQho32jTP6Ce",
+    "verifiedFiles": 32,
+    "exactSourceVerified": true,
+    "environment": {
+      "NETWORK_REVIEW_FRESH_RAIL": "credit_work"
+    },
+    "sourceRecovery": {
+      "commit": "25a25e757d7644056246b170bd6e33476160d68b",
+      "sha256": "587167d57f6294c4952e6ecb11b39055d25ea14f38f670d6c2a1bd695791937b",
+      "requiredFullSourceCommit": "f3658fb5f3c7998a2ee33590be2fb81c309437de"
+    }
+  },
+  "checks": {
+    "at": "2026-10-13T16:19:17.441Z",
+    "sourceCommit": "58b1f33cfbeb2bb3e5afd2ec77e812ab38138ab3",
+    "passed": true,
+    "targetedCases": 3,
+    "log": "streamed-review-check.log",
+    "changedSource": "integration/payment-review/src/index.js",
+    "sha256": "d5f0ed6a620405d10df5185d3da400a020a738ae7d08e37af470eb456466a8ff",
+    "priorParserAndAccountingUnchanged": true
+  }
+}

@@ -1,5 +1,7 @@
 # Protected testnet changes
 
+Phase 3 also admits the [bounded signal profile](signals.md) on Sepolia. The [public record walkthrough](pulse-walkthrough.md) covers Store creation, publisher grants, data publication and revocation; the [live evidence](reference-phase3.json) records the actual flow and reviewed evaluator change. The existing readonly profile and its original operating limits remain separate.
+
 Eligible public projects can use the `claus-readonly-v1` profile on Sepolia (chain ID `11155111`) within the current sponsorship and gas allowances. Check `testnetExecution` in `/health` and project capabilities before use. Registration, compilation or an IMD report does not itself authorize a change. The [completed public reference](reference-public-contract.json) includes a real Claus decision, callback and revocation. [Ethereum](mainnet.md) has a separate chain policy and gas allocation.
 
 ## Register a contract

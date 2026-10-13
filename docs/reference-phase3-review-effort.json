@@ -1,0 +1,32 @@
+{
+  "status": "accepted-maintenance-correction",
+  "at": "2026-10-13T16:33:36.982Z",
+  "sourceCommit": "31b4c2e66fd841a25e02131edb2dcd2dc7be3466",
+  "priorAgentSource": "182af1efac991d25ba228dfad7e8ad54fb51ed23",
+  "priorPaymentSource": "58b1f33cfbeb2bb3e5afd2ec77e812ab38138ab3",
+  "independentAuditOfThisSelection": false,
+  "reason": "Operator-authorized review-only inference profile. A completed genuine Claus verdict is still required. No reduction of evidence or review criteria.",
+  "checks": {
+    "at": "2026-10-13T16:33:36.982Z",
+    "sourceCommit": "31b4c2e66fd841a25e02131edb2dcd2dc7be3466",
+    "passed": true,
+    "targetedCases": 1,
+    "typecheck": true,
+    "scope": "Only review effort changes from conversational setting to high. Full evidence, model, 16k output, strict verdict parsing unchanged."
+  },
+  "preserved": [
+    "Old payment IDs and unknown holds",
+    "2-USDC and 500-USDC financial limits",
+    "Astra model and complete evidence",
+    "Review criteria and strict complete-result parsing",
+    "Conversation configuration and schedule"
+  ],
+  "limitations": [
+    "No independent re-audit of this profile choice",
+    "Existing 600-second provider deadline remains",
+    "Lower reasoning effort can affect judgment; it is not a safety guarantee"
+  ],
+  "liveAcceptancePending": false,
+  "liveAcceptance": "https://claus.si/docs/reference-phase3.json",
+  "liveAcceptedAt": "2026-10-13T18:39:05.932Z"
+}

@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-13T14:00:15.632Z",
+  "oldRequestBytes": 652223,
+  "newRequestBytes": 460922,
+  "oldMaximumMicroUSDC": "591390",
+  "inputHash": "sha256:b5cfa4d87c1501e562ea9c0409f5d91b333f662b1fcb7a5d61e7f0283fef66d7",
+  "losslessActualEvidence": true,
+  "instructionsUnchanged": false,
+  "model": "gpt-6-astra",
+  "reasoning": {
+    "effort": "xhigh",
+    "context": "all_turns"
+  },
+  "fullSuiteRepeated": false,
+  "focusedTests": 6,
+  "providerCauseProven": false,
+  "paidRequests": 0,
+  "typecheck": true,
+  "sourceSha1": "9d4a93efba911b6a21c4b6404ec295976fa0527f",
+  "testsSha1": "222c77cf7225fc321e9662121db9d0a200dc93a0",
+  "reviewCriteriaUnchanged": true,
+  "trustedFormatExplanation": true,
+  "admissionTestsPassed": 6,
+  "sourceRevision": "071b7c918b8dd64066441c3e8245e1e2c19b2ae5",
+  "initialSharedViewQuotedMaximumMicroUSDC": "437746",
+  "initialSharedViewQuotedBytes": 460386,
+  "finalWireQuoteRequested": false
+}

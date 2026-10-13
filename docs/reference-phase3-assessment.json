@@ -1,0 +1,833 @@
+{
+  "status": "accepted-for-phase3",
+  "at": "2026-10-13T15:37:44.686Z",
+  "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+  "reviews": [
+    {
+      "scope": "kernel",
+      "jobId": "4bfe5f40-24e0-4429-b930-397b3927ff5e",
+      "artifactHash": "sha256:958a21318016354bb86615ce72c44411f7609a9a53713440207e07ba49d96f39",
+      "sourceCommit": "41683cf02aa2039b14a99f179496a4ca9c91e477"
+    },
+    {
+      "scope": "runtime",
+      "jobId": "5184c276-7378-44a6-9d86-a25e7916ccf7",
+      "artifactHash": "sha256:03457dfa9de637bd1f861cbbb0c98b6aec532749fd5bd1580abd3e728f82f65d",
+      "sourceCommit": "eb6f568c6b70682b6555f17128beb1d028f10150"
+    },
+    {
+      "scope": "delta",
+      "jobId": "d3229638-a2a2-4dd7-97f0-8e2552c31e96",
+      "artifactHash": "sha256:8c013863f09f706f7b683372132e199d0a1153615c389adee7ae4e7f9c5806c5",
+      "sourceCommit": "8b03d350c768cd4ef6f36107aca22e1e09729935"
+    },
+    {
+      "scope": "availability",
+      "jobId": "a087d4c8-25f5-4bea-a002-477819e1b047",
+      "artifactHash": "sha256:29f885341683c561e0c9cbea73795d67e066b38900294e499d658fb0c01b30b4",
+      "sourceCommit": "7b62bd05fd46eaeee891ed9052e26157652410d7"
+    },
+    {
+      "scope": "handoff",
+      "jobId": "817fa54d-443f-4f62-8557-9eade7ffa612",
+      "artifactHash": "sha256:db1673d535e48fcf004a7c87d2261e04a8637484d3e94a22e4374eadcae2514b",
+      "sourceCommit": "e2f7c02664b111159e4e4b63d8d5a2146558e144"
+    },
+    {
+      "scope": "gas-correction",
+      "jobId": "4ad2566a-8842-45e5-844a-5ce4a1fd5747",
+      "artifactHash": "sha256:d4c51e8fc09c552ea402af86b849b3b36e0b24cb03bdfa35b64ba47618df0491",
+      "sourceCommit": "024c414799661334cdc530a16dcf8ecaa1f43593"
+    },
+    {
+      "scope": "decision-recovery",
+      "jobId": "9a4e3e44-adba-4049-909c-6bb039268284",
+      "artifactHash": "sha256:aa7b80c3ed93e19aeb4f3576a87ed90d3f3a1d0dffc0925bf262527d2609e99d",
+      "sourceCommit": "7661efa9ad06c5b740ad364e37a244d00356c59a"
+    },
+    {
+      "scope": "shared-input-and-recovery-allocation",
+      "jobId": "e0f0d520-b484-4bab-802e-86f4ff877e3f",
+      "artifactHash": "sha256:481dba39fdd5525720f01b8501b054860eab9c620fe23ab8a5c763a358fd681c",
+      "sourceCommit": "b8bb7f7889cc3073da9440dcbd5a40a2c58f4d63"
+    },
+    {
+      "scope": "shared-input-final-corrections",
+      "jobId": "036dc199-4570-4feb-9f57-3731ff1d99a6",
+      "artifactHash": "sha256:e8a639101ec99f51f682735007b7b5d3ce6d760a772f184a2281db39e53b9739",
+      "sourceCommit": "071b7c918b8dd64066441c3e8245e1e2c19b2ae5"
+    },
+    {
+      "scope": "native-prepaid-review",
+      "jobId": "5e2ee286-9298-4fa2-a0d0-5c4b387c7dc8",
+      "artifactHash": "sha256:d4877946e8593b3df1a16c93aaef17aaed83f04180730a058d3b844c04734e8f",
+      "reportHash": "sha256:b31a8c5388db4a2fb988e189418f6f5a59cac098d7b16235b51a1eebb4213dcf",
+      "sourceCommit": "d4af978eb8d43895f7ae448bc1ea4f1fbef9922f"
+    },
+    {
+      "scope": "prepaid-liveness-corrections",
+      "jobId": "6fe2d959-fa84-46d9-9c7a-b3b9b63497a7",
+      "artifactHash": "sha256:5822cd4e69e2596129b1cede92c44832d2d3fdc8d7c6983f2c1614882d99737a",
+      "reportHash": "sha256:561644b15fcc30f94b7532d81ba3a83327d0d9ade7d0c509bdfd3ca9b4160692",
+      "sourceCommit": "07def425130b9e2e2f721030cef305c080a74f52"
+    },
+    {
+      "scope": "final-unsigned-deferral-corrections",
+      "jobId": "59339dee-33fd-4abf-87c3-ecf6ebb923d0",
+      "artifactHash": "sha256:e5b2238de2ed126b1be57903b6dcb2c16890c576c7e6c62378c30e97d01d7b45",
+      "reportHash": "sha256:a0a4720e516f35519d233e43129b865bdbc6e3d5a394af53057de461146faa5d",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1"
+    }
+  ],
+  "originalDispositions": {
+    "kernel": [
+      [
+        "K1",
+        "corrected",
+        "The Store requires both tx.origin == msg.sender and code.length == 0; the authentic CREATE2 constructor regression passes."
+      ],
+      [
+        "K2",
+        "corrected",
+        "A signed grant ID can be revoked before registration. Registration preserves revoked state; cancelling a consumed nonce reverts."
+      ],
+      [
+        "K3",
+        "declared_attestation_boundary",
+        "Pulse is a publisher attestation, not a financial oracle. The admitted reference corroborates the exact finalized block/hash/time/base fee through two different RPC operators. Unknown or future blocks are refused by providers. The unchanged module alone does not prove chain data."
+      ],
+      [
+        "K4",
+        "corrected_runtime_status",
+        "Immutable history is retained. The API reads record, grant, authority and evaluator at one canonical finalized block and reports withdrawn/superseded/stale/current separately."
+      ],
+      [
+        "K5",
+        "fixed_profile_boundary",
+        "One canonical feed/schema per project is intentional. The API uses only the admitted constants and verifies exact factory, store and evaluator. Direct owner-created incompatible stores are never admitted; they require a separate project."
+      ],
+      [
+        "K6",
+        "canonical_identity_required",
+        "Noncanonical directly deployed stores are not network feeds. Both admission and registration verify reviewed code and exact factory mapping."
+      ],
+      [
+        "K7",
+        "idempotency_boundary",
+        "Repeat registration changes no rights and does not certify a new signature. Finalized grant state, not transaction success alone, determines usability."
+      ],
+      [
+        "K8",
+        "global_sequence_boundary",
+        "Sequence and observation time are global across expressly owner-approved grants. Stale unsigned work refreshes from current state; durable broadcasts always reconcile their original hash."
+      ],
+      [
+        "K9",
+        "documented_composed_expiry",
+        "At maximum observation age no future validUntil exists. Consumers must respect both module maximum age and Store validUntil."
+      ],
+      [
+        "K10",
+        "reviewed_configuration_boundary",
+        "The supported Pulse configuration is exactly two uint256 fields with valid positive bounds, validated by the runtime and genuine Claus review. Invalid arbitrary configurations are not approved."
+      ],
+      [
+        "K11",
+        "corrected",
+        "The source manifest now includes all new sources and the signal contract test with exact hashes."
+      ],
+      [
+        "K12",
+        "corrected",
+        "Time-dependent tests use a saved timestamp across vm.warp under viaIR. Targeted real-EVM lifecycle passes."
+      ]
+    ],
+    "runtime": [
+      [
+        "R1",
+        "corrected",
+        "Unsigned API intents are not durable signed transactions. Expiry/authority/budget failures can terminate unsigned runs and free the scheduler lane."
+      ],
+      [
+        "R2",
+        "corrected",
+        "Expired unknown broadcasts reconcile only against a canonical receipt or the exact finalized competing sender+nonce transaction and its receipt. Nonce advancement or missing RPC receipts alone never release a hold. No replacement transaction is sent."
+      ],
+      [
+        "R3",
+        "corrected",
+        "A new recovery preparation can adopt the canonical finalized store after exact artifact/immutable validation, preserving the prior operation/hash and returning no invented transaction hash."
+      ],
+      [
+        "R4",
+        "corrected",
+        "A canonical unregistered store blocks consumer review and execution until its context is recovered."
+      ],
+      [
+        "R5",
+        "corrected",
+        "A provably mismatched mined hash is rejected before persistence; historical definitive mismatches become readable failed operations. Unknown hashes remain immutable."
+      ],
+      [
+        "R6",
+        "corrected",
+        "Only a definitively rejected, unsigned stale-sequence input is discarded for a fresh read. Lost mutation responses retain the exact original input."
+      ],
+      [
+        "R7",
+        "corrected",
+        "Per-order provider failures preserve the original lease/deadline and continue to later orders, with a finite attempt and delivery cap."
+      ],
+      [
+        "R8",
+        "corrected",
+        "Public grant reads use a canonical finalized block. Head observations are not reported as confirmed revocation."
+      ],
+      [
+        "R9",
+        "corrected",
+        "Encoded transaction intents and signed publisher calldata are normalized to lowercase before exact receipt comparisons."
+      ],
+      [
+        "R10",
+        "corrected",
+        "Revocations have separate bounded daily counts for unique markers and prepared operations; exhausted ordinary write quota does not consume revocation quota. Direct owner onchain revoke remains available."
+      ],
+      [
+        "R11",
+        "corrected",
+        "A shared transactional consumer claim prevents concurrent signal/vault creation; existing vault rows are respected."
+      ],
+      [
+        "R12",
+        "corrected",
+        "Admission validates reviewed factory bytecode with the exact executor immutable; Store registration validates the exact reviewed runtime and immutables."
+      ],
+      [
+        "R13",
+        "corrected",
+        "The targeted guard test distinguishes missing host configuration from a configured insecure historical RPC."
+      ],
+      [
+        "R14",
+        "verified_existing_baseline",
+        "The exact deployed agent baseline already defines networkHash/networkCanonical; TypeScript and real signal-review fixture passed against that baseline."
+      ]
+    ]
+  },
+  "deltaDispositions": {
+    "at": "2026-10-13T01:47:00.842Z",
+    "reviewArtifactHash": "sha256:8c013863f09f706f7b683372132e199d0a1153615c389adee7ae4e7f9c5806c5",
+    "reviewJobId": "d3229638-a2a2-4dd7-97f0-8e2552c31e96",
+    "acceptedForEmptyInfrastructure": true,
+    "runtimeActivationPendingSeparateReview": true,
+    "findings": [
+      {
+        "index": 1,
+        "severity": "medium",
+        "title": "Public capabilities discovery and /health now fail on any signal-chain RPC or evidence error because admission() performs a live bytecode check that discovery() does not catch",
+        "path": "src/signals/index.mjs",
+        "disposition": "Corrected by7b62bd0: discovery returns unavailable for dependency failures, writes still fail closed; focused outage regression passed. Runtime activation awaits the separate final review."
+      },
+      {
+        "index": 2,
+        "severity": "low",
+        "title": "Reference scheduler pins the lane on any chain-transactions row, including cancelled, reverted, confirmed or never-broadcast prepared rows, so a persistent pre-reconcile error blocks every later slot",
+        "path": "reference/pulse-scheduler.mjs",
+        "disposition": "Corrected for terminal rows by7b62bd0; unknown and signed prepared rows retain their reservations. The finite host pins its key/grant/budget for its lifetime; configuration rotation while a signed row is unresolved is unsupported. Settle under the original configuration first."
+      },
+      {
+        "index": 3,
+        "severity": "low",
+        "title": "The consumer-profile claim is taken by the first prepare attempt and never released, so an unsigned expired signal_store_prepare (or a failed vault attempt) permanently closes the other profile with a",
+        "path": "src/signals/index.mjs",
+        "disposition": "Accepted bounded profile selection: first successful store preparation chooses the profile, documented explicitly. No custody/vault profile is admitted by this release; use a distinct project for another profile. The transactional claim prevents cross-profile approval races."
+      },
+      {
+        "index": 4,
+        "severity": "low",
+        "title": "grantRegister prepares the registration transaction for a grant ID the owner has already revoked through the API, so the publisher pays gas to register a dead grant and the nonce is consumed",
+        "path": "src/signals/index.mjs",
+        "disposition": "Corrected by7b62bd0: API marker checked before preparation and transactionally at save, finalized onchain revoked state checked before preparation. Existing intents remain immutable, so repeat response is not new authority."
+      },
+      {
+        "index": 5,
+        "severity": "low",
+        "title": "Reference pipeline never bounds validUntil by the grant's expiresAt, so every slot in the final maximumAge window before grant expiry fails terminally with signal_data_expired",
+        "path": "reference/pulse-pipeline.mjs",
+        "disposition": "Corrected by7b62bd0: read finalized grant for fresh run and clamp both publication and record validity to it; 5400s grant versus7200s observation regression passed."
+      },
+      {
+        "index": 6,
+        "severity": "low",
+        "title": "prepareRecord accepts and simulates validUntil values inside the next slot (head.timestamp+1 .. head.timestamp+12) that are guaranteed to revert InvalidRecord when mined, charging the publisher for a ",
+        "path": "adapters/signal-read.mjs",
+        "disposition": "Corrected by7b62bd0: more than60s remaining chain-time validity required; reference separately requires900s. A simulation cannot guarantee eventual block inclusion."
+      },
+      {
+        "index": 7,
+        "severity": "info",
+        "title": "grantPrepare's upper bound equals the contract maximum exactly, so a grant prepared at the API cap reverts InvalidGrant if the registering block's timestamp is below the API host's wall-clock second",
+        "path": "src/signals/index.mjs",
+        "disposition": "Corrected by7b62bd0: latest-chain-time grant ceiling checked before owner signature. Existing shorter7-day operating grant is within it."
+      },
+      {
+        "index": 8,
+        "severity": "info",
+        "title": "Design limit, documented: registering a grant whose digest was revoked before registration still consumes the owner nonce and emits PublisherGranted for a grant that can never publish",
+        "path": "contracts/src/ClausSignalStore.sol",
+        "disposition": "Accepted immutable contract boundary: pre-revoked grant remains inactive and cannot publish; nonce/event are not proof of active rights. API now prevents new registration preparation. Do not change reviewed bytecode for event cosmetics."
+      },
+      {
+        "index": 9,
+        "severity": "info",
+        "title": "Design limit: a finalized replacement proven by the transaction engine is never surfaced to the API signal operation, which reports 'pending' indefinitely",
+        "path": "src/signals/index.mjs",
+        "disposition": "Corrected for isolated hosted engine by7b62bd0: exact original hash, chain, sender and call match required for terminal replacement evidence; ordinary unknowns and external wallet hashes are preserved."
+      },
+      {
+        "index": 10,
+        "severity": "info",
+        "title": "Observation publication expiry can fall below the public-result service's now+1000 ms floor, raising an unclassified invalid_integer that the scheduler retries every 60 s until the run deadline",
+        "path": "reference/pulse-pipeline.mjs",
+        "disposition": "Corrected by7b62bd0: near-expired publication emits pulse_result_expiring and terminates unsigned run. Normal two-hour observation window has additional margin."
+      }
+    ]
+  },
+  "availabilityDispositions": {
+    "at": "2026-10-13T02:06:24.349Z",
+    "status": "corrected-awaiting-final-handoff-review",
+    "sourceCommit": "e2f7c02664b111159e4e4b63d8d5a2146558e144",
+    "reviewJobId": "a087d4c8-25f5-4bea-a002-477819e1b047",
+    "reviewArtifactHash": "sha256:29f885341683c561e0c9cbea73795d67e066b38900294e499d658fb0c01b30b4",
+    "findings": [
+      {
+        "severity": "high",
+        "title": "grantRegister reads the grant through chain.grant() before it exists onchain, so every first-time grant registration is rejected with signal_grant_not_found",
+        "path": "src/signals/index.mjs",
+        "disposition": "Corrected: only signal_grant_not_found permits first registration to continue to the existing owner signature validation. Explicit API and onchain pre-revocation still deny. Actual API plus real chain adapter/contract reproduces before failure and after success, wrong signer and pre-revoked denial."
+      },
+      {
+        "severity": "medium",
+        "title": "Both documented ends of the grant expiresAt range are rejected by the new chain-clock bound, and signal_grant_expiry has no HTTP mapping so the client gets a retryable 503 service_unavailable",
+        "path": "adapters/signal-read.mjs",
+        "disposition": "Corrected: both preparation and registration use the latest chain timestamp, inclusive head+61 through head+30days. API applies type validation without a competing wall-clock range. signal_grant_expiry is HTTP400/nonretryable; exact boundary and error tests pass."
+      },
+      {
+        "severity": "low",
+        "title": "Scheduler finishes a run as failed and releases the lane once the engine row is confirmed/reverted even though the hash was never attached to the API operation (signal_submit kept failing)",
+        "path": "reference/pulse-scheduler.mjs",
+        "disposition": "Corrected: confirmed/reverted hosted rows retain the run until the exact original hash and terminal outcome are recorded on the API operation, including after run expiry or transport error. Original hashes and holds are never replaced."
+      },
+      {
+        "severity": "low",
+        "title": "discovery reports permanent admission faults (signal_factory_changed, wrong_chain, signal_evidence_invalid, missing artifact, no chain client) as the transient signal_dependency_unavailable",
+        "path": "src/signals/index.mjs",
+        "disposition": "Corrected: an explicit whitelist exposes only known non-sensitive configuration error codes; unknown RPC/transport error messages remain redacted, and writes still fail closed."
+      },
+      {
+        "severity": "low",
+        "title": "grantRegister applies no inclusion margin and never consults chain time, so it prepares a registration intent for a grant that is seconds from (or already past) expiry and is guaranteed to revert",
+        "path": "src/signals/index.mjs",
+        "disposition": "Corrected: registration re-reads chain time and requires the same margin and upper bound before returning a transaction intent. Real chain test advances past a signed short grant expiry and observes denial before sending."
+      }
+    ]
+  },
+  "handoffDispositions": {
+    "at": "2026-10-13T09:00:07.620Z",
+    "sourceCommit": "e2f7c02664b111159e4e4b63d8d5a2146558e144",
+    "reviewJobId": "817fa54d-443f-4f62-8557-9eade7ffa612",
+    "reviewArtifactHash": "sha256:db1673d535e48fcf004a7c87d2261e04a8637484d3e94a22e4374eadcae2514b",
+    "acceptedForPublicActivation": true,
+    "scope": "Bounded signal profile, finite exclusive-signer reference and exact reviewed runtime; not an assertion that all findings are repaired.",
+    "findings": [
+      {
+        "severity": "low",
+        "title": "Reference lane is held forever when the API operation carries a different attached hash than the confirmed hosted receipt (regression versus 7b62bd0)",
+        "disposition": "Accepted bounded liveness limitation: only the owner/operation actor can cause the conflicting attachment. The reference gives exclusive operation submission to its single host; credentials and signer are separated. No conflicting manual attachment or automatic hash replacement is permitted. A conflict stops this lane for explicit reconciliation. No funds or authority breach; not claimed repaired."
+      },
+      {
+        "severity": "low",
+        "title": "Fresh-grant registration checks revocation only at the finalized block, so an owner revocation mined at latest but not yet finalized is bypassed and a revoked grant gets registered at the publisher's ",
+        "disposition": "Accepted finalized-read/race boundary: direct onchain revocation retains revoked=true regardless of later registration. Only gas and owner nonce can be consumed. The reference uses API revocation first and waits for finalized onchain revocation before proceeding. Fresh production grant is a distinct nonce, never reuse revoked IDs. Not claimed repaired."
+      },
+      {
+        "severity": "info",
+        "title": "A fully handed-off hosted write is journaled as failed when the pipeline step throws after run expiry",
+        "disposition": "Accepted observability limitation: original engine/API receipts remain authoritative; run failure alone must not trigger a replacement write. The live acceptance checks finalized original receipts, not worker labels alone."
+      },
+      {
+        "severity": "info",
+        "title": "Record preparation still mixes the API host clock and the chain head clock, so a fresh observation can be rejected as expired when the RPC head lags",
+        "disposition": "Accepted fail-closed time boundary: reference uses corroborated finalized chain observations and generous validity margins. Near-boundary arbitrary submissions may reject. No privilege or spend bypass."
+      },
+      {
+        "severity": "info",
+        "title": "Cancelled-with-replacement hosted rows (original hash was broadcast) release the lane while the API handoff is still orphaned; pre-existing boundary, not a regression",
+        "disposition": "Accepted isolated-signer boundary: reference publisher key has one engine, no outside replacements or hot key/config rotations. Exact replacement and original-hash evidence remain retained if this external intervention ever occurs. No automatic API recovery is claimed."
+      }
+    ],
+    "publicDocumentation": "docs/signal-operating-boundaries.md",
+    "liveAcceptancePending": true
+  },
+  "agentPatchSha256": "e0771b9aff91393d2b9f509517cfc41203c9a865254406476d2347b07c0ba900",
+  "checks": [
+    "26 focused Node signal/provider/approval/vault/intake cases passed",
+    "11 recovery/signal/publisher cases passed",
+    "7 existing shared transaction engine cases passed",
+    "Authentic CREATE2 constructor guard regression passed",
+    "Real Anvil source validation + full signal lifecycle passed",
+    "Real Mainnet-chain public request client send/receipt/restart passed",
+    "Exact agent baseline TypeScript and signal-review fixture passed",
+    "Explorer withdrawn/superseded/expiry states passed",
+    "18 focused final runtime cases passed",
+    "Actual API/real Anvil lifecycle including absent grant, wrong signer, pre-revocation, time bounds and expiry HTTP mapping passed",
+    "Two focused gas/publisher checks and actual corrected Sepolia adapter simulation passed",
+    "4 targeted public decision admission tests passed; original counts, global and lifetime ceilings preserved",
+    "Real Mainnet/Sepolia consumer reads validate configured worker ports",
+    "Actual transport 503/disconnect/AbortSignal probes; exact live payment timing/fencing sources verified"
+  ],
+  "exclusions": [
+    "No public inference",
+    "No token launch",
+    "No new customer custody",
+    "No claim of independent customer adoption",
+    "No X announcement",
+    "No change to existing pool, staking, NFT or social economics"
+  ],
+  "liveAcceptancePending": false,
+  "operatingPlanHash": "sha256:b3d7602adc608af3873dc321f954c1fcaf46312b6f9188869f248b48bfc1a133",
+  "additionalReviewAllocation": {
+    "sourceCommit": "7661efa9ad06c5b740ad364e37a244d00356c59a",
+    "maximumAdditionalIMD": "0.5",
+    "maximumFundingGasWei": "400000000000000",
+    "automaticRefill": false,
+    "authorization": "standing necessary equivalent own-review authority; current full Phase3 delivery instruction",
+    "originalOperatingPlanPreserved": true,
+    "reason": "Actual Mainnet worker cannot access its configured signal chain; two terminal no-payment model failures consumed the Sepolia reference daily admission. Review the chain-port wiring correction, an expiring operator-only per-project daily allocation that retains every global/lifetime/money cap, and the narrow existing agent research transport."
+  },
+  "gasCorrection": {
+    "at": "2026-10-13T10:48:42.683Z",
+    "sourceCommit": "024c414799661334cdc530a16dcf8ecaa1f43593",
+    "reviewJobId": "4ad2566a-8842-45e5-844a-5ce4a1fd5747",
+    "docsCommit": "96465eadd6a0274e8e8e02c77417aa672820835e",
+    "acceptedForActivation": true,
+    "pending": null,
+    "findings": [
+      {
+        "severity": "low",
+        "title": "The 'shared' 2,000,000 gas ceiling is not shared: record simulation accepts estimates up to 2,000,000 but the hosted signer refuses any estimate above 1,592,000, leaving a prepared operation that retr",
+        "path": "adapters/signal-read.mjs",
+        "line": 173,
+        "description": "SIGNAL_TRANSACTION_GAS_LIMIT (2,000,000) is applied to two different quantities. In prepareRecord it is the eth_call gas allowance, so any publish whose execution needs up to 2,000,000 gas simulates, and src/signals/index.mjs recordPrepare stores the signal operation; reference/pulse-pipeline.mjs line 81 then checkpoints run.write.operation. In the hosted publisher the same constant caps budget.maximumGas (adapters/signal-publisher.mjs:16), and adapters/sepolia-transactions.mjs:64-65 signs with gas = estimate*125/100 + 10000 and requires gas <= maximumGas. The largest signable estimate is therefore (2,000,000 - 10,000)*100/125 = 1,592,000. Any record estimated in (1,592,000, 2,000,000] passes simulation, is persisted, and every publisher.step rejects with transaction_cost_limit before reservation. That code is not in the scheduler's terminal list (reference/pulse-scheduler.mjs:56-60), so the run is retried every 60 s until run.expiresAt and the slot is consumed without a write. Before this range the relationship was the safe direction (simulation 700,000 < publisher cap 1,000,000). docs/signals.md:86 states both gates 'allow at most 2,000,000 gas units', which is inaccurate by the signer margin. Not reachable with the Pulse profile (fixed 160-byte input, 128-byte output, first record 970,165) and fail-closed: no funds move, no authority expands. Merged from audit_flow, audit_math and audit_economics (same root cause and fix). Minimal fix: simulate with the gas the signer can actually sign, e.g. gas: (SIGNAL_TRANSACTION_GAS_LIMIT - 10000n) * 100n / 125n, or derive both bounds from one margin helper, and state the effective 1,592,000 estimate ceiling in docs/signals.md. Also add the 2,000,001 admission boundary and a 1,592,001 estimate to test/signal-publisher.test.mjs, which today only re-derives the signer's own formula at line 37.",
+        "reproduction": "Reproduced with node:test against 024c414 using the fixture of test/signal-publisher.test.mjs (dependencies installed in a scratch copy under /tmp). State: budget admitted with maximumGas '2000000' (admission of '2000001' rejects with invalid_signal_budget), maximumTransactionWei '1000000000000000', maximumFeePerGas '50000000000'; estimateFeesPerGas returns maxFeePerGas 1,000,000 wei so the cost cap cannot bind (2,000,001*1e6 = 2.0e12 << 1e15). Step 1: createSignalRead({client,chainId:1}).prepareRecord(...) with readContract stubs for projects/pendingProjectOwners/version/grant/latest and a client.call that records its gas argument and throws unless gas >= 1,600,000. Expected per docs/signals.md:86: simulation and hosted admission share one ceiling. Actual: client.call is invoked with gas === 2000000n and prepareRecord resolves, so the operation would be stored. Step 2: createSignalPublisher(...).step(operation) with client.estimateGas returning 1592001n: rejects with code 'transaction_cost_limit' (1,592,001*125/100+10,000 = 2,000,001 > 2,000,000), reserved stays '0', broadcasts 0. With estimateGas 1592000n the same call returns state 'pending' and reserves 2,000,000*1,000,000 wei. Scheduler path: transaction_cost_limit is absent from the terminal codes at reference/pulse-scheduler.mjs:57-60, so jobs.finish is called with state 'waiting' and retryAt now+60000.",
+        "snippet": "      await client.call({ account: transaction.from, to: transaction.to, data: transaction.data, gas: SIGNAL_TRANSACTION_GAS_LIMIT });",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Accepted bounded hosted-signing limit, documented in docs/signals.md: simulation and signing are different stages; 25%+10000 signer margin gives effective maximum estimate1592000. Current fixed Pulse128-byte output fits. No promise of arbitrary evaluator output or publisher budget acceptance."
+      },
+      {
+        "severity": "low",
+        "title": "2,000,000 simulation ceiling is below the first-record cost for evaluator outputs of 384 nonzero bytes or more under Sepolia's EIP-8037 state-gas schedule, although ClausSignalStore permits 512-byte o",
+        "path": "adapters/signal-read.mjs",
+        "line": 7,
+        "description": "The comment above the constant says the ceiling 'includes room for the first record's storage writes on the admitted chains'. That holds for the Pulse schema only. The live Sepolia estimate of 970,165 is explained by EIP-8037 state gas: the first publish creates 1 grant-state slot + 4 fixed record slots + 1 output-length slot + one slot per nonzero 32-byte output word, each new slot costing 97,920 state gas, on top of ~90-190k execution gas. ClausSignalStore.publish allows MAX_OUTPUT_BYTES = 512 (contracts/src/ClausSignalStore.sol:25,148), i.e. up to 16 output slots. Measured with forge 1.8.3 --evm-version amsterdam on this repository's contracts (scratch test, not kept), first publish total gas incl. 21,000 intrinsic: 1,090,276 for the Pulse 128-byte output (matches the specialist's figure and the 970,165 live estimate order), 1,553,488 for 256 nonzero bytes, 2,007,016 for 384, 2,233,779 for 448, 2,460,544 for 512. Under cancun the same cases are 303k-619k. So prepareRecord's eth_call with gas 2,000,000 runs out of gas for any Sepolia store whose reviewed evaluator returns >= 384 nonzero bytes on its first record, and, combined with the signer margin (finding 1), the hosted publisher already fails at 256 bytes if the estimate is a few percent above the forge figure (1,553,488 x 1.25 + 10,000 = 1,951,860, 2.4% of headroom). Impact is low because the only admitted profile is the fixed Pulse schema and the denial is fail-closed; it is a functional limit that the code comment and docs/signals.md state as a general allowance. Zero output words do not create slots, so an evaluator padding with zeros is unaffected. Fix: either size the simulation gas from client.estimateGas plus margin capped by a documented ceiling, or raise the ceiling to cover a 512-byte first record (~2.5M on EIP-8037 chains, with the signer margin ~3.1M) and state in docs/signals.md and the comment that the allowance covers the Pulse-sized first record only.",
+        "reproduction": "Forge reproduction against 024c414 (scratch file under contracts/test/scratch, not kept): deploy ClausApprovalExecutor, register a ClausReadonlyProject whose implementation is a module whose evaluate() returns N bytes all set to 0x01, deploy ClausSignalStore bound to it, register a grant for vm.addr(PUBLISHER), then vm.prank(publisher,publisher) and call publish(grantId,1,1,ts,ts+300,keccak256('public-result'),160-byte input); read vm.lastFrameGas(). Run `forge test --evm-version amsterdam --match-path test/scratch/FirstRecordGas.t.sol -vv`. Expected per the comment at adapters/signal-read.mjs:5 and docs/signals.md:86: any first record the store accepts (output <= 512 bytes) fits in 2,000,000 gas. Actual: N=384 gives gasTotalUsed 321,376 + gasStateUsed 1,664,640 + 21,000 = 2,007,016 > 2,000,000; N=512 gives 2,460,544. For the Pulse module the first record is 1,090,276 (state 881,280 = 9 slots x 97,920) and the second record 139,212 (state 0). Under the default cancun profile the 384-byte case is 516,776, so the limit binds only on EIP-8037 chains, which the 970,165 live Sepolia estimate confirms Sepolia is.",
+        "snippet": "export const SIGNAL_TRANSACTION_GAS_LIMIT = 2000000n;",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Accepted byte-limit/gas-limit distinction documented explicitly.512-byte contract ceiling does not promise every output fits chain gas or hosted allocation; released Pulse returns128 bytes. No Solidity or arbitrary-output expansion."
+      },
+      {
+        "severity": "low",
+        "title": "At the measured 1,222,706 signed gas the unchanged 0.001 ETH per-transaction cap admits the first Pulse record only while maxFeePerGas <= 817,858,095 wei (~0.82 gwei); the new test never exercises thi",
+        "path": "adapters/signal-publisher.mjs",
+        "line": 14,
+        "description": "The range raises only the gas-unit ceiling, which is the stated intent; the monetary caps are unchanged (maximumTransactionWei <= 1e15, maximumTotalWei <= 2e16, maximumFeePerGas <= 5e10 at lines 14-17, and 2,000,000 x 50 gwei = 0.1 ETH is still clipped by the cost cap in createReadonlyTransactions). Consequence: the measured first publication is signed with gas = 970,165*125/100+10,000 = 1,222,706, and adapters/sepolia-transactions.mjs:67 requires gas * fees.maxFeePerGas <= maximumTransactionWei, so even a maximally configured hosted budget admits it only when viem's estimateFeesPerGas().maxFeePerGas (baseFee*1.2 + priority) is at most floor(1e15/1,222,706) = 817,858,095 wei. Above that the publisher throws transaction_cost_limit before any reservation or broadcast; the scheduler treats the code as non-terminal and retries every 60 s until run.expiresAt, so a fee spike silently consumes the hourly slot. This is not a spend-limit bypass and is consistent with the design of independent monetary ceilings, but the commit, docs/signals.md:86 and the test claim the measured publication is enabled, while the only fee exercised in test/signal-publisher.test.mjs is 1,000,000 wei per gas (0.001 gwei), ~800x below the real binding boundary, and its denial case is produced via maximumFeePerGas (1,000,001 > 1,000,000), not via the cost cap. Merged from audit_permissions, audit_math and audit_economics. Fix is a scope decision: document the implied fee window (~0.82 gwei at the maximum per-transaction cap, proportionally lower for a smaller configured cap) as an operating boundary in docs/signals.md and docs/signal-operating-boundaries.md, or raise the per-transaction admission cap, which changes spend limits and needs its own review. At minimum make the test exercise a realistic fee so the boundary is visible.",
+        "reproduction": "Reproduced with node:test against 024c414 using the fixture of test/signal-publisher.test.mjs. State: in-memory store, budget admitted with the maximum admissible caps maximumTransactionWei '1000000000000000', maximumTotalWei '20000000000000000', maximumGas '2000000', maximumFeePerGas '50000000000', maximumTransactions 10; client.estimateGas returns 970165n; balance 1 ETH. With estimateFeesPerGas returning {maxFeePerGas: 1000000000n (1 gwei), maxPriorityFeePerGas: 0n}: createSignalPublisher(...).step(operation) rejects with code 'transaction_cost_limit' because 1,222,706 x 1e9 = 1.222706e15 > 1e15; broadcasts stay 0 and reserved stays '0'. Expected per the change description: state 'pending' with a reservation. Boundary: with maxFeePerGas 817858095n the same step returns 'pending' and reserved equals 1,222,706 x 817,858,095 = 999,999,999,905,070 wei; with 817858096n it rejects with transaction_cost_limit.",
+        "snippet": " requireThat(amount(config.maximumTransactionWei)>0n&&amount(config.maximumTransactionWei)<=1000000000000000n&&",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Intentional independent monetary cap, documented with exact817858095-wei fee boundary at the admission maximum; actual reference caps remain smaller. Fee denial precedes reservation/sign/broadcast. Original finite deadline and no automatic refill remain."
+      },
+      {
+        "severity": "info",
+        "title": "The 2,000,000 admission ceiling is enforced only by admitSignalPublisherBudget, which no runtime path calls; the publisher trusts the stored row and the engine accepts up to 30,000,000 gas",
+        "path": "adapters/signal-publisher.mjs",
+        "line": 29,
+        "description": "runtime/pulse-host.mjs builds createSignalPublisher from the CLAUS_PULSE_CONFIG budget (line 34-35) and only checks that reference-pulse-admissions carries digest(config) (line 51). The gas-unit bound introduced by this range lives in admitSignalPublisherBudget, which only test/signal-publisher.test.mjs invokes (grep over adapters, runtime, reference, scripts, worker, api). ledger() verifies hash equality with the stored row but re-validates none of the bounds, and createReadonlyTransactions accepts limits.gas up to MAX_GAS = 30,000,000 (adapters/sepolia-transactions.mjs:9,31-35). Whether the 'shared 2,000,000 ceiling' binds the hosted publisher therefore depends on the operator admitting the row through that function rather than writing it directly. This is an operator trust assumption, not a bypass by an unprivileged actor, and the monetary caps still hold at 30,000,000 gas because cost is bounded separately. Recommended: have createSignalPublisher (or pulse-host) assert the same bounds on budget at construction so the ceiling is enforced wherever the row came from, and record in docs/operations.md how the hosted budget row is admitted.",
+        "reproduction": "Reproduced with node:test against 024c414. State: write signal-publisher-budgets/finite directly as {config:{...valid fields, maximumGas:'30000000'}, configHash: digest(config), transactions:0, reserved:'0', spent:'0', revokedAt:null} without calling admitSignalPublisherBudget; same config passed to createSignalPublisher; client.estimateGas returns 10000000n, maxFeePerGas 1,000,000 wei. Expected per docs/signals.md:86: hosted publisher admission allows at most 2,000,000 gas units. Actual: step(operation) returns state 'pending' and reserves (10,000,000*125/100+10,000) x 1,000,000 = 12,510,000,000,000 wei; the signed transaction carries gas 12,510,000. Calling admitSignalPublisherBudget on the same config afterwards rejects with invalid_signal_budget, confirming only that function enforces the bound.",
+        "snippet": "  requireThat(row?.value.configHash===configHash&&digest(row.value.config)===configHash,'signal_budget_changed');return row;}",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Accepted trusted-operator boundary, documented. Public credentials cannot write host budgets or host configuration. Private release admits each budget through the bounded helper and binds its exact config; database/host administrators are trusted."
+      },
+      {
+        "severity": "info",
+        "title": "The raised gas ceiling cannot be applied to an already admitted hosted budget; using it requires a new budget id whose ledger starts at zero, i.e. a second monetary allocation under the same per-budge",
+        "path": "adapters/signal-publisher.mjs",
+        "line": 20,
+        "description": "Admission is idempotent on digest(config) and createSignalPublisher pins the same configHash (signal_budget_changed otherwise). A budget admitted before this range necessarily has maximumGas <= 1,000,000 and keeps denying the 1,222,706-gas first record. To benefit from the 2,000,000 ceiling the operator must admit a different budget id; that row is created with spent '0', reserved '0', transactions 0, so the hosted reference gains a new maximumTotalWei (up to 0.02 ETH) and maximumTransactions allocation in addition to whatever the old budget still holds. No cross-budget total is enforced; the hard bounds are the per-budget caps and the signer's ETH balance (adapters/sepolia-transactions.mjs:67). Consistent with the comment 'Changing a configuration never refills an old allocation' and a trust assumption rather than a bypass, but docs/signals.md:86 ('A higher gas-unit allowance does not refill or increase a publisher's monetary allocation') should say that applying the allowance means admitting a new, separately funded budget so a release reviewer accounts for both allocations.",
+        "reproduction": "Reproduced with node:test against 024c414. State: admitSignalPublisherBudget(store, {...config, id:'finite', maximumGas:'1000000'}) succeeds. Input: admitSignalPublisherBudget(store, {...sameConfig, maximumGas:'2000000'}). Expected by an operator reading the docs: the existing allocation now permits the measured first record. Actual: rejects with code 'idempotency_conflict' (same mechanism as test/signal-publisher.test.mjs:42). Admitting {...sameConfig, id:'finite-2', maximumGas:'2000000'} succeeds and returns a second ledger with spent '0', reserved '0' and its own maximumTotalWei.",
+        "snippet": "  if(row){requireThat(row.value.configHash===digest(config),'idempotency_conflict');return row.value;}",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Private activation uses admitSignalPublisherBudget. Existing unused budget is checked for zero transactions/spend/reservations and no transaction records, retained and revoked atomically before v2 admission. All money/count/expiry fields match; unrelated revocation aborts. No ledger reset or duplicate spend allocation."
+      },
+      {
+        "severity": "info",
+        "title": "API_VERSION bumped to 0.13.4 but the generated docs/openapi.json and docs/api-reference.md still state 0.13.1",
+        "path": "interfaces/contract.mjs",
+        "line": 1,
+        "description": "The range bumps API_VERSION and package.json to 0.13.4, but docs/openapi.json line 5 and docs/api-reference.md line 3 are produced by scripts/generate-docs.mjs from API_VERSION (lines 2, 24, 26) and still read 0.13.1. The drift predates this range (0.13.3 was also undocumented) and has no runtime effect; noted because docs/signals.md in this range directs integrators to the packaged schema. Fix: run the docs generator and commit the regenerated docs/openapi.json and docs/api-reference.md.",
+        "reproduction": "State: checkout 024c414. `sed -n 5p docs/openapi.json` prints `\"version\": \"0.13.1\"` and `sed -n 3p docs/api-reference.md` begins 'This source describes API 0.13.1', while `sed -n 1p interfaces/contract.mjs` prints API_VERSION='0.13.4'. Expected: the three agree, since scripts/generate-docs.mjs writes both documents from API_VERSION.",
+        "snippet": "export const API_VERSION='0.13.4';",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Corrected by generating API docs from the unchanged interface source: packaged schema/reference now0.13.4 with121 operations, including current chain-time grant description."
+      }
+    ],
+    "reviewArtifactHash": "sha256:d4c51e8fc09c552ea402af86b849b3b36e0b24cb03bdfa35b64ba47618df0491",
+    "scope": "Current finite Pulse reference and bounded signal interfaces; larger outputs, fee headroom and trusted-operator assumptions remain explicit limits, not claimed repaired."
+  },
+  "decisionRecoveryAssessment": {
+    "at": "2026-10-13T11:55:38.256Z",
+    "sourceCommit": "7661efa9ad06c5b740ad364e37a244d00356c59a",
+    "reviewJobId": "9a4e3e44-adba-4049-909c-6bb039268284",
+    "reviewArtifactHash": "sha256:aa7b80c3ed93e19aeb4f3576a87ed90d3f3a1d0dffc0925bf262527d2609e99d",
+    "acceptedForActivation": true,
+    "findings": [
+      {
+        "severity": "low",
+        "title": "Operator allocation record format (key derivation, millisecond expiresAt, numeric day) is undocumented and any mismatch silently falls back to the default cap, so the planned single extra attempt can ",
+        "path": "src/approvals/limits.mjs",
+        "line": 14,
+        "description": "Merged from four specialist reports (audit_economics, audit_permissions, audit_flow, audit_math), which all describe the same mechanism. The allocation gate itself is correct and bounded: the record is read at id digest({projectId, day}) and accepted only when projectId matches, day is the numeric UTC day index Math.floor(now/86400000), expiresAt is a millisecond epoch inside that day, and maximumProjectDay is an integer in [2,4]; lifetime caps, the global daily cap (8), counters and caller scopes are untouched (verified by the delta's tests and the full suite: 481 tests, 470 pass, 0 fail). No public endpoint writes 'public-decision-allocations': the only reference in src/, interfaces/, runtime/, adapters/ is the read in limits.mjs; portability import writes only its own fixed collections. This is therefore trusted-operator policy, not unprivileged-caller control. The defect is operational: the record must be hand-written into the document store (no script, admin route, CLI or validator exists), and the only documentation, docs/operations.md line 126, says 'keyed by the digest of {projectId, day}' and 'expiresAt must fall within that UTC day' without stating that the key is 'sha256:' + sha256 of canonical sorted compact JSON (src/shared/index.mjs digest/canonical), that day is an integer day index rather than a date, or that expiresAt is in milliseconds. Every other operator-facing expiresAt in this repository's public docs is Unix seconds (signal_grant_prepare in docs/openapi.json, docs/signals.md). Every mismatch is indistinguishable at runtime from 'no allocation': the third attempt is rejected with decision_capacity_reached and retryAt = next UTC day, with no event, log, health field or error detail saying an allocation row exists but was ignored. For this release the recovery plan is exactly one extra Sepolia reference attempt today; a mis-formatted record means that attempt does not happen and the operator learns only from the generic cap error. Fail-closed, so no privilege, accounting or chain impact. Fix: document the exact key derivation (canonical sorted compact JSON with the sha256: prefix, worked example), the integer day index and the millisecond unit in docs/operations.md, and preferably add an operator-only helper analogous to admitSignalPublisherBudget in adapters/signal-publisher.mjs that validates the shape with shape()/integer() and derives the key itself. Optionally expose whether an allocation row for the project/day exists but fails validation (worker-health field or error detail) so an ineffective record is visible before the attempt is spent. The guard itself should stay as it is.",
+        "reproduction": "Run against this tree with an in-memory sqlite store (src/storage/index.mjs openStore(':memory:')), now = 1800000000000 (day index 20833), projectId 'reference'. Correct key is digest({projectId:'reference', day:20833}) = 'sha256:03f3ef0ec6ec881876dce00388a2b80698b6c9d60abc132ba1292a983d8de959'. For each variant: write the allocation record, call publicDecisionCapacity(tx,'reference',now,true) in three separate transactions. Observed output of the script: (1) canonical record {projectId:'reference',day:20833,expiresAt:1800057600000,maximumProjectDay:3} at the correct key -> third admitted. (2) same record with expiresAt:1800057600 (Unix seconds, end of day) -> third rejected: decision_capacity_reached retryAt 1800057600000. (3) day:'20833' (string) at digest({projectId,day:'20833'}) -> third rejected identically. (4) correct record at the id without the 'sha256:' prefix -> third rejected identically. (5) correct record at 'sha256:' + sha256(JSON.stringify({projectId,day})) (unsorted, non-canonical) -> third rejected identically. (6) expiresAt:1800057600001 (1 ms past the day end) -> third rejected identically. Expected per docs/operations.md ('daily maximum 3 today'): third attempt admitted, or a distinguishable indication that the allocation is ineffective. Actual: silent fallback to the two-attempt default with the same error and retryAt as having no allocation at all; the refused transaction consumes no admission count.",
+        "snippet": "    Number.isSafeInteger(allocation.expiresAt) && allocation.expiresAt > now && allocation.expiresAt <= (day + 1) * 86400000 &&",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Documentation corrected in 5a5a8b5: use the shared canonical digest with sha256 prefix, numeric UTC day and millisecond expiry. The private activation helper derives the row, performs exact readback and non-reserving publicDecisionCapacity validation before attempting the third request."
+      },
+      {
+        "severity": "info",
+        "title": "No test exercises the chain-worker application wiring this delta fixes; reverting it to chainPorts: { chain } leaves the suite green",
+        "path": "runtime/chain-worker.mjs",
+        "line": 47,
+        "description": "The change is correct and introduces no chain confusion: createApplication (runtime/server.mjs) builds the signal router from chainPorts.client for Sepolia and chainPorts.mainnetClient for mainnet, createSignalRead rechecks client.getChainId() === chainId on every read (adapters/signal-read.mjs correct()), and createChainRead does the same (adapters/chain-read.mjs correctChain()). Before this commit the worker passed only { chain }, so signals.consumer -> chain.assertTrackedStore fell back to the hard-coded public Sepolia RPC instead of the operator's verified archive RPC and a mainnet-bound project had no mainnet signal reader; 'signal_chain_unavailable' is not in runDecision's blocked list (src/approvals/index.mjs lines 177-179), so such a decision retried every 60 s indefinitely. None of this is asserted by a test. test/chain-recovery-guards.test.mjs only calls createChainWorker with invalid environments and expects 'historical_rpc_required' (it throws before line 47); test/chain-integration.test.mjs constructs createApplication with chainPorts: { chain } only, the same shape that was wrong in the worker. Fix: factor the chainPorts construction out of createChainWorker so a test can build it from fake clients reporting chain ids 11155111 and 1 and assert that signals.consumer for a mainnet-bound project reads through the mainnet client, or have createApplication reject a chainPorts.chain router supplied without matching client/mainnetClient.",
+        "reproduction": "Extracted 7661efa into a scratch directory (git archive, outside the repository), changed line 47 back to the 024c414 form `chainPorts: { chain }`, linked node_modules and ran `node --test test/*.test.mjs`. Result: tests 481, pass 470, fail 0, identical to the unmodified tree. Expected: at least one test fails when the worker's signal router is not bound to the configured clients. Actual: the regression is invisible to the suite.",
+        "snippet": "  const app = createApplication({ store, origin: env.CLAUS_NETWORK_ORIGIN, rateSalt: env.CLAUS_NETWORK_RATE_SALT, chainPorts: { chain, client, mainnetClient } });",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Supplemented by the existing real-chain worker-ports-check.json: old wiring reproduces signal_chain_unavailable, configured ports validate the real Mainnet and Sepolia consumers. Avoided adding an implementation-mirroring unit test."
+      },
+      {
+        "severity": "info",
+        "title": "Worker mainnet client omits cacheTime: 0, unlike the Sepolia client and readonly-ports, so head reads it now also serves to the signal reader are cached for up to 4 s",
+        "path": "runtime/chain-worker.mjs",
+        "line": 41,
+        "description": "Pre-existing line (commit 48c611ad, an ancestor of 024c414), but this delta newly hands the same mainnetClient to createApplication for mainnet signal reads. The Sepolia client on line 32 and runtime/readonly-ports.mjs line 9 both pass cacheTime: 0; this one does not, so viem uses its default cacheTime = pollingInterval = 4000 ms (node_modules/viem/_esm/clients/createClient.js line 12) and getBlockNumber results are reused within that window. The same client object is used by the chain-1 executor (adapters/chain-executor.mjs lines 114 and 262 compute finality as head - receipt.blockNumber >= 2n from getBlockNumber) and by chain-read's observedBlock (adapters/chain-read.mjs line 99). Effect is conservative: a head up to 4 s stale can only delay a finality decision, never advance it, and chain identity is still verified on every read. Consistency item only; no privilege, accounting or chain-confusion impact. Fix: add cacheTime: 0 to this createPublicClient call to match the other two.",
+        "reproduction": "Script using the vendored viem (2.57.1) with a custom transport that counts eth_blockNumber requests: createPublicClient({transport}) then two getBlockNumber() calls -> 1 RPC request (second served from cache); createPublicClient({transport, cacheTime: 0}) then two getBlockNumber() calls -> 2 RPC requests. Expected: the worker's mainnet client behaves like its Sepolia client and readonly-ports (uncached). Actual: mainnet head reads are cached for the 4000 ms default.",
+        "snippet": "  const mainnetClient = configuredMainnet ? createPublicClient({ transport: http(env.CLAUS_MAINNET_RPC_URL, { retryCount: 0, timeout: 15000 }) }) : null;",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Accepted conservative Mainnet head observation cache of at most four seconds. It may delay a finality observation, never advance it or bypass chain identity checks. No runtime change required."
+      },
+      {
+        "severity": "info",
+        "title": "Agent transport patch cannot be verified from this tree: the new inferenceFetch module is absent, the only test mocks it out, and the deadline ordering rests on payments-side constants not present her",
+        "path": "docs/agent-review-transport.patch",
+        "line": 6,
+        "description": "Merged from three specialist reports (audit_economics, audit_permissions, audit_flow). Unverified lead rather than a confirmed defect, because the agent and payments sources are not in this repository. What is checkable here: the patch keeps Idempotency-Key, X-Max-Quote-Micro-USDC 2000000, the saved request body and the decision/finish path unchanged, adds the X-Inference-Purpose: research header, raises the caller abort from 270000 to 650000 ms and the not_found fence from 300000 to 800000 ms, and swaps the default fetch for inferenceFetch from ./inference-transport.js. That module appears nowhere in this tree (grep for 'inference-transport' matches only this patch line), and the patch's test injects a mock fetcher, so inferenceFetch is never executed by any test shown. The assignment's claims 'no automatic new model retry' and 'unknown requests remain held' therefore depend on an unreviewed transport: if it retried on network error or 5xx, a second POST /api/completion with the same Idempotency-Key would reach the relay and idempotency would rest solely on relay-side behaviour not shown here. Three further timing dependencies are outside this tree: (a) the 650 s wait must run under an agent function budget of at least that (this repository's vercel.json limits api/gateway.mjs to 60 s and api/compile.mjs to 120 s; the agent's own maxDuration is not inherited from here), otherwise the catch that moves the row to 'uncertain' never runs; (b) the 800 s fence is measured from row.started_at (set at claim) while the 760 s reservation starts at relay admission, leaving a 40 s margin, and it is sound only if the relay never answers 404 not_found for a request it admitted; (c) the ordering provider 600 < caller 650 < reservation 760 < fence 800 is asserted by the patch's test against completionTiming(false,'research') in payments/vendor/src/response.js, which is not here. On the claus-network side the change is safe regardless: adapters/claus-controller.mjs polls the agent with 25 s calls, re-POSTs /reviews only on 404 or an elapsed queued retryAt, treats failed as terminal, and admission is consumed once per proposal at creation, so a longer agent window cannot consume extra admission from this repository. Fix: include agent/src/inference-transport.ts in the reviewed delta (or quote its retry policy), add one agent test that drives runNetworkReview through the real inferenceFetch against a failing local server and asserts exactly one POST, record the agent function's maxDuration beside the deadlines, and confirm in the payments vendor that /api/requests/{id} returns a terminal status rather than 404 for every admitted id.",
+        "reproduction": "At 7661efa, `grep -rn inference-transport . --exclude-dir=node_modules --exclude-dir=.git` returns only docs/agent-review-transport.patch:6, and `grep -rn completionTiming` returns only the patch's test lines 47 and 59; no X-Inference-Purpose handling exists in this repository. Applying the patch to an agent tree without agent/src/inference-transport.ts fails at import resolution; applying it to a tree that has it changes the transport to code no reviewer of this delta has seen. Expected: a delta claiming 'only transport/deadlines changed, no automatic retry' contains or references the transport implementation and a test exercising it. Actual: the module is missing and the only test mocks it out. Not reproducible as a runtime defect from this tree.",
+        "snippet": "+import {inferenceFetch} from './inference-transport.js';",
+        "citation": "resolved",
+        "blocking": false,
+        "disposition": "Supplemented by decision-transport-evidence.json and deployed agent proof. Real transport sends once on HTTP503/disconnect and honors AbortSignal. Existing workflow retries0, Nitro function800s. Exact live payment-source readback confirms provider600s, reservation760s and atomic missing-ID fencing. Full independent agent/payment audit is outside this network review and is not claimed."
+      }
+    ],
+    "additionalEvidence": [
+      "decision-transport-evidence.json",
+      "worker-ports-check.json",
+      "review-timeout-check.json",
+      "decision-specialist-assessment.json"
+    ],
+    "runtimeChangedAfterReview": false
+  },
+  "sharedInputRecovery": {
+    "status": "accepted-for-phase3",
+    "at": "2026-10-13T14:15:00.966Z",
+    "sourceCommit": "071b7c918b8dd64066441c3e8245e1e2c19b2ae5",
+    "originalFindings": {
+      "at": "2026-10-13T14:04:08.907180+00:00",
+      "jobId": "e0f0d520-b484-4bab-802e-86f4ff877e3f",
+      "reportHash": "sha256:79d1d8ec57d97882c67ccb502fa406ba825ead49ad0d688e0efce18b889ac0d2",
+      "sourceCommit": "b8bb7f7889cc3073da9440dcbd5a40a2c58f4d63",
+      "correctedCommit": "071b7c918b8dd64066441c3e8245e1e2c19b2ae5",
+      "activationAccepted": false,
+      "finalDeltaJob": "036dc199-4570-4feb-9f57-3731ff1d99a6",
+      "findings": [
+        {
+          "number": 1,
+          "severity": "low",
+          "disposition": "Fixed conditional trusted format instructions; tests assert presence only for shared representation; original approval criteria unchanged."
+        },
+        {
+          "number": 2,
+          "severity": "low",
+          "disposition": "Removed next-day retry hint when retained lifetime count reaches tomorrow default limit; focused boundary test passes."
+        },
+        {
+          "number": 3,
+          "severity": "low",
+          "disposition": "Explicit null is rejected; only absent lifetime uses default. Invalid-input test passes."
+        },
+        {
+          "number": 4,
+          "severity": "info",
+          "disposition": "API_VERSION and generated docs/OpenAPI aligned to0.13.6."
+        },
+        {
+          "number": 5,
+          "severity": "info",
+          "disposition": "Operations guide now explicitly distinguishes default lifetime from finite dated operator allocation."
+        },
+        {
+          "number": 6,
+          "severity": "info",
+          "disposition": "Operations guide documents lossless shared format and patch; full agent source mirror supplied for review context."
+        },
+        {
+          "number": 7,
+          "severity": "info",
+          "disposition": "Tests cover missing daily field and daily-above-lifetime; retained counter unchanged on rejection."
+        }
+      ],
+      "limitations": [
+        "Reduced request size is not proof of provider reliability; real Claus decision remains required.",
+        "Original requests, counters and holds are preserved.",
+        "No new deployment or actual model attempt has occurred."
+      ]
+    },
+    "reviews": [
+      {
+        "scope": "shared-input-and-recovery-allocation",
+        "jobId": "e0f0d520-b484-4bab-802e-86f4ff877e3f",
+        "artifactHash": "sha256:481dba39fdd5525720f01b8501b054860eab9c620fe23ab8a5c763a358fd681c",
+        "sourceCommit": "b8bb7f7889cc3073da9440dcbd5a40a2c58f4d63"
+      },
+      {
+        "scope": "shared-input-final-corrections",
+        "jobId": "036dc199-4570-4feb-9f57-3731ff1d99a6",
+        "artifactHash": "sha256:e8a639101ec99f51f682735007b7b5d3ce6d760a772f184a2281db39e53b9739",
+        "sourceCommit": "071b7c918b8dd64066441c3e8245e1e2c19b2ae5"
+      }
+    ],
+    "finalFindings": [
+      {
+        "number": 1,
+        "severity": "low",
+        "disposition": "Accepted conservative terminal intake boundary, now documented in operations.md and contract-intake.md. No speculative next-day retry. Actual recovery allocation checks both project and global capacity before creating either request."
+      },
+      {
+        "number": 2,
+        "severity": "low",
+        "disposition": "Candidate source hashes recorded in docs/agent-review-source.json. Release verifies all157 live source blobs and publishes hashes of the three exact mirrors in reference-phase3-agent.json; final publication requires byte equality."
+      }
+    ],
+    "checks": {
+      "at": "2026-10-13T14:00:15.632Z",
+      "oldRequestBytes": 652223,
+      "newRequestBytes": 460922,
+      "oldMaximumMicroUSDC": "591390",
+      "inputHash": "sha256:b5cfa4d87c1501e562ea9c0409f5d91b333f662b1fcb7a5d61e7f0283fef66d7",
+      "losslessActualEvidence": true,
+      "instructionsUnchanged": false,
+      "model": "gpt-6-astra",
+      "reasoning": {
+        "effort": "xhigh",
+        "context": "all_turns"
+      },
+      "fullSuiteRepeated": false,
+      "focusedTests": 6,
+      "providerCauseProven": false,
+      "paidRequests": 0,
+      "typecheck": true,
+      "sourceSha1": "9d4a93efba911b6a21c4b6404ec295976fa0527f",
+      "testsSha1": "222c77cf7225fc321e9662121db9d0a200dc93a0",
+      "reviewCriteriaUnchanged": true,
+      "trustedFormatExplanation": true,
+      "admissionTestsPassed": 6,
+      "sourceRevision": "071b7c918b8dd64066441c3e8245e1e2c19b2ae5",
+      "initialSharedViewQuotedMaximumMicroUSDC": "437746",
+      "initialSharedViewQuotedBytes": 460386,
+      "finalWireQuoteRequested": false
+    },
+    "runtimeChangedAfterFinalReview": false,
+    "liveAcceptancePending": true,
+    "limitations": [
+      "Actual reliable provider delivery and genuine Claus approval still required.",
+      "No counter reset, automatic retry, financial-limit expansion or substituted approval."
+    ]
+  },
+  "creditDelivery": {
+    "status": "accepted-for-phase3",
+    "at": "2026-10-13T15:37:44.686Z",
+    "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+    "reviews": [
+      {
+        "scope": "native-prepaid-review",
+        "jobId": "5e2ee286-9298-4fa2-a0d0-5c4b387c7dc8",
+        "artifactHash": "sha256:d4877946e8593b3df1a16c93aaef17aaed83f04180730a058d3b844c04734e8f",
+        "reportHash": "sha256:b31a8c5388db4a2fb988e189418f6f5a59cac098d7b16235b51a1eebb4213dcf",
+        "sourceCommit": "d4af978eb8d43895f7ae448bc1ea4f1fbef9922f"
+      },
+      {
+        "scope": "prepaid-liveness-corrections",
+        "jobId": "6fe2d959-fa84-46d9-9c7a-b3b9b63497a7",
+        "artifactHash": "sha256:5822cd4e69e2596129b1cede92c44832d2d3fdc8d7c6983f2c1614882d99737a",
+        "reportHash": "sha256:561644b15fcc30f94b7532d81ba3a83327d0d9ade7d0c509bdfd3ca9b4160692",
+        "sourceCommit": "07def425130b9e2e2f721030cef305c080a74f52"
+      },
+      {
+        "scope": "final-unsigned-deferral-corrections",
+        "jobId": "59339dee-33fd-4abf-87c3-ecf6ebb923d0",
+        "artifactHash": "sha256:e5b2238de2ed126b1be57903b6dcb2c16890c576c7e6c62378c30e97d01d7b45",
+        "reportHash": "sha256:a0a4720e516f35519d233e43129b865bdbc6e3d5a394af53057de461146faa5d",
+        "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1"
+      }
+    ],
+    "priorDispositions": {
+      "status": "assessed-predecessor-findings",
+      "at": "2026-10-13T15:23:21.726100+00:00",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "original": {
+        "jobId": "5e2ee286-9298-4fa2-a0d0-5c4b387c7dc8",
+        "reportHash": "sha256:b31a8c5388db4a2fb988e189418f6f5a59cac098d7b16235b51a1eebb4213dcf",
+        "findings": [
+          {
+            "number": 1,
+            "disposition": "Fixed: after the original 800-second window an explicitly inactive uncertain prepaid delivery fails the agent review while retaining its full payment hold. No replay or approval."
+          },
+          {
+            "number": 2,
+            "disposition": "Fixed: fresh dispatch requires explicit surplus_credit admission; existing request IDs retain their original rail."
+          },
+          {
+            "number": 3,
+            "disposition": "Fixed: all known workAdmission refusals carry the original ID and unsigned deferred marker. Only the exact rolled-back one-active SQL constraint can defer a reservation exception."
+          },
+          {
+            "number": 4,
+            "disposition": "Fixed: readiness checks the configured 2-USDC ceiling; native quote input and output are never reduced."
+          },
+          {
+            "number": 5,
+            "disposition": "Fixed: higher admission ceiling is restricted to at most two explicit project IDs and one exact UTC day. Counts are never reset."
+          },
+          {
+            "number": 6,
+            "disposition": "Fixed: current source docs distinguish the historical verified deployment from the candidate. Final publication writes verified deployed hashes after exact source readback."
+          },
+          {
+            "number": 7,
+            "disposition": "Fixed: operations documents the optional dated maximumGlobalDay allocation and the shared global counter."
+          },
+          {
+            "number": 8,
+            "disposition": "Fixed: only canonical decimal strings 8 through 16 are accepted."
+          },
+          {
+            "number": 9,
+            "disposition": "Fixed: waiting responses include workCandidate when reporting the intended payment rail."
+          }
+        ]
+      },
+      "correction": {
+        "jobId": "6fe2d959-fa84-46d9-9c7a-b3b9b63497a7",
+        "reportHash": "sha256:561644b15fcc30f94b7532d81ba3a83327d0d9ade7d0c509bdfd3ca9b4160692",
+        "findings": [
+          {
+            "number": 1,
+            "disposition": "Fixed: every workAdmission pre-reservation refusal emits exact-ID not_signed/deferred; the agent allowlist covers every current refusal reason."
+          },
+          {
+            "number": 2,
+            "disposition": "Fixed: catch only SQLSTATE23505 on claus_credit_work_one_active. Its atomic statement rolls back; payment-ID collisions and ambiguous acknowledgements remain uncertain."
+          },
+          {
+            "number": 3,
+            "disposition": "Documented: shared global ceilings are not reserved per-project allowances."
+          },
+          {
+            "number": 4,
+            "disposition": "Accepted conservative accounting: unresolved dispatched holds remain within the finite aggregate ceiling. No automatic replenishment or release."
+          },
+          {
+            "number": 5,
+            "disposition": "Existing network controller polls review status. Direct users must poll status; no separate scheduler or unconditional timeout release is introduced."
+          },
+          {
+            "number": 6,
+            "disposition": "Bounded to the verified production ISO DateStyle; three actual timestamps parse. Evidence credit-timestamp-observation.json. Changing the database DateStyle is outside the operation."
+          },
+          {
+            "number": 7,
+            "disposition": "The mirrors are review context, not standalone runnable agent/payment packages. Real private-source targeted tests, typecheck, complete source manifests and deployment verification are retained; no full-service audit is claimed."
+          }
+        ]
+      },
+      "checks": [
+        "credit-fixes-check.json",
+        "credit-deferral-check.json",
+        "credit-timestamp-observation.json"
+      ],
+      "finalDeltaCompleted": "59339dee-33fd-4abf-87c3-ecf6ebb923d0"
+    },
+    "finalFindings": [
+      {
+        "number": 1,
+        "severity": "info",
+        "disposition": "Accepted existing fail-closed boundary for provider or operator configuration changes between snapshots. No new payment or hold is created. Uniform retries outside the reviewed admission path are not claimed."
+      },
+      {
+        "number": 2,
+        "severity": "info",
+        "disposition": "Final publication removes the dangling public log pointer and labels full private-runtime checks explicitly, with a link to the deployment/check evidence. Runtime unchanged."
+      },
+      {
+        "number": 3,
+        "severity": "info",
+        "disposition": "Accepted existing boundary: a fenced ID may wait while another slot is occupied, but cannot reserve or pay when capacity returns. The agent never resubmits a terminally fenced review."
+      }
+    ],
+    "checks": {
+      "at": "2026-10-13T15:20:21.629760+00:00",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "passed": true,
+      "targetedCases": 3,
+      "typecheck": true,
+      "log": "credit-deferral-check.log",
+      "priorChecks": "credit-fixes-check.json",
+      "files": {
+        "agent/src/network-review.ts": "342633084c33cd5813ce7a5b00514322d059994806ec78a7209a75d6b08cb112",
+        "payments/src/index.js": "11be83606613dc2a6a92b0786b9f1e1bc403655e76c49b8744978ee88bf8a788",
+        "payments/src/credit-provider.js": "1120d18a08938b220c29481d0def1f4fbad3567c2147af05fa4673a5650af154"
+      }
+    },
+    "additionalEvidence": [
+      "credit-fixes-check.json",
+      "credit-timestamp-observation.json",
+      "review-credit-source-recovery.json"
+    ],
+    "runtimeChangedAfterFinalReview": false,
+    "liveAcceptancePending": true,
+    "limitations": [
+      "Actual model decision, finalized contract execution and normal scheduled run remain required.",
+      "No old hold or original request is released or replayed.",
+      "No public inference, customer custody, token launch or unbounded financial grant."
+    ]
+  },
+  "liveAcceptance": "https://claus.si/docs/reference-phase3.json",
+  "acceptedOperatingBoundaries": "https://claus.si/docs/signal-operating-boundaries"
+}
