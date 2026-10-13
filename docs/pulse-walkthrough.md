@@ -55,7 +55,7 @@ var agent=await once('agent',()=>owner.call('agent_create',{projectId,name:'Puls
 state.expiresAt??=Date.now()+24*3600000;await save();
 var scopes=['project.read','artifact.read','artifact.write','snapshot.create','build.compile',
   'review.quote','review.admit','review.read','source.publish','project.publish',
-  'proposal.create','proposal.read','proposal.execute','service.call','service.read',
+  'proposal.create','proposal.read','proposal.execute','service.call','service.read','service.settle',
   'signal.manage','signal.read','signal.publish','signal.grant.revoke'];
 var mandate=await once('mandate',()=>owner.call('mandate_create',{
   projectId,principalId:agent.id,scopes,expiresAt:state.expiresAt,idempotencyKey:'mandate:1'}));

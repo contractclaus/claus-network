@@ -8,7 +8,7 @@ A publisher can write data under a finite owner-signed grant. It cannot change t
 
 The [copyable Pulse walkthrough](pulse-walkthrough.md) covers the full lifecycle. Use the [quickstart](quickstart.md) to authenticate an EOA owner, create a project and delegate an agent. Complete the [review and contract workflow](reviews-and-contracts.md) for the Pulse evaluator before the steps below. The exact source is `contracts/src/ClausPulseModule.sol`, importing `ClausSignalTypes.sol`; compile with Solidity 0.8.27, optimizer 200, viaIR and Cancun. Its configuration is ABI-encoded `(uint256 thresholdWei, uint256 maximumAgeSeconds)`. This example supports one fixed public chain-observation schema; arbitrary funds or token hooks are outside the profile.
 
-The agent needs `project.read`, `signal.read`, `signal.manage`, `signal.publish`, `signal.grant.revoke`, `service.call`, `service.read` and, only when publishing, `project.publish`. Keep owner and publisher signing keys in your own wallet tools. The API never returns a private wallet key.
+The agent needs `project.read`, `signal.read`, `signal.manage`, `signal.publish`, `signal.grant.revoke`, `service.call`, `service.read`, `service.settle` and, only when publishing, `project.publish`. `service.settle` allows the consumer to accept its delivered result. Keep owner and publisher signing keys in your own wallet tools. The API never returns a private wallet key.
 
 All names below are available unchanged in SDK, CLI and MCP. Use `node interfaces/cli.mjs describe NAME` for the exact JSON schema. Store prepared responses, input bodies, resource IDs and transaction hashes before continuing.
 
