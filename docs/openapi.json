@@ -1702,9 +1702,13 @@
                         "type": "boolean"
                       },
                       "expiresAt": {
-                        "type": "integer",
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
                         "minimum": 0,
-                        "maximum": 9007199254740991
+                        "maximum": 9007199254740991,
+                        "description": "Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted."
                       },
                       "maximumPerReview": {
                         "type": "string",
@@ -2428,9 +2432,13 @@
                         "type": "boolean"
                       },
                       "expiresAt": {
-                        "type": "integer",
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
                         "minimum": 0,
-                        "maximum": 9007199254740991
+                        "maximum": 9007199254740991,
+                        "description": "Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted."
                       },
                       "executor": {
                         "type": "string",

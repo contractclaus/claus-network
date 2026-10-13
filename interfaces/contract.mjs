@@ -1,6 +1,7 @@
 export const API_VERSION='0.13.9';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
+const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
 const boolean={type:'boolean'};
 const readonlyChain={type:'integer',enum:[1,11155111]};
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
@@ -81,7 +82,7 @@ export const ROUTES=Object.freeze([
  route('job_get','GET','/v1/projects/{projectId}/jobs/{jobId}',{projectId:string(),jobId:string()}),
  route('job_cancel','DELETE','/v1/projects/{projectId}/jobs/{jobId}',{projectId:string(),jobId:string()}),
  route('review_admission_get','GET','/v1/admin/review-admission'),
- route('review_admission_publish','POST','/v1/admin/review-admission/versions',{version:string(64),config:object({enabled:boolean,expiresAt:integer,maximumPerReview:string(18),maximumLifetime:string(30),perOwnerDay:integer,perProjectDay:integer,globalDay:integer,activeGlobal:integer})}),
+ route('review_admission_publish','POST','/v1/admin/review-admission/versions',{version:string(64),config:object({enabled:boolean,expiresAt:operatingDeadline,maximumPerReview:string(18),maximumLifetime:string(30),perOwnerDay:integer,perProjectDay:integer,globalDay:integer,activeGlobal:integer})}),
  route('review_admission_activate','PUT','/v1/admin/review-admission/active',{version:string(64),expectedGeneration:integer}),
  route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string()}),
  route('review_pilot_get','GET','/v1/admin/review-pilots/{projectId}',{projectId:string()}),
@@ -91,7 +92,7 @@ export const ROUTES=Object.freeze([
  route('review_artifact','GET','/v1/projects/{projectId}/reviews/{caseId}/artifact',{projectId:string(),caseId:string()}),
  route('review_publish','PUT','/v1/projects/{projectId}/reviews/{caseId}/publication',{projectId:string(),caseId:string(),published:boolean,expectedRevision:integer}),
  route('chain_admission_get','GET','/v1/admin/chain-admission',{chainId:readonlyChain},[]),
- route('chain_admission_publish','POST','/v1/admin/chain-admission/versions',{chainId:readonlyChain,version:string(64),config:object({enabled:boolean,expiresAt:integer,executor:string(42),executorCodeHash:string(66),targetArtifactHash:string(71),reviewProjectId:string(),reviewCaseId:string(),reviewArtifactHash:string(71),maximumProjects:integer,maximumTransactionGasWei:string(30),maximumProjectGasWei:string(30),maximumTotalGasWei:string(30)})},['version','config']),
+ route('chain_admission_publish','POST','/v1/admin/chain-admission/versions',{chainId:readonlyChain,version:string(64),config:object({enabled:boolean,expiresAt:operatingDeadline,executor:string(42),executorCodeHash:string(66),targetArtifactHash:string(71),reviewProjectId:string(),reviewCaseId:string(),reviewArtifactHash:string(71),maximumProjects:integer,maximumTransactionGasWei:string(30),maximumProjectGasWei:string(30),maximumTotalGasWei:string(30)})},['version','config']),
  route('chain_admission_activate','PUT','/v1/admin/chain-admission/active',{chainId:readonlyChain,version:string(64),expectedGeneration:integer},['version','expectedGeneration']),
  route('module_deploy','POST','/v1/projects/{projectId}/modules',{projectId:string(),caseId:string(),chainId:readonlyChain},['projectId','caseId']),
  route('module_get','GET','/v1/projects/{projectId}/modules/{moduleId}',{projectId:string(),moduleId:string()}),
@@ -183,6 +184,10 @@ export const ROUTES=Object.freeze([
 ]);
 export function validate(schema,value,path='input'){
  if(schema===true)return;
+ if(Array.isArray(schema.type)){
+  if(value===null&&schema.type.includes('null'))return;
+  return validate({...schema,type:schema.type.find(type=>type!=='null')},value,path);
+ }
  if(schema.enum&&!schema.enum.includes(value))throw Object.assign(Error('invalid_choice'),{code:'invalid_input',field:path});
  if(schema.type==='object'){
   if(!value||typeof value!=='object'||Array.isArray(value))throw Object.assign(Error('invalid_input'),{code:'invalid_input',field:path});
