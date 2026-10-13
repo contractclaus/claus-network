@@ -59,11 +59,33 @@ test('one bounded daily allocation preserves used attempts, global limits and li
 });
 
 test('expired, cross-project and excessive allocations do not lift the default daily cap', async t => {
-  for (const change of [{ expiresAt: 1 }, { projectId: 'someone-else' }, { maximumProjectDay: 5 }]) {
+  for (const change of [{ expiresAt: 1 }, { projectId: 'someone-else' }, { maximumProjectDay: 5 },
+    { maximumProjectLifetime: 9 }, { maximumProjectLifetime: '5' }, { maximumProjectLifetime: 3 }]) {
     const store = openStore(':memory:'); t.after(() => store.close()); const now = 1800000000000, day = Math.floor(now / 86400000), projectId = 'reference';
     await store.transaction(tx => tx.write('public-decision-allocations', digest({ projectId, day }),
       { projectId, day, expiresAt: (day + 1) * 86400000, maximumProjectDay: 3, ...change }, 0));
     for (let n = 0; n < 2; n++) await store.transaction(tx => publicDecisionCapacity(tx, projectId, now, true));
     await assert.rejects(store.transaction(tx => publicDecisionCapacity(tx, projectId, now, true)), { code: 'decision_capacity_reached' });
   }
+});
+
+test('a finite recovery allocation adds only its remaining capacity and expires without resetting history', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close()); let now = 1800000000000;
+  const projectId = 'recovery', day = Math.floor(now / 86400000), expiresAt = now + 10000;
+  const submit = () => store.transaction(tx => publicDecisionCapacity(tx, projectId, now, true));
+  await store.transaction(async tx => {
+    await tx.write('public-decision-allocations', digest({ projectId, day }),
+      { projectId, day, expiresAt, maximumProjectDay: 5, maximumProjectLifetime: 5 }, 0);
+    for (const [scope, subject, period, count] of [
+      ['lifetime', projectId, null, 4], ['day', projectId, day, 4], ['lifetime', 'global', null, 12], ['day', 'global', day, 6]
+    ]) await tx.write('public-decision-admission', digest({ scope, subject, period }), { count }, 0);
+  });
+  const concurrent = await Promise.allSettled([submit(), submit()]);
+  assert.equal(concurrent.filter(v => v.status === 'fulfilled').length, 1);
+  const count = async (scope, subject, period) => (await store.read('public-decision-admission', digest({ scope, subject, period }))).value.count;
+  assert.equal(await count('lifetime', projectId, null), 5); assert.equal(await count('lifetime', 'global', null), 13);
+  assert.equal(await count('day', 'global', day), 7);
+  now = expiresAt;
+  await assert.rejects(submit(), e => e.code === 'decision_capacity_reached' && e.retryAt === undefined);
+  assert.equal(await count('lifetime', projectId, null), 5);
 });
