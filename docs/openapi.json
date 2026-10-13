@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.13.1"
+    "version": "0.13.4"
   },
   "servers": [
     {
@@ -5401,7 +5401,7 @@
     "/v1/projects/{projectId}/signal/grants": {
       "post": {
         "operationId": "signal_grant_prepare",
-        "description": "Prepare EIP712 owner signature for bounded publisher writes. Requires signal.manage. expiresAt is Unix seconds; owner/publisher must be EOAs. Quantity, interval, chain/store/project/schema/generation and nonce are bound.",
+        "description": "Prepare EIP712 owner signature for bounded publisher writes. Requires signal.manage. expiresAt is Unix seconds, from latest chain timestamp + 61 to + 30 days, rechecked at registration; owner/publisher must be EOAs. Quantity, interval, chain/store/project/schema/generation and nonce are bound.",
         "security": [
           {
             "bearerAuth": []
