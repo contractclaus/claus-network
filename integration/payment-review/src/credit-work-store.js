@@ -24,9 +24,10 @@ export const creditWorkDDL=`
 export async function creditSnapshot(db){
  const pool=await legacySnapshot(db);if(!pool)return null;
  const [control]=await db`SELECT frozen FROM claus_credit_work_control WHERE id=true`;
+ const [budget]=await db`SELECT ceiling::text FROM claus_payment_budget WHERE id=true`;
  // Internal adapter shape only: remaining is a request exposure cap, not a
  // funded balance. The provider adapter independently reads the real balance.
- return {...pool,committed:'0',remaining:'2000000',state:pool.state==='funded'&&control?.frozen===false?'funded':'frozen',reservationKind:'independent_request_risk'};
+ return {...pool,committed:'0',remaining:'2000000',state:pool.state==='funded'&&control?.frozen===false?'funded':'frozen',reservationKind:'independent_request_risk',accountBalanceCeiling:budget?.ceiling};
 }
 export async function readCredit(db,id){
  if(!validId(id))return null;
