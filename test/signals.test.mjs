@@ -18,7 +18,7 @@ async function fixture(t) {
     requireThat(projectId==='p' && (actor==='owner' || actor==='publisher' && ['signal.read','signal.publish','signal.grant.revoke'].includes(scope) ||
       actor==='reader' && scope==='signal.read'),'scope_denied');}};
   const chain={
-    validateAdmission:async()=>{if(f.admissionDown)throw Error('https://rpc.invalid/private-token');},validateStoreBuild:async()=>{},
+    validateAdmission:async()=>{if(f.admissionDown)throw f.admissionDown instanceof Error?f.admissionDown:Error('https://rpc.invalid/private-token');},validateStoreBuild:async()=>{},
     prepareStore:async()=>{f.calls++;return f.recover?{recovered:true,signal,blockHash:word('f'),blockNumber:'50',finalized:true}:{transaction};},
     assertTrackedStore:async(_c,_b,tracked)=>requireThat(!f.untracked||tracked,'signal_review_context_changed'),
     prepareGrant:async()=>({grantId:word('1'),typedData:{message:{publisher:address('6')}},owner:binding.owner}),
@@ -142,6 +142,8 @@ test('an RPC outage marks only signal discovery unavailable and still denies wri
  assert.deepEqual(await f.api.discovery(1),{chainId:1,profile:'claus-signal-v1',admission:'unavailable',reason:'signal_dependency_unavailable'});
  await assert.rejects(f.api.recordPrepare('publisher','p',f.record()),/rpc.invalid/);
  assert.equal((await f.store.list('signal-operations')).length,1);
+ f.admissionDown=Object.assign(Error('private transport context'),{code:'signal_factory_changed'});
+ assert.deepEqual(await f.api.discovery(1),{chainId:1,profile:'claus-signal-v1',admission:'not_enabled',reason:'signal_factory_changed'});
 });
 test('only exact host replacement evidence settles an original pending record',async t=>{
  const f=await fixture(t);await f.setup();f.final=false;

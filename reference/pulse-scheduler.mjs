@@ -46,7 +46,13 @@ export function createPulseScheduler({store,jobs,pipeline,config,now=Date.now}){
    // Only a durable signed transaction may own the lane indefinitely. An
    // unsigned API intent cannot block all later slots after expiry or denial.
    const signed=run.write?.operation&&await store.read('chain-transactions','signal-record:'+run.write.operation.id);
-   const unresolved=signed&&!['confirmed','reverted','cancelled'].includes(signed.value.state);
+   const receiptState=signed&&['confirmed','reverted'].includes(signed.value.state);
+   const apiOperation=receiptState&&await store.read('signal-operations',run.write.operation.id);
+   // A finalized receipt is not a completed API handoff. Preserve retries
+   // through an API outage until the original hash and terminal outcome land.
+   const unreportedReceipt=receiptState&&signed.value.hash&&
+    (apiOperation?.value.transactionHash!==signed.value.hash||!['confirmed','failed'].includes(apiOperation?.value.state));
+   const unresolved=unreportedReceipt||signed&&!['confirmed','reverted','cancelled'].includes(signed.value.state);
    const terminal=!unresolved&&(
     run.expiresAt<=now()||['pulse_service_failed','pulse_publication_withdrawn','pulse_rule_changed',
      'pulse_source_changed','pulse_result_expiring','public_result_unavailable','signal_grant_inactive','signal_grant_exhausted',

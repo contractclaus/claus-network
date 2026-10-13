@@ -158,7 +158,9 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
         factory: c.factory, factoryCodeHash: c.factoryCodeHash, feedId: c.feedId, schemaHash: c.schemaHash,
         publicationGas: 'publisher', maximumInputBytes: 2048, maximumOutputBytes: 512 }; }
       catch (error) {
-        if (['signal_not_enabled','signal_admission_changed','signal_scope_not_reviewed'].includes(error.code))
+        if (['signal_not_enabled','signal_admission_changed','signal_scope_not_reviewed',
+          'signal_factory_changed','signal_evidence_invalid','wrong_chain','signal_chain_unavailable',
+          'artifact_corrupt','artifact_not_found','not_found'].includes(error.code))
           return { chainId, profile: 'claus-signal-v1', admission: 'not_enabled', reason: error.code };
         // A chain dependency outage closes this profile, not unrelated project
         // access or the entire health endpoint. Never expose RPC error details.
@@ -192,7 +194,11 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       requireThat(row.value.expiresAt > now() && row.value.input.expiresAt * 1000 > now(), 'signal_operation_expired');
       const revocationId=digest({projectId,grantId:row.value.grantId});
       requireThat(!await store.read('signal-revocations',revocationId),'signal_api_revoked');
-      requireThat(!(await chain.grant(await signal(projectId),row.value.grantId)).revoked,'signal_grant_inactive');
+      // The finalized adapter reports a fresh, unregistered digest as absent.
+      // Only that result permits first registration; transport/evidence errors
+      // still fail closed and an explicitly pre-revoked digest remains denied.
+      try { requireThat(!(await chain.grant(await signal(projectId),row.value.grantId)).revoked,'signal_grant_inactive'); }
+      catch(error) { if(error.code!=='signal_grant_not_found')throw error; }
       const prepared = await chain.registerGrant(await signal(projectId), current.binding, row.value, signature);
       return store.transaction(async tx => {
         const latest = await writeAllowed(actor, projectId, 'signal.manage', tx);
