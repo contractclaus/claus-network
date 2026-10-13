@@ -305,6 +305,10 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
         executed = { hash: receipt.transactionHash, receipt: { blockNumber: receipt.blockNumber.toString(), blockHash: receipt.blockHash } };
       }
       if (executed) {
+        // Finality can advance between the queue observation and execution
+        // reconciliation. Settle again before this job becomes terminal.
+        if (chainId === 1 || managed)
+          await reconcileQueuedGas({ store, client, admission, id: 'queue:' + value.id });
         requireThat(Number(await read(p.target, 'version', [], targetAbi)) === p.fromVersion + 1 &&
           (await read(p.target, 'implementation', [], targetAbi)).toLowerCase() === p.implementation.toLowerCase() &&
           keccak256(await read(p.target, 'configuration', [], targetAbi)) === keccak256(p.configuration), 'execution_state_mismatch');
