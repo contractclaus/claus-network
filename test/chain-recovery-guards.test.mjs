@@ -50,3 +50,9 @@ test('a changed finalized block preserves the recovery cursor and refuses a new 
   assert.deepEqual(await store.list('chain-event-recovery'), before);
   assert.equal(scans, 1);
 });
+
+test('disabled managed keys do not halt the existing readonly controller or executor',async t=>{
+ const store=openStore(':memory:');t.after(()=>store.close());const signer={address:'0x'+'11'.repeat(20)};
+ await store.transaction(async tx=>{await tx.write('network-capabilities','chain:1',{enabled:true,approvalSigner:signer.address,executorPayer:signer.address},0);await tx.write('network-capabilities','chain:1:managed',{enabled:false,approvalSigner:'0x'+'22'.repeat(20),executorPayer:'0x'+'33'.repeat(20)},0);});
+ await checkChainWorkerRoles(store,'controller',[[1,signer]]);await checkChainWorkerRoles(store,'executor',[[1,signer]]);
+});

@@ -284,3 +284,22 @@ test('managed review admission retains its profile and awaits validation before 
   assert.equal((await f.flow.admission.get(f.actor)).committedMaximum,'5');
   assert.deepEqual(seen,['claus-managed-v1','claus-managed-v1','claus-managed-v1']);
 });
+
+test('review scope cannot relabel an existing quote or trigger a replacement purchase',async t=>{
+ const f=await fixture(t,{selectReviewProfile:async(_r,_p,s)=>({profile:s.profile??'claus-readonly-v1',chainId:s.chainId}),validatePublicBuild:async()=>{}});
+ await f.publish();const first=await f.flow.request(f.actor,f.projectId,f.input);await f.flow.runQuote();
+ await assert.rejects(f.flow.request(f.actor,f.projectId,{...f.input,profile:'claus-managed-v1',chainId:1}),{code:'idempotency_conflict'});
+ await assert.rejects(f.flow.request(f.actor,f.projectId,{...f.input,profile:'claus-managed-v1',chainId:1,idempotencyKey:'new-key'}),{code:'review_scope_conflict'});
+ assert.equal(f.quotes(),1);assert.equal((await f.store.list('review-cases',{projectId:f.projectId})).length,1);
+ assert.equal((await f.flow.get(f.actor,f.projectId,first.id)).profile,'claus-readonly-v1');
+});
+
+test('readonly review without an explicit chain remains usable when the project selects mainnet',async t=>{
+ const f=await fixture(t,{networkOwner:true,publicOnly:true,validatePublicBuild:async()=>{}});await f.publish();
+ const config={enabled:true,expiresAt:null,maximumPerReview:'5',maximumLifetime:'50',perOwnerDay:2,perProjectDay:2,globalDay:8,activeGlobal:8};
+ await f.flow.admission.publish(f.actor,{version:'neutral',config});await f.flow.admission.activate(f.actor,{version:'neutral',expectedGeneration:0});
+ const item=await f.flow.request(f.actor,f.projectId,f.input);assert.equal(item.chainId,undefined);
+ await f.store.transaction(tx=>tx.write('chain-project-profiles',f.projectId,{chainId:1,profile:'claus-readonly-v1'},0));
+ await f.flow.runQuote();await f.flow.accept(f.actor,f.projectId,{caseId:item.id,quoteId:item.id,idempotencyKey:'neutral-accept'});
+ assert.equal((await f.flow.admission.get(f.actor)).committedMaximum,'5');
+});

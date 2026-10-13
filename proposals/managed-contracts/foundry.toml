@@ -11,5 +11,5 @@ via_ir = true
 ffi = false
 fs_permissions = []
 auto_detect_remappings = false
-allow_paths = ["../../contracts/lib"]
-remappings = ["@openzeppelin/contracts/=../../contracts/lib/openzeppelin-contracts/contracts/", "forge-std/=../../contracts/lib/forge-std/src/"]
+allow_paths = ["../../contracts/lib", "../../reference/managed-counter"]
+remappings = ["managed-reference/=../../reference/managed-counter/", "@openzeppelin/contracts/=../../contracts/lib/openzeppelin-contracts/contracts/", "forge-std/=../../contracts/lib/forge-std/src/"]

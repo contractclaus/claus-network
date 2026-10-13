@@ -21,7 +21,7 @@ Managed registrations wait for chain finality on both supported chains before be
 
 The network accepts owner-selected upgrade delays from zero through five days. The underlying registry also permits longer delays through direct owner calls, but a delay above five days permanently removes that instance from the network's supported upgrade workflow: the registry never allows an accepted delay to decrease. Do not increase it beyond five days when using the network API.
 
-The Counter reference must be activated with the nonempty `initializeCounter(7)` configuration committed at registration. An empty configuration would leave its public one-time initializer available to anyone.
+The Counter reference must be activated with the nonempty `initializeCounter(7)` configuration committed at registration. Its initializer accepts only the registry during approved activation; CounterV2 uses empty upgrade data because the first activation already initialized storage.
 
 ## Boundaries
 
@@ -42,3 +42,11 @@ With a zero upgrade delay, revocation has no guaranteed intervention window and 
 Revoking upgrade authority does not stop calls to the currently installed module. Any application pause must be part of the separately reviewed module; the registry is not an emergency pause for application execution. Cancelling signer recovery also invalidates outstanding Claus approvals through its generation counter, even if no recovery was pending.
 
 The proxy's registry lookup and delegation exceed the 2,300-gas stipend used by Solidity `transfer` and `send`. They must not be treated as supported payment paths. This release does not admit payment or custody applications.
+
+The current hosts reuse one Claus approval key and one transaction payer per chain across readonly and managed profiles. Typed domains, admissions and accounting remain separate; this is not separate key custody for the two profiles. Disabled profiles do not prevent other profiles from running.
+
+Managed review requests must select their chain and profile. Module deployment and approval consume only matching review evidence. Historical readonly reviews without a selected chain remain chain-neutral. An existing paid review cannot be relabelled by changing the request scope.
+
+A reverted execution does not cancel its onchain approval. Until expiry or nonce cancellation, a relayer can submit those same approved bytes again. The owner can call the registry's `cancelApproval(projectId, nonce)` or revoke project authority; an API failure status alone is not onchain cancellation.
+
+The integrated deployment path excludes delegated EOA implementations and requires a network-deployed verified module. The registry's code-hash check alone does not enforce every API admission rule.

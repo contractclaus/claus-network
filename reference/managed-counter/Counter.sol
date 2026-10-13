@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
+interface IManagedIdentity {
+    function executor() external view returns (address);
+}
+
 /// @notice Non-custodial reference. Anyone may increment this public counter.
 contract Counter {
     bool private initialized;
     uint256 public count;
 
     function initializeCounter(uint256 initialCount) external {
+        require(msg.sender == IManagedIdentity(address(this)).executor(), "executor only");
         require(!initialized, "already initialized");
         initialized = true;
         count = initialCount;
