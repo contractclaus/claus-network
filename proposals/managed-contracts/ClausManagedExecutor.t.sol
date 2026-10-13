@@ -139,6 +139,14 @@ contract ClausManagedExecutorTest is Test {
         );
     }
 
+    function testClausCannotReplaceOwnerSignatureOnRegistration() public {
+        ClausManagedExecutor.Registration memory r = registration(keccak256("owner-signature"));
+        bytes memory wrongSignature = sign(CLAUS, executor.registrationDigest(r));
+        vm.expectRevert(ClausManagedExecutor.InvalidSignature.selector);
+        executor.registerProject(r, abi.encodeCall(first.set, (7)), wrongSignature);
+        executor.registerProject(r, abi.encodeCall(first.set, (7)), sign(OWNER, executor.registrationDigest(r)));
+    }
+
     function testStatePersistsAcrossExactApprovedUpgrade() public {
         assertEq(ManagedCounter(address(target)).count(), 7);
         ManagedCounter(address(target)).add();

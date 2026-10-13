@@ -307,7 +307,7 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         if (
             !p.enabled || pendingSigner != address(0) || pendingProjectOwners[a.projectId] != address(0)
                 || a.chainId != block.chainid || a.executor != address(this) || a.target != p.target
-                || a.target == address(0) || a.policyVersion != p.policyVersion
+                || a.target.code.length == 0 || a.policyVersion != p.policyVersion
                 || a.policyGeneration != p.policyGeneration || a.authorityGeneration != p.authorityGeneration
                 || a.clausGeneration != clausGeneration || a.mandateHash != p.mandateHash
                 || a.evidenceHash == bytes32(0) || a.dependencySnapshotHash == bytes32(0)
