@@ -8,12 +8,15 @@ export async function publicDecisionCapacity(reader, projectId, now, reserve = f
   if (!await reader.read('public-chain-projects', projectId) && pilot?.enabled && pilot.expiresAt > now) return false;
   const day = Math.floor(now / 86400000);
   // Operator-only, expiring allocations can fund a bounded recovery attempt.
-  // Counts are never reset. Global caps and the separate model budget still bind.
+  // Counts are never reset. The global lifetime cap and separate model budget still bind.
   const allocation = (await reader.read('public-decision-allocations', digest({ projectId, day })))?.value;
   const requestedLifetime = Object.hasOwn(allocation ?? {}, 'maximumProjectLifetime')
     ? allocation.maximumProjectLifetime : PUBLIC_DECISION_LIMITS.projectLifetime;
+  const requestedGlobalDay = Object.hasOwn(allocation ?? {}, 'maximumGlobalDay')
+    ? allocation.maximumGlobalDay : PUBLIC_DECISION_LIMITS.globalDay;
   const allocated = allocation?.projectId === projectId && allocation.day === day &&
     Number.isSafeInteger(allocation.expiresAt) && allocation.expiresAt > now && allocation.expiresAt <= (day + 1) * 86400000 &&
+    Number.isSafeInteger(requestedGlobalDay) && requestedGlobalDay >= PUBLIC_DECISION_LIMITS.globalDay && requestedGlobalDay <= 16 &&
     Number.isSafeInteger(requestedLifetime) && requestedLifetime >= PUBLIC_DECISION_LIMITS.projectLifetime && requestedLifetime <= 8 &&
     Number.isSafeInteger(allocation.maximumProjectDay) && allocation.maximumProjectDay >= PUBLIC_DECISION_LIMITS.projectDay &&
     allocation.maximumProjectDay <= requestedLifetime;
@@ -24,7 +27,7 @@ export async function publicDecisionCapacity(reader, projectId, now, reserve = f
     ['lifetime', projectId, null, projectLifetime],
     ['lifetime', 'global', null, PUBLIC_DECISION_LIMITS.globalLifetime],
     ['day', projectId, day, projectDay],
-    ['day', 'global', day, PUBLIC_DECISION_LIMITS.globalDay]
+    ['day', 'global', day, allocated ? requestedGlobalDay : PUBLIC_DECISION_LIMITS.globalDay]
   ]) {
     const key = digest({ scope, subject, period }), row = await reader.read('public-decision-admission', key);
     if (scope === 'lifetime' && subject === projectId)

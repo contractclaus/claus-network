@@ -43,6 +43,13 @@ async function expireQueued(db:Query) {
    OR EXISTS(SELECT 1 FROM claus_network_review_revocations r WHERE r.id=claus_network_reviews.id)
    OR (SELECT (content->'policy'->'capabilities'->>'networkReview')::boolean AND (content->'settings'->>'enabled')::boolean FROM claus_config ORDER BY revision DESC LIMIT 1) IS NOT TRUE)`;
 }
+// Operator-configured recovery applies on one UTC day only. Failed attempts
+// remain counted, the active-case lock and the payer ceiling stay unchanged.
+export function networkReviewDailyLimit(now=Date.now(),env=process.env) {
+ const n=Number(env.NETWORK_REVIEW_RECOVERY_LIMIT);
+ return env.NETWORK_REVIEW_RECOVERY_DAY===new Date(now).toISOString().slice(0,10)&&
+  Number.isInteger(n)&&n>=8&&n<=16?n:8;
+}
 export async function submitNetworkReview(input:any,db:Query=sql(),readConfig=configuration) {
  validateNetworkReview(input);
  await expireQueued(db);
@@ -55,7 +62,7 @@ export async function submitNetworkReview(input:any,db:Query=sql(),readConfig=co
  try{
   const rows=await db`INSERT INTO claus_network_reviews(id,input_hash,input,request,configuration_revision,configuration_hash,state)
     SELECT ${id},${inputHash},${JSON.stringify(input)}::jsonb,${JSON.stringify(request)}::jsonb,${config.revision},${config.hash},'queued'
-    WHERE (SELECT count(*) FROM claus_network_reviews WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')<8
+    WHERE (SELECT count(*) FROM claus_network_reviews WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')<${networkReviewDailyLimit()}
      AND NOT EXISTS(SELECT 1 FROM claus_network_review_revocations WHERE id=${id})
     ON CONFLICT(id) DO NOTHING RETURNING *`;
   if(rows.length)return visible(rows[0]);
