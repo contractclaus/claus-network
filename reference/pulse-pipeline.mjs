@@ -7,6 +7,7 @@ export function createPulsePipeline({client,projectId,observerServiceId,evaluato
  grantId,signal,readRule,now=Date.now}) {
  const call=(name,args={})=>client.call(name,{projectId,...args});
  async function publicResult(order,expiresAt){
+   requireThat(expiresAt>now()+1000,'pulse_result_expiring');
   const state=await call('service_result_publication',{orderId:order.id});
   if(state.revision>0){
    requireThat(state.published&&state.outputHash===order.outputHash&&state.expiresAt>=expiresAt,'pulse_publication_withdrawn');
@@ -50,6 +51,13 @@ export function createPulsePipeline({client,projectId,observerServiceId,evaluato
   }
   requireThat(run.expiresAt>now(),'pulse_run_expired');
   if(!run.rule){run.rule=await readRule();await checkpoint(run);}
+  if(!run.grantExpiresAt){
+   const grant=await call('signal_grant',{grantId});
+   requireThat(grant.finalized&&!grant.revoked&&!grant.apiRevoked,'signal_grant_inactive');
+   run.grantExpiresAt=Number(grant.terms.expiresAt)*1000;
+   requireThat(Number.isSafeInteger(run.grantExpiresAt)&&run.grantExpiresAt>now(),'signal_grant_inactive');
+   run.serviceExpiresAt=Math.min(run.serviceExpiresAt,run.grantExpiresAt);await checkpoint(run);
+  }
   const observer=await service(run,'observer',observerServiceId,{chainId:signal.chainId},[],checkpoint);
   if(!observer)return {...run,state:'waiting'};
   const evaluator=await service(run,'evaluator',evaluatorServiceId,{observation:observer.output,thresholdWei:run.rule.thresholdWei,

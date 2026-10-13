@@ -112,6 +112,16 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       if(error.code!=='signal_transaction_mismatch')throw error;
       observed={state:'failed',error:'signal_transaction_mismatch'};
     }
+    if(observed.state==='pending'&&action.kind==='record') {
+      // Only the isolated transaction engine can write this evidence. Keep the
+      // original hash and require its exact chain/sender/call, never a nonce hint.
+      const prior=(await store.read('chain-transactions','signal-record:'+action.id))?.value;
+      if(prior?.state==='cancelled'&&prior.replacement&&prior.hash===action.transactionHash&&
+        prior.intent?.chainId===action.transaction.chainId&&prior.sender?.toLowerCase()===action.transaction.from&&
+        prior.intent.to===action.transaction.to&&prior.intent.data===action.transaction.data&&prior.intent.value==='0') {
+        observed={state:'failed',error:'signal_transaction_replaced',replacement:prior.replacement};
+      }
+    }
     if (observed.state === 'pending') return view(row);
     if(observed.state==='confirmed'&&action.kind==='store')await validateStoreBuild(action.config,observed);
     return store.transaction(async tx => {
@@ -147,8 +157,13 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       try { const c = await admission(chainId); return { chainId, profile: c.profile, admission: 'public', expiresAt: c.expiresAt,
         factory: c.factory, factoryCodeHash: c.factoryCodeHash, feedId: c.feedId, schemaHash: c.schemaHash,
         publicationGas: 'publisher', maximumInputBytes: 2048, maximumOutputBytes: 512 }; }
-      catch (error) { if (!['signal_not_enabled','signal_admission_changed','signal_scope_not_reviewed'].includes(error.code)) throw error;
-        return { chainId, profile: 'claus-signal-v1', admission: 'not_enabled', reason: error.code }; }
+      catch (error) {
+        if (['signal_not_enabled','signal_admission_changed','signal_scope_not_reviewed'].includes(error.code))
+          return { chainId, profile: 'claus-signal-v1', admission: 'not_enabled', reason: error.code };
+        // A chain dependency outage closes this profile, not unrelated project
+        // access or the entire health endpoint. Never expose RPC error details.
+        return {chainId,profile:'claus-signal-v1',admission:'unavailable',reason:'signal_dependency_unavailable'};
+      }
     },
     storePrepare(actor, projectId, input) {
       shape(input, ['idempotencyKey']);
@@ -175,12 +190,16 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       const signatureHash = digest(signature);
       if (row.value.signatureHash) { requireThat(row.value.signatureHash === signatureHash, 'idempotency_conflict'); return view(row); }
       requireThat(row.value.expiresAt > now() && row.value.input.expiresAt * 1000 > now(), 'signal_operation_expired');
+      const revocationId=digest({projectId,grantId:row.value.grantId});
+      requireThat(!await store.read('signal-revocations',revocationId),'signal_api_revoked');
+      requireThat(!(await chain.grant(await signal(projectId),row.value.grantId)).revoked,'signal_grant_inactive');
       const prepared = await chain.registerGrant(await signal(projectId), current.binding, row.value, signature);
       return store.transaction(async tx => {
         const latest = await writeAllowed(actor, projectId, 'signal.manage', tx);
         requireThat(digest(latest) === digest(current), 'signal_admission_changed');
         const prior = await owned(projectId, operationId, tx);
         if (prior.value.signatureHash) { requireThat(prior.value.signatureHash === signatureHash, 'idempotency_conflict'); return view(prior); }
+        requireThat(!await tx.read('signal-revocations',revocationId),'signal_api_revoked');
         return view(await tx.write('signal-operations', operationId, { ...prior.value, ...prepared, signatureHash, state: 'prepared' }, prior.revision));
       });
     },

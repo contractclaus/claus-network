@@ -53,6 +53,8 @@ test('real local signal lifecycle binds source, typed grant, reviewed consumer, 
  assert.throws(()=>validateSignalRuntime({build,buildHash:digest(build),factoryBuild,factoryBuildHash:digest(factoryBuild),executor,
   storeCode:captured.store.code.slice(0,-2)+'00',factoryCode:captured.factory.code}),{code:'signal_evidence_invalid'});
  const terms={publisher:publisher.address,maximumWrites:3,minimumInterval:1,expiresAt:Number((await now()).timestamp)+86400,nonce:'14'};
+ const grantHead=Number((await now()).timestamp);
+ for(const expiresAt of [grantHead+1,grantHead+30*86400+1])await assert.rejects(signalChain.prepareGrant(signal,binding,{...terms,expiresAt}),{code:'signal_grant_expiry'});
  const grant=await signalChain.prepareGrant(signal,binding,terms);
  await assert.rejects(signalChain.registerGrant(signal,binding,grant,await publisher.signTypedData(grant.typedData)),{code:'invalid_signature'});
  const registered=await signalChain.registerGrant(signal,binding,grant,await owner.signTypedData(grant.typedData));
@@ -62,6 +64,8 @@ test('real local signal lifecycle binds source, typed grant, reviewed consumer, 
   observedAt:Number(block.timestamp),validUntil:Number(block.timestamp)+600,sourceHash:keccak256(stringToHex('public-result-fixture')),
   data:encodeAbiParameters([{type:'uint256'},{type:'uint64'},{type:'bytes32'},{type:'uint64'},{type:'uint256'}],
    [1n,block.number,block.hash,block.timestamp,2000000000n])};};
+ const expiring=await record(1,1);expiring.validUntil=expiring.observedAt+1;
+ await assert.rejects(signalChain.prepareRecord(signal,binding,expiring),{code:'signal_data_expired'});
  const first=await signalChain.prepareRecord(signal,binding,await record(1,1));await send(first.transaction,publisher);
  await final();const current=await signalChain.latest(signal);assert.equal(current.record.sequence,'1');assert.equal(current.authorizationActive,true);assert.equal(current.currentVersion,1);
  const snapshot=await chain.captureEvidence({module,consumer});

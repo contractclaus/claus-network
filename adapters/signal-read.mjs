@@ -131,6 +131,8 @@ export function createSignalRead({ client, chainId }) {
     },
     async prepareGrant(signal, binding, terms) {
       const s = await state(binding); await Promise.all([eoa(s.owner), eoa(terms.publisher)]);
+      const head=await client.getBlock({blockTag:'latest'});
+      requireThat(terms.expiresAt>Number(head.timestamp)+60&&terms.expiresAt<=Number(head.timestamp)+30*86400,'signal_grant_expiry');
       requireThat(!await read(signal.address, signalAbi, 'grantNonces', [s.owner, BigInt(terms.nonce)]), 'signal_nonce_used');
       const message = { projectId: binding.projectKey, feedId: signal.feedId, schemaHash: signal.schemaHash,
         ...terms, authorityGeneration: s.authorityGeneration };
@@ -153,7 +155,7 @@ export function createSignalRead({ client, chainId }) {
         Number(g.terms.expiresAt) > Number(head.timestamp), 'signal_grant_inactive');
       requireThat(BigInt(g.used) < BigInt(g.terms.maximumWrites), 'signal_grant_exhausted');
       requireThat(s.version === input.expectedVersion, 'signal_stale_version');
-      requireThat(input.validUntil > Number(head.timestamp) && input.observedAt <= Number(head.timestamp) &&
+      requireThat(input.validUntil > Number(head.timestamp)+60 && input.observedAt <= Number(head.timestamp) &&
         input.validUntil <= Number(g.terms.expiresAt) && input.validUntil <= input.observedAt+86400, 'signal_data_expired');
       requireThat(Number(g.used)===0 || Number(head.timestamp)>=Number(g.lastWrite)+Number(g.terms.minimumInterval), 'signal_interval_pending');
       const current=await read(signal.address,signalAbi,'latest');

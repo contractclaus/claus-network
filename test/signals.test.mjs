@@ -18,7 +18,7 @@ async function fixture(t) {
     requireThat(projectId==='p' && (actor==='owner' || actor==='publisher' && ['signal.read','signal.publish','signal.grant.revoke'].includes(scope) ||
       actor==='reader' && scope==='signal.read'),'scope_denied');}};
   const chain={
-    validateAdmission:async()=>{},validateStoreBuild:async()=>{},
+    validateAdmission:async()=>{if(f.admissionDown)throw Error('https://rpc.invalid/private-token');},validateStoreBuild:async()=>{},
     prepareStore:async()=>{f.calls++;return f.recover?{recovered:true,signal,blockHash:word('f'),blockNumber:'50',finalized:true}:{transaction};},
     assertTrackedStore:async(_c,_b,tracked)=>requireThat(!f.untracked||tracked,'signal_review_context_changed'),
     prepareGrant:async()=>({grantId:word('1'),typedData:{message:{publisher:address('6')}},owner:binding.owner}),
@@ -135,4 +135,33 @@ test('untracked canonical stores and incompatible consumers fail closed before a
  await f.store.transaction(tx=>tx.write('project-vaults','p',{state:'verified'},0));
  await assert.rejects(f.api.storePrepare('owner','p',{idempotencyKey:'store'}),{code:'signal_review_context_changed'});
  assert.equal((await f.store.list('signal-operations')).length,0);
+});
+
+test('an RPC outage marks only signal discovery unavailable and still denies writes',async t=>{
+ const f=await fixture(t);await f.setup();f.admissionDown=true;
+ assert.deepEqual(await f.api.discovery(1),{chainId:1,profile:'claus-signal-v1',admission:'unavailable',reason:'signal_dependency_unavailable'});
+ await assert.rejects(f.api.recordPrepare('publisher','p',f.record()),/rpc.invalid/);
+ assert.equal((await f.store.list('signal-operations')).length,1);
+});
+test('only exact host replacement evidence settles an original pending record',async t=>{
+ const f=await fixture(t);await f.setup();f.final=false;
+ const op=await f.api.recordPrepare('publisher','p',f.record());
+ await f.api.submit('publisher','p',{operationId:op.id,transactionHash:word('2')});
+ const key='signal-record:'+op.id, replacement={transactionHash:word('3'),blockHash:word('f'),finalized:true};
+ const host={state:'cancelled',hash:word('2'),sender:op.transaction.from,intent:{...op.transaction},replacement};
+ await f.store.transaction(tx=>tx.write('chain-transactions',key,{...host,hash:word('4')},0));
+ assert.equal((await f.api.operation('publisher','p',op.id)).state,'pending');
+ const row=await f.store.read('chain-transactions',key);
+ await f.store.transaction(tx=>tx.write('chain-transactions',key,host,row.revision));
+ const settled=await f.api.operation('publisher','p',op.id);
+ assert.equal(settled.state,'failed');assert.equal(settled.error,'signal_transaction_replaced');
+ assert.equal(settled.transactionHash,word('2'));assert.deepEqual(settled.replacement,replacement);
+});
+test('API revocation prevents preparing registration of an already signed grant',async t=>{
+ const f=await fixture(t);await f.setup();
+ const grant=await f.api.grantPrepare('owner','p',{publisher:address('6'),maximumWrites:2,minimumInterval:1,
+  expiresAt:f.now/1000+3600,nonce:'1',idempotencyKey:'grant'});
+ await f.api.revoke('owner','p',{grantId:grant.grantId,idempotencyKey:'revoke-first'});
+ await assert.rejects(f.api.grantRegister('owner','p',{operationId:grant.id,signature:'0x'+'11'.repeat(65)}),{code:'signal_api_revoked'});
+ assert.equal((await f.api.operation('owner','p',grant.id)).state,'awaiting_signature');
 });

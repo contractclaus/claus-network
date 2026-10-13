@@ -19,3 +19,5 @@ The intended upgrade path is: pin the exact source, build it, collect independen
 
 - [Public data services](public-data.md): explicit output publication and provenance.
 - [Bounded signal feeds](signals.md): scoped publisher grants, records and revocation.
+
+- [Complete Pulse walkthrough](pulse-walkthrough.md): project, services, first record and revocation.
