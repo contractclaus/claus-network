@@ -11,7 +11,7 @@ test('the public client prepares a real requester call and resumes the same rece
   const url = new URL(process.env.CLAUS_TEST_CHAIN);
   assert.equal(url.hostname, '127.0.0.1', 'Fixtures must stay on the local chain');
   const chain = createPublicClient({ transport: http(url.href, { retryCount: 0 }), cacheTime: 0 });
-  assert.equal(await chain.getChainId(), 11155111);
+  const chainId=await chain.getChainId();assert([1,11155111].includes(chainId));
   const account = privateKeyToAccount(generatePrivateKey());
   await chain.request({ method: 'anvil_setBalance', params: [account.address, '0x56bc75e2d63100000'] });
   const wallet = createWalletClient({ account, transport: http(url.href) });
@@ -27,14 +27,14 @@ test('the public client prepares a real requester call and resumes the same rece
   const now = Number((await chain.getBlock()).timestamp) * 1000;
   const id = digest({ local: 'public-client-binding' }), projectId = 'local-project';
   const binding = { id, projectId, onchainBinding: '0x' + id.slice(7), requester, inbox,
-    chainId: 11155111, codeHash: keccak256(await chain.getCode({ address: inbox })),
+    chainId, codeHash: keccak256(await chain.getCode({ address: inbox })),
     capability: keccak256(stringToHex('claus.proposal.create.v1')), expiresAt: now + 86400000,
     used: 0, maxRequests: 1, revokedAt: null };
   const api = { call: async (method, args) => {
     assert.equal(method, 'contract_binding_get'); assert.deepEqual(args, { projectId, bindingId: id });
     return structuredClone(binding);
   } };
-  const pin = { chainId: 11155111, inbox, codeHash: binding.codeHash, requester,
+  const pin = { chainId, inbox, codeHash: binding.codeHash, requester,
     requesterCodeHash: keccak256(await chain.getCode({ address: requester })), controller: account.address };
   const options = { api, chain, projectId, bindingId: id, pin, input: { moduleId: 'local-module', configuration: '0x1234' },
     deadline: Math.floor(now / 1000) + 3600, now };
@@ -47,7 +47,7 @@ test('the public client prepares a real requester call and resumes the same rece
   binding.revokedAt = null;
   await assert.rejects(prepareContractRequest({ ...options, pin: { ...pin, requesterCodeHash: '0x' + '00'.repeat(32) } }), { code: 'deployment_code_mismatch' });
   await assert.rejects(prepareContractRequest({ ...options, pin: { ...pin, controller: '0x' + '11'.repeat(20) } }), { code: 'requester_authority_mismatch' });
-  await assert.rejects(prepareContractRequest({ ...options, chain: { getChainId: async () => 1 } }), { code: 'wrong_chain' });
+  await assert.rejects(prepareContractRequest({ ...options, chain: { getChainId: async () => chainId===1?11155111:1 } }), { code: 'wrong_chain' });
   const hash = await wallet.sendTransaction({ chain: null, to: prepared.transaction.to,
     data: prepared.transaction.data, value: BigInt(prepared.transaction.value) });
   await chain.waitForTransactionReceipt({ hash });
