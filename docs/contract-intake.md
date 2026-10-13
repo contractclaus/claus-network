@@ -1,6 +1,6 @@
 # Contract requests
 
-Eligible public projects can submit bounded asynchronous contract requests on Sepolia. The [completed public reference](reference-public-contract.json) records its real Claus decision, delivered callback, finalized configuration change and revoked temporary authority. Intake has separate admission and dispatcher gas limits; it is not available on Mainnet.
+Eligible public projects can submit bounded asynchronous contract requests on Ethereum and Sepolia. The [Phase 3 reference](reference-phase3.json) records the actual Mainnet decision callback, separate finalized execution and binding revocation. The [earlier Sepolia reference](reference-public-contract.json) retains its successful callback and revocation. Each chain has separate admission, Inbox pins, worker health and finite dispatcher gas limits.
 
 The older [Inbox reference](reference-intake.json) retains its failed callback and subsequent canonical-result recovery. The successful public reference does not alter that history.
 
@@ -30,7 +30,7 @@ const binding = await api.call('contract_binding_create', {
 });
 ```
 
-`pin` contains `chainId`, `inbox`, `codeHash` (the Inbox runtime hash), `requester`, `requesterCodeHash` and `controller`. Obtain these from the admitted deployment and your verified requester deployment, not from untrusted model output. `chain` is a viem public client for Sepolia; `api` is the authenticated network SDK client.
+`pin` contains `chainId`, `inbox`, `codeHash` (the Inbox runtime hash), `requester`, `requesterCodeHash` and `controller`. Obtain these from the admitted deployment and your verified requester deployment, not from untrusted model output. `chain` is a viem public client for the project’s admitted chain; `api` is the authenticated network SDK client.
 
 ```js
 import {

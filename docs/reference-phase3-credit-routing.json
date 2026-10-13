@@ -1,0 +1,274 @@
+{
+  "checksScope": "These checks ran against the full private agent/payment runtimes. Log names identify retained private operational evidence, not files in this source mirror.",
+  "checks": {
+    "at": "2026-10-13T15:20:21.629760+00:00",
+    "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+    "passed": true,
+    "targetedCases": 3,
+    "typecheck": true,
+    "log": "credit-deferral-check.log",
+    "priorChecks": "credit-fixes-check.json",
+    "files": {
+      "agent/src/network-review.ts": "342633084c33cd5813ce7a5b00514322d059994806ec78a7209a75d6b08cb112",
+      "payments/src/index.js": "11be83606613dc2a6a92b0786b9f1e1bc403655e76c49b8744978ee88bf8a788",
+      "payments/src/credit-provider.js": "1120d18a08938b220c29481d0def1f4fbad3567c2147af05fa4673a5650af154"
+    }
+  },
+  "priorChecks": {
+    "at": "2026-10-13T14:53:35.726051+00:00",
+    "passed": true,
+    "targetedCases": 75,
+    "initialRun": {
+      "passed": 74,
+      "failed": 1,
+      "failure": "Fixture expected lane-level reason for invalid global config; global gate correctly refused it."
+    },
+    "correctedCase": {
+      "passed": 1,
+      "log": "credit-fixes-recheck.log"
+    },
+    "datedLimit": {
+      "passed": 2,
+      "log": "credit-dated-limit-check.log"
+    },
+    "typecheck": true,
+    "boundaries": {
+      "forbiddenCapabilityImports": 0
+    },
+    "logs": [
+      "credit-fixes-check.log",
+      "credit-fixes-recheck.log",
+      "credit-dated-limit-check.log"
+    ],
+    "files": {
+      "agent/src/network-review.ts": "93a9462b90ee4a879150c4270723c15f8971f2b037c7e12e1da05f5f90782514",
+      "payments/src/index.js": "ce75159b9049c64298e3735a35d10f4f18917db13bc0cef51a2058b6315d9add",
+      "payments/src/credit-provider.js": "853deee23dc341bc8941655c7c1db7d35b76ed0f4b97f9c74d7eb534aecd0fd1",
+      "payments/src/credit-work-admission.js": "761ff95abbbb3683e9c1e4081d9008042b1007662ca9ae5ec5a8850d97cffe41"
+    },
+    "sourceCommit": "07def425130b9e2e2f721030cef305c080a74f52"
+  },
+  "release": {
+    "at": "2026-10-13T16:21:22.466Z",
+    "sourceCommit": "58b1f33cfbeb2bb3e5afd2ec77e812ab38138ab3",
+    "deployment": "dpl_5Lg7aayrk9diPtCtahhQRfJS2ttd",
+    "previousDeployment": "dpl_ADURnXASE8DcSXvmXQho32jTP6Ce",
+    "verifiedFiles": 32,
+    "exactSourceVerified": true,
+    "environment": {
+      "NETWORK_REVIEW_FRESH_RAIL": "credit_work"
+    },
+    "sourceRecovery": {
+      "commit": "25a25e757d7644056246b170bd6e33476160d68b",
+      "sha256": "587167d57f6294c4952e6ecb11b39055d25ea14f38f670d6c2a1bd695791937b",
+      "requiredFullSourceCommit": "f3658fb5f3c7998a2ee33590be2fb81c309437de"
+    }
+  },
+  "assessment": {
+    "status": "accepted-for-phase3",
+    "at": "2026-10-13T16:05:56.572Z",
+    "sourceCommit": "182af1efac991d25ba228dfad7e8ad54fb51ed23",
+    "reviews": [
+      {
+        "scope": "native-prepaid-review",
+        "jobId": "5e2ee286-9298-4fa2-a0d0-5c4b387c7dc8",
+        "artifactHash": "sha256:d4877946e8593b3df1a16c93aaef17aaed83f04180730a058d3b844c04734e8f",
+        "reportHash": "sha256:b31a8c5388db4a2fb988e189418f6f5a59cac098d7b16235b51a1eebb4213dcf",
+        "sourceCommit": "d4af978eb8d43895f7ae448bc1ea4f1fbef9922f"
+      },
+      {
+        "scope": "prepaid-liveness-corrections",
+        "jobId": "6fe2d959-fa84-46d9-9c7a-b3b9b63497a7",
+        "artifactHash": "sha256:5822cd4e69e2596129b1cede92c44832d2d3fdc8d7c6983f2c1614882d99737a",
+        "reportHash": "sha256:561644b15fcc30f94b7532d81ba3a83327d0d9ade7d0c509bdfd3ca9b4160692",
+        "sourceCommit": "07def425130b9e2e2f721030cef305c080a74f52"
+      },
+      {
+        "scope": "final-unsigned-deferral-corrections",
+        "jobId": "59339dee-33fd-4abf-87c3-ecf6ebb923d0",
+        "artifactHash": "sha256:e5b2238de2ed126b1be57903b6dcb2c16890c576c7e6c62378c30e97d01d7b45",
+        "reportHash": "sha256:a0a4720e516f35519d233e43129b865bdbc6e3d5a394af53057de461146faa5d",
+        "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1"
+      },
+      {
+        "scope": "native-review-output-budget",
+        "jobId": "2a30a521-fd15-4eec-b384-3b9474cc186d",
+        "artifactHash": "sha256:336b2702dc80eaa6dd466e523c8e2d5b703f22e88f56d86a3b5df07c20db053d",
+        "reportHash": "sha256:d6331ab74011afcd08552d3a5378b895ff277d9f086297626d98f1c0e1d51f8a",
+        "sourceCommit": "182af1efac991d25ba228dfad7e8ad54fb51ed23"
+      }
+    ],
+    "priorDispositions": {
+      "status": "assessed-predecessor-findings",
+      "at": "2026-10-13T15:23:21.726100+00:00",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "original": {
+        "jobId": "5e2ee286-9298-4fa2-a0d0-5c4b387c7dc8",
+        "reportHash": "sha256:b31a8c5388db4a2fb988e189418f6f5a59cac098d7b16235b51a1eebb4213dcf",
+        "findings": [
+          {
+            "number": 1,
+            "disposition": "Fixed: after the original 800-second window an explicitly inactive uncertain prepaid delivery fails the agent review while retaining its full payment hold. No replay or approval."
+          },
+          {
+            "number": 2,
+            "disposition": "Fixed: fresh dispatch requires explicit surplus_credit admission; existing request IDs retain their original rail."
+          },
+          {
+            "number": 3,
+            "disposition": "Fixed: all known workAdmission refusals carry the original ID and unsigned deferred marker. Only the exact rolled-back one-active SQL constraint can defer a reservation exception."
+          },
+          {
+            "number": 4,
+            "disposition": "Fixed: readiness checks the configured 2-USDC ceiling; native quote input and output are never reduced."
+          },
+          {
+            "number": 5,
+            "disposition": "Fixed: higher admission ceiling is restricted to at most two explicit project IDs and one exact UTC day. Counts are never reset."
+          },
+          {
+            "number": 6,
+            "disposition": "Fixed: current source docs distinguish the historical verified deployment from the candidate. Final publication writes verified deployed hashes after exact source readback."
+          },
+          {
+            "number": 7,
+            "disposition": "Fixed: operations documents the optional dated maximumGlobalDay allocation and the shared global counter."
+          },
+          {
+            "number": 8,
+            "disposition": "Fixed: only canonical decimal strings 8 through 16 are accepted."
+          },
+          {
+            "number": 9,
+            "disposition": "Fixed: waiting responses include workCandidate when reporting the intended payment rail."
+          }
+        ]
+      },
+      "correction": {
+        "jobId": "6fe2d959-fa84-46d9-9c7a-b3b9b63497a7",
+        "reportHash": "sha256:561644b15fcc30f94b7532d81ba3a83327d0d9ade7d0c509bdfd3ca9b4160692",
+        "findings": [
+          {
+            "number": 1,
+            "disposition": "Fixed: every workAdmission pre-reservation refusal emits exact-ID not_signed/deferred; the agent allowlist covers every current refusal reason."
+          },
+          {
+            "number": 2,
+            "disposition": "Fixed: catch only SQLSTATE23505 on claus_credit_work_one_active. Its atomic statement rolls back; payment-ID collisions and ambiguous acknowledgements remain uncertain."
+          },
+          {
+            "number": 3,
+            "disposition": "Documented: shared global ceilings are not reserved per-project allowances."
+          },
+          {
+            "number": 4,
+            "disposition": "Accepted conservative accounting: unresolved dispatched holds remain within the finite aggregate ceiling. No automatic replenishment or release."
+          },
+          {
+            "number": 5,
+            "disposition": "Existing network controller polls review status. Direct users must poll status; no separate scheduler or unconditional timeout release is introduced."
+          },
+          {
+            "number": 6,
+            "disposition": "Bounded to the verified production ISO DateStyle; three actual timestamps parse. Evidence credit-timestamp-observation.json. Changing the database DateStyle is outside the operation."
+          },
+          {
+            "number": 7,
+            "disposition": "The mirrors are review context, not standalone runnable agent/payment packages. Real private-source targeted tests, typecheck, complete source manifests and deployment verification are retained; no full-service audit is claimed."
+          }
+        ]
+      },
+      "checks": [
+        "credit-fixes-check.json",
+        "credit-deferral-check.json",
+        "credit-timestamp-observation.json"
+      ],
+      "finalDeltaCompleted": "59339dee-33fd-4abf-87c3-ecf6ebb923d0"
+    },
+    "finalFindings": [
+      {
+        "number": 1,
+        "severity": "low",
+        "title": "Introduced: agent hard-codes a 16384 output cap that an unpatched payer refuses; the ordering dependency is undocumented and each mis-ordered review fails terminally for its input hash",
+        "disposition": "Addressed in the deployment procedure: promote and verify the widened payment relay first; the agent promotion checks the exact live payment deployment/source. Rollback must restore the older agent before reverting the payment validator. No capability auto-fallback or smaller review is introduced."
+      },
+      {
+        "number": 2,
+        "severity": "info",
+        "title": "Unchanged mechanism, exposure widened: credit-lane telemetry reports effectiveMaxOutputTokens from the sent request and ignores the provider's x-si-adapted-params header",
+        "disposition": "Accepted telemetry limitation: effectiveMaxOutputTokens records the request sent, not proof of the provider internal cap. Completion and actual usage will be recorded from the genuine first calls; public documentation must not claim provider-adaptation verification."
+      },
+      {
+        "number": 3,
+        "severity": "info",
+        "title": "Unchanged limitation: the 600 s provider deadline is not widened with the 4x larger reasoning budget; a time-cut review still ends failed with its 2 USDC hold retained",
+        "disposition": "Accepted existing finite deadline and retained-uncertainty accounting. No timeout replay or hold release. Actual completion latency remains a live acceptance criterion."
+      },
+      {
+        "number": 4,
+        "severity": "info",
+        "title": "Unchanged limitation: the 2 USDC ceiling with no quote shrinking now applies to a 16384-token quote, narrowing the affordable input range by roughly 58261 microUSDC",
+        "disposition": "Accepted intended clean refusal under the unchanged 2-USDC maximum, with no shrinking, refill or disguised free allocation."
+      },
+      {
+        "number": 5,
+        "severity": "info",
+        "title": "Unchanged trust assumption, widened: the 16384 lane is selected by the caller-chosen Idempotency-Key pattern alone, so any INFERENCE_SECRET holder can obtain the widened budget",
+        "disposition": "Accepted trusted internal-secret boundary. This endpoint is not public inference; preserve the secret, finite per-call/lifetime limits and strict review-ID routing."
+      }
+    ],
+    "checks": {
+      "at": "2026-10-13T15:46:14.806Z",
+      "passed": true,
+      "targetedTests": 2,
+      "actualPriorInputIdentical": true,
+      "previousMaximumOutputTokens": 4096,
+      "maximumOutputTokens": 16384,
+      "maximumQuoteMicroUSDC": "2000000",
+      "unsignedQuoteMicroUSDC": "526768",
+      "model": "gpt-6-astra",
+      "reasoning": {
+        "effort": "xhigh",
+        "context": "all_turns"
+      },
+      "paidModelCalls": 0,
+      "files": {
+        "agent/src/network-review-schema.ts": "bd3db2efc1ad4e0eb401f4880e9854a18cb36231b88f9910c995337a803dde5c",
+        "payments/src/credit-provider.js": "5f17cbc12179a38a75d5b48956c7cc4084f1abaa2bec15d5e1acd6a6a764fb45",
+        "payments/src/index.js": "f6d9ab8e3e4cc1a5fbb8c91dc91e000c20605a851b457fe8478b6b8050d35bcf"
+      },
+      "typecheck": true,
+      "sourceCommit": "182af1efac991d25ba228dfad7e8ad54fb51ed23"
+    },
+    "additionalEvidence": [
+      "credit-fixes-check.json",
+      "credit-timestamp-observation.json",
+      "review-credit-source-recovery.json"
+    ],
+    "runtimeChangedAfterFinalReview": false,
+    "liveAcceptancePending": true,
+    "limitations": [
+      "Actual model decision, finalized contract execution and normal scheduled run remain required.",
+      "No old hold or original request is released or replayed.",
+      "No public inference, customer custody, token launch or unbounded financial grant."
+    ],
+    "priorCreditFinalFindings": [
+      {
+        "number": 1,
+        "severity": "info",
+        "disposition": "Accepted existing fail-closed boundary for provider or operator configuration changes between snapshots. No new payment or hold is created. Uniform retries outside the reviewed admission path are not claimed."
+      },
+      {
+        "number": 2,
+        "severity": "info",
+        "disposition": "Final publication removes the dangling public log pointer and labels full private-runtime checks explicitly, with a link to the deployment/check evidence. Runtime unchanged."
+      },
+      {
+        "number": 3,
+        "severity": "info",
+        "disposition": "Accepted existing boundary: a fenced ID may wait while another slot is occupied, but cannot reserve or pay when capacity returns. The agent never resubmits a terminally fenced review."
+      }
+    ],
+    "outputBudgetAssessment": "output-budget-assessment.json"
+  }
+}

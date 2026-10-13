@@ -52,5 +52,15 @@
     "typecheck": true,
     "scope": "Two targeted tests and a typecheck ran in the full private agent/payment worktree; mirrors are not standalone runtime distributions."
   },
-  "publicationIsActivation": false
+  "publicationIsActivation": false,
+  "deploymentOrder": [
+    "Promote and verify the payment relay accepting native review requests through 16384 tokens.",
+    "Then promote the matching agent; the release procedure requires the verified live payment deployment."
+  ],
+  "rollbackOrder": [
+    "Restore the older agent first.",
+    "Only then restore the older payment validator."
+  ],
+  "evidence": "https://claus.si/docs/reference-phase3-output-budget.json",
+  "telemetryBoundary": "The legacy effectiveMaxOutputTokens field records the sent request, not independently verified provider adaptation. A complete genuine verdict and its actual usage are separate evidence."
 }

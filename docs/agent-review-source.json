@@ -1,13 +1,13 @@
 {
-  "sourceCommit": "071b7c918b8dd64066441c3e8245e1e2c19b2ae5",
+  "sourceCommit": "31b4c2e66fd841a25e02131edb2dcd2dc7be3466",
   "sha256": {
-    "integration/agent-review/network-review.ts": "068d26646ce48313bd82d6586b7051115c8c5a1fa3a6a4ba5d6c79733562d8b4",
-    "integration/agent-review/network-signal-review.ts": "0f090966d7bd5ab8f25f7008ad1b4ae68c95ed9eef354bf28c4e9e3ffe5d6a88",
-    "integration/agent-review/network-review-schema.ts": "5108433ca60f6c84ec6cb817456b90c9e456faaf7245d57a55e190ed2a0c4688"
+    "integration/agent-review/network-review.ts": "342633084c33cd5813ce7a5b00514322d059994806ec78a7209a75d6b08cb112",
+    "integration/agent-review/network-review-schema.ts": "276536831c1f42799316b1496de3a8b9ea473ed7b6bf048f0361e5276d1ce063",
+    "integration/agent-review/network-signal-review.ts": "0f090966d7bd5ab8f25f7008ad1b4ae68c95ed9eef354bf28c4e9e3ffe5d6a88"
   },
   "deploymentEvidence": "https://claus.si/docs/reference-phase3-agent.json",
-  "scope": "Historical deployed agent evidence for the pinned sourceCommit. Current working-tree mirrors include a newer review-delivery candidate and are not asserted deployed by this record. Final deployment replaces this manifest after exact live readback.",
-  "deployment": "dpl_HNEkqeYJ63VQUoZZQ3i9bcSaXzRi",
-  "verifiedAt": "2026-10-13T14:16:05.263Z",
+  "scope": "These exact agent mirrors match the verified deployed release. Full Phase3 lifecycle evidence is recorded separately.",
+  "deployment": "dpl_FDrwpabDKPLBHzpJCdPMQbGd5XEc",
+  "verifiedAt": "2026-10-13T16:35:48.686Z",
   "verifiedFiles": 157
 }

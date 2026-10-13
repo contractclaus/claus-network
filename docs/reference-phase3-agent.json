@@ -1,0 +1,37 @@
+{
+  "at": "2026-10-13T16:35:48.686Z",
+  "sourceCommit": "31b4c2e66fd841a25e02131edb2dcd2dc7be3466",
+  "deployment": "dpl_FDrwpabDKPLBHzpJCdPMQbGd5XEc",
+  "previousDeployment": "dpl_ASPSsTN7fLfa87tatbTD1BjGVecp",
+  "verifiedFiles": 157,
+  "exactSourceVerified": true,
+  "environment": {
+    "NETWORK_REVIEW_RECOVERY_DAY": "2026-10-13",
+    "NETWORK_REVIEW_RECOVERY_LIMIT": "13",
+    "NETWORK_REVIEW_RECOVERY_PROJECTS": "prj_51fcfa1f-21a6-4d48-927e-a399d4e04f56,prj_5d89e95c-f729-446b-a227-78ead03a9877"
+  },
+  "sourceRecovery": {
+    "commit": "bf5347e0a452fe72c9fbff3304cdb1e90d056137",
+    "sha256": "d00b58748b69d293feacb20c7ad7a31da1928d142b0f4b0852b96a61303cf3ae",
+    "requiredFullSourceCommit": "f3658fb5f3c7998a2ee33590be2fb81c309437de"
+  },
+  "configuration": 484,
+  "configurationUnchanged": true,
+  "reviewSource": {
+    "integration/agent-review/network-review.ts": {
+      "deployedPath": "src/network-review.ts",
+      "sha1": "074bda9b7a0423a9ba55150de0e890095d860ebc",
+      "sha256": "342633084c33cd5813ce7a5b00514322d059994806ec78a7209a75d6b08cb112"
+    },
+    "integration/agent-review/network-review-schema.ts": {
+      "deployedPath": "src/network-review-schema.ts",
+      "sha1": "64064e5488ca54ea6b7051aa41639a68b49e6b6b",
+      "sha256": "276536831c1f42799316b1496de3a8b9ea473ed7b6bf048f0361e5276d1ce063"
+    },
+    "integration/agent-review/network-signal-review.ts": {
+      "deployedPath": "src/network-signal-review.ts",
+      "sha1": "250ebf2d634e1da88877b1059174672fe75c9679",
+      "sha256": "0f090966d7bd5ab8f25f7008ad1b4ae68c95ed9eef354bf28c4e9e3ffe5d6a88"
+    }
+  }
+}

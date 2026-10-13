@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-13T12:09:28.970262+00:00",
+  "passed": true,
+  "typecheck": true,
+  "sourceSha1": "7fd23a4b5b5c0f55d38369f77fb33f4f13d1cb99",
+  "reproducedFailures": 2,
+  "focusedTestsPassed": 6,
+  "fullSuiteRepeated": false,
+  "checks": [
+    "Actual payment confirmAbsent/reservePayment race reproduced before correction and passed afterwards",
+    "Actual streamCompletion HTTP200 error reproduced before correction and passed afterwards",
+    "Original-ID recovery after existing 800-second delivery fence",
+    "Revocation during admission blocks sends",
+    "Cancellation preserves uncertain requests"
+  ],
+  "modelPromptQuoteLimitUnchanged": true,
+  "noPaymentFenceRemoved": true,
+  "publicPatchSha256": "3f52374d8b7476860b1b33b715f0e22f3787a8e75a99747b212d9bf462c58d7b"
+}

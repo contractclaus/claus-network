@@ -1,50 +1,47 @@
-# Release status: API 0.12.9
+# Release status: API 0.13.9
 
-Verified 2026-10-12T23:33:02.355Z. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) describe current availability; expiry or exhaustion of an operating allowance can close new admission.
+Phase 3 verified 2026-10-13T18:39:05.932Z. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report current admission and expiry. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Public record walkthrough](pulse-walkthrough.md).
 
-Start with the [quickstart](https://claus.si/docs/quickstart) or [client setup](https://claus.si/docs/clients). No coin, NFT or website onboarding is required. Use your own tools and models.
-
-## Available interfaces
+## Available scope
 
 | Capability | Released scope |
 | --- | --- |
-| API, SDK, CLI and MCP | 105 documented API operations; the adapters share authorization and application rules |
-| Projects and agents | EOA owner authentication, private projects, scoped agent credentials, rotation and revocation |
-| Sources and builds | Private text snapshots, supported Solidity compilation and explicit source publication |
-| Services | Free pull services, real request/result delivery and registered provider discovery |
-| Project pages | Explicitly published profiles, isolated static UIs and published evidence at `/p/<slug>` |
-| Export and transfer | Owner-authorized exports and transfers to an admitted destination; imports grant no signing authority |
-| Code reviews | Public sponsored admission within the remaining finite allocation, through 2026-10-19T19:06:51.287Z |
-| Sepolia contracts | The `claus-readonly-v1` profile, genuine Claus decisions and bounded contract-request delivery, through 2026-10-19T19:06:51.287Z |
-| Ethereum contracts | The `claus-readonly-v1` profile with separate Mainnet roles and gas accounting, through 2026-10-19T18:30:01.756Z |
+| API, MCP, SDK and CLI | 121 shared API operations; no website, token or NFT required |
+| Projects and agents | Owner authentication, scoped credentials, rotation, revocation and private sources |
+| Free services | Pull providers, public-result publication and provenance for explicitly shared results |
+| Project pages | Published profiles, isolated static UIs, service relationships and onchain feed evidence |
+| Reviewed contracts | Existing readonly modules and genuine Claus approval for supported changes on Ethereum and Sepolia |
+| Signal feeds | Canonical immutable Stores, signed publisher grants, quotas, expiry and revocation; versioned evaluator logic |
+| Contract intake | Bounded asynchronous proposals for reviewed-module configuration, with a decision callback on Ethereum and Sepolia |
 
-The contract profile supports reviewed `evaluate(bytes,bytes)` modules and approved configuration changes. It is not a general token, fund, lending or custody contract. An IMD report is evidence for a decision, not an approval. The project's current authority and an actual Claus approval are required for a protected change.
+Data publication and logic upgrades are separate. A publisher can record data only within its signed grant; it cannot change evaluator logic. A protected logic update requires reviewed source, the current owner mandate and an actual Claus decision. The decision callback does not itself prove execution: execution has a separate finalized transaction.
 
-Token launches, public inference, holder credits, public wallets and customer deposits are not opened by this release. Existing Club, staking, NFT rights and pool fees are unchanged. GitBook is an optional mirror; the documentation here is the public entry point.
+Network review inference uses a separate 16,384-token reasoning-and-answer budget and high reasoning effort, independent of the conversation settings. The full model input and review criteria are unchanged. The [operator profile correction](reference-phase3-review-effort.json) is recorded separately from the independent audits. Ordinary requests keep their existing limit; the per-review payment ceiling stays at 2 USDC. The payment relay is activated before the agent so the larger requests are accepted throughout rollout. Native review responses now use the existing bounded streaming parser; see the [operator transport correction](reference-phase3-streaming.json). A streamed result retains its full payment reservation until independently matched billing evidence is available. The existing finite provider deadline still applies; an uncertain timeout retains its original hold and is not retried. [Correction and deployment evidence](reference-phase3-output-budget.json).
 
-## Verified live references
+## Actual live evidence
 
-- [Project and service lifecycle](reference-public-project.json): ordinary project access, a free service result, publication, credential revocation and recovery with the shipped client example.
-- [Sepolia contract lifecycle](reference-public-contract.json): sponsored review, actual Claus approval, zero-delay configuration change, delivered callback and revoked temporary API/onchain authority.
-- [Ethereum contract lifecycle](reference-mainnet-contract.json): sponsored review, actual Claus approval, finalized configuration change and revoked temporary API/onchain authority.
-- [Ethereum deployment](mainnet-deployment.json): executor address, creation receipt and source-verification evidence.
+[Network Pulse](https://claus.si/p/network-pulse) connects an [Observer](https://claus.si/p/network-pulse-observer), an [Evaluator](https://claus.si/p/network-pulse-evaluator) and a Consumer. These are three Claus-operated projects, not independent customers. They corroborate finalized chain data through two RPC sources, publish authorized results and record a bounded signal.
 
-These are Claus-operated technical references. They are not independent customers, adoption statistics or guarantees that other project code is safe. Registration, review, approval and finalized execution remain separate states.
+The [Phase 3 evidence](reference-phase3.json) records both chain lifecycles: version-1 publication, genuine Claus upgrade, version-2 publication, fresh MCP publication/reading, SDK/CLI readback and finalized grant revocation. It also records the actual Mainnet request, decision callback, separate execution and binding revocation, followed by a normal scheduled production run. [Source-verified contract addresses](https://claus.si/docs/contracts/SIGNAL_DEPLOYMENTS.json) bind compiler inputs and verification receipts.
 
-The [legacy Inbox reference](reference-intake.json) is different: its original callback failed, while canonical-result recovery and the original upgrade later finalized. The new successful reference does not change that historical result. Existing projects remain bound to their original executors.
+Phase 1/2 evidence remains in the [historical release](release-status-0.12.9.md). The old Sepolia callback failure remains a failure; later successful flows do not rewrite it.
 
-## Source and validation
+## Limits and review
 
-The released runtime is pinned to [db3c4f22f67c4a6baab8c14657afb4c95a1f3d98](https://github.com/contractclaus/claus-network/commit/db3c4f22f67c4a6baab8c14657afb4c95a1f3d98). The [scope assessment](reference-release-assessment.json) identifies the independent report, exact source, reused core review and accepted limitations.
+The API and reference publisher use [ea60511243d7478572bee344a00a52ff4e9b01b1](https://github.com/contractclaus/claus-network/commit/ea60511243d7478572bee344a00a52ff4e9b01b1); unchanged worker roles retain their previously verified releases. Exact role pins are included in the [live evidence](reference-phase3.json). The [independent review assessment](reference-phase3-assessment.json) preserves the original review jobs, the gas-limit and decision-recovery corrections, and every finding disposition. Relevant API, scheduler, recovery and real local-EVM checks passed; the live receipts above establish the released paths. Unchanged earlier checks were reused.
 
-The preceding 0.12.5 release gate passed 423 checks, with 10 optional environment-dependent skips and no failures. The 0.12.8 fair queue correction passed its focused checks. The final 0.12.9 verification correction passed 51 focused checks, with one optional external-PostgreSQL case skipped. Unchanged evidence is reused rather than rerun. Focused recovery checks and real local Ethereum/Sepolia flows supplement that gate; the live references above establish the actual released paths. The 0.12.5 Sepolia integration covers both unchanged-version cancellation and superseded approval. Its chain-1 integration covers supersession; the earlier 0.12.4 chain-1 cancellation check is reused because that branch is unchanged. The combined chain-1 fixture retains the production decision cap. These checks do not claim universal correctness or unlimited capacity.
+Remaining recovery and timing findings are accepted within the [documented operating boundaries](signal-operating-boundaries.md). The gas correction also retains explicit [output, fee and operator-budget limits](signals.md#time-and-authority-boundaries); the assessment records every finding and its disposition. A finalized record proves acceptance by its Store, not the truth of external data. This is not a financial oracle or a guarantee that arbitrary project code is safe.
 
-The final independent report records three low-severity findings and one informational finding, accepted for this bounded release. Explorer refusals can delay source verification for up to an hour per check, and pending provider-specific status fields can be inconsistent; only aggregate verified state with exact evidence releases a job. The [verification behavior](testnet.md) documents the retry exceptions and the full [assessment](reference-release-assessment.json) retains every finding.
+The [agent transport correction](agent-review-transport.patch) uses the existing ten-minute provider window for full-code review. Its caller remains bounded and its 2-USDC quote ceiling, model, exact review input, decision validation and no-duplicate recovery are unchanged. [Deployed agent evidence](reference-phase3-agent.json) and [transport checks](reference-phase3-transport.json) are separate from the contract and API source pins. The network review does not claim to be a complete independent audit of the agent or payment service.
 
-Recovery identifies the exact approval behind a finalized project version transition. A different approval yields `approval_superseded`; missing history remains retryable without skipping a cursor. Signing hosts require explicitly configured historical RPC access. [Operating requirements](operations.md) include original-transaction reconciliation, finite allowances and revocation preservation.
+The [status correction](agent-review-status.patch) prevents a negative status lookup from racing initial payment admission. Normal completion is saved by its original POST; recovery waits through the existing 800-second delivery window before querying an ID that may be fenced as absent. Streamed relay errors remain unresolved until their original payment status is reconciled. [The two reproduced failures and focused checks](reference-phase3-status-correction.json) cover those paths. Failed earlier requests remain failed in the evidence; no model decision or payment is invented for them.
 
-## Operating limits
+The [shared-input correction](agent-review-shared-input.patch) sends identical Store and Factory compiler input once, with a fixed explicit reference. The complete original evidence and its hashes remain the approval input. [Lossless reconstruction checks](reference-phase3-shared-input.json) verify the representation. Long internal model reviews use the [bounded prepaid payment adapter](review-credit-routing.md); existing requests stay on their original payment route. [Deployment and checks](reference-phase3-credit-routing.json) bind the released source. Explicit one-day operator recovery allocations retain all prior attempts and the separate model budget; they do not grant automatic approval or unlimited retries.
 
-Review sponsorship starts from 4 IMD, with at most 0.5 IMD per admitted review. Current remaining coverage is authoritative; registration does not guarantee a subsidy. The Sepolia allocation is 0.003 test ETH. The initial Ethereum package caps total new exposure at 0.02 ETH, including funding costs and bootstrap; its operating share is 0.015 ETH across at most eight projects. Mainnet operating ceilings are 0.001 ETH per transaction and 0.002 ETH per project. Reference transactions consume these same allocations. There is no automatic refill.
+Public data projects currently have at most 64 accepted free service orders per day. External publishers pay their own transaction gas. The Mainnet reference has two acceptance writes and at most 166 hourly production writes, ending 2026-10-20T00:46:01.737Z, with no automatic refill. The new Mainnet intake allocation is at most 0.003 ETH overall, 0.0006 ETH per project and 0.0003 ETH per transaction, with the same end date. These are ceilings, not observed costs.
 
-An exhausted or expired allowance stops new funded work. It does not erase charges, unresolved reservations, signed transactions or revocations. Existing onchain state remains; reads and reconciliation continue. The operator can update admission through documented owner-only policy operations. Zero upgrade delay is distinct from Ethereum finality and the separate recovery-owner delay.
+Existing public-review and Sepolia allowances retain their original end of 2026-10-19T19:06:51.287Z; the readonly Mainnet allowance retains 2026-10-19T18:30:01.756Z. Consumed amounts and unresolved holds are not reset. Current capabilities and accounting determine whether new work is admitted. Expiry stops new sponsored effects; reading, export, revocation and reconciliation remain available.
+
+The automatic data pipeline does not consume model credit. New contract reviews separately require available prepaid model credit, an admissible quote and review capacity. These balances are finite and are not refilled automatically; deployed review endpoints do not promise immediate admission.
+
+Token launches, public inference, holder credits, public wallets and customer custody remain unavailable. Existing CLAUS economics, Club, staking and NFT rights are unchanged.

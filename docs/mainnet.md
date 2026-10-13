@@ -1,8 +1,8 @@
-# Ethereum read-only profile
+# Ethereum contract profiles
 
-API 0.12.9 supports the Ethereum readonly profile within the owner-authorized finite operating allocation. The [deployment](mainnet-deployment.json) and [completed reference](reference-mainnet-contract.json) record actual verification, Claus approval, execution and revocation. Check live `capabilities` and `/health` before use; new admission closes when its allowance expires or is exhausted.
+API 0.13.9 supports the Ethereum readonly and bounded signal profiles within the owner-authorized finite operating allocation. The [deployment](mainnet-deployment.json) and [completed reference](reference-mainnet-contract.json) record actual verification, Claus approval, execution and revocation. Check live `capabilities` and `/health` before use; new admission closes when its allowance expires or is exhausted.
 
-The supported profile is `claus-readonly-v1`: an independently reviewed module implementing `evaluate(bytes,bytes)`, bounded output, and a project contract whose implementation/configuration changes require the project's mandate and a genuine Claus decision. It accepts no deposits or arbitrary value transfers. Tokens, wallets, vaults and contract intake on Mainnet are not enabled by this release.
+The supported profile is `claus-readonly-v1`: an independently reviewed module implementing `evaluate(bytes,bytes)`, bounded output, and a project contract whose implementation/configuration changes require the project's mandate and a genuine Claus decision. It accepts no deposits or arbitrary value transfers. The [signal profile](signals.md) adds a canonical Store and bounded publisher grants around the reviewed evaluator. [Contract intake](contract-intake.md) accepts supported configuration proposals on Mainnet. [Phase 3 evidence](reference-phase3.json) records the actual new flows. Tokens, wallets and vaults are not enabled by this release.
 
 ## Clients
 
@@ -14,7 +14,9 @@ The [source-verification limits](testnet.md) also apply on Ethereum. An unrecogn
 
 Deployment records retain the original audit source IDs. Their `publicSource` field links to the current Claus repository revision, with byte-identical compiler inputs checked against the deployed build. Repository history changes do not rewrite the original review or chain evidence.
 
-## Recorded operator release procedure
+## Historical readonly operator release procedure
+
+The following records the original Phase 2 deployment. Phase 3 adds the [verified signal and intake contracts](https://claus.si/docs/contracts/SIGNAL_DEPLOYMENTS.json), separate bounded allocations and [signal review context](../integration/agent-signal-review.patch); it preserves those original executors and budgets.
 
 The exact local release plan pins the public runtime commit, reviewed contract commit/build, constructor data, expected deployment address, roles and finite budgets. `integration/mainnet-release.mjs` supplies the guarded deployment and capability staging steps. Neither is exposed to clients. An owner approval must match the plan hash and an independent assessment must match its source/build and chain.
 

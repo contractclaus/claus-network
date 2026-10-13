@@ -11,7 +11,7 @@ State transitions are short database transactions. Provider calls and compilatio
 - Cancel queued work through the job endpoint. A marked external effect requires reconciliation instead of deleting its record.
 - If a token is lost or its response was interrupted, recover with owner authentication and revoke the affected mandate or credential.
 - A temporary graph failure does not withdraw a project. Publication state comes from the registry.
-- In the 0.12.4 source candidate (not yet deployed), a changed block hash in finalized event recovery blocks the affected registration or execution with `recovery_block_changed`. Its cursor, signed transaction and accounting remain intact for operator investigation. This is an explicit stop, not a refund or permission to resend under a new identity.
+- A changed block hash in finalized event recovery blocks the affected registration or execution with `recovery_block_changed`. Its cursor, signed transaction and accounting remain intact for operator investigation. This is an explicit stop, not a refund or permission to resend under a new identity.
 
 Initial rate limits are separate from any future financial allowance. Authentication accepts at most 30 requests per peer per five minutes and 200 globally. Other admitted API requests accept at most 300 per peer and 3,000 globally per five minutes. MCP transport and tool admission both count. Errors are explicit; clients should back off.
 
@@ -76,7 +76,7 @@ Publish compatible workers before enabling a new admission policy. Verify each u
 
 `review_admission_*` manages a separate finite, expiring sponsorship policy. It requires both available deposited IMD and per-owner/project/global admission. Its lifetime exposure counts reserved or settled maximum cost; only provably unsent cancellations return their share. A new policy version never resets historical use. No policy call deposits money or increases a wallet allowance.
 
-`chain_admission_*` manages a separate finite, expiring readonly profile. The default is Sepolia; the prepared Mainnet profile uses chainId 1 and a separate policy and ledger. It pins executor code, target build and independently reviewed evidence plus the operator’s explicit public-scope assessment. Global/project gas reservations and receipts survive expiry and policy changes. Expiry blocks new spending, while already submitted transactions remain reconcilable. All signing workers must run the compatible code before this policy is enabled. Mainnet, customer custody, inference and token launches remain separate gates.
+`chain_admission_*` manages a separate finite, expiring readonly profile. The default is Sepolia; the active Mainnet profile uses chainId 1 and a separate policy and ledger. It pins executor code, target build and independently reviewed evidence plus the operator’s explicit public-scope assessment. Global/project gas reservations and receipts survive expiry and policy changes. Expiry blocks new spending, while already submitted transactions remain reconcilable. All signing workers must run the compatible code before this policy is enabled. Mainnet, customer custody, inference and token launches remain separate gates.
 
 Pilot `review_pilot_set` accepts optional `perProjectDay` and `globalDay` limits (defaults 2 and 8). Only the network owner may set them; quota changes never clear historical counts or create credit. Public sponsorship uses separate admission counters, so earlier internal pilots do not consume a newly authorized public allocation. Public daily, active-work and lifetime bounds remain independently enforced.
 
@@ -119,7 +119,7 @@ The registration scan intentionally retains its module-based lower bound, includ
 
 ## Approval recovery in candidate 0.12.5
 
-Execution recovery reads the exact finalized project version transition using `execution:v3:<proposalId>`. Earlier `execution:v2` and original execution cursor rows are retained as historical journals and are not the active cursor for this version. A transition belonging to a different approval closes the pending proposal as `approval_superseded`; it cannot be represented as that proposal's execution. Missing transition logs leave the original job retryable without advancing its history cursor. An unchanged version with a consumed nonce remains `approval_cancelled`. This behavior is not yet deployed. The signing intake host, as well as the chain hosts, requires an explicit HTTPS historical RPC configuration.
+Execution recovery reads the exact finalized project version transition using `execution:v3:<proposalId>`. Earlier `execution:v2` and original execution cursor rows are retained as historical journals and are not the active cursor for this version. A transition belonging to a different approval closes the pending proposal as `approval_superseded`; it cannot be represented as that proposal's execution. Missing transition logs leave the original job retryable without advancing its history cursor. An unchanged version with a consumed nonce remains `approval_cancelled`. This recovery behavior is deployed. The signing intake host, as well as the chain hosts, requires an explicit HTTPS historical RPC configuration.
 
 ## Bounded decision recovery allocation
 

@@ -1,0 +1,235 @@
+{
+  "at": "2026-10-13T18:39:05.932Z",
+  "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+  "mainnetCallback": true,
+  "actualClausUpgrade": true,
+  "revocations": true,
+  "normalAutomaticRun": true,
+  "publicClients": true,
+  "publicDecisionEvidence": {
+    "at": "2026-10-13T17:35:57.159Z",
+    "published": [
+      {
+        "chainId": 1,
+        "projectId": "prj_5d89e95c-f729-446b-a227-78ead03a9877",
+        "proposalId": "sha256:eca571980e4661a237b3e966cae8f3778a2efcaae6ca60acca44bfbb88e2d23a",
+        "caseId": "sha256:d9ff424f80ebd74e2083f179ad67ca41bf2a67ffe7406e29b6b73137f45b8398",
+        "url": "https://claus.si/p/network-pulse",
+        "publicDecisionAndExecution": true
+      },
+      {
+        "chainId": 11155111,
+        "projectId": "prj_51fcfa1f-21a6-4d48-927e-a399d4e04f56",
+        "proposalId": "sha256:92da251d5d7166e8eaad58c705f554a8cbd9d622d2d4b833c07746a600771626",
+        "caseId": "sha256:a9a1aa8a35de0e0096d27480590bfb397751ef054de98fcfd7be77b014a487e8",
+        "url": "https://claus.si/p/network-pulse-sepolia",
+        "publicDecisionAndExecution": true
+      }
+    ]
+  },
+  "references": [
+    {
+      "chainId": 1,
+      "projectId": "prj_5d89e95c-f729-446b-a227-78ead03a9877",
+      "url": "https://claus.si/p/network-pulse",
+      "roles": {
+        "observer": {
+          "projectId": "prj_c7420942-0c99-4555-8ff8-57e904ad13ee",
+          "serviceId": "sha256:22fbf821df45940d9c8069b0eebff0a35a43aed35d9856efddacd6758046afaf"
+        },
+        "evaluator": {
+          "projectId": "prj_686ef53c-093c-496b-8071-43048b2b6b44",
+          "serviceId": "sha256:d9e4bd712e6b652b0fdf4cac71617df0157e0b486bc9397305843ac086bca2c7"
+        },
+        "consumer": {
+          "projectId": "prj_5d89e95c-f729-446b-a227-78ead03a9877",
+          "serviceId": "sha256:fa5eb4182c075b9a7e075ea88353ef808e9d255c065c9028588be1369d7fe924"
+        }
+      },
+      "beforeTransaction": "0x93da71a2a63d5b8016b3b3449c4e3c85cd5d8f751e30e9f51ac68b6a6a04d415",
+      "afterTransaction": "0x85ba4cd3dfa4f2f178e3bec9110211171cf9fdb2f465c085d568c22390761dcd",
+      "revokedGrant": "0x61aad4cc4ee0ddb4747a7cab49d666528fc9db5381f4a667825d11789d72f753",
+      "client": {
+        "at": "2026-10-13T12:07:01.293Z",
+        "projectId": "prj_5d89e95c-f729-446b-a227-78ead03a9877",
+        "chainId": 1,
+        "apiVersion": "0.13.5",
+        "toolDiscovery": 118,
+        "sharedSchemas": true,
+        "mcpWrite": "signal_publish",
+        "mcpRead": "signal_latest",
+        "sdkRead": true,
+        "freshCliRead": true,
+        "finalized": true,
+        "recordSequence": "1",
+        "sourceHash": "0xf13ab37f38b1a13d099e0959063539103ac6d9523a7b5ddf2990bbf124288f39",
+        "url": "https://claus.si/p/network-pulse"
+      }
+    },
+    {
+      "chainId": 11155111,
+      "projectId": "prj_51fcfa1f-21a6-4d48-927e-a399d4e04f56",
+      "url": "https://claus.si/p/network-pulse-sepolia",
+      "roles": {
+        "observer": {
+          "projectId": "prj_c58f8e93-01f0-4e56-84e9-d45d0d15b87f",
+          "serviceId": "sha256:ceda9d15eddb707f98cd1010fc962ea5a0f830686ac37af8f5dc9fae71fc68ed"
+        },
+        "evaluator": {
+          "projectId": "prj_3a061980-cdcc-4e18-8321-9cff96c3f11a",
+          "serviceId": "sha256:3708617b6c04539278deb38f259d4b6d94efbd2f5e08ef7bf4d7eab849a8403c"
+        },
+        "consumer": {
+          "projectId": "prj_51fcfa1f-21a6-4d48-927e-a399d4e04f56",
+          "serviceId": "sha256:3b5fa17f8026daffcfbfef488c4ee0c1e155e4d5c76b27949dc9ec460fba5ee5"
+        }
+      },
+      "beforeTransaction": "0x6fbf657898d9f5c18e724c5bf30ca35de0364ace0636bb44f788604d61c466ca",
+      "afterTransaction": "0x8c72362f41f3df2fb953268be6fddb928b0fcd7d646894cc6e9f157f3ae9b5dc",
+      "revokedGrant": "0x74c1d43ab8bd180066826b97f4de897881fe832c975c98cfd626e87a15f9ff14",
+      "client": {
+        "at": "2026-10-13T12:07:07.213Z",
+        "projectId": "prj_51fcfa1f-21a6-4d48-927e-a399d4e04f56",
+        "chainId": 11155111,
+        "apiVersion": "0.13.5",
+        "toolDiscovery": 118,
+        "sharedSchemas": true,
+        "mcpWrite": "signal_publish",
+        "mcpRead": "signal_latest",
+        "sdkRead": true,
+        "freshCliRead": true,
+        "finalized": true,
+        "recordSequence": "1",
+        "sourceHash": "0xff763b68cc9fb9181a285d9aa452e81158a650f4907f56d7bfee891b0b0beb72",
+        "url": "https://claus.si/p/network-pulse-sepolia"
+      }
+    }
+  ],
+  "mainnetRequest": {
+    "id": "sha256:d8e2c979af774b5092c98c066a862697f3cec031993e29ce1afaba00d774a7a4",
+    "transactionHash": "0x82b202f3da8e620164438cc4c2d030a77a23a11078d6b72a2bcf2e9215dbebca",
+    "proposalId": "sha256:eca571980e4661a237b3e966cae8f3778a2efcaae6ca60acca44bfbb88e2d23a",
+    "executionTransaction": "0x12082c839a983f9ebafdcce66479989914262b3be794b280e43f69ab7bbfada7",
+    "bindingId": "sha256:08568795f5bc788a180840963af8cbde43167712cc27d5ca55442974cf0eb275",
+    "revokedAt": 1791912924461,
+    "priorFailedAttempt": {
+      "requestId": "sha256:388d94fabb7ebaa636809d0b68dc8b275cef379561d61851c9e5a89c26aa3dcc",
+      "transactionHash": "0x9f8a75946d99adfc39d294f59ca53c0bd5a23120c0dec48f0312a5dd06e60d16",
+      "proposalId": "sha256:de7cacf9ebba9b03fc9d673409d075be3502aa13cd3e2b8e6714db62cfd5c0e9",
+      "state": "blocked",
+      "bindingRevokedAt": 1791909387234,
+      "decision": "No valid model decision; the original delivery and payment status are retained separately, including unresolved payment holds. No approval or execution."
+    }
+  },
+  "automaticRun": {
+    "jobId": "sha256:cc37e611155214cc4b6de504b1a9b682f4ec6e77b2283d927a912eb73dba5f55",
+    "runId": "prj_5d89e95c-f729-446b-a227-78ead03a9877:0",
+    "completedAt": 1791916669162,
+    "transactionHash": "0xe4db27203e9f72cdaa86bf177a14293d675a359e2feedb0ee467363717dc3abe",
+    "operationId": "sha256:042d619c43818e50f10ed337e884f1176fc6610b84c003ae5150d38a1b049b47",
+    "orders": [
+      {
+        "role": "observer",
+        "id": "sha256:38bcec391a88b50348d121564dcf198a102705f0841e65e9f42462ae1e3cf02a",
+        "providerProjectId": "prj_c7420942-0c99-4555-8ff8-57e904ad13ee",
+        "outputHash": "sha256:386cd7db8948444c778b3f4ceb8db1f1cfb904e8639e14008784d38a1808af3e"
+      },
+      {
+        "role": "evaluator",
+        "id": "sha256:e5a9317427ba2e03df56d3e120a2de789264b6fc693c2d349430e8cc37ac2f42",
+        "providerProjectId": "prj_686ef53c-093c-496b-8071-43048b2b6b44",
+        "outputHash": "sha256:fac18590daf5691a27cbbea8494737cbdd5f649ac154b6536326da914155cb02"
+      }
+    ]
+  },
+  "health": [
+    {
+      "role": "observer",
+      "observedAt": 1791916725760,
+      "state": "ready",
+      "release": "efa994265919d61e90ba8a06e2758831d450fb412ffefeccffc2e14cbba2e6cb"
+    },
+    {
+      "role": "evaluator",
+      "observedAt": 1791916715651,
+      "state": "ready",
+      "release": "efa994265919d61e90ba8a06e2758831d450fb412ffefeccffc2e14cbba2e6cb"
+    },
+    {
+      "role": "consumer",
+      "observedAt": 1791916728031,
+      "state": "ready",
+      "release": "efa994265919d61e90ba8a06e2758831d450fb412ffefeccffc2e14cbba2e6cb"
+    }
+  ],
+  "runtimeRoles": {
+    "api": {
+      "deployment": "dpl_4QwLAagFw1133S1VDkKqn3ZJ8fFb",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "release": "f79b5791055197d4c54ff99180892496d3f4bfe5a4d31f62c8857d0c8a61d094"
+    },
+    "review": {
+      "deployment": "dpl_DQispehaHWbUrRsFuGKwoC9D5rZw",
+      "sourceCommit": "e2f7c02664b111159e4e4b63d8d5a2146558e144",
+      "release": "5413415f34470457b9ad39bbc960aa4f963acf8605109a9788047d874d5df7ad"
+    },
+    "controller": {
+      "deployment": "dpl_7BGq8autFX7Ps5cVQAW9MzPTrzqG",
+      "sourceCommit": "7661efa9ad06c5b740ad364e37a244d00356c59a",
+      "release": "a63f7921fbb050474c446d0a6d326958a9eab882eeefa19e36eba6f737d5590b"
+    },
+    "executor": {
+      "deployment": "dpl_7gif1b9sTxeRdPUzt9fYGaDmRqdV",
+      "sourceCommit": "7661efa9ad06c5b740ad364e37a244d00356c59a",
+      "release": "a63f7921fbb050474c446d0a6d326958a9eab882eeefa19e36eba6f737d5590b"
+    },
+    "services": {
+      "deployment": "dpl_JGPHtJz9Sao21Ycep6nU2MYqmPVz",
+      "sourceCommit": "e2f7c02664b111159e4e4b63d8d5a2146558e144",
+      "release": "84a237c4da9eb431e26d9a940d5b3bfbf9a06411e6f46da66d7065e32afc22c2"
+    },
+    "portable": {
+      "deployment": "dpl_7dDSKJqqQFRHtXirGoqgusCRgN6W",
+      "sourceCommit": "e2f7c02664b111159e4e4b63d8d5a2146558e144",
+      "release": "2a4ca36e4899a63fb80859ab9d5caf19f1ab816fc84b6515694176e77856ec30"
+    },
+    "portable-services": {
+      "deployment": "dpl_6vjRRnAKQWJuiHBZ5nb5813Qfewy",
+      "sourceCommit": "e2f7c02664b111159e4e4b63d8d5a2146558e144",
+      "release": "84a237c4da9eb431e26d9a940d5b3bfbf9a06411e6f46da66d7065e32afc22c2"
+    },
+    "intake": {
+      "deployment": "dpl_23aTnJRJdJfCKDjJax5iNNGpvQXo",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "release": "5f51ae8f630a8a25b60d9a59e95c6fec85d06529a0c808e58ecaa353bbee661c"
+    },
+    "intake-mainnet": {
+      "deployment": "dpl_NzHZ7qpujdgGxqTur3jwecbSgMXA",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "release": "29b7753b48401e4d0951e5546653377c574ea5bf483b1df9c87a442bc440f1d1"
+    },
+    "pulse-observer": {
+      "deployment": "dpl_7DMfDjyPf2i4CgprdMtJA1bi9hLB",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "release": "efa994265919d61e90ba8a06e2758831d450fb412ffefeccffc2e14cbba2e6cb"
+    },
+    "pulse-evaluator": {
+      "deployment": "dpl_CwLZCvS8RduYPzso5WfrxTskpQGf",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "release": "efa994265919d61e90ba8a06e2758831d450fb412ffefeccffc2e14cbba2e6cb"
+    },
+    "pulse-consumer": {
+      "deployment": "dpl_7Dt1V71xpini4gQ6VRBnuJS4C7kb",
+      "sourceCommit": "ea60511243d7478572bee344a00a52ff4e9b01b1",
+      "release": "efa994265919d61e90ba8a06e2758831d450fb412ffefeccffc2e14cbba2e6cb"
+    }
+  },
+  "budget": {
+    "id": "pulse-1-operating-publisher-v1",
+    "spent": "15085636488153",
+    "reserved": "0",
+    "maximum": "9200000000000000",
+    "expiresAt": 1792457161737
+  },
+  "limitations": "Claus-operated finite reference; accepted review limitations in docs/signal-operating-boundaries.md; no independent-customer claim."
+}
