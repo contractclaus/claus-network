@@ -26,7 +26,7 @@ function actualCost(header,result) {
 // This lane consumes the store's existing finite escrow. An unsigned quote is
 // only an estimate/filter, not a signed spending ceiling. No x402 signing,
 // top-up, fallback, retry or provider recovery request belongs here.
-export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenceFetch,store=creditStore,forceStream,transportProfile}) {
+export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenceFetch,store=creditStore,forceStream,transportProfile,allowSmallerOutput,allowCapacityDeferral=false}) {
   return async function creditCompletion(c) {
     const id=c.req.header('idempotency-key');
     if(!validId(id))return c.json({error:'stable_request_id_required'},400);
@@ -64,7 +64,9 @@ export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenc
     const timing=transport??completionTiming(false,'research'),started=Date.now(),deadline=started+timing.activeMs;
     const reserved=await store.reserveCredit(db,{id,hash,maximum,activeMs:timing.activeMs,binding:{address:pool.deposit_address,keyId:pool.key_id,transaction:pool.deposit_tx,
       ...(transport?{transport:{profile:transport.profile,endpoint:target,provider:'openrouter',model:request.model,effort:transport.request.reasoning_effort}}:{})}});
-    if(!reserved.length)return c.json({error:'request_already_reserved'},409);
+    if(!reserved.length)return allowCapacityDeferral
+      ?c.json({id,error:'credit_capacity_wait',admission:'deferred',payment:'not_signed'},503)
+      :c.json({error:'request_already_reserved'},409);
     let submitting=false,providerRequestId=null,httpStatus=null,providerSignal=null;
     let providerResponse=null,terminalStage=null;
     const streamed=transport?transport.streamed:forceStream??env.SURPLUS_CREDIT_STREAM==='true';
@@ -79,7 +81,7 @@ export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenc
       // The caller's identity/hash remains unchanged. Only this operator-owned
       // credit transport changes; the quote and durable wire hash use the same
       // exact streamed request. x402 and old saved requests are unaffected.
-      const quoted=await quoteWithinBudget(transport?.request??(streamed?{...request,stream:true}:request),{maximum,schemes:['upto'],endpoint:target,allowSmallerOutput:!transport,fetchQuote:async candidate=>{
+      const quoted=await quoteWithinBudget(transport?.request??(streamed?{...request,stream:true}:request),{maximum,schemes:['upto'],endpoint:target,allowSmallerOutput:allowSmallerOutput??!transport,fetchQuote:async candidate=>{
         const response=await fetcher(target,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(candidate),signal:signal(20000)});
         if(response.status!==402)throw Error('quote_rejected');
         return response.json();

@@ -33,8 +33,8 @@ export async function setupNetworkReviews(db:Query=sql()) {
   state text NOT NULL CHECK(state IN ('queued','running','uncertain','completed','failed','blocked')),
   result jsonb,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),
   available_at timestamptz NOT NULL DEFAULT now(),started_at timestamptz)`;
- // One active decision in the initial profile. An uncertain purchase retains
- // its slot; a timeout cannot quietly become a fresh paid model request.
+ // One active decision. An uncertain purchase retains its slot until the
+ // payer confirms execution ended; its monetary hold and ID remain intact.
  await db`CREATE UNIQUE INDEX IF NOT EXISTS claus_network_review_active ON claus_network_reviews ((true)) WHERE state IN ('queued','running','uncertain')`;
 }
 async function expireQueued(db:Query) {
@@ -45,9 +45,10 @@ async function expireQueued(db:Query) {
 }
 // Operator-configured recovery applies on one UTC day only. Failed attempts
 // remain counted, the active-case lock and the payer ceiling stay unchanged.
-export function networkReviewDailyLimit(now=Date.now(),env=process.env) {
- const n=Number(env.NETWORK_REVIEW_RECOVERY_LIMIT);
- return env.NETWORK_REVIEW_RECOVERY_DAY===new Date(now).toISOString().slice(0,10)&&
+export function networkReviewDailyLimit(now=Date.now(),env=process.env,projectId?:string) {
+ const n=Number(env.NETWORK_REVIEW_RECOVERY_LIMIT),projects=(env.NETWORK_REVIEW_RECOVERY_PROJECTS??'').split(',');
+ if(projects.length>2||!projects.every(p=>/^prj_[a-f0-9-]{36}$/.test(p))||!projectId||!projects.includes(projectId))return 8;
+ return /^(8|9|1[0-6])$/.test(env.NETWORK_REVIEW_RECOVERY_LIMIT??'')&&env.NETWORK_REVIEW_RECOVERY_DAY===new Date(now).toISOString().slice(0,10)&&
   Number.isInteger(n)&&n>=8&&n<=16?n:8;
 }
 export async function submitNetworkReview(input:any,db:Query=sql(),readConfig=configuration) {
@@ -62,7 +63,7 @@ export async function submitNetworkReview(input:any,db:Query=sql(),readConfig=co
  try{
   const rows=await db`INSERT INTO claus_network_reviews(id,input_hash,input,request,configuration_revision,configuration_hash,state)
     SELECT ${id},${inputHash},${JSON.stringify(input)}::jsonb,${JSON.stringify(request)}::jsonb,${config.revision},${config.hash},'queued'
-    WHERE (SELECT count(*) FROM claus_network_reviews WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')<${networkReviewDailyLimit()}
+    WHERE (SELECT count(*) FROM claus_network_reviews WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')<${networkReviewDailyLimit(Date.now(),process.env,input.projectId)}
      AND NOT EXISTS(SELECT 1 FROM claus_network_review_revocations WHERE id=${id})
     ON CONFLICT(id) DO NOTHING RETURNING *`;
   if(rows.length)return visible(rows[0]);
@@ -101,7 +102,7 @@ export async function runNetworkReview(id:string,ports:{db?:Query;readConfig?:ty
  // the existing payer admits this exact request ceiling.
  let admitted=false;
  try{const response=await fetcher(origin+'/api/admission/'+encodeURIComponent(effectId)+'?maximumMicroUsdc=2000000',{headers,redirect:'error',signal:AbortSignal.timeout(15000)});
-  if(response.ok){const status=await json(response);admitted=status.id===effectId&&status.ready===true&&status.maximumMicroUsdc==='2000000';}}
+  if(response.ok){const status=await json(response);admitted=status.id===effectId&&status.ready===true&&status.maximumMicroUsdc==='2000000'&&status.rail==='surplus_credit';}}
  catch{}
  if(!admitted){await db`UPDATE claus_network_reviews SET available_at=now()+interval '60 seconds' WHERE id=${id} AND state='queued'`;return visible(await rowFor(id,db));}
  const claimed=await db`UPDATE claus_network_reviews SET state='running',started_at=now(),updated_at=now() WHERE id=${id} AND state='queued'
@@ -113,8 +114,15 @@ export async function runNetworkReview(id:string,ports:{db?:Query;readConfig?:ty
   // changes only delivery time, never the saved request, price cap or retry ID.
   const response=await fetcher(origin+'/api/completion',{method:'POST',headers:{...headers,'Idempotency-Key':effectId,'X-Max-Quote-Micro-USDC':'2000000','X-Inference-Purpose':'research'},
    body:JSON.stringify(row.request),redirect:'error',signal:AbortSignal.timeout(650000)});
-  if(!response.ok)throw Error('network_review_inference_uncertain');
   const body=await json(response);
+  // Only the trusted payer's explicit pre-reservation deferral can return
+  // this same ID to the queue. Lost acknowledgements are never retried.
+  if(body?.id===effectId&&body?.admission==='deferred'&&body?.payment==='not_signed'&&
+    ['credit_busy','credit_capacity_wait'].includes(body?.error)){
+   await db`UPDATE claus_network_reviews SET state='queued',started_at=NULL,available_at=now()+interval '60 seconds',updated_at=now() WHERE id=${id} AND state='running'`;
+   return visible(await rowFor(id,db));
+  }
+  if(!response.ok)throw Error('network_review_inference_uncertain');
   // A streamed relay response commits HTTP 200 before a later failure. That
   // envelope is not a model result; reconcile its original payment ID.
   if(body?.error)throw Error('network_review_inference_uncertain');
@@ -142,6 +150,11 @@ export async function networkReviewStatus(id:string,ports:{db?:Query;fetcher?:ty
      responseStatus:b.responseStatus,finishReason:b.choices?.[0]?.finish_reason},db);
    }else if(body.status==='failed'&&['not_signed','not_settled','settled'].includes(body.outcome?.payment)){
     await db`UPDATE claus_network_reviews SET state='failed',result=${JSON.stringify({error:'inference_failed',outcome:body.outcome,accounting:body.accounting??null})}::jsonb,updated_at=now() WHERE id=${id} AND state IN ('running','uncertain')`;
+   }else if(body.id===effectId&&body.status==='uncertain'&&body.rail==='surplus_credit'&&body.execution?.active===false&&
+     Number.isFinite(Date.parse(body.execution.activeUntil))&&Date.parse(body.execution.activeUntil)<=Date.now()){
+    // Delivery ended, not payment reconciliation. Preserve the payer's hold
+    // and terminally fail this review; never approve or replay it.
+    await db`UPDATE claus_network_reviews SET state='failed',result=${JSON.stringify({error:'inference_delivery_unknown',paymentHoldRetained:true,inferenceId:effectId,outcome:body.outcome??null})}::jsonb,updated_at=now() WHERE id=${id} AND state IN ('running','uncertain')`;
    }
   }else if(response.status===404&&Date.now()-Date.parse(row.started_at)>800000&&(await json(response)).error==='not_found'){
    // The fixed payer fences missing request IDs against subsequent admission.

@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-13T14:54:24.477768+00:00",
+  "originalJob": "5e2ee286-9298-4fa2-a0d0-5c4b387c7dc8",
+  "reviewedSource": "d4af978eb8d43895f7ae448bc1ea4f1fbef9922f",
+  "specialists": [
+    "audit_math",
+    "audit_permissions",
+    "audit_economics",
+    "audit_flow"
+  ],
+  "fixes": [
+    {
+      "finding": "Indefinite uncertain execution",
+      "resolution": "Payer reports original id/rail/activity deadline. After original 800-second window the agent fails an inactive uncertain credit delivery; no approval, replay or hold release."
+    },
+    {
+      "finding": "Rail-blind admission",
+      "resolution": "Fresh agent dispatch requires surplus_credit explicitly. Existing x402 attempts retain original reconciliation."
+    },
+    {
+      "finding": "Admission race",
+      "resolution": "Only exact-ID unsigned pre-reservation busy/capacity deferrals requeue the same agent row. No claim on that failed reservation and no second paid POST. Lost acknowledgement remains uncertain."
+    },
+    {
+      "finding": "Configured ceiling readiness",
+      "resolution": "Credit admission refuses a configured ceiling below 2000000; global invalid configuration continues to fail closed."
+    },
+    {
+      "finding": "Recovery scope and numeric encoding",
+      "resolution": "At most two explicit project IDs, exact UTC date, canonical decimal 8..16. All other projects remain at eight. No counters reset."
+    },
+    {
+      "finding": "Quote may trim evidence or output",
+      "resolution": "Native review lane disables quote adaptation. Unaffordable original requests fail unsigned."
+    },
+    {
+      "finding": "Stale operations/source statement and waiting rail label",
+      "resolution": "Docs name maximumGlobalDay and historical deployed manifest separately from ahead-of-live mirrors; configured waiting rail includes work candidates."
+    }
+  ],
+  "activated": false
+}
