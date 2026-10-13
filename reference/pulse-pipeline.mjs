@@ -26,7 +26,13 @@ export function createPulsePipeline({client,projectId,observerServiceId,evaluato
   if(order.state!=='delivered')return null;
   const output=await call('service_result',{orderId:order.id});requireThat(output.status==='ok'&&digest(output)===order.outputHash,'pulse_result_invalid');
   await call('service_accept_result',{orderId:order.id,outputHash:order.outputHash,accepted:true});
-  if(!step.expiresAt){step.expiresAt=Math.min(run.expiresAt,run.serviceExpiresAt);await checkpoint(run);}
+  // Fresh-work deadline and observation validity are distinct. An hourly run
+  // may publish a two-hour observation so finality does not create a gap.
+  if(!step.expiresAt){
+   const observedAt=output.observedAt??output.observation?.observedAt;
+   requireThat(Number.isSafeInteger(observedAt),'pulse_result_invalid');
+   step.expiresAt=Math.min((observedAt+run.rule.maximumAge)*1000,run.serviceExpiresAt);await checkpoint(run);
+  }
   const ref=await publicResult(order,step.expiresAt);
   step.output=output;step.ref=ref;await checkpoint(run);return step;
  }
@@ -59,12 +65,18 @@ export function createPulsePipeline({client,projectId,observerServiceId,evaluato
    requireThat(latest.finalized===true,'signal_not_finalized');
    const input={grantId,sequence:Number(latest.record.sequence)+1,expectedVersion:run.rule.version,
     observedAt:consumed.observation.observedAt,validUntil:Math.min(consumed.observation.observedAt+run.rule.maximumAge,
-      Math.floor(run.expiresAt/1000),Math.floor(run.serviceExpiresAt/1000)),sourceResult:evaluator.ref,data:consumed.onchainData,idempotencyKey:run.id};
+      Math.floor(run.serviceExpiresAt/1000)),sourceResult:evaluator.ref,data:consumed.onchainData,idempotencyKey:run.id};
    requireThat(input.validUntil>Math.floor(now()/1000)+900,'pulse_result_expiring');
    run.write={input};await checkpoint(run);
   }
   // With a lost prepare response, this exact saved body recovers the same ID.
-  run.write.operation=await call('signal_record_prepare',run.write.input);await checkpoint(run);
+  try { run.write.operation=await call('signal_record_prepare',run.write.input); }
+  catch(error) {
+   // This definitive pre-acceptance failure has no operation or signature.
+   // A lost response is not cleared and still reuses its exact original body.
+   if(error.code==='signal_stale_sequence'){delete run.write;await checkpoint(run);}
+   throw error;
+  }await checkpoint(run);
   return {...run,state:'waiting'};
  }};
 }

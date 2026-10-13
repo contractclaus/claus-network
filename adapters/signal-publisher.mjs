@@ -48,7 +48,7 @@ export function createSignalPublisher({store,client,signer,sealer,identity,servi
   requireThat(original?.kind==='record'&&original.projectId===budget.projectId&&digest(original.transaction)===digest(operation.transaction), 'signal_operation_mismatch');
   const input=original.input,sourceHash='0x'+digest(input.sourceResult).slice(7);
   const data=encodeFunctionData({abi:signalAbi,functionName:'publish',args:[input.grantId,input.sequence,input.expectedVersion,
-   input.observedAt,input.validUntil,sourceHash,input.data]});
+   input.observedAt,input.validUntil,sourceHash,input.data]}).toLowerCase();
   requireThat(input.grantId===budget.grantId&&original.transaction.chainId===budget.chainId&&original.transaction.from===budget.publisher&&
    original.transaction.to===budget.store&&original.transaction.value==='0'&&original.transaction.data===data,'signal_operation_mismatch');
   const id='signal-record:'+operation.id,authority={kind:'signal-record',operationId:operation.id,projectId:budget.projectId,

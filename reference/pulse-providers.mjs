@@ -61,7 +61,7 @@ export function createPulseProvider({role,chainId,primary,secondary,now=Date.now
 // retain their order identity; a lost lease waits for the same order to reopen.
 export function createPulseProviderWorker({client,projectId,serviceId,provider,now=Date.now}){
  return {async tick(){
-  let after='',delivered=0;
+  let after='',delivered=0,failed=0;
   for(let pages=0;pages<10;pages++){
    const page=await client.call('provider_orders',{projectId,...(after?{after}:{}),limit:100});
    for(const order of page.orders){
@@ -69,12 +69,15 @@ export function createPulseProviderWorker({client,projectId,serviceId,provider,n
     let claim;try{claim=await client.call('provider_claim',{projectId,orderId:order.id});}
     catch(error){if(error.code==='service_order_busy')continue;throw error;}
     if(claim.state!=='working')continue;
-    const output=await provider.execute(claim.input,{purpose:claim.purpose});
-    await client.call('provider_deliver',{projectId,orderId:order.id,lease:claim.lease,output});
-    if(++delivered===4)return {state:'ready',delivered};
+    try {
+     const output=await provider.execute(claim.input,{purpose:claim.purpose});
+     await client.call('provider_deliver',{projectId,orderId:order.id,lease:claim.lease,output});
+     delivered++;
+    } catch { failed++; /* Retain the original order; its lease/deadline handles retry. */ }
+    if(delivered===4||delivered+failed===8)return {state:failed?'degraded':'ready',delivered,failed};
    }
    if(!page.nextCursor)break;after=page.nextCursor;
   }
-  return {state:'ready',delivered};
+  return {state:failed?'degraded':'ready',delivered,failed};
  }};
 }

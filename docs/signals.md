@@ -40,7 +40,7 @@ A finalized record proves what this store accepted. It does not prove an externa
 
 ## Revoke and recover
 
-`signal_grant_revoke` records API revocation immediately and prepares the owner's onchain call. Sign and submit that call and observe finality. `signal_grant` reports the two states separately. API revocation cannot cancel an already-broadcast transaction or prevent a signer using its still-valid onchain grant directly. Only finalized onchain revocation removes that grant onchain.
+`signal_grant_revoke` records API revocation immediately and prepares the owner's onchain call. Sign and submit that call and observe finality. `signal_grant` reports the two states separately. API revocation cannot cancel an already-broadcast transaction or prevent a signer using its still-valid onchain grant directly. Only finalized onchain revocation removes that grant onchain. The owner can revoke a signed grant ID even before it is registered; registering it later cannot undo the revocation. Cancelling a nonce after registration reverts; revoke the grant ID instead.
 
 Preserve the original operation and transaction hash after transport errors. `signal_operation`, `signal_latest`, `signal_grant` and resource listing remain readable when admission expires; revocation stays reachable. A new credential or grant never silently restores revoked rights. Withdrawn public results stop fresh reuse; already-published onchain data cannot be erased.
 
@@ -54,3 +54,17 @@ Preserve the original operation and transaction hash after transport errors. `si
 | `public_result_unavailable` / `signal_source_changed` | Stop reuse; inspect the source's publication |
 | `signal_transaction_conflict` | Keep and reconcile the original hash |
 | `signal_not_enabled` | Read capabilities and expiry; reads and revocation remain available |
+
+## Record status
+
+The latest record is immutable history. The API reads the evaluator and grant at the same finalized block: `withdrawn` means its grant or project authority is revoked, suspended or changed; `superseded` means the evaluator has since changed version; `stale` means the observation expired. Only an authorized record matching the current evaluator version and validity window is `current`. A withdrawn or superseded record is retained for inspection, never represented as a new observation.
+
+Pulse runs hourly with a two-hour observation window. The run deadline limits new work; it does not shorten the observation's validity. Service publication, grant and observation expiry still bound publication. Interrupted broadcasts always reconcile their original transaction before new work.
+
+## Existing stores and recovery
+
+If a wallet replaces a creation transaction or the owner creates the store directly, call `signal_store_prepare` with a new recovery idempotency key. The API can adopt only the canonical, finalized factory store with exactly the admitted evaluator, feed and schema. A recovery returns `confirmed`, `recovered: true` and its finalized block evidence, without inventing a creation transaction hash. Any earlier uncertain transaction keeps its original hash and remains independently reconcilable. A canonical store missing from API evidence blocks evaluator approval until recovery supplies its consumer context.
+
+A project can select one consumer profile, signal or vault. Separate projects are required for different profiles. Revocations have separate daily limits from normal writes (128 unique grant IDs and 128 prepared revocation calls); direct owner revocation remains available onchain.
+
+An operator's unknown broadcast retains its budget and signer slot after expiry. They are released only by a canonical receipt, or by proof of a different finalized transaction from the same sender using the exact nonce. A higher account nonce or a missing receipt alone is insufficient. This recovery reads history and never creates a cancellation or replacement transaction.

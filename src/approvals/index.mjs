@@ -19,7 +19,8 @@ export function createApprovals({ store, identity, projects, reviews, deployment
   async function consumerMatches(value, reader) {
     const vault = (await reader.read('project-vaults', value.projectId))?.value;
     const consumer = (await readInput(value, reader)).evidence.chain.consumer;
-    const signal = (await reader.read('project-signals', value.projectId))?.value;
+    const signal = (await signalConsumer(value.projectId,reader))?.signal ??
+      (await reader.read('project-signals', value.projectId))?.value;
     if (signal || consumer?.profile === 'claus-signal-v1') {
       requireThat(!vault && signal?.state === 'verified' && consumer?.profile === 'claus-signal-v1' &&
         consumer.store.address.toLowerCase() === signal.address.toLowerCase() && consumer.store.codeHash === signal.codeHash &&

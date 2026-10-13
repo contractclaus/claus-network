@@ -24,7 +24,7 @@ export const grantTypes = { PublisherGrant: [
 const zero = value => /^0x0{40}$/i.test(value);
 const lower = value => value?.toLowerCase();
 const safe = value => JSON.parse(JSON.stringify(value, (_, v) => typeof v === 'bigint' ? v.toString() : v));
-const intent = (chainId, from, to, data) => ({ chainId, from: lower(from), to: lower(to), value: '0', data });
+const intent = (chainId, from, to, data) => ({ chainId, from: lower(from), to: lower(to), value: '0', data: data.toLowerCase() });
 
 // Read and exact-call preparation only. The owner/publisher signs locally;
 // this adapter never receives a private key or broadcasts a transaction.
@@ -69,22 +69,63 @@ export function createSignalRead({ client, chainId }) {
   async function grant(signal, id, blockNumber) {
     await correct();
     const value = safe(await read(signal.address, signalAbi, 'grant', [id], blockNumber));
-    requireThat(value?.terms && !zero(value.terms.publisher), 'signal_grant_not_found');
+    requireThat(value?.terms && (!zero(value.terms.publisher) || value.revoked), 'signal_grant_not_found');
     return { id, ...value };
   }
   return {
-    state, verifyStore: store, grant,
+    state, verifyStore: store,
+    async validateAdmission(config,factoryBuild) {
+      await factory(config);
+      const {validateSignalFactory}=await import('./signal-evidence.mjs');
+      validateSignalFactory({factoryBuild,factoryBuildHash:config.factoryArtifactHash,executor:config.executor,
+        factoryCode:await client.getCode({address:config.factory})});
+    },
+    async validateStoreBuild(config,signal,build,factoryBuild,blockNumber) {
+      const {validateSignalRuntime}=await import('./signal-evidence.mjs');
+      const [storeCode,factoryCode]=await Promise.all([signal.address,config.factory].map(address=>client.getCode({address,blockNumber:BigInt(blockNumber)})));
+      validateSignalRuntime({build,buildHash:config.storeArtifactHash,factoryBuild,factoryBuildHash:config.factoryArtifactHash,
+        executor:config.executor,storeCode,factoryCode});
+    },
+    async grant(signal,id) {
+      const block=await client.getBlock({blockTag:'finalized'});
+      const value=await grant(signal,id,block.number);
+      requireThat((await client.getBlock({blockNumber:block.number})).hash===block.hash,'evidence_block_changed');
+      return {...value,finalized:true,blockNumber:String(block.number),blockHash:block.hash};
+    },
+    async assertTrackedStore(config,binding,signal) {
+      await factory(config);
+      const existing=await read(config.factory,factoryAbi,'stores',[binding.projectKey]);
+      requireThat(zero(existing) ? !signal : signal?.state==='verified' && lower(existing)===lower(signal.address),
+        'signal_review_context_changed');
+    },
     async latest(signal) {
       await correct();
       const block = await client.getBlock({ blockTag: 'finalized' });
       requireThat(keccak256(await client.getCode({ address: signal.address, blockNumber: block.number })) === signal.codeHash, 'signal_store_mismatch');
-      const record = safe(await read(signal.address, signalAbi, 'latest', [], block.number));
+      const [record, project, pendingOwner, version] = await Promise.all([
+        read(signal.address, signalAbi, 'latest', [], block.number).then(safe),
+        read(signal.executor, executorAbi, 'projects', [signal.projectKey], block.number),
+        read(signal.executor, executorAbi, 'pendingProjectOwners', [signal.projectKey], block.number),
+        read(signal.evaluator, targetAbi, 'version', [], block.number)
+      ]);
+      const recordGrant = Number(record.sequence) > 0 ? await grant(signal, record.grantId, block.number) : null;
+      const authorizationActive = Boolean(project[7] && zero(pendingOwner) &&
+        lower(project[1]) === lower(signal.evaluator) && recordGrant && !recordGrant.revoked &&
+        Number(recordGrant.terms.authorityGeneration) === Number(project[6]));
       requireThat((await client.getBlock({ blockNumber: block.number })).hash === block.hash, 'evidence_block_changed');
-      return { record, blockNumber: block.number.toString(), blockHash: block.hash, blockTimestamp: Number(block.timestamp), finalized: true };
+      return { record, authorizationActive, currentVersion: Number(version),
+        blockNumber: block.number.toString(), blockHash: block.hash, blockTimestamp: Number(block.timestamp), finalized: true };
     },
     async prepareStore(config, binding) {
       await factory(config); const s = await state(binding); await eoa(s.owner);
-      requireThat(zero(await read(config.factory, factoryAbi, 'stores', [binding.projectKey])), 'signal_store_exists');
+      const existing=await read(config.factory,factoryAbi,'stores',[binding.projectKey]);
+      if(!zero(existing)) {
+        const block=await client.getBlock({blockTag:'finalized'});
+        requireThat(lower(await read(config.factory,factoryAbi,'stores',[binding.projectKey],block.number))===lower(existing), 'signal_store_not_finalized');
+        const signal=await store(config,binding,existing,block.number);
+        requireThat((await client.getBlock({blockNumber:block.number})).hash===block.hash,'evidence_block_changed');
+        return {recovered:true,signal,blockNumber:String(block.number),blockHash:block.hash,finalized:true};
+      }
       return { transaction: intent(chainId, s.owner, config.factory, encodeFunctionData({ abi: factoryAbi, functionName: 'create',
         args: [binding.projectKey, config.feedId, config.schemaHash] })) };
     },
@@ -125,7 +166,7 @@ export function createSignalRead({ client, chainId }) {
       return { transaction, publisher: transaction.from };
     },
     async prepareRevoke(signal, binding, grantId) {
-      const s = await state(binding, false); await grant(signal, grantId);
+      const s = await state(binding, false);
       return { transaction: intent(chainId, s.owner, signal.address, encodeFunctionData({ abi: signalAbi, functionName: 'revokeGrant', args: [grantId] })) };
     },
     async observe(action, hash) {
@@ -134,7 +175,7 @@ export function createSignalRead({ client, chainId }) {
       try { tx = await client.getTransaction({ hash }); receipt = await client.getTransactionReceipt({ hash }); }
       catch (error) { if (['TransactionNotFoundError','TransactionReceiptNotFoundError'].includes(error.name)) return { state: 'pending' }; throw error; }
       const expected = action.transaction;
-      requireThat(lower(tx.from) === expected.from && lower(tx.to) === expected.to && tx.input === expected.data &&
+      requireThat(lower(tx.from) === expected.from && lower(tx.to) === expected.to && lower(tx.input) === lower(expected.data) &&
         tx.value === 0n && Number(tx.chainId) === chainId && lower(receipt.from) === expected.from && lower(receipt.to) === expected.to,
       'signal_transaction_mismatch');
       const block = await client.getBlock({ blockNumber: receipt.blockNumber });
@@ -156,6 +197,9 @@ export function createSignalRouter({ sepolia, mainnet }) {
   const selected = chainId => { const value = chainId === 1 ? mainnet : chainId === 11155111 ? sepolia : null;
     requireThat(value, 'signal_chain_unavailable'); return value; };
   return {
+    validateAdmission: (c,b) => selected(c.chainId).validateAdmission(c,b),
+    validateStoreBuild: (c,s,b,f,n) => selected(c.chainId).validateStoreBuild(c,s,b,f,n),
+    assertTrackedStore: (c,b,s) => selected(b.chainId).assertTrackedStore(c,b,s),
     prepareStore: (c,b) => selected(b.chainId).prepareStore(c,b),
     prepareGrant: (s,b,t) => selected(b.chainId).prepareGrant(s,b,t),
     registerGrant: (s,b,p,sig) => selected(b.chainId).registerGrant(s,b,p,sig),

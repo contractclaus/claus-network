@@ -9,9 +9,11 @@ test('chain hosts require an explicit secure historical endpoint before connecti
   await assert.rejects(createChainWorker('executor', {}), { code: 'historical_rpc_required' });
   await assert.rejects(createChainWorker('controller', { CLAUS_SEPOLIA_RPC_URL: 'http://example.invalid' }),
     { code: 'historical_rpc_required' });
-  await assert.rejects(createHostedContractIntakeWorker({}), { code: 'historical_rpc_required' });
-  await assert.rejects(createHostedContractIntakeWorker({ CLAUS_SEPOLIA_RPC_URL: 'http://example.invalid' }),
-    { code: 'historical_rpc_required' });
+  await assert.rejects(createHostedContractIntakeWorker({}), { code: 'intake_host_unconfigured' });
+  const pin={chainId:11155111,inbox:'0x'+'11'.repeat(20),codeHash:'0x'+'11'.repeat(32),dispatcher:'0x'+'22'.repeat(20),
+    startBlock:1,reviewProjectId:'review',reviewCaseId:'case',reviewArtifactHash:'sha256:'+'a'.repeat(64)};
+  await assert.rejects(createHostedContractIntakeWorker({CLAUS_CONTRACT_INTAKE_PROFILE:JSON.stringify(pin),
+    CLAUS_CONTRACT_DISPATCH_BUDGET:'budget',CLAUS_SEPOLIA_RPC_URL:'http://example.invalid'}),{code:'historical_rpc_required'});
 });
 
 test('worker role mismatch is rejected even while admission is disabled',async t=>{
