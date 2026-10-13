@@ -145,6 +145,8 @@ export function createSignalRead({ client, chainId }) {
       requireThat(s.owner === prepared.owner && s.authorityGeneration === prepared.typedData.message.authorityGeneration, 'signal_grant_stale');
       requireThat(await verifyTypedData({ address: s.owner, ...prepared.typedData, signature }), 'invalid_signature');
       const { projectId, feedId, schemaHash, ...terms } = prepared.typedData.message;
+      const head=await client.getBlock({blockTag:'latest'});
+      requireThat(terms.expiresAt>Number(head.timestamp)+60&&terms.expiresAt<=Number(head.timestamp)+30*86400,'signal_grant_expiry');
       return { transaction: intent(chainId, terms.publisher, signal.address, encodeFunctionData({ abi: signalAbi,
         functionName: 'registerGrant', args: [terms, signature] })) };
     },

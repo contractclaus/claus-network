@@ -181,7 +181,9 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       shape(input, ['publisher','maximumWrites','minimumInterval','expiresAt','nonce','idempotencyKey']);
       requireThat(address(input.publisher) && /^(0|[1-9][0-9]{0,77})$/.test(input.nonce) && BigInt(input.nonce) < 2n ** 256n, 'invalid_signal_grant');
       integer(input.maximumWrites,1,10000); integer(input.minimumInterval,1,7*86400);
-      integer(input.expiresAt,Math.floor(now()/1000)+60,Math.floor(now()/1000)+30*86400);
+      // Grant time bounds use the chain clock in the adapter, not a second
+      // competing range based on the API host's clock.
+      integer(input.expiresAt,1);
       const { idempotencyKey, ...terms } = input;
       return prepare(actor, projectId, 'grant', input, async c => chain.prepareGrant(await signal(projectId), c.binding, terms));
     },
@@ -191,7 +193,7 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       requireThat(row.value.kind === 'grant' && hex(signature,65), 'invalid_signature');
       const signatureHash = digest(signature);
       if (row.value.signatureHash) { requireThat(row.value.signatureHash === signatureHash, 'idempotency_conflict'); return view(row); }
-      requireThat(row.value.expiresAt > now() && row.value.input.expiresAt * 1000 > now(), 'signal_operation_expired');
+      requireThat(row.value.expiresAt > now(), 'signal_operation_expired');
       const revocationId=digest({projectId,grantId:row.value.grantId});
       requireThat(!await store.read('signal-revocations',revocationId),'signal_api_revoked');
       // The finalized adapter reports a fresh, unregistered digest as absent.

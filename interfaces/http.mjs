@@ -28,7 +28,7 @@ const errors={unauthenticated:401,invalid_signature:401,challenge_expired:401,sc
  signal_grant_not_found:404,signal_grant_stale:409,signal_nonce_used:409,signal_stale_version:409,
  signal_stale_sequence:409,signal_data_expired:409,signal_interval_pending:409,signal_store_exists:409,
  signal_store_mismatch:409,signal_transaction_mismatch:400,signal_transaction_reorganized:409,signal_transaction_reverted:409,
- signal_admission_changed:409,signal_api_revoked:403,signal_not_enabled:409,signal_operation_expired:409,
+ signal_admission_changed:409,signal_api_revoked:403,signal_not_enabled:409,signal_operation_expired:409,signal_grant_expiry:400,
  signal_scope_not_reviewed:409,signal_signature_required:409,signal_source_changed:409,
  signal_store_not_registered:409,signal_transaction_conflict:409,signal_budget_exhausted:409,
  invalid_contract_input:400,invalid_address:400,invalid_word:400};
