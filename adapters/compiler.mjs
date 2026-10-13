@@ -4,12 +4,13 @@ import { canonical, digest, requireThat } from '../src/shared/index.mjs';
 
 export const COMPILER_PROFILE = Object.freeze({ compiler: '0.8.27+commit.40a35a09.Emscripten.clang',
   evmVersion: 'cancun', optimizerRuns: 200, viaIR: true, profile: 'solidity-static-compile-v1' });
+export const MANAGED_COMPILER_PROFILE = Object.freeze({ ...COMPILER_PROFILE, profile: 'solidity-managed-compile-v1' });
 export const MARKET_COMPILER_PROFILE = Object.freeze({ ...COMPILER_PROFILE,
   compiler: '0.8.26+commit.8a97fa7a.Emscripten.clang', profile: 'solidity-0.8.26-static-v1' });
 
 export async function compileSnapshot({ files, entry, contract, compilerProfile = COMPILER_PROFILE.profile, sourceRoot }) {
-  requireThat([COMPILER_PROFILE.profile, MARKET_COMPILER_PROFILE.profile].includes(compilerProfile), 'unsupported_compiler_profile');
-  const profile = compilerProfile === COMPILER_PROFILE.profile ? COMPILER_PROFILE : MARKET_COMPILER_PROFILE;
+  requireThat([COMPILER_PROFILE.profile, MARKET_COMPILER_PROFILE.profile, MANAGED_COMPILER_PROFILE.profile].includes(compilerProfile), 'unsupported_compiler_profile');
+  const profile = compilerProfile === COMPILER_PROFILE.profile ? COMPILER_PROFILE : compilerProfile === MANAGED_COMPILER_PROFILE.profile ? MANAGED_COMPILER_PROFILE : MARKET_COMPILER_PROFILE;
   requireThat(sourceRoot === undefined || (typeof sourceRoot === 'string' && sourceRoot.length <= 160 &&
     /^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*$/.test(sourceRoot) &&
     sourceRoot.split('/').every(part => part !== '.' && part !== '..')), 'invalid_source_root');
@@ -21,7 +22,7 @@ export async function compileSnapshot({ files, entry, contract, compilerProfile 
   const sources = Object.fromEntries(files.filter(f => f.path.endsWith('.sol')).map(f => [f.path, { content: f.content }]));
   requireThat(Object.hasOwn(sources, entry), 'entry_missing');
   const input = { language: 'Solidity', sources, settings: { optimizer: { enabled: true, runs: 200 },
-    viaIR: true, evmVersion: 'cancun', metadata: { bytecodeHash: 'ipfs' },
+    viaIR: true, evmVersion: 'cancun', metadata: profile === MANAGED_COMPILER_PROFILE ? { appendCBOR: false, bytecodeHash: 'none' } : { bytecodeHash: 'ipfs' },
     remappings: ['@openzeppelin/contracts/=' + prefix + 'lib/openzeppelin-contracts/contracts/',
       ...(profile === MARKET_COMPILER_PROFILE ? ['@uniswap/v4-core/=' + prefix + 'lib/v4-core/', 'solmate/=' + prefix + 'lib/v4-core/lib/solmate/'] : [])],
     outputSelection: { '*': { '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'metadata', 'storageLayout'] } } } };

@@ -68,7 +68,7 @@ test('concurrent registration preparation reuses one bounded intent and legacy a
   const store=openStore(':memory:'); t.after(()=>store.close()); let clock=1800000000000, enqueued=0;
   const projectId='registration-bound', moduleId='module', mandateId='mandate';
   await store.transaction(async tx=>{
-    await tx.write('network-capabilities','chain',{enabled:true,chainId:11155111},0);
+    await tx.write('network-capabilities','chain',{enabled:true,chainId:11155111,profile:'claus-readonly-v1'},0);
     await tx.write('review-pilots',projectId,{enabled:true,expiresAt:clock+86400000},0);
     await tx.write('chain-modules',moduleId,{projectId,state:'verified',chainId:11155111},0);
     await tx.write('principals','owner',{address:'0x'+'11'.repeat(20)},0);

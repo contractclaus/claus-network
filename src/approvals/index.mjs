@@ -1,5 +1,6 @@
 import { canonical, digest, requireThat, text } from '../shared/index.mjs';
 import { publicDecisionCapacity } from './limits.mjs';
+import { MANAGED_PROFILE } from '../chain-deployments/index.mjs';
 
 export function createApprovals({ store, identity, projects, reviews, deployments, jobs, artifacts, chain, signalConsumer = async () => null, now = () => Date.now() }) {
   function executionEvidence(value) {
@@ -43,7 +44,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       text(idempotencyKey);
       const id = digest({ projectId, idempotencyKey, kind: 'protected-upgrade' });
       const requestHash = digest(dependencies.length ? { moduleId, configuration, dependencies } : { moduleId, configuration });
-      await allowed(actor, projectId);
+      const capability = await allowed(actor, projectId);
       const existing = await store.read('chain-proposals', id);
       if (existing) { requireThat(existing.value.requestHash === requestHash, 'idempotency_conflict'); return existing.value; }
       if (await publicDecisionCapacity(store, projectId, now()))
@@ -70,7 +71,25 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       requireThat(!vault || !signal, 'signal_review_context_changed');
       const consumer = signal ?? (vault ? { vault, build: await artifacts.get(projectId, vault.artifactHash),
         review: await artifacts.get(projectId, vault.reviewArtifactHash) } : undefined);
-      const snapshot = await chain.captureEvidence({ module, dependencies, consumer });
+      let previous;
+      if (binding.profile === MANAGED_PROFILE) {
+        requireThat(!consumer, 'managed_consumer_unsupported');
+        const current = await chain.state(binding);
+        if (current.version > 0) {
+          const modules = await store.list('chain-modules', { projectId, limit: 1000 });
+          const prior = modules.find(row => row.value.state === 'verified' && row.value.chainId === binding.chainId &&
+            row.value.profile === MANAGED_PROFILE && row.value.address.toLowerCase() === current.implementation.toLowerCase() &&
+            row.value.codeHash === current.codeHash)?.value;
+          requireThat(prior, 'managed_previous_source_missing');
+          const oldReview = await reviews.get(actor, projectId, prior.caseId);
+          previous = { build: await artifacts.get(projectId, prior.artifactHash), source: {
+            snapshotHash: oldReview.input.sourceHash, buildHash: prior.artifactHash,
+            repository: oldReview.input.repoUrl, commit: oldReview.input.baseCommit, entry: oldReview.input.contracts[0],
+            files: (await projects.files(actor, projectId, oldReview.input.sourceHash)).map(({ path, content }) => ({ path, content }))
+          } };
+        }
+      }
+      const snapshot = await chain.captureEvidence({ module, dependencies, consumer, binding, capability, previous });
       const source = { snapshotHash: reviewed.input.sourceHash, buildHash: reviewed.input.buildHash,
         repository: reviewed.input.repoUrl, commit: reviewed.input.baseCommit, entry: reviewed.input.contracts[0], files };
       chain.validateBuildEvidence(build, source, snapshot.implementation);
@@ -174,7 +193,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         });
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
-        const blocked = ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'source_not_published', 'proposal_expiring', 'proposal_stale', 'project_suspended',
+        const blocked = ['project_profile_mismatch','managed_registry_changed','managed_previous_code_changed','managed_evidence_mismatch','managed_initial_mismatch','managed_previous_source_missing','scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'source_not_published', 'proposal_expiring', 'proposal_stale', 'project_suspended',
           'vault_review_context_changed', 'signal_review_context_changed', 'signal_evidence_invalid', 'dependency_evidence_mismatch', 'evidence_block_changed', 'dependency_code_changed', 'dependency_code_missing',
           'dependency_delegation_unsupported', 'dependency_indirection_unsupported', 'dependency_proxy_unsupported'].includes(error.code);
         return jobs.finish(claim, { state: blocked ? 'blocked' : 'waiting', retryAt: blocked ? null : now() + 60000,

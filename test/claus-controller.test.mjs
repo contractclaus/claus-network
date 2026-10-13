@@ -6,7 +6,7 @@ import { digest } from '../src/shared/index.mjs';
 
 test('revoked decisions cancel unsent inference and keep reconciling paid uncertainty without POST', async t => {
   const store = openStore(':memory:'); t.after(() => store.close());
-  const proposal = { profile: 'local-fixture', chainId: 11155111 }, artifactHash = digest('fixture-review');
+  const proposal = { profile: 'claus-readonly-v1', chainId: 11155111 }, artifactHash = digest('fixture-review');
   const value = { id: 'fixture', projectId: 'prj_fixture', proposal, proposalHash: digest(proposal), reviewArtifactHash: artifactHash };
   const input = { projectId: value.projectId, proposal, proposalHash: value.proposalHash, review: { artifactHash } };
   await store.transaction(tx => tx.write('chain-bindings', value.projectId, { fixture: true }, 0));

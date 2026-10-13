@@ -30,7 +30,7 @@ export function inspectCode(code) {
 
 export function validateBuildEvidence(build, source, implementation) {
   requireThat(digest(build) === source.buildHash && build.status === 'compiled' &&
-    build.profile?.profile === 'solidity-static-compile-v1' && build.entry === source.entry &&
+    ['solidity-static-compile-v1','solidity-managed-compile-v1'].includes(build.profile?.profile) && build.entry === source.entry &&
     digest(build.standardInput) === build.inputHash &&
     digest(build.standardInput.sources) === digest(Object.fromEntries(source.files.filter(f => f.path.endsWith('.sol'))
       .map(f => [f.path, { content: f.content }]))) &&

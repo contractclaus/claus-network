@@ -2,13 +2,18 @@ import { decodeFunctionData, encodeAbiParameters, encodeFunctionData, hashTypedD
 import { digest, requireThat } from '../src/shared/index.mjs';
 import { createReadonlyTransactions } from './sepolia-transactions.mjs';
 import { approvalMessage, approvalTypes, domain, validateModule, selectExecutorCapability } from './chain-read.mjs';
-import { ClausApprovalExecutorAbi as executorAbi, ClausReadonlyProjectAbi as targetAbi } from './chain-abi.mjs';
+import { ClausApprovalExecutorAbi as readonlyExecutorAbi, ClausReadonlyProjectAbi as readonlyTargetAbi } from './chain-abi.mjs';
+import { ClausManagedExecutorAbi, ClausManagedProjectAbi } from './managed-abi.mjs';
+import { chainProfile, MANAGED_PROFILE, READONLY_PROFILE } from '../src/chain-deployments/profiles.mjs';
 import { authorityDenied } from './authorization.mjs';
 import { recoverChainEvent } from './chain-event-recovery.mjs';
 
-export function createChainExecutor({ store, client, signer, sealer, chain, verification, artifacts, admission, chainId = 11155111, now = () => Date.now() }) {
+export function createChainExecutor({ store, client, signer, sealer, chain, verification, artifacts, admission, chainId = 11155111, profile = READONLY_PROFILE, now = () => Date.now() }) {
   requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
-  const capKey = chainId === 1 ? 'chain:1' : 'chain';
+  const capKey = chainProfile(chainId, profile).capability;
+  const managed = profile === MANAGED_PROFILE;
+  const executorAbi = managed ? ClausManagedExecutorAbi : readonlyExecutorAbi;
+  const targetAbi = managed ? ClausManagedProjectAbi : readonlyTargetAbi;
   const read = (address, functionName, args = [], abi = executorAbi) => client.readContract({ address, abi, functionName, args });
   async function transact({ id, to = null, data, authority, expiresAt, authorize, validate = async () => {} }) {
     let currentChainState = true;
@@ -120,10 +125,10 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     tx.state === 'reverted' ? { state: 'failed', error: 'transaction_reverted', transactionHash: tx.hash } : null;
   const deployment = {
     async step({ kind, value, artifact, signature, authorize }) {
-      requireThat(value.chainId === chainId, 'wrong_chain');
+      requireThat(value.chainId === chainId && (value.profile ?? READONLY_PROFILE) === profile, 'wrong_chain');
       const cap = await capability(kind === 'project-register' ? value.executor : undefined);
       if (kind === 'module-deploy') {
-        validateModule(artifact);
+        chain.validateModule(artifact);
         const tx = await transact({ id: 'deploy:' + value.id, data: artifact.creationBytecode,
           authority: { kind, projectId: value.projectId, moduleId: value.id }, expiresAt: value.expiresAt,
           authorize: async reader => { await currentCapability(cap, reader); await published(value, reader); return authorize(reader); } });
@@ -170,8 +175,9 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       requireThat((await registeredRead(target, 'executor', [], targetAbi)).toLowerCase() === value.executor.toLowerCase() &&
         await registeredRead(target, 'projectId', [], targetAbi) === value.message.projectId, 'registration_state_unavailable');
       const targetArtifact = await artifacts.get(cap.artifactProjectId, cap.targetArtifactHash);
-      const constructorArguments = encodeAbiParameters([{ type: 'bytes32' }, { type: 'address' }, { type: 'bytes' }],
+      const constructorArguments = managed ? encodeAbiParameters([{ type: 'bytes32' }], [value.message.projectId]) : encodeAbiParameters([{ type: 'bytes32' }, { type: 'address' }, { type: 'bytes' }],
         [value.message.projectId, value.message.implementation, value.configuration]);
+      if (managed) requireThat(await registeredRead(target, 'version', [], targetAbi) === 0n, 'managed_initial_state_invalid');
       const proof = await verification.step({ address: target, artifact: targetArtifact,
         constructorArguments, creationTransaction: tx.hash });
       return { state: proof.state === 'verified' ? 'verified' : 'verifying', transactionHash: tx.hash,
@@ -184,13 +190,13 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     async step({ value, authorize }) {
       const p = value.proposal;
       const cap = await capability(p.executor);
-      requireThat(p.chainId === chainId && p.executor === cap.executor && digest(p) === value.proposalHash, 'proposal_mismatch');
+      requireThat(p.profile === profile && p.chainId === chainId && p.executor === cap.executor && digest(p) === value.proposalHash, 'proposal_mismatch');
       const signed = (await store.read('claus-signed-approvals', value.id))?.value;
       requireThat(signed && value.decision?.decision === 'approve' && signed.decisionHash === value.decision.decisionHash &&
         signed.proposalHash === value.proposalHash, 'approval_missing');
       const evidenceHash = '0x' + digest({ proposalHash: value.proposalHash, reviewArtifactHash: value.reviewArtifactHash,
         decisionHash: signed.decisionHash }).slice(7);
-      const message = approvalMessage(p, evidenceHash), typed = { domain: domain(p.executor, chainId), types: approvalTypes, primaryType: 'Approval', message };
+      const message = approvalMessage(p, evidenceHash), typed = { domain: domain(p.executor, chainId, profile), types: approvalTypes, primaryType: 'Approval', message };
       requireThat(digest(message) === digest(signed.message) && hashTypedData(typed) === signed.approvalHash &&
         (await recoverTypedDataAddress({ ...typed, signature: signed.signature })).toLowerCase() === signed.signer.toLowerCase() &&
         signed.signer.toLowerCase() === cap.approvalSigner.toLowerCase(), 'approval_mismatch');

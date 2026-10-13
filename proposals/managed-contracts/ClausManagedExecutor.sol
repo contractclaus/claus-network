@@ -24,7 +24,7 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
     uint64 public constant MAX_DELAY = 365 days;
 
     bytes32 public constant REGISTRATION_TYPEHASH = keccak256(
-        "Registration(bytes32 projectId,address owner,bytes32 salt,address implementation,bytes32 codeHash,bytes32 initCallHash,bytes32 mandateHash,bytes32 policyVersion,uint64 minDelaySeconds,uint256 nonce,uint64 expiresAt,bytes32 evidenceHash,bytes32 dependencySnapshotHash,uint64 clausGeneration)"
+        "Registration(bytes32 projectId,address owner,bytes32 salt,address implementation,bytes32 codeHash,bytes32 initCallHash,bytes32 mandateHash,bytes32 policyVersion,uint64 minDelaySeconds,uint256 nonce,uint64 expiresAt)"
     );
     bytes32 public constant APPROVAL_TYPEHASH = keccak256(
         "Approval(bytes32 projectId,uint256 chainId,address executor,address target,uint64 fromVersion,bytes32 fromCodeHash,address implementation,bytes32 toCodeHash,bytes32 initCallHash,bytes32 dependencySnapshotHash,bytes32 evidenceHash,bytes32 policyVersion,uint64 policyGeneration,uint64 authorityGeneration,uint64 clausGeneration,bytes32 mandateHash,uint256 nonce,uint64 notBefore,uint64 expiresAt)"
@@ -42,10 +42,8 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         uint64 minDelaySeconds;
         uint256 nonce;
         uint64 expiresAt;
-        bytes32 evidenceHash;
-        bytes32 dependencySnapshotHash;
-        uint64 clausGeneration;
     }
+
     struct Approval {
         bytes32 projectId;
         uint256 chainId;
@@ -67,6 +65,7 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         uint64 notBefore;
         uint64 expiresAt;
     }
+
     struct Project {
         address owner;
         address target;
@@ -78,15 +77,32 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         bool enabled;
     }
 
-    struct Module { address implementation; bytes32 codeHash; uint64 version; bytes configuration; }
+    struct Module {
+        address implementation;
+        bytes32 codeHash;
+        uint64 version;
+        bytes configuration;
+    }
     mapping(bytes32 => Module) private modules;
 
-    function moduleState(bytes32 id) external view returns(address,bytes32,uint64,bytes memory) {
-        Module storage m=modules[id]; return(m.implementation,m.codeHash,m.version,m.configuration);
+    // Registration reserves a dormant target. The first real implementation
+    // needs the same independently reviewed Claus approval as every upgrade.
+    struct InitialModule {
+        address implementation;
+        bytes32 codeHash;
+        bytes32 initCallHash;
+        uint256 createdAtBlock;
+    }
+    mapping(bytes32 => InitialModule) public initialModules;
+
+    function moduleState(bytes32 id) external view returns (address, bytes32, uint64, bytes memory) {
+        Module storage m = modules[id];
+        return (m.implementation, m.codeHash, m.version, m.configuration);
     }
 
-    function moduleCode(bytes32 id) external view returns(address,bytes32) {
-        Module storage m=modules[id]; return(m.implementation,m.codeHash);
+    function moduleCode(bytes32 id) external view returns (address, bytes32) {
+        Module storage m = modules[id];
+        return (m.implementation, m.codeHash);
     }
 
     address public clausSigner;
@@ -101,11 +117,17 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
     mapping(bytes32 => mapping(uint256 => bool)) public executionNonces;
     mapping(bytes32 => uint256) public readyAt;
 
-    event ProjectRegistered(bytes32 indexed projectId, address indexed target, address indexed owner, bytes32 mandateHash);
+    event ProjectRegistered(
+        bytes32 indexed projectId, address indexed target, address indexed owner, bytes32 mandateHash
+    );
     event ApprovalQueued(bytes32 indexed projectId, bytes32 indexed approvalHash, uint256 readyAt, uint256 nonce);
-    event UpgradeExecuted(bytes32 indexed projectId, bytes32 indexed approvalHash, address implementation, uint64 version);
+    event UpgradeExecuted(
+        bytes32 indexed projectId, bytes32 indexed approvalHash, address implementation, uint64 version
+    );
     event ProjectAuthorityChanged(bytes32 indexed projectId, uint64 generation, bytes32 mandateHash, bool enabled);
-    event ProjectPolicyChanged(bytes32 indexed projectId, uint64 generation, bytes32 policyVersion, uint64 minDelaySeconds);
+    event ProjectPolicyChanged(
+        bytes32 indexed projectId, uint64 generation, bytes32 policyVersion, uint64 minDelaySeconds
+    );
     event SignerRecoveryScheduled(address indexed signer, uint64 readyAt);
     event SignerRecovered(address indexed signer, uint64 generation);
     event SignerRecoveryCancelled();
@@ -115,7 +137,9 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
     event ProjectOwnerChanged(bytes32 indexed projectId, address indexed owner, uint64 generation);
 
     constructor(address signer, address recovery, uint64 delay) EIP712("Claus Managed Network", "1") {
-        if (signer == address(0) || recovery == address(0) || delay < 1 days || delay > MAX_DELAY) revert InvalidRecovery();
+        if (signer == address(0) || recovery == address(0) || delay < 1 days || delay > MAX_DELAY) {
+            revert InvalidRecovery();
+        }
         clausSigner = signer;
         recoveryOwner = recovery;
         recoveryDelay = delay;
@@ -124,6 +148,7 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
     function registrationDigest(Registration calldata r) public view returns (bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(REGISTRATION_TYPEHASH, r)));
     }
+
     function approvalDigest(Approval calldata a) public view returns (bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(APPROVAL_TYPEHASH, a)));
     }
@@ -137,23 +162,27 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         emit RegistrationCancelled(msg.sender, nonce);
     }
 
-    function registerProject(Registration calldata r, bytes calldata configuration, bytes calldata ownerSignature, bytes calldata clausSignature)
-        external nonReentrant returns (address target)
+    function registerProject(Registration calldata r, bytes calldata configuration, bytes calldata ownerSignature)
+        external
+        nonReentrant
+        returns (address target)
     {
-        if (pendingSigner != address(0) || r.clausGeneration != clausGeneration || r.evidenceHash == bytes32(0) || r.dependencySnapshotHash == bytes32(0)
-            || r.projectId != projectKey(r.owner, r.salt) || r.owner == address(0) || projects[r.projectId].target != address(0)
-            || r.implementation.code.length == 0 || r.implementation.codehash != r.codeHash
-            || keccak256(configuration) != r.initCallHash || configuration.length > 8192
-            || r.mandateHash == bytes32(0) || r.policyVersion == bytes32(0)
-            || r.minDelaySeconds < MIN_UPGRADE_DELAY || r.minDelaySeconds > MAX_DELAY
-            || r.expiresAt <= block.timestamp || registrationNonces[r.owner][r.nonce]) revert InvalidRegistration();
-        if (!SignatureChecker.isValidSignatureNow(r.owner, registrationDigest(r), ownerSignature)) revert InvalidSignature();
-        if (!SignatureChecker.isValidSignatureNow(clausSigner, registrationDigest(r), clausSignature)) revert InvalidSignature();
+        if (
+            pendingSigner != address(0) || r.projectId != projectKey(r.owner, r.salt) || r.owner == address(0)
+                || projects[r.projectId].target != address(0) || r.implementation == address(this)
+                || r.implementation.code.length == 0 || r.implementation.codehash != r.codeHash
+                || keccak256(configuration) != r.initCallHash || configuration.length > 8192
+                || r.mandateHash == bytes32(0) || r.policyVersion == bytes32(0) || r.minDelaySeconds < MIN_UPGRADE_DELAY
+                || r.minDelaySeconds > MAX_DELAY || r.expiresAt <= block.timestamp
+                || registrationNonces[r.owner][r.nonce]
+        ) revert InvalidRegistration();
+        if (!SignatureChecker.isValidSignatureNow(r.owner, registrationDigest(r), ownerSignature)) {
+            revert InvalidSignature();
+        }
         registrationNonces[r.owner][r.nonce] = true;
         target = address(new ClausManagedProject(r.projectId));
-        modules[r.projectId] = Module(r.implementation, r.codeHash, 1, configuration);
+        initialModules[r.projectId] = InitialModule(r.implementation, r.codeHash, r.initCallHash, block.number);
         projects[r.projectId] = Project(r.owner, target, r.mandateHash, r.policyVersion, r.minDelaySeconds, 1, 1, true);
-        ClausManagedProject(payable(target)).initialize(configuration);
         emit ProjectRegistered(r.projectId, target, r.owner, r.mandateHash);
     }
 
@@ -170,8 +199,14 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         }
     }
 
-    function execute(Approval calldata a, bytes calldata configuration, bytes calldata clausSignature) external nonReentrant {
+    function execute(Approval calldata a, bytes calldata configuration, bytes calldata clausSignature)
+        external
+        nonReentrant
+    {
         _validate(a);
+        // EIP-6780 permits SELFDESTRUCT to delete a target in its creation
+        // transaction. No module code may execute in that creation block.
+        if (block.number <= initialModules[a.projectId].createdAtBlock) revert NotReady();
         bytes32 hash = approvalDigest(a);
         if (readyAt[hash] == 0 || block.timestamp < readyAt[hash]) revert NotReady();
         if (keccak256(configuration) != a.initCallHash || configuration.length > 8192) revert InvalidApproval();
@@ -179,7 +214,10 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         executionNonces[a.projectId][a.nonce] = true;
         delete readyAt[hash];
         Module storage m = modules[a.projectId];
-        m.implementation = a.implementation; m.codeHash = a.toCodeHash; ++m.version; m.configuration = configuration;
+        m.implementation = a.implementation;
+        m.codeHash = a.toCodeHash;
+        ++m.version;
+        m.configuration = configuration;
         ClausManagedProject(payable(a.target)).initialize(configuration);
         emit UpgradeExecuted(a.projectId, hash, a.implementation, m.version);
     }
@@ -196,8 +234,10 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
 
     function cancelApproval(bytes32 id, uint256 nonce) external {
         Project storage p = projects[id];
-        if (p.target == address(0) || (msg.sender != p.owner &&
-            (msg.sender != clausSigner || pendingSigner != address(0)))) revert OwnerOnly();
+        if (
+            p.target == address(0)
+                || (msg.sender != p.owner && (msg.sender != clausSigner || pendingSigner != address(0)))
+        ) revert OwnerOnly();
         executionNonces[id][nonce] = true;
         emit ApprovalCancelled(id, nonce);
     }
@@ -242,6 +282,7 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         ++clausGeneration;
         emit SignerRecoveryScheduled(signer, recoveryReadyAt);
     }
+
     function cancelSignerRecovery() external {
         if (msg.sender != recoveryOwner) revert OwnerOnly();
         ++clausGeneration;
@@ -249,6 +290,7 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         recoveryReadyAt = 0;
         emit SignerRecoveryCancelled();
     }
+
     function finishSignerRecovery() external {
         if (pendingSigner == address(0) || block.timestamp < recoveryReadyAt) revert NotReady();
         clausSigner = pendingSigner;
@@ -260,18 +302,25 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
 
     function _validate(Approval calldata a) private view {
         Project memory p = projects[a.projectId];
-        if (!p.enabled || pendingSigner != address(0) || pendingProjectOwners[a.projectId] != address(0)
-            || a.chainId != block.chainid || a.executor != address(this)
-            || a.target != p.target || a.target == address(0)
-            || a.policyVersion != p.policyVersion || a.policyGeneration != p.policyGeneration
-            || a.authorityGeneration != p.authorityGeneration || a.clausGeneration != clausGeneration
-            || a.mandateHash != p.mandateHash || a.evidenceHash == bytes32(0)
-            || a.dependencySnapshotHash == bytes32(0) || a.expiresAt <= block.timestamp
-            || a.notBefore >= a.expiresAt || a.implementation.code.length == 0
-            || a.implementation == a.target || a.implementation == address(this)
-            || a.implementation.codehash != a.toCodeHash
-            || modules[a.projectId].version != a.fromVersion
-            || modules[a.projectId].codeHash != a.fromCodeHash) revert InvalidApproval();
+        if (
+            !p.enabled || pendingSigner != address(0) || pendingProjectOwners[a.projectId] != address(0)
+                || a.chainId != block.chainid || a.executor != address(this) || a.target != p.target
+                || a.target == address(0) || a.policyVersion != p.policyVersion
+                || a.policyGeneration != p.policyGeneration || a.authorityGeneration != p.authorityGeneration
+                || a.clausGeneration != clausGeneration || a.mandateHash != p.mandateHash
+                || a.evidenceHash == bytes32(0) || a.dependencySnapshotHash == bytes32(0)
+                || a.expiresAt <= block.timestamp || a.notBefore >= a.expiresAt || a.implementation.code.length == 0
+                || a.implementation == a.target || a.implementation == address(this)
+                || a.implementation.codehash != a.toCodeHash || modules[a.projectId].version != a.fromVersion
+                || modules[a.projectId].codeHash != a.fromCodeHash
+        ) revert InvalidApproval();
+        if (a.fromVersion == 0) {
+            InitialModule memory first = initialModules[a.projectId];
+            if (
+                a.implementation != first.implementation || a.toCodeHash != first.codeHash
+                    || a.initCallHash != first.initCallHash
+            ) revert InvalidApproval();
+        }
         if (executionNonces[a.projectId][a.nonce]) revert AlreadyExecuted();
     }
 }
