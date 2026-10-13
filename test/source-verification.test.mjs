@@ -277,3 +277,63 @@ test('exhausted verification polls at most hourly and can still observe exact ex
   assert.equal(calls, before);
   indexed = true; time += 3600000; assert.equal((await verifier.step(input)).state, 'verified');
 });
+
+function metadataFreeFixture() {
+  const request = structuredClone(input);
+  request.constructorArguments = '0x';
+  Object.assign(request.artifact, { creationBytecode: '0x60006001', runtimeTemplate: '0x6001', immutableReferences: {} });
+  request.artifact.profile.profile = 'solidity-managed-compile-v1';
+  request.artifact.standardInput = { language: 'Solidity', sources: { 'src/Example.sol': { content: 'contract Example {}' } },
+    settings: { metadata: { appendCBOR: false, bytecodeHash: 'none' }, outputSelection: { '*': { '*': ['abi'] } } } };
+  const compiledInput = structuredClone(request.artifact.standardInput); delete compiledInput.settings.outputSelection;
+  const code = bytecode => ({ onchainBytecode: bytecode, recompiledBytecode: bytecode, transformations: [], cborAuxdata: {} });
+  const response = { chainId: '1', address: request.address, creationMatch: 'match', runtimeMatch: 'match',
+    deployment: { transactionHash: request.creationTransaction }, stdJsonInput: compiledInput,
+    compilation: { compilerVersion: '0.8.27+commit.40a35a09', fullyQualifiedName: 'src/Example.sol:Example' },
+    creationBytecode: code(request.artifact.creationBytecode), runtimeBytecode: { ...code(request.artifact.runtimeTemplate), immutableReferences: {} } };
+  return { request, response };
+}
+
+async function verifyMetadataFree(fixture, store, counter = { posts: 0 }) {
+  return createSourceVerification({ store, chainId: 1, etherscanKey: 'key', fetcher: async (url, options = {}) => {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'sourcify.dev') {
+      if (options.method === 'POST') { counter.posts++; return Response.json({ verificationId: 'retained-source-id' }); }
+      return Response.json(fixture.response);
+    }
+    return Response.json({ status: '1', result: [{ SourceCode: '{}', ContractName: 'Example' }] });
+  } }).step(fixture.request);
+}
+
+test('metadata-free verification resumes original submission with exact full bytecode and pinned source', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close());
+  const f = metadataFreeFixture(), count = { posts: 0 }, expected = f.response.runtimeBytecode.onchainBytecode;
+  f.response.runtimeBytecode.onchainBytecode = '0x6002';
+  assert.equal((await verifyMetadataFree(f, store, count)).state, 'pending');
+  f.response.runtimeBytecode.onchainBytecode = expected;
+  const result = await verifyMetadataFree(f, store, count);
+  assert.equal(result.state, 'verified'); assert.equal(count.posts, 1);
+  assert.equal(result.sourcifyId, 'retained-source-id'); assert.equal(result.runtimeMatch, 'match');
+  assert.equal(result.metadataFreeEvidence.metadataFingerprintVerified, false);
+});
+
+test('metadata-free verification rejects changed code, source, deployment identity and relaxed compiler profiles', async () => {
+  const mutations = [
+    f => { f.response.runtimeBytecode.onchainBytecode = '0x6002'; },
+    f => { f.response.creationBytecode.recompiledBytecode = '0x6002'; },
+    f => { f.response.stdJsonInput.sources['src/Example.sol'].content += '// different source'; },
+    f => { f.response.address = '0x' + '33'.repeat(20); },
+    f => { f.response.deployment.transactionHash = '0x' + '33'.repeat(32); },
+    f => { f.response.compilation.compilerVersion = '0.8.26'; },
+    f => { f.response.runtimeBytecode.transformations = [{ reason: 'cborAuxdata' }]; },
+    f => { f.request.artifact.standardInput.settings.metadata.appendCBOR = true; },
+    f => { f.request.artifact.profile.profile = 'solidity-compile-v1'; },
+    f => { f.response.runtimeBytecode.immutableReferences = { 1: [{ start: 1, length: 32 }] }; },
+    f => { f.request.constructorArguments = '0x01'; }
+  ];
+  for (const mutate of mutations) {
+    const store = openStore(':memory:');
+    try { const f = metadataFreeFixture(); mutate(f); assert.equal((await verifyMetadataFree(f, store)).state, 'pending'); }
+    finally { await store.close(); }
+  }
+});

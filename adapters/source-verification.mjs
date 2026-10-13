@@ -1,6 +1,35 @@
 import { digest, requireThat } from '../src/shared/index.mjs';
 import { boundedResponse } from './imd.mjs';
 
+// Sourcify cannot attest an onchain metadata fingerprint when the compiler
+// omitted it. Keep that distinction: accept only this managed compile profile,
+// identical complete bytecode and the exact pinned compiler input instead.
+function metadataFreeEvidence(matched, artifact, { chainId, address, creationTransaction, constructorArguments }) {
+  if (artifact.profile?.profile !== 'solidity-managed-compile-v1' ||
+      artifact.standardInput?.settings?.metadata?.appendCBOR !== false || constructorArguments !== '0x') return null;
+  const normalized = value => {
+    const copy = structuredClone(value);
+    if (copy?.settings) delete copy.settings.outputSelection;
+    return copy;
+  };
+  const empty = value => value && typeof value === 'object' && Object.keys(value).length === 0;
+  if (String(matched.chainId) !== String(chainId) || matched.address?.toLowerCase() !== address.toLowerCase() ||
+      matched.deployment?.transactionHash?.toLowerCase() !== creationTransaction.toLowerCase() ||
+      matched.compilation?.compilerVersion !== artifact.profile.compiler.replace('.Emscripten.clang', '') ||
+      matched.compilation?.fullyQualifiedName !== artifact.entry + ':' + artifact.contract ||
+      !matched.stdJsonInput || digest(normalized(matched.stdJsonInput)) !== digest(normalized(artifact.standardInput)) ||
+      !empty(artifact.immutableReferences) || !empty(matched.runtimeBytecode?.immutableReferences)) return null;
+  for (const [kind, expected] of [['creationBytecode', artifact.creationBytecode], ['runtimeBytecode', artifact.runtimeTemplate]]) {
+    const code = matched[kind];
+    if (typeof expected !== 'string' || !/^0x(?:[0-9a-f]{2})+$/i.test(expected) ||
+        code?.onchainBytecode !== expected || code?.recompiledBytecode !== expected ||
+        !Array.isArray(code.transformations) || code.transformations.length || !empty(code.cborAuxdata)) return null;
+  }
+  if (!['match', 'exact_match'].includes(matched.runtimeMatch) || !['match', 'exact_match'].includes(matched.creationMatch)) return null;
+  return { kind: 'complete-bytecode-without-metadata', artifactHash: digest(artifact),
+    standardInputHash: digest(artifact.standardInput), creationTransaction, metadataFingerprintVerified: false };
+}
+
 // Verification only; no explorer response can create a signing request.
 export function createSourceVerification({ store, etherscanKey, chainId = 11155111, fetcher = fetch, now = () => Date.now() }) {
   requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
@@ -49,9 +78,13 @@ export function createSourceVerification({ store, etherscanKey, chainId = 111551
           sourcifyAlreadyVerified: response.status === 409 }; await save();
       }
       try {
-        const matched = await request('https://sourcify.dev/server/v2/contract/' + chainId + '/' + address);
+        const fields = artifact.profile?.profile === 'solidity-managed-compile-v1'
+          ? 'creationMatch,runtimeMatch,deployment,compilation,stdJsonInput,runtimeBytecode,creationBytecode'
+          : 'creationMatch,runtimeMatch';
+        const matched = await request('https://sourcify.dev/server/v2/contract/' + chainId + '/' + address + '?fields=' + fields);
         value = { ...value, runtimeMatch: typeof matched.runtimeMatch === 'string' ? matched.runtimeMatch : null,
-          creationMatch: typeof matched.creationMatch === 'string' ? matched.creationMatch : null };
+          creationMatch: typeof matched.creationMatch === 'string' ? matched.creationMatch : null,
+          metadataFreeEvidence: metadataFreeEvidence(matched, artifact, { chainId, address, creationTransaction, constructorArguments }) };
       } catch { /* A newly indexed deployment can still be pending. */ }
       const source = await etherscan({ action: 'getsourcecode', address });
       const entry = source.status === '1' && Array.isArray(source.result) ? source.result[0] : null;
@@ -132,7 +165,8 @@ export function createSourceVerification({ store, etherscanKey, chainId = 111551
       value = { ...value, checkedAt: now(), explorerUrl: (chainId === 1 ? 'https://etherscan.io/address/' : 'https://sepolia.etherscan.io/address/') + address + '#code',
         sourcifyUrl: 'https://repo.sourcify.dev/' + chainId + '/' + address };
       if (value.etherscanVerified) delete value.etherscanError;
-      if (value.runtimeMatch === 'exact_match' && value.creationMatch === 'exact_match' && value.etherscanVerified) value.state = 'verified';
+      if ((value.runtimeMatch === 'exact_match' && value.creationMatch === 'exact_match' || value.metadataFreeEvidence) &&
+          value.etherscanVerified) value.state = 'verified';
       await save(); return value;
     }
   };
