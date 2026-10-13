@@ -151,7 +151,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
           requireThat(source?.value.published === true, 'source_not_published');
           requireThat(decisions.length < 50 && deployments.length < 50, 'capacity_reached');
           const { decision, reason, risks, decisionHash, configurationRevision, model, completedAt } = value.decision;
-          decisions.push({ id: proposalId, proposalHash: value.proposalHash,
+          decisions.push({ id: proposalId, ...(value.proposal.profile === MANAGED_PROFILE ? { profile: MANAGED_PROFILE } : {}), proposalHash: value.proposalHash,
             status: decision === 'approve' ? 'Approved' : 'Rejected', decision, reason, risks,
             decisionHash, configurationRevision, model, completedAt });
           if (value.state === 'executed') deployments.push(executionEvidence(value));

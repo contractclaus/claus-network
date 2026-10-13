@@ -3,8 +3,9 @@ import { validateModule, validateBuildEvidence } from './chain-read.mjs';
 import { validateManagedModule } from './managed-module.mjs';
 import { chainProfile, MANAGED_PROFILE, READONLY_PROFILE } from '../src/chain-deployments/profiles.mjs';
 
-// Two explicit chains for the readonly evaluator. Signal stores and Inbox
-// requests have their own chain-pinned adapters. Wallet and vault remain Sepolia-only. A chain is never selected from an untrusted RPC response.
+// Explicit chain/profile routing. Managed remains disabled until its own
+// admission is installed; legacy absent-profile records always use readonly.
+// Wallets, signal stores and vaults retain their separate adapters.
 export function createReadonlyChainRouter({ sepolia, mainnet, managedSepolia, managedMainnet }) {
   const selected = (chainId, profile = READONLY_PROFILE) => {
     chainProfile(chainId, profile);
