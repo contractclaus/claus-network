@@ -120,7 +120,7 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
         await store.transaction(async tx => {
           // Keep the most recent rejection per admitted binding; public log
           // spam cannot create an unbounded private rejection history.
-          const key = digest({ inbox: profile.inbox, bindingId: event.bindingId });
+          const key = digest({ chainId: profile.chainId, inbox: profile.inbox, bindingId: event.bindingId });
           const prior = await tx.read('contract-intake-rejections', key);
           await tx.write('contract-intake-rejections', key,
             { bindingId: event.bindingId, code: error.code, transactionHash: event.transactionHash,
@@ -133,7 +133,7 @@ export function createContractIntakeWorker({ store, intake, chain, delivery, sta
     if (active && !scanError) await store.transaction(async tx => {
       await tx.write('contract-intake-cursors', id, batch.cursor, prior?.revision ?? 0);
     });
-    const proposal = active ? await intake.run() : { state: 'disabled' };
+    const proposal = active ? await intake.run(profile.chainId) : { state: 'disabled' };
     return { state: active ? 'active' : 'disabled', disabledReason, scanError, ingested, delivered, deferred,
       proposal: proposal.state ?? 'idle', afterBlock: batch.cursor.afterBlock };
   } };

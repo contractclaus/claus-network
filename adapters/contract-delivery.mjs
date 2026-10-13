@@ -1,5 +1,5 @@
 import { digest, requireThat, shape, integer, amount, text } from '../src/shared/index.mjs';
-import { createSepoliaTransactions } from './sepolia-transactions.mjs';
+import { createReadonlyTransactions } from './sepolia-transactions.mjs';
 
 const address = value => typeof value === 'string' && /^0x[0-9a-f]{40}$/.test(value) && !/^0x0{40}$/.test(value);
 const BUDGETS = 'contract-dispatch-budgets', RESERVATIONS = 'contract-dispatch-reservations';
@@ -14,7 +14,7 @@ export async function admitContractDispatchBudget(store, config) {
   const publicAdmission = config.admissionMode === 'public-readonly-v1';
   requireThat(!Object.hasOwn(config, 'admissionMode') || publicAdmission, 'invalid_dispatch_budget');
   text(config.id); integer(config.expiresAt, 1);
-  requireThat(config.chainId === 11155111 && address(config.dispatcher) && address(config.inbox) &&
+  requireThat([1, 11155111].includes(config.chainId) && address(config.dispatcher) && address(config.inbox) &&
     /^0x[0-9a-f]{64}$/.test(config.codeHash) && Array.isArray(config.projectIds) &&
     (publicAdmission ? config.projectIds.length === 0 : config.projectIds.length > 0 && config.projectIds.length <= 100) &&
     new Set(config.projectIds).size === config.projectIds.length, 'invalid_dispatch_budget');
@@ -82,6 +82,7 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
     if (admitted && await admitted(reader, request.projectId) !== true) return false;
     const binding = (await reader.read('contract-bindings', request.bindingId))?.value;
     if (!binding || binding.projectId !== request.projectId || binding.revokedAt || binding.expiresAt <= now() ||
+      binding.chainId !== budget.chainId || request.observation.chainId !== budget.chainId ||
       binding.inbox !== budget.inbox || binding.codeHash !== budget.codeHash ||
       binding.requester !== request.observation.requester) return false;
     const original = (await reader.read('contract-requests', request.id))?.value;
@@ -157,7 +158,7 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
       // RPC calls stay outside the PostgreSQL transaction. The callback below
       // rechecks current database authority, and the inbox enforces chain state.
       const observedForSubmit = await chain.deliveryState(request);
-      const transactions = createSepoliaTransactions({ store, client, signer, sealer, now, finalized: true,
+      const transactions = createReadonlyTransactions({ store, client, signer, sealer, now, finalized: true, chainId: budget.chainId,
         limits: { gas: budget.maximumGas, feePerGas: budget.maximumFeePerGas, cost: budget.maximumTransaction },
         onReserve: reserve, onFinalize: finalize,
         authorize: async (candidate, reader) => {

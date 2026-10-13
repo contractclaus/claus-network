@@ -23,14 +23,19 @@ const FIELDS = Object.freeze({
   'wallet-actions': 'id projectId kind request state jobId createdAt updatedAt transactionHash address codeHash verification paymentEvidence error',
   'wallet-sessions': 'id projectId wallet typedData state createdAt',
   'wallet-payments': 'id projectId orderId wallet typedData signer state createdAt',
+  'project-signals': 'projectId state profile chainId address codeHash factory factoryCodeHash evaluator executor projectKey feedId schemaHash artifactProjectId artifactHash reviewArtifactHash transactionHash blockHash blockNumber registeredAt',
+  'signal-operations': 'id projectId kind requestHash input binding state createdAt expiresAt updatedAt transactionHash submittedAt blockHash blockNumber finalized error sourceHash grantId typedData',
+  'signal-revocations': 'projectId grantId revokedAt onchain transactionHash',
+  'signal-publications': 'projectId published',
   'project-vaults': 'projectId owner chainId profile attempt policy artifactProjectId artifactHash reviewArtifactHash state jobId createdAt updatedAt address transactionHash codeHash verification error',
   'service-versions': 'id projectId manifest manifestHash state createdAt compatibility',
-  'service-quotes': 'id projectId requestHash serviceId providerProjectId manifestHash inputHash chainId asset providerWei networkWei maximumWei recipient dataPolicy settlement maxDurationSeconds expiresAt createdAt',
-  'service-orders': 'id projectId providerProjectId serviceId purpose manifestHash quoteHash inputHash state payment acceptance deadline createdAt outputHash completedAt deliveredAt attempts',
+  'service-quotes': 'id projectId requestHash serviceId providerProjectId manifestHash inputHash chainId asset providerWei networkWei maximumWei recipient dataPolicy dataPolicyHash sourceResults depth settlement maxDurationSeconds expiresAt createdAt',
+  'service-orders': 'id projectId providerProjectId serviceId purpose manifestHash quoteHash inputHash state payment acceptance deadline createdAt outputHash completedAt deliveredAt attempts dataPolicyHash sourceResults',
   'project-releases': 'id projectId snapshotId paths createdAt contentHash url isolation',
   'public-projects': 'projectId slug name description published updatedAt',
   'public-sources': 'projectId snapshotId published files',
   'service-publications': 'projectId published',
+  'service-result-publications': 'projectId orderId outputHash published expiresAt publishedAt sourceResults depth',
   'release-publications': 'projectId published expiresAt updatedAt',
   'imported-history': 'projectId archiveId header pages',
   'workflow-jobs': 'id projectId kind requestHash state effect effectKey attempts availableAt createdAt updatedAt result'
@@ -175,6 +180,10 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
             !['complete', 'failed', 'cancelled'].includes(r.value.state)).map(r => ({ id: r.id,
               kind: r.value.kind, state: r.value.state, effect: r.value.effect, effectKey: r.value.effectKey,
               disposition: 'retain-at-source; reconcile original identity; never re-purchase' })).concat(
+              records.filter(r => r.collection === 'signal-operations' && r.value.transactionHash &&
+                !['confirmed','failed'].includes(r.value.state)).map(r => ({ id:r.id,kind:'signal-transaction',state:r.value.state,
+                effect:'outcome_unknown',effectKey:r.id,transactionHash:r.value.transactionHash,
+                disposition:'retain-at-source; reconcile original transaction; never re-sign or reactivate grants at destination' })),
               records.filter(r => r.collection === 'contract-requests' && r.value.state === 'result_ready' &&
                 !['delivered', 'closed', 'failed'].includes(r.value.delivery?.state)).map(r => ({
                 id: r.id, kind: 'contract-result-delivery', state: r.value.delivery?.state ?? 'pending',

@@ -11,6 +11,7 @@ const word = value => {
 export const bindingWord = id => '0x' + id.slice('sha256:'.length);
 export const proposalKey = id => 'contract-intake:' + id;
 export const intakeProposalId = (projectId, id) => digest({ projectId, idempotencyKey: proposalKey(id), kind: 'protected-upgrade' });
+const intakeKind = chainId => chainId === 11155111 ? 'contract-intake' : 'contract-intake:' + chainId;
 
 // All chain observations and proposal ports are supplied by the trusted host.
 // Public callers cannot submit a claimed event, choose a dispatcher, or invoke
@@ -38,8 +39,10 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
       const requester = address(body.requester);
       integer(body.expiresAt, now() + 1000, now() + 30 * 86400000);
       integer(body.maxRequests, 1, 100); text(body.idempotencyKey);
-      const chainProfile = await chain.profile();
-      requireThat(chainProfile.chainId === 11155111, 'unsupported_chain');
+      const projectChain = (await store.read('chain-bindings', projectId))?.value.chainId ?? 11155111;
+      const chainProfile = await chain.profile(projectChain);
+      requireThat([1, 11155111].includes(chainProfile.chainId), 'unsupported_chain');
+      requireThat(chainProfile.chainId === projectChain, 'project_chain_mismatch');
       address(chainProfile.inbox); word(chainProfile.codeHash);
       const config = { projectId, actor, requester, expiresAt: body.expiresAt, maxRequests: body.maxRequests,
         chainId: chainProfile.chainId, inbox: address(chainProfile.inbox), codeHash: chainProfile.codeHash,
@@ -47,6 +50,8 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
       const id = digest({ projectId, contractBinding: body.idempotencyKey });
       return store.transaction(async tx => {
         await admitted(tx, config);
+        requireThat(((await tx.read('chain-bindings', projectId))?.value.chainId ?? 11155111) === config.chainId,
+          'project_chain_mismatch');
         const old = await tx.read('contract-bindings', id);
         if (old) { requireThat(old.value.configHash === digest(config), 'idempotency_conflict'); return bindingView(old); }
         if (await tx.read('public-chain-projects', projectId)) {
@@ -66,7 +71,8 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
     async binding(actor, projectId, id) {
       await identity.authorize(actor, 'contract.read', { projectId });
       const row = await owned(store, 'contract-bindings', projectId, id);
-      const rejected = (await store.read('contract-intake-rejections', digest({ inbox: row.value.inbox, bindingId: id })))?.value;
+      const rejected = (await store.read('contract-intake-rejections', digest({ chainId: row.value.chainId, inbox: row.value.inbox, bindingId: id })))?.value ??
+        (row.value.chainId === 11155111 ? (await store.read('contract-intake-rejections', digest({ inbox: row.value.inbox, bindingId: id })))?.value : undefined);
       return { ...bindingView(row), latestRejection: rejected ?? null };
     },
     async revoke(actor, projectId, id) {
@@ -118,7 +124,7 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
           requireThat(!prior || !['queued', 'waiting'].includes(prior.state) || prior.observation.deadline * 1000 <= now(),
             'contract_request_in_progress');
         }
-        const job = await jobs.enqueue(tx, { projectId: binding.projectId, kind: 'contract-intake',
+        const job = await jobs.enqueue(tx, { projectId: binding.projectId, kind: intakeKind(binding.chainId),
           payload: { requestId: id }, authority: { actor: binding.actor }, idempotencyKey: id });
         await tx.write('contract-bindings', bindingId, { ...current.value, used: current.value.used + 1 }, current.revision);
         await tx.write('contract-requests', id, { id, projectId: binding.projectId, bindingId, jobId: job.id,
@@ -129,11 +135,13 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
         return { id, state: 'queued' };
       });
     },
-    async run() {
-      const claim = await jobs.claim({ kinds: ['contract-intake'], leaseMs: 60000 });
+    async run(chainId = 11155111) {
+      requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
+      const claim = await jobs.claim({ kinds: [intakeKind(chainId)], leaseMs: 60000 });
       if (claim.idle) return claim;
       const request = (await owned(store, 'contract-requests', claim.job.projectId, claim.job.payload.requestId)).value;
       const binding = (await owned(store, 'contract-bindings', request.projectId, request.bindingId)).value;
+      requireThat(binding.chainId === chainId && request.observation.chainId === chainId, 'project_chain_mismatch');
       const update = (state, result, error) => async tx => {
         const row = await owned(tx, 'contract-requests', request.projectId, request.id);
         await tx.write('contract-requests', request.id, { ...row.value, state, result,
@@ -189,7 +197,7 @@ export function createContractIntake({ store, identity, jobs, chain, createPropo
       return jobs.finish(claim, { state: 'complete', result: { requestId: request.id, proposalId: proposal.id } }, update('result_ready', result));
     },
     async onCancel(tx, job) {
-      if (job.kind !== 'contract-intake') return;
+      if (!['contract-intake', 'contract-intake:1'].includes(job.kind)) return;
       const row = await owned(tx, 'contract-requests', job.projectId, job.payload.requestId);
       await tx.write('contract-requests', row.value.id, { ...row.value, state: 'cancelled', updatedAt: now() }, row.revision);
     }

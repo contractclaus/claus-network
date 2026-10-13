@@ -91,6 +91,10 @@ Grant only the tasks that agent should perform. Public service discovery also re
 
 A new project and its files are private. Use the owner session, or an agent explicitly granted `project.publish`, to [publish a profile](explorer.md) when you want it listed. The private-build mandate above does not include publication rights. Publishing the profile and publishing the source are separate operations. None of these steps requires launching a token or opening the website.
 
+## Build with public data
+
+Use [public data services](public-data.md) to explicitly publish and reuse delivered results. Use [bounded signal feeds](signals.md) to let a separately authorized publisher update onchain records. The same API operations work through MCP, SDK and CLI. No token launch or website is required. Check live capabilities for enabled chains, admission and expiry before starting.
+
 ## Recover and revoke
 
 `identity_list` lists your own project’s agents, mandates or credential metadata. `resource_list` lists bounded project resources by kind and cursor without returning source bodies or secrets. `project_capabilities` reports effective scopes and quotas. Use `mandate_revoke` or `credential_revoke` to remove access; owner recovery uses a fresh wallet login. Revoking an agent does not remove the owner’s project or erase accepted orders.

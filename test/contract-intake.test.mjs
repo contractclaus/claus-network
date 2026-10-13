@@ -6,14 +6,14 @@ import { createContractIntake, bindingWord, intakeProposalId } from '../src/cont
 import { digest, requireThat } from '../src/shared/index.mjs';
 
 const word = n => '0x' + n.repeat(64), address = n => '0x' + n.repeat(40);
-async function fixture(t) {
+async function fixture(t, chainId = 11155111) {
   const f = { time: 1800000000000, enabled: true, allowedProjects: ['project-a'], revoked: false, pending: true, submissions: 0, proposals: new Map() };
   f.store = openStore(':memory:'); t.after(() => f.store.close());
   const identity = { credential: async actor => ({ kind: actor, expiresAt: f.time + 2 * 86400000 }), async authorize(actor, _action, { projectId }) {
     requireThat(!f.authExpired, 'unauthenticated');
     requireThat((actor === 'owner' || actor === 'agent' && !f.revoked) && projectId === 'project-a', 'scope_denied');
   } };
-  const profile = { chainId: 11155111, inbox: address('a'), codeHash: word('1'), capability: word('2') };
+  const profile = { chainId, inbox: address('a'), codeHash: word('1'), capability: word('2') };
   const chain = { profile: async () => profile, observe: async () => structuredClone(f.observation), pending: async () => f.pending };
   f.open = () => {
     f.jobs = createJobs({ store: f.store, identity, now: () => f.time, onCancel: (tx, job) => f.api.onCancel(tx, job) });
@@ -32,6 +32,7 @@ async function fixture(t) {
       } });
   };
   f.open();
+  if (chainId !== 11155111) await f.store.transaction(tx => tx.write('chain-bindings', 'project-a', { chainId }, 0));
   f.bindingBody = { requester: address('b'), expiresAt: f.time + 86400000, maxRequests: 2, idempotencyKey: 'first' };
   f.binding = await f.api.bind('agent', 'project-a', f.bindingBody);
   f.observation = { ...profile, finalized: true, state: 'pending', requestId: word('3'),
@@ -215,4 +216,16 @@ test('an authorized binding read exposes the latest rejected event without imply
  await f.store.transaction(tx=>tx.write('contract-intake-rejections',digest({inbox:f.binding.inbox,bindingId:f.binding.id}),rejected,0));
  assert.deepEqual((await f.api.binding('owner','project-a',f.binding.id)).latestRejection,rejected);
  assert.equal((await f.api.binding('owner','project-a',f.binding.id)).used,0);
+});
+
+test('mainnet queue retains the original request through restart and cannot be claimed by Sepolia', async t => {
+  const f = await fixture(t, 1), request = await f.ingest();
+  assert.equal((await f.api.run(11155111)).idle, true);
+  f.loseResponse = true; await f.api.run(1);
+  f.open(); f.advance(); f.decide(request); await f.api.run(1);
+  assert.equal(f.submissions, 1);
+  assert.equal((await f.api.request('owner', 'project-a', request.id)).state, 'result_ready');
+  assert.equal((await f.ingest()).id, request.id);
+  await f.api.revoke('owner', 'project-a', f.binding.id);
+  assert.ok((await f.api.binding('owner', 'project-a', f.binding.id)).revokedAt);
 });

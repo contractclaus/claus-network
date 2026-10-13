@@ -1,0 +1,86 @@
+--- a/agent/src/network-review-schema.ts
++++ b/agent/src/network-review-schema.ts
+@@ -1,5 +1,6 @@
+ import {createHash} from 'node:crypto';
+ import {keccak256,stringToHex,toHex} from 'viem';
++import {validateNetworkSignalConsumer} from './network-signal-review.js';
+ import type {Configuration} from './config.js';
+ 
+ const fail=()=>{throw Error('network_review_invalid_input');};
+@@ -34,6 +35,7 @@
+  }
+ }
+ function validateConsumer(value:any,p:any,projectId:string){
++ if(value?.profile==='claus-signal-v1'){validateNetworkSignalConsumer(value,p,projectId,networkHash,networkCanonical);return;}
+  keys(value,['profile','projectId','vault','policy','owner','totalPrincipalWei','ownerPrincipalWei','build','buildHash','review']);
+  if(p.chainId!==11155111||value.profile!=='claus-native-principal-v1'||value.projectId!==projectId||!address(value.policy)||
+   value.policy.toLowerCase()!==p.target.toLowerCase()||!address(value.owner)||
+@@ -115,7 +117,9 @@
+  validateNetworkReview(input);
+  if(!config.settings.enabled||config.policy.capabilities.networkReview!==true)throw Error('network_review_disabled');
+  const vaultContext=input.evidence.chain.consumer;
+- const scope=vaultContext?
++ const scope=vaultContext?.profile==='claus-signal-v1'?
++  `Review this bounded public-data evaluator and its registered immutable Claus Signal store on the chain named in the proposal. The output controls a stored public record, so this is not a readonly-only consumer. Assess the exact store and factory compiler artifacts, constructor-bound code, separate independent report, feed/schema, authenticated publisher context, sequence/version guards and fixed grant limits. Owners may issue multiple finite grants; the per-grant limit is not a global cap. Data truth is a publisher/provider trust assumption; neither hashes nor an IMD review prove it. Check proposed configuration and module decoding/output semantics against the store ABI and known consumer. Reject incompatible schema, bypassable expiry/revocation, unjustified external dependencies, or unresolved material findings. Approval changes evaluator logic only, not publisher grants, the store, balances, custody or unknown downstream uses.`:
++  vaultContext?
+   `Review only this owner-operated Sepolia admission-policy change. The evidence identifies an already deployed native-principal vault consuming the policy. Its complete constructor-bound runtime, compiler sources, separate IMD report and finalized principal observations are supplied. Check the actual immutable vault code and its withdrawal path, not only the policy module. The supplied snapshot must account for all principal under the recorded owner and is limited to 1000000000000 wei of Sepolia test ETH. Explain how the proposed policy changes admission, and reject any claim of control over existing principal or withdrawals that the code does not support. This is not approval for vault deployment, mainnet, customers, investment, yield or a general custody service. Reject if the code, report or configuration leaves a material risk unresolved.`:
+   input.proposal.chainId===1?
+   `Review only this non-custodial Ethereum Mainnet readonly profile. Trading, credit, liquidity, vaults and user deposits are outside this profile.`:
+--- a/agent/src/network-signal-review.ts
++++ b/agent/src/network-signal-review.ts
+@@ -0,0 +1,55 @@
++import {keccak256} from 'viem';
++
++// Independent model-boundary validation. Only the exact reviewed immutable
++// factory/store pair is admitted as a writing consumer of readonly evaluation.
++export function validateNetworkSignalConsumer(v:any,p:any,projectId:string,hash:(v:any)=>string,canonical:(v:any)=>string) {
++ const fail=()=>{throw Error('network_review_invalid_input');};
++ const keys=(v:any,names:string[])=>{if(!v||typeof v!=='object'||Array.isArray(v)||Object.keys(v).length!==names.length||names.some(k=>!Object.hasOwn(v,k)))fail();};
++ const address=(x:any)=>typeof x==='string'&&/^0x[0-9a-f]{40}$/i.test(x)&&!/^0x0{40}$/i.test(x);
++ const word=(x:any)=>typeof x==='string'&&/^0x[0-9a-f]{64}$/i.test(x);
++ keys(v,['profile','projectId','store','factory','evaluator','executor','projectKey','feedId','schemaHash','limits','dataTrust','build','buildHash','factoryBuild','factoryBuildHash','review']);
++ if(v.profile!=='claus-signal-v1'||v.projectId!==projectId||!address(v.evaluator)||!address(v.executor)||
++  v.evaluator.toLowerCase()!==p.target.toLowerCase()||v.executor.toLowerCase()!==p.executor.toLowerCase()||
++  v.projectKey!==p.projectKey||![v.feedId,v.schemaHash].every(word)||v.dataTrust!=='publisher-attested-public-data')fail();
++ const expectedLimits={maximumInputBytes:2048,maximumOutputBytes:512,evaluationGas:200000,maximumWritesPerGrant:10000,
++  maximumGrantSeconds:2592000,maximumDataSeconds:86400,minimumIntervalSeconds:1,multipleOwnerSignedGrants:true,assetCustody:false};
++ if(canonical(v.limits)!==canonical(expectedLimits))fail();
++ for(const c of [v.store,v.factory]) {
++  keys(c,['address','code','codeHash']);
++  if(!address(c.address)||typeof c.code!=='string'||!/^0x(?:[0-9a-f]{2}){1,24576}$/i.test(c.code)||keccak256(c.code)!==c.codeHash)fail();
++ }
++ for(const [b,h,name] of [[v.build,v.buildHash,'ClausSignalStore'],[v.factoryBuild,v.factoryBuildHash,'ClausSignalFactory']]) {
++  if(!b||hash(b)!==h||b.status!=='compiled'||b.contract!==name||b.profile?.profile!=='solidity-static-compile-v1'||
++   b.profile.compiler!=='0.8.27+commit.40a35a09.Emscripten.clang'||hash(b.standardInput)!==b.inputHash||
++   !b.standardInput?.sources?.[b.entry]?.content||typeof b.runtimeTemplate!=='string'||
++   !/^0x(?:[0-9a-f]{2}){1,24576}$/i.test(b.runtimeTemplate)||keccak256(b.runtimeTemplate)!==b.runtimeTemplateHash)fail();
++ }
++ if(hash(v.build.standardInput.sources)!==hash(v.factoryBuild.standardInput.sources))fail();
++ const groups:any[]=Object.values(v.factoryBuild.immutableReferences??{});
++ if(groups.length!==1||!Array.isArray(groups[0])||groups[0].length===0)fail();
++ let expected=v.factoryBuild.runtimeTemplate.slice(2);
++ for(const ref of groups[0]) {
++  if(!Number.isSafeInteger(ref.start)||ref.start<0||ref.length!==32||(ref.start+32)*2>expected.length||
++   !/^0{64}$/.test(expected.slice(ref.start*2,(ref.start+32)*2)))fail();
++  expected=expected.slice(0,ref.start*2)+v.executor.toLowerCase().slice(2).padStart(64,'0')+expected.slice((ref.start+32)*2);
++ }
++ if('0x'+expected!==v.factory.code.toLowerCase())fail();
++ let masked=v.store.code.slice(2).toLowerCase();const used=new Set();
++ if(masked.length!==v.build.runtimeTemplate.length-2)fail();
++ for(const refs of Object.values(v.build.immutableReferences??{}) as any[]) {
++  if(!Array.isArray(refs)||refs.length===0)fail();let value;
++  for(const ref of refs) {
++   if(!Number.isSafeInteger(ref.start)||ref.start<0||ref.length!==32||(ref.start+32)*2>masked.length||
++    !/^0{64}$/.test(v.build.runtimeTemplate.slice(2+ref.start*2,2+(ref.start+32)*2)))fail();
++   const actual=masked.slice(ref.start*2,(ref.start+32)*2);
++   if(value!==undefined&&actual!==value)fail();value=actual;
++   for(let i=ref.start;i<ref.start+32;i++){if(used.has(i))fail();used.add(i);}
++   masked=masked.slice(0,ref.start*2)+'0'.repeat(64)+masked.slice((ref.start+32)*2);
++  }
++ }
++ if('0x'+masked!==v.build.runtimeTemplate.toLowerCase())fail();
++ const r=v.review;keys(r,['provider','jobId','artifactHash','report','reportHash']);
++ if(r.provider!=='imd-audit-v1'||typeof r.jobId!=='string'||!/^[a-z0-9-]{1,128}$/.test(r.jobId)||
++  typeof r.artifactHash!=='string'||!/^sha256:[0-9a-f]{64}$/.test(r.artifactHash)||typeof r.report!=='string'||
++  r.report.length<20||Buffer.byteLength(r.report)>80000||hash(r.report)!==r.reportHash)fail();
++}

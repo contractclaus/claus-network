@@ -3,7 +3,7 @@ import { createPolicies } from '../policies/index.mjs';
 
 // Technical admission only. This module cannot create funding or chain grants.
 export const ACCESS_DEFAULTS = Object.freeze({
-  publicCollaboration: false, paused: false,
+  publicCollaboration: false, publicDataServices: false, paused: false,
   projectsPerOwner: 10, agentsPerProject: 32, mandatesPerDay: 64, credentialsPerDay: 128,
   snapshotsPerProject: 64, snapshotBytesPerProject: 8000000,
   buildsPerProjectDay: 16, buildsPerDay: 256,
@@ -15,7 +15,7 @@ export const ACCESS_DEFAULTS = Object.freeze({
 export const ACCESS_MAXIMA = Object.freeze(Object.fromEntries(Object.entries(ACCESS_DEFAULTS)
   .filter(([, value]) => typeof value === 'number').map(([key, value]) => [key, value * 4])));
 
-export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, mainnetAdmission, now = () => Date.now() }) {
+export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, mainnetAdmission, signalDiscovery = async () => [], intakeDiscovery = async () => [], now = () => Date.now() }) {
   async function owner(actor, reader = store) {
     const who = await identity.credential(actor, reader);
     const principal = (await reader.read('principals', who.principalId))?.value;
@@ -27,8 +27,9 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
   const policies = createPolicies({ store, now,
     authorize: (actor, _action, _scope, reader) => owner(actor, reader),
     schemas: { 'project-access': config => {
-      shape(config, Object.keys(ACCESS_DEFAULTS));
+      shape(config, Object.keys(ACCESS_DEFAULTS).filter(key => key !== 'publicDataServices' || Object.hasOwn(config, key)));
       requireThat(typeof config.publicCollaboration === 'boolean' && typeof config.paused === 'boolean', 'invalid_access_policy');
+      requireThat(config.publicDataServices === undefined || typeof config.publicDataServices === 'boolean', 'invalid_access_policy');
       for (const [key, maximum] of Object.entries(ACCESS_MAXIMA)) integer(config[key], 1, maximum);
     } }
   });
@@ -83,13 +84,20 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       collaboration: { admission: active.config.paused ? 'paused' : !collaborationEnabled ? 'not_enabled' :
         active.config.publicCollaboration ? 'public' : 'restricted_pilot', worker: await fresh('services') ? 'ready' : 'unavailable' },
       staticHosting: { isolated: true, backendExecution: false },
+      publicDataServices: { enabled: collaborationEnabled && !active.config.paused && active.config.publicDataServices === true,
+        policy: 'public-data-v1', maximumLineageDepth: 3, explicitResultPublication: true },
       transfers: { enabled: (await cap('portability'))?.enabled === true, trustedDestinationRequired: true },
       reviews: { admission: !reviewEnabled ? 'not_enabled' : reviews?.config.enabled && reviews.config.expiresAt > now() ? 'public_sponsored' : 'restricted_pilot', reservationRequired: true, projectPrice: '0', asset: 'IMD', chainId: 1 },
       chainProfiles: [{ chainId: 11155111, profile: 'claus-readonly-v1', admission: chainState },
         { chainId: 1, profile: 'claus-readonly-v1', admission: mainnetState }],
+      signalProfiles: await signalDiscovery(), contractIntake: await intakeDiscovery(),
       mainnet: mainnetState, publicInference: 'not_enabled', limits: copy(active.config) };
   }
   return { policy, limit, collaboration, discovery,
+    async publicData(projectId, reader = store) {
+      await collaboration(projectId, reader);
+      requireThat((await policy(reader)).config.publicDataServices === true, 'public_data_not_enabled');
+    },
     consumeProjects: reader => consume(reader, 'projects', 1, 'newProjectsPerDay', 'newProjectsTotal'),
     consumeSnapshotBytes: (reader, bytes) => consume(reader, 'snapshotBytes', bytes, 'newSnapshotBytesPerDay', 'newSnapshotBytesTotal'),
     async project(actor, projectId) {

@@ -14,7 +14,7 @@ If an agent is replaced before provider work starts, its successor can call `ser
 
 Cancellation before work begins stops dispatch. A late payment receipt remains recorded even if the order has expired or was cancelled; it is not an automatic refund. Paid requests use a stable order identifier and are reconciled after interruptions. Inputs are released only to the chosen provider; this protocol cannot make a provider forget data already received.
 
-Initial limits are 64 service versions per project, 64 quotes and 16 accepted orders per project per UTC day. Technical admission is reported by `project_capabilities`; published versions and their terms do not change when limits change. Service versions expire within 30 days. Data, analysis and rendering providers can be composed by an agent using these same interfaces; the agent explicitly decides which result to share with the next provider.
+Default limits are 64 service versions per project, 64 quotes and 16 accepted orders per project per UTC day; the active access policy may adjust daily limits. Technical admission is reported by `project_capabilities`; published versions and their terms do not change when limits change. Service versions expire within 30 days. Data, analysis and rendering providers can be composed by an agent using these same interfaces; the agent explicitly decides which result to share with the next provider.
 
 ## Recover publication after a restart
 
@@ -33,3 +33,7 @@ Their current profiles are [Claus Chain Data](https://claus.si/p/claus-data-serv
 ## Three-project API example
 
 The [quickstart](quickstart.md#run-the-complete-example) runs the shipped `reference/public-project.mjs` provider, consumer and publisher. Its UI contains a real delivered result. It uses ordinary public API admission, no preconfigured project ID and no private operator database access.
+
+## Explicit public reuse
+
+The additional [public-data-v1 lifecycle](public-data.md) supports separately authorized result publication and bounded provenance. Existing no-delegation manifests retain their original meaning. [Signal feeds](signals.md) can consume exact published observations with a finite owner-signed grant.
