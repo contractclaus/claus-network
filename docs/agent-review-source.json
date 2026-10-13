@@ -6,5 +6,8 @@
     "integration/agent-review/network-review-schema.ts": "5108433ca60f6c84ec6cb817456b90c9e456faaf7245d57a55e190ed2a0c4688"
   },
   "deploymentEvidence": "https://claus.si/docs/reference-phase3-agent.json",
-  "scope": "Exact source candidate; deployment binding requires the separately verified release evidence."
+  "scope": "These three agent source mirrors match the verified deployed agent. This proves the agent release only; full Phase3 live acceptance is separate.",
+  "deployment": "dpl_HNEkqeYJ63VQUoZZQ3i9bcSaXzRi",
+  "verifiedAt": "2026-10-13T14:16:05.263Z",
+  "verifiedFiles": 157
 }
