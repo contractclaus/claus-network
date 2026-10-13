@@ -9,6 +9,7 @@ import {captureSignalConsumer,validateSignalRuntime} from '../adapters/signal-ev
 import {digest} from '../src/shared/index.mjs';
 import {openStore} from '../src/storage/index.mjs';
 import {createSignals} from '../src/signals/index.mjs';
+import {errorStatus,errorBody} from '../interfaces/http.mjs';
 
 test('real local signal lifecycle binds source, typed grant, reviewed consumer, version, finalized receipts and revocation',
  {skip:!process.env.CLAUS_TEST_CHAIN||!process.env.CLAUS_SIGNAL_BUILDS,timeout:60000},async t=>{
@@ -72,11 +73,19 @@ test('real local signal lifecycle binds source, typed grant, reviewed consumer, 
  const api=createSignals({store:apiStore,chain:signalChain,identity:{authorize:async()=>{}},
   artifacts:{get:async(_p,h)=>h===digest(factoryBuild)?factoryBuild:build},now:()=>grantHead*1000});
  const grant=await api.grantPrepare('owner',signal.projectId,{...terms,idempotencyKey:'local-grant'});
+ const clock=Number((await now()).timestamp);
+ await assert.rejects(api.grantPrepare('owner',signal.projectId,{...terms,expiresAt:clock+60,nonce:'16',idempotencyKey:'short-invalid'}),error=>{
+  assert.equal(error.code,'signal_grant_expiry');assert.equal(errorStatus(error),400);assert.equal(errorBody(error).retryable,false);return true;
+ });
+ const short=await api.grantPrepare('owner',signal.projectId,{...terms,expiresAt:clock+61,nonce:'16',idempotencyKey:'short-valid'});
+ const cap=await api.grantPrepare('owner',signal.projectId,{...terms,expiresAt:clock+30*86400,nonce:'17',idempotencyKey:'chain-cap'});
+ assert.equal(cap.typedData.message.expiresAt,clock+30*86400);
  await assert.rejects(signalChain.grant(signal,grant.grantId),{code:'signal_grant_not_found'});
  await assert.rejects(api.grantRegister('owner',signal.projectId,{operationId:grant.id,signature:await publisher.signTypedData(grant.typedData)}),{code:'invalid_signature'});
  const registered=await api.grantRegister('owner',signal.projectId,{operationId:grant.id,signature:await owner.signTypedData(grant.typedData)});
  const preRevoked=await api.grantPrepare('owner',signal.projectId,{...terms,nonce:'15',idempotencyKey:'local-pre-revoked'});
  await send((await signalChain.prepareRevoke(signal,binding,preRevoked.grantId)).transaction);await final();
+ await assert.rejects(api.grantRegister('owner',signal.projectId,{operationId:short.id,signature:await owner.signTypedData(short.typedData)}),{code:'signal_grant_expiry'});
  await assert.rejects(api.grantRegister('owner',signal.projectId,{operationId:preRevoked.id,signature:await owner.signTypedData(preRevoked.typedData)}),{code:'signal_grant_inactive'});
  await send(registered.transaction,publisher);await final();
  assert.equal((await signalChain.grant(signal,grant.grantId)).terms.nonce,'14');
