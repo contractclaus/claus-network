@@ -1,0 +1,16 @@
+{
+  "scope": "Select the existing native Responses streaming transport for network reviews. Agent, model, effort, evidence, output limit, verdict parsing, deadlines, single dispatch and payment limits are unchanged.",
+  "priorSource": "182af1efac991d25ba228dfad7e8ad54fb51ed23",
+  "changedRuntimeFile": "integration/payment-review/src/index.js",
+  "newBehavior": "Quote and send the same native input with stream=true; consume only a complete typed terminal event through the existing bounded parser.",
+  "accounting": "A streamed completion is not settlement. Keep the full existing request-risk hold until independently matched billing evidence is available. Never use early headers as final cost.",
+  "existingRequests": "Previously dispatched IDs retain their saved transport/outcome and are never resent. A queued agent request with no payer dispatch can use the new transport.",
+  "validation": {
+    "targetedCases": 3,
+    "passed": true,
+    "scope": "Complete private payment runtime with existing database-backed routing fixtures. Existing parser tests and reviews are reused, not repeated."
+  },
+  "independentReview": "The new one-flag route selection has not received an additional paid independent audit. It reuses the previously reviewed parser/accounting implementation; the deployment record distinguishes this operator maintenance correction from independent reviews.",
+  "publicationIsActivation": false,
+  "providerDocumentation": "https://www.surplusintelligence.ai/docs/api-reference/responses"
+}
