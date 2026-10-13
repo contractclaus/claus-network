@@ -3,6 +3,14 @@ import { requireThat } from '../shared/index.mjs';
 export const READONLY_PROFILE = 'claus-readonly-v1';
 export const MANAGED_PROFILE = 'claus-managed-v1';
 
+export function assertReviewProfile(review, { chainId, profile = READONLY_PROFILE }) {
+  requireThat((review.profile ?? READONLY_PROFILE) === profile, 'project_profile_mismatch');
+  // Historical readonly source reviews did not select a chain. Managed
+  // reviews must name one; never reinterpret an explicitly scoped review.
+  requireThat(review.chainId === chainId || review.chainId === undefined && profile === READONLY_PROFILE,
+    'project_chain_mismatch');
+}
+
 // Legacy keys and absent profile fields belong to readonly. Adding a profile
 // must never repoint an existing project or spend another profile's allocation.
 export function chainProfile(chainId = 11155111, profile = READONLY_PROFILE) {

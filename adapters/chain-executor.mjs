@@ -276,7 +276,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       if (executed) {
         requireThat(Number(await read(p.target, 'version', [], targetAbi)) === p.fromVersion + 1 &&
           (await read(p.target, 'implementation', [], targetAbi)).toLowerCase() === p.implementation.toLowerCase() &&
-          await read(p.target, 'configuration', [], targetAbi) === p.configuration, 'execution_state_mismatch');
+          keccak256(await read(p.target, 'configuration', [], targetAbi)) === keccak256(p.configuration), 'execution_state_mismatch');
         return { state: 'executed', execution: { chainId, ...(managed ? { profile } : {}), address: p.target, implementation: p.implementation,
           version: p.fromVersion + 1, codeHash: p.toCodeHash, approvalHash: signed.approvalHash,
           transactionHash: executed.hash, blockNumber: executed.receipt.blockNumber, blockHash: executed.receipt.blockHash,

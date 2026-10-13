@@ -53,3 +53,13 @@ test('a managed adapter cannot settle a readonly reservation or reuse its assess
   await assert.rejects(store.transaction(tx=>adm.finalizeGas(tx,{id:'old',actual:'3'})),{code:'project_profile_mismatch'});
   assert.equal((await store.read('public-chain-reservations',digest({id:'old'}))).value.settled,false);
 });
+
+test('deployment rejects review chain and profile mismatches before reserving funds',async t=>{
+ const store=openStore(':memory:');t.after(()=>store.close());const {createChainDeployments}=await import('../src/chain-deployments/index.mjs');
+ let reviewed={state:'reviewed',artifactHash:'report',buildId:'build',profile:READONLY_PROFILE,chainId:11155111,input:{buildHash:'artifact'}};
+ const deployments=createChainDeployments({store,identity:{authorize:async()=>{}},reviews:{get:async()=>reviewed},builds:{get:async()=>({state:'compiled',artifactHash:'artifact'})},artifacts:{get:async()=>({})},chain:{validateModule:()=>{throw Error('must reject before validation');}}});
+ await assert.rejects(deployments.deployModule('actor','p',{caseId:'r',chainId:11155111,profile:MANAGED_PROFILE}),{code:'project_profile_mismatch'});
+ reviewed={...reviewed,profile:MANAGED_PROFILE};
+ await assert.rejects(deployments.deployModule('actor','p',{caseId:'r',chainId:1,profile:MANAGED_PROFILE}),{code:'project_chain_mismatch'});
+ assert.equal((await store.list('chain-modules')).length,0);assert.equal((await store.list('public-chain-reservations')).length,0);
+});

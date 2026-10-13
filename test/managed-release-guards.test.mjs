@@ -32,3 +32,16 @@ test('controller will not sign an approval with only a retry-sized execution win
  const controller=createClausController({store,profile,signer:{...signer,signTypedData:async()=>{signed++;throw Error('must not sign');}},secret:'local',now:()=>now*1000,client:{},chain:{capabilityMatches:async()=>{},validateProposal:async()=>({minDelaySeconds:delay})},fetcher:async()=>Response.json({id:'nr_'+digest(input).slice(7),state:'completed',result})});
  await assert.rejects(controller.step({value,input,authorize:async()=>true}),{code:'proposal_expiring'});assert.equal(signed,0);assert.equal(await store.read('claus-signed-approvals',value.id),null);
 });
+
+test('a confirmed mixed-case initialization is recognized by bytes and not retried forever',async t=>{
+ const{approvalMessage,approvalTypes,domain}=await import('../adapters/chain-read.mjs');const{hashTypedData}=await import('viem');
+ const store=openStore(':memory:');t.after(()=>store.close());const signer=privateKeyToAccount('0x'+'33'.repeat(32));
+ const p={profile,chainId:11155111,executor:addr(2),target:addr(4),projectKey:word,fromVersion:0,fromCodeHash:'0x'+'00'.repeat(32),implementation:addr(5),toCodeHash:word,configuration:'0xD09DE08A',dependencySnapshotHash:word,policyVersion:word,policyGeneration:1,authorityGeneration:1,clausGeneration:1,mandateHash:word,nonce:'1',notBefore:1800000000,expiresAt:1800086400};
+ const value={id:'case-config',projectId:'prj_config',proposal:p,proposalHash:digest(p),reviewArtifactHash:digest('review'),decision:{decision:'approve',decisionHash:digest('decision')}};
+ const evidenceHash='0x'+digest({proposalHash:value.proposalHash,reviewArtifactHash:value.reviewArtifactHash,decisionHash:value.decision.decisionHash}).slice(7),message=approvalMessage(p,evidenceHash),typed={domain:domain(p.executor,p.chainId,p.profile),types:approvalTypes,primaryType:'Approval',message};
+ const signed={decisionHash:value.decision.decisionHash,proposalHash:value.proposalHash,message,approvalHash:hashTypedData(typed),signature:await signer.signTypedData(typed),signer:signer.address};
+ await store.transaction(async tx=>{await tx.write('network-capabilities','chain:11155111:managed',{enabled:true,profile,chainId:11155111,executor:p.executor,approvalSigner:signer.address,executorPayer:signer.address},0);await tx.write('claus-signed-approvals',value.id,signed,0);await tx.write('chain-bindings',value.projectId,{verification:{state:'verified'}},0);await tx.write('chain-transactions','execute:'+value.id,{state:'confirmed',sender:signer.address,intent:{chainId:11155111},hash:word,receipt:{blockNumber:'100',blockHash:word}},0);});
+ const client={getChainId:async()=>11155111,readContract:async({functionName})=>({version:1n,implementation:p.implementation,configuration:p.configuration.toLowerCase()})[functionName]};
+ const executor=createChainExecutor({store,profile,client,signer,sealer:createSealer('12'.repeat(32)),chain:{capabilityMatches:async()=>{}},artifacts:{get:async()=>({proposal:p,proposalHash:value.proposalHash})}});
+ const result=await executor.execution.step({value,authorize:async()=>true});assert.equal(result.state,'executed');assert.equal(result.execution.transactionHash,word);
+});

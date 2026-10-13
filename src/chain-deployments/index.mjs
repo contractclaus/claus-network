@@ -1,8 +1,8 @@
-export { MANAGED_PROFILE, READONLY_PROFILE, chainProfile, projectProfile } from './profiles.mjs';
+export { MANAGED_PROFILE, READONLY_PROFILE, chainProfile, projectProfile, assertReviewProfile } from './profiles.mjs';
 import { createChainAdmission } from './admission.mjs';
 export { createChainAdmission } from './admission.mjs';
 import { digest, requireThat, text } from '../shared/index.mjs';
-import { chainProfile, projectProfile, READONLY_PROFILE, MANAGED_PROFILE } from './profiles.mjs';
+import { chainProfile, projectProfile, assertReviewProfile, READONLY_PROFILE, MANAGED_PROFILE } from './profiles.mjs';
 
 export function createChainDeployments({ store, identity, builds, reviews, jobs, artifacts, chain, now = () => Date.now() }) {
   const admissions = new Map();
@@ -42,7 +42,8 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
       if (selected.profile === MANAGED_PROFILE) {
         await forChain(selected.chainId, selected.profile).admitted(reader);
       }
-      return { chainId: selected.chainId, profile: selected.profile };
+      return { chainId: requested.chainId === undefined && selected.profile === READONLY_PROFILE ? undefined : selected.chainId,
+        profile: selected.profile };
     },
     async onCancel(tx, job) {
       const moduleJob = job.kind === 'module-deploy';
@@ -64,6 +65,7 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
       const artifact = await artifacts.get(projectId, build.artifactHash);
       return store.transaction(async tx => {
         const { chainId, profile } = await selection(tx, projectId, requestedChain, requestedProfile);
+        assertReviewProfile(reviewed, { chainId, profile });
         await allowed(actor, projectId, tx, chainId, profile);
         chain.validateModule(artifact, profile);
         const id = digest({ projectId, caseId, kind: 'module-deploy', ...(chainId === 1 ? { chainId } : {}), ...(profile !== READONLY_PROFILE ? { profile } : {}) });

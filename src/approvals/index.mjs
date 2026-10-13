@@ -1,6 +1,6 @@
 import { canonical, digest, requireThat, text } from '../shared/index.mjs';
 import { publicDecisionCapacity } from './limits.mjs';
-import { MANAGED_PROFILE } from '../chain-deployments/index.mjs';
+import { MANAGED_PROFILE, assertReviewProfile } from '../chain-deployments/index.mjs';
 
 export function createApprovals({ store, identity, projects, reviews, deployments, jobs, artifacts, chain, signalConsumer = async () => null, now = () => Date.now() }) {
   function executionEvidence(value) {
@@ -60,6 +60,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       requireThat(binding, 'project_not_registered');
       const reviewed = await reviews.get(actor, projectId, module.caseId);
       requireThat(reviewed.state === 'reviewed' && reviewed.artifactHash, 'review_not_complete');
+      assertReviewProfile(reviewed, { chainId: binding.chainId ?? 11155111, profile: binding.profile });
       const report = await reviews.artifact(actor, projectId, module.caseId);
       requireThat(report.complete === true && report.jobId === reviewed.providerJobId, 'review_mismatch');
       const files = (await projects.files(actor, projectId, reviewed.input.sourceHash)).map(({ path, content }) => ({ path, content }));

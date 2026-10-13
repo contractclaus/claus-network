@@ -64,30 +64,33 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         await sourceIsPublished(tx, value);
         const scope = selectReviewProfile ? await selectReviewProfile(tx, projectId, { chainId, profile }) : null;
         requireThat(scope || chainId === undefined && profile === undefined, 'unsupported_profile');
-        if (scope) { value.chainId = scope.chainId; value.profile = scope.profile; }
+        if (scope) { if (scope.chainId !== undefined) value.chainId = scope.chainId; value.profile = scope.profile; }
+        const sameScope = record => (record.profile ?? 'claus-readonly-v1') === (scope?.profile ?? 'claus-readonly-v1') &&
+          record.chainId === scope?.chainId;
         const old = await tx.read('review-cases', id);
-        if (old) { requireThat(old.value.inputHash === inputHash, 'idempotency_conflict'); return old.value; }
+        if (old) { requireThat(old.value.inputHash === inputHash && sameScope(old.value), 'idempotency_conflict'); return old.value; }
         const candidates = await tx.list('review-cases', { projectId, limit: 1000 });
         for (const row of candidates) {
           const prior = row.value;
           if (prior.inputHash !== inputHash) continue;
+          const existing = () => { requireThat(sameScope(prior), 'review_scope_conflict'); return prior; };
           // A paid or uncertain attempt is never replaced by a new key.
-          if (prior.state === 'reviewed') return prior;
+          if (prior.state === 'reviewed') return existing();
           if (prior.state === 'admitted') {
             const job = prior.reviewJobId && (await tx.read('review-jobs', prior.reviewJobId))?.value;
             // Only the atomic, proven-unsent cancellation path releases this
             // source. Paid, unknown and missing records retain their identity.
-            if (job?.work !== 'cancelled' || job.billing !== 'void') return prior;
+            if (job?.work !== 'cancelled' || job.billing !== 'void') return existing();
           }
           const workflow = (await tx.read('workflow-jobs', prior.quoteJobId))?.value;
           if (prior.state === 'preparing' && workflow &&
-            !['failed', 'blocked', 'cancelled'].includes(workflow.state)) return prior;
+            !['failed', 'blocked', 'cancelled'].includes(workflow.state)) return existing();
           const quote = prior.quoteId && (await tx.read('review-quotes', prior.quoteId))?.value;
-          if (prior.state === 'quoted' && quote?.offer.expiresAt > now()) return prior;
+          if (prior.state === 'quoted' && quote?.offer.expiresAt > now()) return existing();
         }
         requireThat(candidates.length < 64, 'capacity_reached');
         const eligibility = await sponsor(tx, projectId);
-        if (eligibility.kind === 'public') {
+        if (eligibility.kind === 'public' || scope?.profile === 'claus-managed-v1') {
           requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
           await validatePublicBuild(await artifacts.get(projectId, build.artifactHash, tx), scope?.profile);
         }

@@ -17,7 +17,7 @@ export async function checkChainWorkerRoles(store, role, signers) {
   for(const [chainId,signer] of signers){
     for (const profile of [READONLY_PROFILE, MANAGED_PROFILE]) {
     const cap=(await store.read('network-capabilities',chainProfile(chainId,profile).capability))?.value;
-    if(!cap)continue;
+    if(!cap || profile === MANAGED_PROFILE && !cap.enabled)continue;
     const expected=role==='controller'?cap.approvalSigner:cap.executorPayer;
     requireThat(expected?.toLowerCase()===signer.address.toLowerCase(),'worker_role_mismatch');
     }
