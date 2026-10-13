@@ -60,7 +60,7 @@ test('one bounded daily allocation preserves used attempts, global limits and li
 
 test('expired, cross-project and excessive allocations do not lift the default daily cap', async t => {
   for (const change of [{ expiresAt: 1 }, { projectId: 'someone-else' }, { maximumProjectDay: 5 },
-    { maximumProjectLifetime: 9 }, { maximumProjectLifetime: '5' }, { maximumProjectLifetime: 3 }, { maximumProjectLifetime: null },
+    { maximumProjectLifetime: 9 }, { maximumProjectLifetime: '5' }, { maximumProjectLifetime: 3 }, { maximumProjectLifetime: null }, { maximumGlobalDay: 17 }, { maximumGlobalDay: null }, { maximumGlobalDay: '10' },
     { maximumProjectDay: undefined, maximumProjectLifetime: 5 }, { maximumProjectDay: 6, maximumProjectLifetime: 5 }]) {
     const store = openStore(':memory:'); t.after(() => store.close()); const now = 1800000000000, day = Math.floor(now / 86400000), projectId = 'reference';
     const allocation = { projectId, day, expiresAt: (day + 1) * 86400000, maximumProjectDay: 3, ...change };
@@ -106,4 +106,18 @@ test('a finite recovery allocation adds only its remaining capacity and expires 
   now = expiresAt;
   await assert.rejects(submit(), e => e.code === 'decision_capacity_reached' && e.retryAt === undefined);
   assert.equal(await count('lifetime', projectId, null), 5);
+});
+
+test('global recovery headroom is project-bound, finite and never resets historical counters', async t => {
+ const store=openStore(':memory:');t.after(()=>store.close());let now=1800000000000;const day=Math.floor(now/86400000),projectId='recovery';
+ const key=digest({scope:'day',subject:'global',period:day});
+ await store.transaction(async tx=>{
+  await tx.write('public-decision-admission',key,{count:8},0);
+  await tx.write('public-decision-allocations',digest({projectId,day}),{projectId,day,expiresAt:now+10000,maximumProjectDay:2,maximumGlobalDay:10},0);
+ });
+ await assert.rejects(store.transaction(tx=>publicDecisionCapacity(tx,'unallocated',now,true)),{code:'decision_capacity_reached'});
+ await store.transaction(tx=>publicDecisionCapacity(tx,projectId,now,true));
+ assert.equal((await store.read('public-decision-admission',key)).value.count,9);
+ now+=10000;await assert.rejects(store.transaction(tx=>publicDecisionCapacity(tx,projectId,now,true)),{code:'decision_capacity_reached'});
+ assert.equal((await store.read('public-decision-admission',key)).value.count,9);
 });

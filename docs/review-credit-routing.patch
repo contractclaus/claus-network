@@ -1,0 +1,95 @@
+--- a/payments/src/index.js
++++ b/payments/src/index.js
+@@ -61,6 +61,11 @@
+   const creditLedgerEnabled=()=>!!env.SURPLUS_CREDIT_KEY_ID;
+   const credit=createCreditCompletion({env,sql,fetcher,paidFetch});
+   const independentCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:true,transportProfile:env.BUILDER_CREDIT_PROFILE});
++  // Reviews retain the native Responses payload and model/effort. Builder's
++  // optional Chat adapter must never reinterpret a review. Native nonstreaming
++  // returns its final bill; the relay still sends downstream keepalives.
++  const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:false});
++  const workHandler=id=>/^network-review:nr_[a-f0-9]{64}$/.test(id)?reviewCredit:independentCredit;
+   const creditResult=row=>({status:row.status,response:row.response??null,outcome:row.outcome??null});
+   const workResult=row=>({...creditResult(row),...(row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed'
+     ?{accounting:{requestId:row.id,amount:'0',maximumMicroUsdc:row.reserved_max,basis:'verified_nonpayment'}}:{})});
+@@ -133,7 +138,7 @@
+     const db=sql(),rows=await db`SELECT status FROM claus_inference WHERE id=${id}`;
+     const savedCredit=await readCredit(db,id);
+     if(savedCredit)return credit(c);
+-    if(await creditWork.readCredit(db,id))return independentCredit(c);
++    if(await creditWork.readCredit(db,id))return workHandler(id)(c);
+     if(!rows.length) {
+       const legacy=await legacyStatus(id,{env,fetcher});
+       if(legacy.kind==='found')return c.json({error:'legacy_request_read_only',id,...legacy.result},409);
+@@ -150,7 +155,7 @@
+       if(c.req.header('x-inference-purpose')!=='research')return c.json({error:'credit_purpose_required',payment:'not_signed'},400);
+       const admission=await workAdmission(db,env,id,c.req.header('x-max-quote-micro-usdc'));
+       if(!admission.ready)return c.json({error:admission.reason,payment:'not_signed'},503);
+-      return deliver(independentCredit);
++      return deliver(workHandler(id));
+     }
+     if(!rows.length&&creditCandidate(env,id)&&path==='/api/completion') {
+       if(c.req.header('x-inference-purpose')!=='research')return c.json({error:'credit_purpose_required',payment:'not_signed'},400);
+--- a/payments/src/credit-provider.js
++++ b/payments/src/credit-provider.js
+@@ -26,7 +26,7 @@
+ // This lane consumes the store's existing finite escrow. An unsigned quote is
+ // only an estimate/filter, not a signed spending ceiling. No x402 signing,
+ // top-up, fallback, retry or provider recovery request belongs here.
+-export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenceFetch,store=creditStore,forceStream=false,transportProfile}) {
++export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenceFetch,store=creditStore,forceStream,transportProfile}) {
+   return async function creditCompletion(c) {
+     const id=c.req.header('idempotency-key');
+     if(!validId(id))return c.json({error:'stable_request_id_required'},400);
+@@ -67,7 +67,7 @@
+     if(!reserved.length)return c.json({error:'request_already_reserved'},409);
+     let submitting=false,providerRequestId=null,httpStatus=null,providerSignal=null;
+     let providerResponse=null,terminalStage=null;
+-    const streamed=transport?transport.streamed:forceStream||env.SURPLUS_CREDIT_STREAM==='true';
++    const streamed=transport?transport.streamed:forceStream??env.SURPLUS_CREDIT_STREAM==='true';
+     let outcome={rail:'surplus_credit',failure:'credit_preflight_failed'};
+     const signal=limit=>{
+       const remaining=Math.min(limit,deadline-Date.now()-30000);
+--- a/payments/src/credit-work-admission.js
++++ b/payments/src/credit-work-admission.js
+@@ -1,11 +1,13 @@
+ import {creditSnapshot} from './credit-work-store.js';
+ import {CHAT_BUILDER_PROFILE,BOUNDED_BUILDER_PROFILE,SOL_BUILDER_PROFILE,SOL_EXTENDED_BUILDER_PROFILE} from './builder-transport.js';
+ const builder=/^build_[a-f0-9]{24}:model:[1-3]$/;
+-export const workCandidate=(env,id)=>env.SURPLUS_CREDIT_SCOPE==='builder'&&env.BUILDER_FRESH_RAIL==='credit_work'&&builder.test(id)&&id!==env.SURPLUS_CREDIT_PILOT_ID;
++const review=/^network-review:nr_[a-f0-9]{64}$/;
++export const reviewCreditCandidate=(env,id)=>env.NETWORK_REVIEW_FRESH_RAIL==='credit_work'&&review.test(id);
++export const workCandidate=(env,id)=>reviewCreditCandidate(env,id)||env.SURPLUS_CREDIT_SCOPE==='builder'&&env.BUILDER_FRESH_RAIL==='credit_work'&&builder.test(id)&&id!==env.SURPLUS_CREDIT_PILOT_ID;
+ export async function workAdmission(db,env,id,maximumMicroUsdc){
+  const waiting=reason=>({id,maximumMicroUsdc,ready:false,rail:'surplus_credit',reason,retryAfterSeconds:60});
+  if(!workCandidate(env,id)||env.SURPLUS_CREDIT_ENABLED!=='true')return waiting('credit_pilot_wait');
+- if(env.BUILDER_CREDIT_PROFILE!==undefined&&![CHAT_BUILDER_PROFILE,BOUNDED_BUILDER_PROFILE,SOL_BUILDER_PROFILE,SOL_EXTENDED_BUILDER_PROFILE].includes(env.BUILDER_CREDIT_PROFILE))return waiting('credit_profile_unavailable');
++ if(!reviewCreditCandidate(env,id)&&env.BUILDER_CREDIT_PROFILE!==undefined&&![CHAT_BUILDER_PROFILE,BOUNDED_BUILDER_PROFILE,SOL_BUILDER_PROFILE,SOL_EXTENDED_BUILDER_PROFILE].includes(env.BUILDER_CREDIT_PROFILE))return waiting('credit_profile_unavailable');
+  if(!/^inf_[a-f0-9]{32}$/.test(env.SURPLUS_CREDIT_KEY??''))return waiting('credit_not_configured');
+  const p=await creditSnapshot(db);
+  if(!p||p.state!=='funded'||p.allocated!=='2000000'||p.key_id!==env.SURPLUS_CREDIT_KEY_ID||!/^0x[a-f0-9]{40}$/i.test(p.deposit_address??''))return waiting('credit_unavailable');
+--- a/agent/src/network-review.ts
++++ b/agent/src/network-review.ts
+@@ -43,6 +43,13 @@
+    OR EXISTS(SELECT 1 FROM claus_network_review_revocations r WHERE r.id=claus_network_reviews.id)
+    OR (SELECT (content->'policy'->'capabilities'->>'networkReview')::boolean AND (content->'settings'->>'enabled')::boolean FROM claus_config ORDER BY revision DESC LIMIT 1) IS NOT TRUE)`;
+ }
++// Operator-configured recovery applies on one UTC day only. Failed attempts
++// remain counted, the active-case lock and the payer ceiling stay unchanged.
++export function networkReviewDailyLimit(now=Date.now(),env=process.env) {
++ const n=Number(env.NETWORK_REVIEW_RECOVERY_LIMIT);
++ return env.NETWORK_REVIEW_RECOVERY_DAY===new Date(now).toISOString().slice(0,10)&&
++  Number.isInteger(n)&&n>=8&&n<=16?n:8;
++}
+ export async function submitNetworkReview(input:any,db:Query=sql(),readConfig=configuration) {
+  validateNetworkReview(input);
+  await expireQueued(db);
+@@ -55,7 +62,7 @@
+  try{
+   const rows=await db`INSERT INTO claus_network_reviews(id,input_hash,input,request,configuration_revision,configuration_hash,state)
+     SELECT ${id},${inputHash},${JSON.stringify(input)}::jsonb,${JSON.stringify(request)}::jsonb,${config.revision},${config.hash},'queued'
+-    WHERE (SELECT count(*) FROM claus_network_reviews WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')<8
++    WHERE (SELECT count(*) FROM claus_network_reviews WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')<${networkReviewDailyLimit()}
+      AND NOT EXISTS(SELECT 1 FROM claus_network_review_revocations WHERE id=${id})
+     ON CONFLICT(id) DO NOTHING RETURNING *`;
+   if(rows.length)return visible(rows[0]);
