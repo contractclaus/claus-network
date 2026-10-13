@@ -236,4 +236,40 @@ contract ClausManagedExecutorTest is Test {
         assertFalse(executor.executionNonces(id, 1));
         assertEq(ManagedCounter(address(target)).count(), 7);
     }
+
+    function testManagedTargetsCannotBecomeAnotherProjectsImplementation() public {
+        ClausManagedExecutor.Registration memory r = registration(keccak256("other"));
+        address other =
+            executor.registerProject(r, abi.encodeCall(first.set, (7)), sign(OWNER, executor.registrationDigest(r)));
+        assertTrue(executor.isManagedTarget(other));
+        ClausManagedExecutor.Approval memory a = approval(other, "");
+        bytes memory signature = sign(CLAUS, executor.approvalDigest(a));
+        vm.expectRevert(ClausManagedExecutor.InvalidApproval.selector);
+        executor.queue(a, signature);
+        r = registration(keccak256("nested"));
+        r.implementation = other;
+        r.codeHash = other.codehash;
+        signature = sign(OWNER, executor.registrationDigest(r));
+        vm.expectRevert(ClausManagedExecutor.InvalidRegistration.selector);
+        executor.registerProject(r, abi.encodeCall(first.set, (7)), signature);
+    }
+
+    function testRecoveryAndOwnerTransferInvalidateExistingApprovals() public {
+        ClausManagedExecutor.Approval memory a = approval(address(second), "");
+        bytes memory signature = sign(CLAUS, executor.approvalDigest(a));
+        executor.queue(a, signature);
+        executor.scheduleSignerRecovery(vm.addr(CLAUS));
+        vm.expectRevert(ClausManagedExecutor.InvalidApproval.selector);
+        executor.execute(a, "", signature);
+        executor.cancelSignerRecovery();
+        vm.expectRevert(ClausManagedExecutor.InvalidApproval.selector);
+        executor.execute(a, "", signature);
+        a.clausGeneration = executor.clausGeneration();
+        signature = sign(CLAUS, executor.approvalDigest(a));
+        executor.queue(a, signature);
+        vm.prank(vm.addr(OWNER));
+        executor.proposeProjectOwner(id, address(0x123));
+        vm.expectRevert(ClausManagedExecutor.InvalidApproval.selector);
+        executor.execute(a, "", signature);
+    }
 }

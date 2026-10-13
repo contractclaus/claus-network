@@ -84,6 +84,7 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         bytes configuration;
     }
     mapping(bytes32 => Module) private modules;
+    mapping(address => bool) public isManagedTarget;
 
     // Registration reserves a dormant target. The first real implementation
     // needs the same independently reviewed Claus approval as every upgrade.
@@ -170,17 +171,18 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
         if (
             pendingSigner != address(0) || r.projectId != projectKey(r.owner, r.salt) || r.owner == address(0)
                 || projects[r.projectId].target != address(0) || r.implementation == address(this)
-                || r.implementation.code.length == 0 || r.implementation.codehash != r.codeHash
-                || keccak256(configuration) != r.initCallHash || configuration.length > 8192
-                || r.mandateHash == bytes32(0) || r.policyVersion == bytes32(0) || r.minDelaySeconds < MIN_UPGRADE_DELAY
-                || r.minDelaySeconds > MAX_DELAY || r.expiresAt <= block.timestamp
-                || registrationNonces[r.owner][r.nonce]
+                || isManagedTarget[r.implementation] || r.implementation.code.length == 0
+                || r.implementation.codehash != r.codeHash || keccak256(configuration) != r.initCallHash
+                || configuration.length > 8192 || r.mandateHash == bytes32(0) || r.policyVersion == bytes32(0)
+                || r.minDelaySeconds < MIN_UPGRADE_DELAY || r.minDelaySeconds > MAX_DELAY
+                || r.expiresAt <= block.timestamp || registrationNonces[r.owner][r.nonce]
         ) revert InvalidRegistration();
         if (!SignatureChecker.isValidSignatureNow(r.owner, registrationDigest(r), ownerSignature)) {
             revert InvalidSignature();
         }
         registrationNonces[r.owner][r.nonce] = true;
         target = address(new ClausManagedProject(r.projectId));
+        isManagedTarget[target] = true;
         initialModules[r.projectId] = InitialModule(r.implementation, r.codeHash, r.initCallHash, block.number);
         projects[r.projectId] = Project(r.owner, target, r.mandateHash, r.policyVersion, r.minDelaySeconds, 1, 1, true);
         emit ProjectRegistered(r.projectId, target, r.owner, r.mandateHash);
@@ -311,8 +313,8 @@ contract ClausManagedExecutor is EIP712, ReentrancyGuard {
                 || a.evidenceHash == bytes32(0) || a.dependencySnapshotHash == bytes32(0)
                 || a.expiresAt <= block.timestamp || a.notBefore >= a.expiresAt || a.implementation.code.length == 0
                 || a.implementation == a.target || a.implementation == address(this)
-                || a.implementation.codehash != a.toCodeHash || modules[a.projectId].version != a.fromVersion
-                || modules[a.projectId].codeHash != a.fromCodeHash
+                || isManagedTarget[a.implementation] || a.implementation.codehash != a.toCodeHash
+                || modules[a.projectId].version != a.fromVersion || modules[a.projectId].codeHash != a.fromCodeHash
         ) revert InvalidApproval();
         if (a.fromVersion == 0) {
             InitialModule memory first = initialModules[a.projectId];
