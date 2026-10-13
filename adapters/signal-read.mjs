@@ -2,6 +2,10 @@ import { encodeFunctionData, hashTypedData, keccak256, parseAbi, verifyTypedData
 import { requireThat } from '../src/shared/index.mjs';
 import { ClausApprovalExecutorAbi as executorAbi, ClausReadonlyProjectAbi as targetAbi } from './chain-abi.mjs';
 
+// Includes room for the first record's storage writes on the admitted chains.
+// This is a gas-unit ceiling; each publisher's monetary ceiling remains separate.
+export const SIGNAL_TRANSACTION_GAS_LIMIT = 2000000n;
+
 export const factoryAbi = parseAbi([
   'function executor() view returns (address)',
   'function stores(bytes32) view returns (address)',
@@ -166,7 +170,7 @@ export function createSignalRead({ client, chainId }) {
         args: [input.grantId, input.sequence, input.expectedVersion, input.observedAt, input.validUntil, input.sourceHash, input.data] }));
       // The exact sender/call is simulated; limits, sequence and interval are
       // rechecked by the immutable store when the signed transaction executes.
-      await client.call({ account: transaction.from, to: transaction.to, data: transaction.data, gas: 700000n });
+      await client.call({ account: transaction.from, to: transaction.to, data: transaction.data, gas: SIGNAL_TRANSACTION_GAS_LIMIT });
       return { transaction, publisher: transaction.from };
     },
     async prepareRevoke(signal, binding, grantId) {
