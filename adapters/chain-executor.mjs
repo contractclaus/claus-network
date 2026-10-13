@@ -244,7 +244,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       const existingExecution = (await store.read('chain-transactions', executionId))?.value;
       const queueProof = chainId === 1 || managed ?
         await reconcileQueuedGas({ store, client, admission, id: 'queue:' + value.id }) : null;
-      if (!existingExecution && queueProof?.canonical === false)
+      if ((!existingExecution || existingExecution.state === 'prepared') && queueProof?.canonical === false)
         return { state: 'blocked', error: 'queue_confirmation_reorg' };
       let executed = null;
       if (existingExecution) {
