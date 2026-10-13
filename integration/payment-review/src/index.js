@@ -154,7 +154,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     if(!rows.length&&workCandidate(env,id)&&path==='/api/completion'){
       if(c.req.header('x-inference-purpose')!=='research')return c.json({error:'credit_purpose_required',payment:'not_signed'},400);
       const admission=await workAdmission(db,env,id,c.req.header('x-max-quote-micro-usdc'));
-      if(!admission.ready)return c.json({id,error:admission.reason,payment:'not_signed',...(admission.reason==='credit_busy'?{admission:'deferred'}:{})},503);
+      if(!admission.ready)return c.json({id,error:admission.reason,payment:'not_signed',admission:'deferred'},503);
       return deliver(workHandler(id));
     }
     if(!rows.length&&creditCandidate(env,id)&&path==='/api/completion') {
