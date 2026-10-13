@@ -178,7 +178,9 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       requireThat(BigInt(quote.offer.maximum) <= BigInt(pilot.maximumPerReview), 'sponsor_limit');
       if (pilot.kind === 'public') {
         requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
-        validatePublicBuild(await artifacts.get(projectId, value.input.buildHash, tx));
+        if (selectReviewProfile && value.profile)
+          await selectReviewProfile(tx, projectId, { chainId: value.chainId, profile: value.profile });
+        await validatePublicBuild(await artifacts.get(projectId, value.input.buildHash, tx), value.profile);
         await admission.reserve(tx, projectId, quote.offer.maximum, pilot, jobId);
       }
       const active = (await tx.read('active-paid-reviews', 'global'))?.value.ids ?? [];

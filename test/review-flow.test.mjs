@@ -17,7 +17,9 @@ async function fixture(t, options = {}) {
   const provider = { id: 'test-provider', quote: async ({ inputHash }) => ({ id: 'offer-' + ++quotes,
     provider: 'test-provider', asset, maximum: '5', expiresAt: Date.now() + 600000, inputHash }) };
   const app = createApplication({ store, now: () => time, rateSalt: 'x'.repeat(32), reviewPorts: { ownerAddress, provider,
-    validatePublicBuild: options.validatePublicBuild, verifyCost: async () => true, verifySource: options.verifySource ?? (async ({ input }) => ({ inputHash: digest(input) })) } });
+    validatePublicBuild: options.validatePublicBuild,
+    ...(options.selectReviewProfile ? { selectReviewProfile: options.selectReviewProfile } : {}),
+    verifyCost: async () => true, verifySource: options.verifySource ?? (async ({ input }) => ({ inputHash: digest(input) })) } });
   const challenge = await app.identity.challenge({ address: account.address });
   const session = await app.identity.session({ challengeId: challenge.id, signature: await account.signMessage({ message: challenge.message }) });
   const actor = await app.identity.authenticate(session.token);
@@ -261,4 +263,24 @@ test('local signing failures release unsent sponsor exposure both immediately an
     assert.equal(balance.reserved, '0'); assert.equal(balance.available, '50');
     assert.equal((await f.flow.runPaid({ createPayment: () => payment })).idle, true);
   }
+});
+
+test('managed review admission retains its profile and awaits validation before reserving credit', async t => {
+  const seen=[];let deny=false;
+  const f=await fixture(t,{networkOwner:true,publicOnly:true,
+    selectReviewProfile:async(_reader,_id,scope)=>{assert.equal(scope.profile,'claus-managed-v1');assert.equal(scope.chainId,1);return scope;},
+    validatePublicBuild:async(artifact,profile)=>{await Promise.resolve();seen.push(profile);assert.equal(profile,'claus-managed-v1');
+      if(deny)throw Object.assign(Error('unsupported_module'),{code:'unsupported_module'});assert.equal(artifact.status,'compiled');}});
+  await f.publish();const config={enabled:true,expiresAt:null,maximumPerReview:'5',maximumLifetime:'50',perOwnerDay:2,perProjectDay:2,globalDay:8,activeGlobal:8};
+  await f.flow.admission.publish(f.actor,{version:'managed-test',config});
+  await f.flow.admission.activate(f.actor,{version:'managed-test',expectedGeneration:0});
+  const item=await f.flow.request(f.actor,f.projectId,{...f.input,chainId:1,profile:'claus-managed-v1'});await f.flow.runQuote();
+  const accept={caseId:item.id,quoteId:item.id,idempotencyKey:'managed-accept'};
+  deny=true;await assert.rejects(f.flow.accept(f.actor,f.projectId,accept),{code:'unsupported_module'});
+  assert.equal((await f.flow.admission.get(f.actor)).committedMaximum,'0');
+  const balance=await f.network.billing.balance({actor:f.workerActor,account:'sponsor:'+f.ownerAddress,asset:f.asset});
+  assert.equal(balance.reserved,'0');assert.equal(balance.available,'50');
+  deny=false;await f.flow.accept(f.actor,f.projectId,accept);
+  assert.equal((await f.flow.admission.get(f.actor)).committedMaximum,'5');
+  assert.deepEqual(seen,['claus-managed-v1','claus-managed-v1','claus-managed-v1']);
 });

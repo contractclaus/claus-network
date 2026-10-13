@@ -21,10 +21,18 @@ Registrations and module deployments use the existing API operations. MCP, SDK a
 
 The registry also rejects its own managed project proxies as implementations, preventing one project from silently following another project’s upgrades.
 
+Use the target address returned by a verified registration. Registrations use the registry's creation nonce, so a predicted address can change if another registration executes first. Never fund or advertise an unconfirmed target.
+
 Each chain/profile has a separate admission policy, exact executor and target-artifact pins, assessed review evidence and gas allocation. A readonly admission cannot enable managed contracts or pay their gas. No profile is activated merely by publishing its source.
 
 The immutable registry and fixed proxy selectors cannot be replaced by project storage writes. Direct module `DELEGATECALL`, `CALLCODE` and `SELFDESTRUCT` are excluded from this initial profile. Project code may change its own state and call declared external contracts; review must assess those effects and any storage migration. A review cannot guarantee that code is harmless.
 
+The onchain code hash binds the immediate implementation, not every external behavior it can invoke. Admission checks and review must reject hidden or mutable external logic that bypasses the reviewed change path. Declared dependencies and intentional mutable data remain part of each proposal's evidence.
+
 Financial products, customer custody, token launches and public inference are outside this profile. Existing signal stores and vault references are not automatically attached to managed projects. The current candidate requires its own independent review, exact-source deployment, real activation/upgrade/revocation reference and explicit admission before it can be described as live.
 
 With a zero upgrade delay, revocation has no guaranteed intervention window and cannot undo an executed change. The owner may opt into a delay when registering. The immutable recovery owner can pause new approvals and replace the Claus signer after the fixed recovery delay. These are explicit trusted powers.
+
+Revoking upgrade authority does not stop calls to the currently installed module. Any application pause must be part of the separately reviewed module; the registry is not an emergency pause for application execution. Cancelling signer recovery also invalidates outstanding Claus approvals through its generation counter, even if no recovery was pending.
+
+The proxy's registry lookup and delegation exceed the 2,300-gas stipend used by Solidity `transfer` and `send`. They must not be treated as supported payment paths. This release does not admit payment or custody applications.
