@@ -7,9 +7,11 @@ import {createSignalRead,signalAbi} from '../adapters/signal-read.mjs';
 import {createChainRead,domain,approvalMessage,approvalTypes} from '../adapters/chain-read.mjs';
 import {captureSignalConsumer,validateSignalRuntime} from '../adapters/signal-evidence.mjs';
 import {digest} from '../src/shared/index.mjs';
+import {openStore} from '../src/storage/index.mjs';
+import {createSignals} from '../src/signals/index.mjs';
 
 test('real local signal lifecycle binds source, typed grant, reviewed consumer, version, finalized receipts and revocation',
- {skip:!process.env.CLAUS_TEST_CHAIN||!process.env.CLAUS_SIGNAL_BUILDS,timeout:60000},async()=>{
+ {skip:!process.env.CLAUS_TEST_CHAIN||!process.env.CLAUS_SIGNAL_BUILDS,timeout:60000},async t=>{
  const url=new URL(process.env.CLAUS_TEST_CHAIN);assert.equal(url.hostname,'127.0.0.1');
  const client=createPublicClient({transport:http(url.href,{retryCount:0}),cacheTime:0,pollingInterval:50});assert.equal(await client.getChainId(),1);
  const [owner,claus,publisher]=Array.from({length:3},()=>privateKeyToAccount(generatePrivateKey()));
@@ -55,9 +57,27 @@ test('real local signal lifecycle binds source, typed grant, reviewed consumer, 
  const terms={publisher:publisher.address,maximumWrites:3,minimumInterval:1,expiresAt:Number((await now()).timestamp)+86400,nonce:'14'};
  const grantHead=Number((await now()).timestamp);
  for(const expiresAt of [grantHead+1,grantHead+30*86400+1])await assert.rejects(signalChain.prepareGrant(signal,binding,{...terms,expiresAt}),{code:'signal_grant_expiry'});
- const grant=await signalChain.prepareGrant(signal,binding,terms);
- await assert.rejects(signalChain.registerGrant(signal,binding,grant,await publisher.signTypedData(grant.typedData)),{code:'invalid_signature'});
- const registered=await signalChain.registerGrant(signal,binding,grant,await owner.signTypedData(grant.typedData));
+ // Exercise the actual API/chain-adapter composition: an unregistered grant
+ // reads as not-found, while a revoked unregistered digest has real state.
+ const apiStore=openStore(':memory:');t.after(()=>apiStore.close());
+ Object.assign(config,{enabled:true,profile:'claus-signal-v1',expiresAt:(grantHead+86400)*1000,
+  artifactProjectId:'local-review',reviewCaseId:'local-review',reviewArtifactHash:digest(report),storeArtifactHash:digest(build)});
+ await apiStore.transaction(async tx=>{
+  await tx.write('chain-bindings',signal.projectId,binding,0);await tx.write('project-signals',signal.projectId,signal,0);
+  await tx.write('network-capabilities','signal:1',config,0);
+  await tx.write('review-cases','local-review',{state:'reviewed',projectId:'local-review',artifactHash:digest(report)},0);
+  await tx.write('signal-admission-assessments',digest(config),{accepted:true,profileHash:digest(config),reviewArtifactHash:digest(report),
+   factoryArtifactHash:digest(factoryBuild),storeArtifactHash:digest(build)},0);
+ });
+ const api=createSignals({store:apiStore,chain:signalChain,identity:{authorize:async()=>{}},
+  artifacts:{get:async(_p,h)=>h===digest(factoryBuild)?factoryBuild:build},now:()=>grantHead*1000});
+ const grant=await api.grantPrepare('owner',signal.projectId,{...terms,idempotencyKey:'local-grant'});
+ await assert.rejects(signalChain.grant(signal,grant.grantId),{code:'signal_grant_not_found'});
+ await assert.rejects(api.grantRegister('owner',signal.projectId,{operationId:grant.id,signature:await publisher.signTypedData(grant.typedData)}),{code:'invalid_signature'});
+ const registered=await api.grantRegister('owner',signal.projectId,{operationId:grant.id,signature:await owner.signTypedData(grant.typedData)});
+ const preRevoked=await api.grantPrepare('owner',signal.projectId,{...terms,nonce:'15',idempotencyKey:'local-pre-revoked'});
+ await send((await signalChain.prepareRevoke(signal,binding,preRevoked.grantId)).transaction);await final();
+ await assert.rejects(api.grantRegister('owner',signal.projectId,{operationId:preRevoked.id,signature:await owner.signTypedData(preRevoked.typedData)}),{code:'signal_grant_inactive'});
  await send(registered.transaction,publisher);await final();
  assert.equal((await signalChain.grant(signal,grant.grantId)).terms.nonce,'14');
  const record=async(sequence,version)=>{const block=await now();return {grantId:grant.grantId,sequence,expectedVersion:version,

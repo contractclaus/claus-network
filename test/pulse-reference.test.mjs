@@ -116,3 +116,23 @@ test('a poisoned public order cannot abort unrelated provider deliveries',async(
  }}}).tick();
  assert.deepEqual(delivered,['good']);assert.equal(result.failed,1);assert.equal(result.delivered,1);
 });
+
+test('a finalized hosted receipt retains its API handoff across outage and run expiry',async t=>{
+ const store=openStore(':memory:');t.after(()=>store.close());let time=1800000000000;
+ const jobs=createJobs({store,identity:{authorize:async()=>{}},now:()=>time});
+ const config={projectId:'handoff',startsAt:time,expiresAt:time+14400000,intervalMs:3600000,maximumRuns:4};
+ const pipeline={async step(run,checkpoint){run.write={operation:{id:'op-'+run.id}};await checkpoint(run);
+  const id=run.write.operation.id;
+  if(!await store.read('chain-transactions','signal-record:'+id))await store.transaction(async tx=>{
+   await tx.write('chain-transactions','signal-record:'+id,{state:'confirmed',hash:'0xoriginal'},0);
+   await tx.write('signal-operations',id,{state:'prepared'},0);
+  });
+  throw Error('API unavailable');
+ }};
+ const tick=()=>createPulseScheduler({store,jobs,pipeline,config,now:()=>time}).tick();
+ const first=await tick();assert.equal(first.state,'unavailable');time+=7200001;
+ const retained=await tick();assert.equal(retained.state,'unavailable');assert.equal(retained.runId,first.runId);
+ const api=await store.read('signal-operations','op-'+first.runId);
+ await store.transaction(tx=>tx.write('signal-operations','op-'+first.runId,{state:'confirmed',transactionHash:'0xoriginal'},api.revision));
+ time+=60001;assert.equal((await tick()).state,'failed');
+});
