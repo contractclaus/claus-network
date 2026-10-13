@@ -1,0 +1,160 @@
+{
+  "at": "2026-10-13T19:18:25.524Z",
+  "scope": "Operator continuing-policy maintenance; existing contract profiles and financial ceilings preserved.",
+  "roles": {
+    "api": {
+      "deployment": "dpl_4TTWbVdWRMfd4gQZ8tpMQMErrkGU",
+      "release": "ee2e91ef34bbe9a1344cda5c653165be7e4452be855e6e276f87c5075bf56179",
+      "sourceCommit": "a8c032eb61b179f249e552292eec21086a993289",
+      "verifiedFiles": 123
+    },
+    "review": {
+      "deployment": "dpl_E6krT242bmEkMf3phpKVMw7RWRf3",
+      "release": "3632e634bfd2ef9b70ec76c8b18fdd89793331fd09c0040d5c90b027ba93f75f",
+      "sourceCommit": "a8c032eb61b179f249e552292eec21086a993289",
+      "verifiedFiles": 100
+    },
+    "controller": {
+      "deployment": "dpl_2YKSFPPiuf4wASDDg9b6GY4Dyuh6",
+      "release": "2ce927634766de318206683e4b04cc9f2c05c023c4336f5bb9f9018744e4ede8",
+      "sourceCommit": "a8c032eb61b179f249e552292eec21086a993289",
+      "verifiedFiles": 100
+    },
+    "executor": {
+      "deployment": "dpl_4EYd5AXW7MngdK8ALWmZtDAMU1jz",
+      "release": "2ce927634766de318206683e4b04cc9f2c05c023c4336f5bb9f9018744e4ede8",
+      "sourceCommit": "a8c032eb61b179f249e552292eec21086a993289",
+      "verifiedFiles": 100
+    },
+    "intake": {
+      "deployment": "dpl_Eg2FHPPshYCSFrmCaQn5dBqPTQbo",
+      "release": "800b0fc1f3743e9276fc323a11a72212c24370d1ee7a13a17de60a6d5f3e7063",
+      "sourceCommit": "a8c032eb61b179f249e552292eec21086a993289",
+      "verifiedFiles": 123
+    },
+    "intake-mainnet": {
+      "deployment": "dpl_GCGzdRbvG1uc4JCFu3DqC81Bdpm5",
+      "release": "027c85bc9c3a0b10ae1925252940da35266d680f793beb035c5319164cdc8fbd",
+      "sourceCommit": "a8c032eb61b179f249e552292eec21086a993289",
+      "verifiedFiles": 97
+    },
+    "pulse-consumer": {
+      "deployment": "dpl_HMt3ykW8qaGN3pcNosJnHKTnsFdn",
+      "release": "f3210a860861686ee0b33d39dd5eb61b128cf1e621651c274662fad15699783e",
+      "sourceCommit": "a8c032eb61b179f249e552292eec21086a993289",
+      "verifiedFiles": 97
+    }
+  },
+  "payment": {
+    "deployment": "dpl_3t2x5f8a876Em1V7wgnw1dMduHNz",
+    "sourceCommit": "5bd61a46ea6793fc68f7619f86ccf08ccfe6b959",
+    "verifiedFiles": 33
+  },
+  "policies": [
+    {
+      "module": "review.admission",
+      "version": "continuous-2026-10-13-v1",
+      "config": {
+        "enabled": true,
+        "expiresAt": null,
+        "globalDay": 8,
+        "perOwnerDay": 2,
+        "activeGlobal": 8,
+        "perProjectDay": 2,
+        "maximumLifetime": "4000000000000000000",
+        "maximumPerReview": "500000000000000000"
+      }
+    },
+    {
+      "module": "chain.admission",
+      "version": "continuous-2026-10-13-v1",
+      "config": {
+        "enabled": true,
+        "executor": "0x30274c35b95f43064dea7799c15ca57a5fc50182",
+        "expiresAt": null,
+        "reviewCaseId": "sha256:7ef2a4f1c8c0d730f54049223b6b6d0ab47dbc192e495595386003b04ae22dbd",
+        "maximumProjects": 8,
+        "reviewProjectId": "prj_75bf7313-4bbb-4895-82a4-3a6e379af590",
+        "executorCodeHash": "0x28a80d0c794a4ecc2f6539f747c8e6a33d2330033f5201ee7400a99da4322bc4",
+        "maximumTotalGasWei": "2000000000000000",
+        "reviewArtifactHash": "sha256:1070004295d421d61d37039a5bc59b06185ad35b025ec3b435af2de0f1e9aa0b",
+        "targetArtifactHash": "sha256:afc6878107b2af9a554c179855bafc4b571729287b8444c59c7b71c16795f1ef",
+        "maximumProjectGasWei": "500000000000000",
+        "maximumTransactionGasWei": "200000000000000"
+      }
+    },
+    {
+      "module": "chain.mainnet.admission",
+      "version": "continuous-2026-10-13-v1",
+      "config": {
+        "enabled": true,
+        "executor": "0x892fa49d0c38e949deb827db66590fbaeaa34af8",
+        "expiresAt": null,
+        "reviewCaseId": "sha256:7ef2a4f1c8c0d730f54049223b6b6d0ab47dbc192e495595386003b04ae22dbd",
+        "maximumProjects": 8,
+        "reviewProjectId": "prj_75bf7313-4bbb-4895-82a4-3a6e379af590",
+        "executorCodeHash": "0x17134ca82584d05ffa4f70327ba5031632ff1d04db6a42eb4fed7e7d61c30ef7",
+        "maximumTotalGasWei": "15000000000000000",
+        "reviewArtifactHash": "sha256:1070004295d421d61d37039a5bc59b06185ad35b025ec3b435af2de0f1e9aa0b",
+        "targetArtifactHash": "sha256:afc6878107b2af9a554c179855bafc4b571729287b8444c59c7b71c16795f1ef",
+        "maximumProjectGasWei": "2000000000000000",
+        "maximumTransactionGasWei": "1000000000000000"
+      }
+    }
+  ],
+  "signalAdmission": {
+    "chains": [
+      1,
+      11155111
+    ],
+    "expiresAt": null,
+    "contractsChanged": false
+  },
+  "decisionAdmission": {
+    "projectDay": 2,
+    "globalDay": 8,
+    "pilotLifetimeCutoffsRemoved": true,
+    "historicalCountsPreserved": true
+  },
+  "dispatch": [
+    {
+      "chainId": 11155111,
+      "previousAllocation": "claus-public-intake-2026-10-12-v1",
+      "allocation": "claus-public-intake-2026-10-12-v1-continuous",
+      "expiresAt": null,
+      "maximum": "400000000000000",
+      "spentCarried": "540694191645",
+      "priorAllocationRetired": true
+    },
+    {
+      "chainId": 1,
+      "previousAllocation": "claus-phase3-mainnet-intake-v1",
+      "allocation": "claus-phase3-mainnet-intake-v1-continuous",
+      "expiresAt": null,
+      "maximum": "3000000000000000",
+      "spentCarried": "23115491257950",
+      "priorAllocationRetired": true
+    }
+  ],
+  "targetedValidation": [
+    "Larger funded-account admission and historical reservation retention",
+    "Continuing policies retain budget exhaustion and revocation",
+    "Operator deadlines accept null; user credentials and signed grants do not",
+    "Callbacks retain finite original transaction deadlines"
+  ],
+  "hostedReference": {
+    "separateFiniteWorkload": true,
+    "expiresAt": 1792457161737,
+    "maximumProductionWrites": 166
+  },
+  "managedContractCandidate": {
+    "commit": "7dbf6e864d4ddbab34fe104023ca3bc0e0742a6b",
+    "offerId": "f27347b4-f99a-41f5-bb91-531d03d7e147",
+    "jobId": "8b83f6ca-74a7-495a-b475-d0e2163c303f",
+    "state": "executing",
+    "admitted": false,
+    "deployed": false
+  },
+  "publicInferenceEnabled": false,
+  "tokenLaunchEnabled": false
+}
