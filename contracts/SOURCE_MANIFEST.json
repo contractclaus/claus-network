@@ -51,9 +51,13 @@
     "src/ClausBalanceLens.sol": "550bf939f18393ea4a6216aed7df14c53054c3b0d54670e55c143ad13e5d0ff4",
     "src/ClausNativeVault.sol": "a1d74f600d75162d275f99ae8df9337a9d59dac244b70f4494f7a185e345167c",
     "src/ClausProjectWallet.sol": "8e607acbbf9ff47ff4edd1e9519ee710b215e7fb660b745cb472151ecbc1f556",
+    "src/ClausPulseModule.sol": "728c9e3b789d97bb89fc5b2d5e023b256c2f8b8c98326598763f67c1d3ef8610",
     "src/ClausReadonlyProject.sol": "7c7fe172382a767b3700daac415fedb297b57ffe5c932deba561fffc1bbe75a1",
     "src/ClausRequestClient.sol": "37912a8217169aa961e8d7b45016ecbbe9c97287587ac01b32eb8a4d4a20f9c7",
     "src/ClausRequestInbox.sol": "3244917fea9275980c691acffe19cdd939dace62b9714dcc2138622bf6b832c7",
+    "src/ClausSignalFactory.sol": "100f4fe0a4bc288bd81fd10777828572f4dab9ef32eb006b5897d44118610fc0",
+    "src/ClausSignalStore.sol": "8da79dc2010a79509a4db9e0165b347dbd18cf8dcd61ea247bc926ff3cf97104",
+    "src/ClausSignalTypes.sol": "72b7dc98f3333a1abf2d22d4408a46801c9455709de63bd6d3f9e1fce78ff61a",
     "src/ClausVaultAdmission.sol": "d8068a7565a659ed3047dcd78b0e0738cebd5662ce2a0811ef7d638494a0e804",
     "test/ClausApprovalExecutor.t.sol": "ca399a24f3a50e7d0991d2f3337b9d779ac5b805d1b5349a3ba72557c7bd9d96",
     "test/ClausBalanceLens.t.sol": "370e67c9894c3c4c16acd57f23547cd3369e644dbc4800f406bc61ba3afe32aa",
@@ -62,6 +66,7 @@
     "test/ClausReadonlyResult.t.sol": "9523f2f66c2ff1940649d6abc8afcc9bc5c200d30932a86d91b8755e08b158c2",
     "test/ClausRequestClient.t.sol": "8a6d7d481269ccda71e99ea633366e8fa9cfbe0baf704bf74fa47cf963ce864a",
     "test/ClausRequestInbox.t.sol": "8300821fe65f6769c7b560811af844cd6b7f47a1308affc19b0f9d53c3d90c63",
+    "test/ClausSignalStore.t.sol": "85f4c9e46569efde3097f21335fe584cb22d3b54e62590f63dbee599d95adc06",
     "test/ClausVaultLifecycle.t.sol": "226ac00336859d06f11be6d36d2e04c6e214be78169601a2c181495e29483f36"
   },
   "dependencies": {

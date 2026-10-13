@@ -8,6 +8,14 @@ const view = row => { const { actor, config, ...value } = row.value; return { ..
 // A narrow companion to an existing reviewed evaluator. The API prepares
 // exact calls and observes receipts; owners and publishers keep their keys.
 export function createSignals({ store, identity, chain, artifacts, publicResult, now = () => Date.now() }) {
+  function recordState(evidence) {
+    if (!evidence.finalized) return 'unavailable';
+    if (Number(evidence.record.sequence) === 0) return 'empty';
+    if (typeof evidence.authorizationActive !== 'boolean' || !Number.isSafeInteger(evidence.currentVersion)) return 'unavailable';
+    if (!evidence.authorizationActive) return 'withdrawn';
+    if (evidence.currentVersion !== Number(evidence.record.version)) return 'superseded';
+    return Number(evidence.record.validUntil)*1000 <= now() ? 'stale' : 'current';
+  }
   async function binding(projectId, reader = store) {
     const b = (await reader.read('chain-bindings', projectId))?.value;
     requireThat(b?.profile === 'claus-readonly-v1' && [1,11155111].includes(b.chainId), 'project_not_registered');
@@ -26,6 +34,7 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       review.artifactHash === config.reviewArtifactHash && assessment.reviewArtifactHash === review.artifactHash &&
       assessment.factoryArtifactHash === config.factoryArtifactHash && assessment.storeArtifactHash === config.storeArtifactHash,
     'signal_scope_not_reviewed');
+    await chain.validateAdmission(config,await artifacts.get(config.artifactProjectId,config.factoryArtifactHash,reader));
     return config;
   }
   async function signal(projectId, reader = store) {
@@ -49,6 +58,11 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       result.output.onchainData === input.data, 'signal_source_changed');
     return '0x' + digest(input.sourceResult).slice(7);
   }
+  async function validateStoreBuild(config,observed) {
+    await chain.validateStoreBuild(config,observed.signal,
+      await artifacts.get(config.artifactProjectId,config.storeArtifactHash),
+      await artifacts.get(config.artifactProjectId,config.factoryArtifactHash),observed.blockNumber);
+  }
   async function prepare(actor, projectId, kind, input, build, { revoke = false } = {}) {
     text(input.idempotencyKey);
     const scope = kind === 'record' ? 'signal.publish' : revoke ? 'signal.grant.revoke' : 'signal.manage';
@@ -58,30 +72,48 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
     if (old) { requireThat(old.value.requestHash === requestHash, 'idempotency_conflict'); return view(old); }
     const current = revoke ? { binding: await binding(projectId), config: (await signal(projectId)).config } : await writeAllowed(actor, projectId, scope);
     const prepared = await build(current);
+    if(prepared.recovered)await validateStoreBuild(current.config,prepared);
     return store.transaction(async tx => {
       await identity.authorize(actor, scope, { projectId }, tx);
       const latest = revoke ? { binding: await binding(projectId, tx), config: current.config } : await writeAllowed(actor, projectId, scope, tx);
       requireThat(digest(latest) === digest(current), 'signal_admission_changed');
       const old = await tx.read('signal-operations', id);
       if (old) { requireThat(old.value.requestHash === requestHash, 'idempotency_conflict'); return view(old); }
-      if (kind === 'store') requireThat(!await tx.read('project-signals', projectId), 'signal_store_exists');
+      if (kind === 'store') {
+        requireThat(!await tx.read('project-signals', projectId), 'signal_store_exists');
+        requireThat(!await tx.read('project-vaults',projectId),'signal_review_context_changed');
+        const claim=await tx.read('project-consumer-claims',projectId);
+        requireThat(!claim||claim.value.profile==='claus-signal-v1','signal_review_context_changed');
+        if(!claim)await tx.write('project-consumer-claims',projectId,{profile:'claus-signal-v1'},0);
+        if(prepared.recovered) await tx.write('project-signals',projectId,{...prepared.signal,projectId,
+          state:'verified',profile:'claus-signal-v1',config:current.config,binding:current.binding,
+          artifactProjectId:current.config.artifactProjectId,artifactHash:current.config.storeArtifactHash,
+          reviewArtifactHash:current.config.reviewArtifactHash,transactionHash:null,
+          blockHash:prepared.blockHash,blockNumber:prepared.blockNumber,recovered:true,registeredAt:now()},0);
+      }
       if (kind === 'record') {
         requireThat(!(await tx.read('signal-revocations', digest({ projectId, grantId: input.grantId }))), 'signal_api_revoked');
         await source(input, tx);
       }
-      const capacityId = projectId + ':' + Math.floor(now() / 86400000), capacity = await tx.read('signal-capacity', capacityId);
-      requireThat(revoke || (capacity?.value.count ?? 0) < 128, 'capacity_reached');
-      if (!revoke) await tx.write('signal-capacity', capacityId, { projectId, count: (capacity?.value.count ?? 0) + 1 }, capacity?.revision ?? 0);
+      const capacityId = projectId + ':' + (revoke?'revoke:':'') + Math.floor(now() / 86400000), capacity = await tx.read('signal-capacity', capacityId);
+      requireThat((capacity?.value.count ?? 0) < 128, 'capacity_reached');
+      await tx.write('signal-capacity', capacityId, { projectId, count: (capacity?.value.count ?? 0) + 1 }, capacity?.revision ?? 0);
       return view(await tx.write('signal-operations', id, { id, projectId, actor, kind, requestHash, input: copy(input),
-        ...current, ...prepared, state: prepared.transaction ? 'prepared' : 'awaiting_signature',
+        ...current, ...prepared, state: prepared.recovered ? 'confirmed' : prepared.transaction ? 'prepared' : 'awaiting_signature',
         createdAt: now(), expiresAt: kind === 'record' ? input.validUntil * 1000 : now() + 86400000 }, 0));
     });
   }
   async function reconcile(row) {
     const action = row.value;
     if (!action.transactionHash || ['confirmed','failed'].includes(action.state)) return view(row);
-    const observed = await chain.observe(action, action.transactionHash);
+    let observed;
+    try { observed=await chain.observe(action,action.transactionHash); }
+    catch(error) {
+      if(error.code!=='signal_transaction_mismatch')throw error;
+      observed={state:'failed',error:'signal_transaction_mismatch'};
+    }
     if (observed.state === 'pending') return view(row);
+    if(observed.state==='confirmed'&&action.kind==='store')await validateStoreBuild(action.config,observed);
     return store.transaction(async tx => {
       const latest = await owned(action.projectId, action.id, tx);
       if (['confirmed','failed'].includes(latest.value.state)) return view(latest);
@@ -164,8 +196,12 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
         await identity.authorize(actor, 'signal.grant.revoke', { projectId }, tx);
         await signal(projectId, tx);
         const id = digest({ projectId, grantId: input.grantId });
-        if (!await tx.read('signal-revocations', id)) await tx.write('signal-revocations', id,
-          { projectId, grantId: input.grantId, revokedAt: now(), onchain: 'not_submitted' }, 0);
+        if (!await tx.read('signal-revocations', id)) {
+          const key=projectId+':'+Math.floor(now()/86400000),cap=await tx.read('signal-revocation-capacity',key);
+          requireThat((cap?.value.count??0)<128,'capacity_reached');
+          await tx.write('signal-revocation-capacity',key,{projectId,count:(cap?.value.count??0)+1},cap?.revision??0);
+          await tx.write('signal-revocations',id,{projectId,grantId:input.grantId,revokedAt:now(),onchain:'not_submitted'},0);
+        }
       });
       return prepare(actor, projectId, 'revoke', input, async c =>
         chain.prepareRevoke(await signal(projectId), c.binding, input.grantId), { revoke: true });
@@ -184,6 +220,13 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
     },
     async submit(actor, projectId, { operationId, transactionHash }) {
       requireThat(word(transactionHash), 'invalid_transaction_hash');
+      await identity.authorize(actor,'signal.read',{projectId});
+      const pending=await owned(projectId,operationId);
+      requireThat(pending.value.transaction,'signal_signature_required');
+      requireThat(pending.value.transactionHash||pending.value.actor===actor||(await identity.credential(actor)).kind==='owner','scope_denied');
+      // Reject a provably wrong hash before making it the permanent receipt.
+      // Unknown hashes remain attached and are never replaced or cancelled.
+      if(!pending.value.transactionHash)await chain.observe(pending.value,transactionHash);
       const row = await store.transaction(async tx => {
         // Receipt recovery remains available after admission or grant expiry.
         await identity.authorize(actor, 'signal.read', { projectId }, tx);
@@ -203,7 +246,7 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       await identity.authorize(actor, 'signal.read', { projectId });
       const s = await signal(projectId), evidence = await chain.latest(s);
       return { projectId, address: s.address, chainId: s.chainId, ...evidence,
-        state: Number(evidence.record.sequence) === 0 ? 'empty' : Number(evidence.record.validUntil)*1000 <= now() ? 'stale' : 'current' };
+        state: recordState(evidence) };
     },
     async publish(actor, projectId, { published, expectedRevision }) {
       requireThat(typeof published === 'boolean', 'invalid_publication'); integer(expectedRevision);
@@ -219,7 +262,7 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       const value = { projectId, profile: s.profile, chainId: s.chainId, address: s.address, codeHash: s.codeHash,
         factory: s.factory, evaluator: s.evaluator, feedId: s.feedId, schemaHash: s.schemaHash, transactionHash: s.transactionHash };
       try { const evidence = await chain.latest(s); return { ...value, ...evidence,
-        state: Number(evidence.record.sequence) === 0 ? 'empty' : Number(evidence.record.validUntil)*1000 <= now() ? 'stale' : 'current' }; }
+        state: recordState(evidence) }; }
       catch { return { ...value, state: 'unavailable' }; }
     },
     async publicForProject(projectId) {
@@ -230,6 +273,9 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
     },
     async consumer(projectId, reader = store) {
       const s = (await reader.read('project-signals', projectId))?.value;
+      const b=(await reader.read('chain-bindings',projectId))?.value;
+      const config=b&&(await reader.read('network-capabilities','signal:'+b.chainId))?.value;
+      if(config?.factory)await chain.assertTrackedStore(config,b,s);
       if (!s) return null;
       return { signal: s, build: await artifacts.get(s.artifactProjectId, s.artifactHash, reader),
         factoryBuild: await artifacts.get(s.artifactProjectId, s.config.factoryArtifactHash, reader),

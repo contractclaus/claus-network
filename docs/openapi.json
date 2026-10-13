@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.13.0"
+    "version": "0.13.1"
   },
   "servers": [
     {
@@ -5290,7 +5290,7 @@
     "/v1/projects/{projectId}/signal/store": {
       "post": {
         "operationId": "signal_store_prepare",
-        "description": "Prepare one store from the admitted fixed factory for an existing reviewed readonly project. Requires signal.manage. Owner signs exact zero-value transaction locally; reuse idempotencyKey.",
+        "description": "Prepare one store from the admitted fixed factory for an existing reviewed readonly project. Requires signal.manage. Owner signs exact zero-value transaction locally; reuse idempotencyKey. An existing canonical finalized store can be recovered with block evidence; no transaction hash is invented.",
         "security": [
           {
             "bearerAuth": []
@@ -5967,7 +5967,7 @@
     "/v1/projects/{projectId}/signal/latest": {
       "get": {
         "operationId": "signal_latest",
-        "description": "Read the finalized store record and source digest with signal.read. Publisher attestation and hashes do not prove input truth.",
+        "description": "Read the finalized store record, authority/version status and source digest with signal.read. Publisher attestation and hashes do not prove input truth.",
         "security": [
           {
             "bearerAuth": []

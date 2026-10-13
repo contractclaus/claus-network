@@ -11,11 +11,8 @@ function buildMatches(build, hash, name) {
     build.profile?.profile === 'solidity-static-compile-v1' && build.profile.compiler === '0.8.27+commit.40a35a09.Emscripten.clang' &&
     digest(build.standardInput) === build.inputHash && keccak256(build.runtimeTemplate) === build.runtimeTemplateHash, 'signal_evidence_invalid');
 }
-// Factory provenance authenticates constructor execution; the complete runtime
-// comparison permits differences only in compiler-declared immutable words.
-export function validateSignalRuntime({ build, buildHash, factoryBuild, factoryBuildHash, executor, storeCode, factoryCode }) {
-  buildMatches(build,buildHash,'ClausSignalStore'); buildMatches(factoryBuild,factoryBuildHash,'ClausSignalFactory');
-  requireThat(digest(build.standardInput.sources) === digest(factoryBuild.standardInput.sources), 'signal_evidence_invalid');
+export function validateSignalFactory({factoryBuild,factoryBuildHash,executor,factoryCode}) {
+  buildMatches(factoryBuild,factoryBuildHash,'ClausSignalFactory');
   const groups = Object.values(factoryBuild.immutableReferences ?? {});
   requireThat(groups.length === 1 && groups[0].length > 0, 'signal_evidence_invalid');
   let expected = factoryBuild.runtimeTemplate.slice(2);
@@ -25,6 +22,14 @@ export function validateSignalRuntime({ build, buildHash, factoryBuild, factoryB
     expected = expected.slice(0,ref.start*2) + executor.toLowerCase().slice(2).padStart(64,'0') + expected.slice((ref.start+32)*2);
   }
   requireThat('0x'+expected === factoryCode.toLowerCase(), 'signal_evidence_invalid');
+}
+
+// Factory provenance authenticates constructor execution; the complete runtime
+// comparison permits differences only in compiler-declared immutable words.
+export function validateSignalRuntime({ build, buildHash, factoryBuild, factoryBuildHash, executor, storeCode, factoryCode }) {
+  buildMatches(build,buildHash,'ClausSignalStore'); buildMatches(factoryBuild,factoryBuildHash,'ClausSignalFactory');
+  requireThat(digest(build.standardInput.sources) === digest(factoryBuild.standardInput.sources), 'signal_evidence_invalid');
+  validateSignalFactory({factoryBuild,factoryBuildHash,executor,factoryCode});
   let masked = storeCode.slice(2).toLowerCase();
   const used = new Set();
   requireThat(masked.length === build.runtimeTemplate.length-2, 'signal_evidence_invalid');

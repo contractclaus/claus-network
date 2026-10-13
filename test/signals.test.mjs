@@ -6,7 +6,7 @@ import { digest, requireThat } from '../src/shared/index.mjs';
 const address = c => '0x'+c.repeat(40), word = c => '0x'+c.repeat(64);
 async function fixture(t) {
   const store=openStore(':memory:');t.after(()=>store.close());
-  const f={now:1800000000000,final:false,source:true,chainDown:false,calls:0};
+  const f={now:1800000000000,final:false,source:true,chainDown:false,calls:0,authorizationActive:true,currentVersion:1};
   const binding={chainId:1,profile:'claus-readonly-v1',owner:address('1'),executor:address('2'),target:address('3'),projectKey:word('a')};
   const config={enabled:true,profile:'claus-signal-v1',chainId:1,factory:address('4'),factoryCodeHash:word('b'),executor:binding.executor,
     artifactProjectId:'review-project',factoryArtifactHash:digest('factory'),storeArtifactHash:digest('store'),reviewCaseId:'review',
@@ -18,14 +18,16 @@ async function fixture(t) {
     requireThat(projectId==='p' && (actor==='owner' || actor==='publisher' && ['signal.read','signal.publish','signal.grant.revoke'].includes(scope) ||
       actor==='reader' && scope==='signal.read'),'scope_denied');}};
   const chain={
-    prepareStore:async()=>{f.calls++;return {transaction};},
+    validateAdmission:async()=>{},validateStoreBuild:async()=>{},
+    prepareStore:async()=>{f.calls++;return f.recover?{recovered:true,signal,blockHash:word('f'),blockNumber:'50',finalized:true}:{transaction};},
+    assertTrackedStore:async(_c,_b,tracked)=>requireThat(!f.untracked||tracked,'signal_review_context_changed'),
     prepareGrant:async()=>({grantId:word('1'),typedData:{message:{publisher:address('6')}},owner:binding.owner}),
     registerGrant:async()=>({transaction}),
     prepareRecord:async()=>{requireThat(!f.chainDown,'signal_chain_unavailable');return {transaction};},
     prepareRevoke:async()=>{requireThat(!f.chainDown,'signal_chain_unavailable');return {transaction};},
-    observe:async(a,h)=> f.final ? {state:'confirmed',...(a.kind==='store'?{signal}:{}),transactionHash:h,blockHash:word('f'),blockNumber:'50',finalized:true} : {state:'pending'},
+    observe:async(a,h)=>{requireThat(h!==word('9'),'signal_transaction_mismatch');return f.final ? {state:'confirmed',...(a.kind==='store'?{signal}:{}),transactionHash:h,blockHash:word('f'),blockNumber:'50',finalized:true} : {state:'pending'};},
     grant:async()=>({id:word('1'),terms:{publisher:address('6')},revoked:false}),
-    latest:async()=>{requireThat(!f.chainDown,'signal_chain_unavailable');return {record:{sequence:'1',validUntil:String(Math.floor(f.now/1000)+60)},finalized:true};}
+    latest:async()=>{requireThat(!f.chainDown,'signal_chain_unavailable');return {record:{sequence:'1',version:'1',validUntil:String(Math.floor(f.now/1000)+60)},authorizationActive:f.authorizationActive,currentVersion:f.currentVersion,finalized:true};}
   };
   const sourceResult={id:'order',revision:1,outputHash:digest('output')};
   const make=()=>createSignals({store,identity,chain,artifacts:{get:async()=>({})},now:()=>f.now,
@@ -98,4 +100,39 @@ test('public feed requires separate publication; unavailable data is not called 
   f.chainDown=true;assert.equal((await f.api.public('p')).state,'unavailable');
   await f.api.publish('owner','p',{published:false,expectedRevision:1});
   await assert.rejects(f.api.public('p'),{code:'not_found'});
+});
+
+// Finalized history survives revocation and upgrades, but cannot look current.
+test('public and authenticated feeds distinguish withdrawn and superseded records',async t=>{
+ const f=await fixture(t);await f.setup();await f.api.publish('owner','p',{published:true,expectedRevision:0});
+ for(const [active,version,expected] of [[true,1,'current'],[false,1,'withdrawn'],[true,2,'superseded']]){
+  f.authorizationActive=active;f.currentVersion=version;
+  const authenticated=await f.api.latest('reader','p'),pub=await f.api.public('p');
+  assert.equal(authenticated.state,expected);assert.equal(pub.state,expected);
+  assert.equal(pub.record.sequence,'1');assert.equal(pub.record.version,'1');
+ }
+});
+
+test('finalized factory recovery restores the binding without replacing an unknown original hash',async t=>{
+ const f=await fixture(t),original=await f.api.storePrepare('owner','p',{idempotencyKey:'original'});
+ await f.api.submit('owner','p',{operationId:original.id,transactionHash:word('1')});
+ f.recover=true;
+ const restored=await f.api.storePrepare('owner','p',{idempotencyKey:'recover'});
+ assert.equal(restored.state,'confirmed');assert.equal(restored.recovered,true);assert.equal(restored.transactionHash,undefined);
+ assert.equal((await f.api.get('owner','p')).address,address('5'));
+ const old=await f.api.operation('owner','p',original.id);
+ assert.equal(old.transactionHash,word('1'));assert.equal(old.state,'pending');
+});
+test('a definitively wrong receipt is rejected before attachment and does not poison a prepared operation',async t=>{
+ const f=await fixture(t),op=await f.api.storePrepare('owner','p',{idempotencyKey:'store'});
+ await assert.rejects(f.api.submit('owner','p',{operationId:op.id,transactionHash:word('9')}),{code:'signal_transaction_mismatch'});
+ assert.equal((await f.api.operation('owner','p',op.id)).transactionHash,undefined);
+ f.final=true;assert.equal((await f.api.submit('owner','p',{operationId:op.id,transactionHash:word('1')})).state,'confirmed');
+});
+test('untracked canonical stores and incompatible consumers fail closed before approval',async t=>{
+ const f=await fixture(t);f.untracked=true;
+ await assert.rejects(f.api.consumer('p'),{code:'signal_review_context_changed'});
+ await f.store.transaction(tx=>tx.write('project-vaults','p',{state:'verified'},0));
+ await assert.rejects(f.api.storePrepare('owner','p',{idempotencyKey:'store'}),{code:'signal_review_context_changed'});
+ assert.equal((await f.store.list('signal-operations')).length,0);
 });

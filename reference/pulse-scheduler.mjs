@@ -43,11 +43,14 @@ export function createPulseScheduler({store,jobs,pipeline,config,now=Date.now}){
    return {state,runId:run.id,transactionHash:run.transactionHash??null};
   }catch(error){
    if(error.code==='lease_lost')throw error;
-   // Once a write exists it owns the lane until the original transaction is
-   // reconciled, even after source withdrawal, expiry or a transient RPC error.
-   const terminal=!run.write?.operation&&(
+   // Only a durable signed transaction may own the lane indefinitely. An
+   // unsigned API intent cannot block all later slots after expiry or denial.
+   const signed=run.write?.operation&&await store.read('chain-transactions','signal-record:'+run.write.operation.id);
+   const terminal=!signed&&(
     run.expiresAt<=now()||['pulse_service_failed','pulse_publication_withdrawn','pulse_rule_changed',
-     'pulse_source_changed','public_result_unavailable','signal_grant_inactive'].includes(error.code));
+     'pulse_source_changed','public_result_unavailable','signal_grant_inactive','signal_grant_exhausted',
+     'transaction_not_authorized','signal_budget_exhausted','signal_budget_changed','scope_denied',
+     'signal_not_enabled','signal_operation_mismatch','signal_data_expired','signal_stale_version'].includes(error.code));
    await jobs.finish(claim,{state:terminal?'failed':'waiting',result:{run,error:error.code??'reference_unavailable'},
     ...(!terminal?{retryAt:now()+60000}:{})});
    return {state:terminal?'failed':'unavailable',runId:run.id,error:error.code??'reference_unavailable'};

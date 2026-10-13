@@ -39,9 +39,12 @@ test('real local signal lifecycle binds source, typed grant, reviewed consumer, 
  const config={chainId:1,executor,factory,factoryCodeHash:keccak256(await client.getCode({address:factory})),
   factoryArtifactHash:digest(factoryBuild),feedId:keccak256(stringToHex('claus.network-pulse.v1')),
   schemaHash:keccak256(stringToHex('Pulse(uint64 blockNumber,bytes32 blockHash,uint256 baseFeeWei,bool aboveThreshold)'))};
+ await signalChain.validateAdmission(config,factoryBuild);
  const prepared=await signalChain.prepareStore(config,binding),receipt=await send(prepared.transaction);
- await final();const observed=await signalChain.observe({...prepared,kind:'store',config,binding},receipt.transactionHash);
+ await final();const recovered=await signalChain.prepareStore(config,binding);assert.equal(recovered.recovered,true);
+ const observed=await signalChain.observe({...prepared,kind:'store',config,binding},receipt.transactionHash);
  assert.equal(observed.state,'confirmed');
+ await signalChain.validateStoreBuild({...config,storeArtifactHash:digest(build)},observed.signal,build,factoryBuild,observed.blockNumber);
  const signal={...observed.signal,projectId:'prj_signal-local',state:'verified',profile:'claus-signal-v1',artifactHash:digest(build),config};
  const report={complete:true,jobId:'local-fixture-only',report:'Explicit local fixture; not an independent live review or approval.'};signal.reviewArtifactHash=digest(report);
  const consumer={signal,build,factoryBuild,review:report};
@@ -53,14 +56,14 @@ test('real local signal lifecycle binds source, typed grant, reviewed consumer, 
  const grant=await signalChain.prepareGrant(signal,binding,terms);
  await assert.rejects(signalChain.registerGrant(signal,binding,grant,await publisher.signTypedData(grant.typedData)),{code:'invalid_signature'});
  const registered=await signalChain.registerGrant(signal,binding,grant,await owner.signTypedData(grant.typedData));
- await send(registered.transaction,publisher);
+ await send(registered.transaction,publisher);await final();
  assert.equal((await signalChain.grant(signal,grant.grantId)).terms.nonce,'14');
  const record=async(sequence,version)=>{const block=await now();return {grantId:grant.grantId,sequence,expectedVersion:version,
   observedAt:Number(block.timestamp),validUntil:Number(block.timestamp)+600,sourceHash:keccak256(stringToHex('public-result-fixture')),
   data:encodeAbiParameters([{type:'uint256'},{type:'uint64'},{type:'bytes32'},{type:'uint64'},{type:'uint256'}],
    [1n,block.number,block.hash,block.timestamp,2000000000n])};};
  const first=await signalChain.prepareRecord(signal,binding,await record(1,1));await send(first.transaction,publisher);
- await final();assert.equal((await signalChain.latest(signal)).record.sequence,'1');
+ await final();const current=await signalChain.latest(signal);assert.equal(current.record.sequence,'1');assert.equal(current.authorizationActive,true);assert.equal(current.currentVersion,1);
  const snapshot=await chain.captureEvidence({module,consumer});
  const proposal=await chain.proposal({binding,module,configuration:encodeAbiParameters([{type:'uint256'},{type:'uint256'}],[3000000000n,3600n]),
   dependencySnapshot:snapshot,nonceSeed:'local-reviewed-config',now:Number((await now()).timestamp)});
@@ -72,6 +75,6 @@ test('real local signal lifecycle binds source, typed grant, reviewed consumer, 
  await send((await signalChain.prepareRecord(signal,binding,await record(2,2))).transaction,publisher);
  await send((await signalChain.prepareRevoke(signal,binding,grant.grantId)).transaction);
  await assert.rejects(signalChain.prepareRecord(signal,binding,await record(3,2)),{code:'signal_grant_inactive'});
- await final();const latest=await signalChain.latest(signal);assert.equal(latest.record.sequence,'2');assert.equal(latest.record.version,'2');
+ await final();const latest=await signalChain.latest(signal);assert.equal(latest.record.sequence,'2');assert.equal(latest.record.version,'2');assert.equal(latest.authorizationActive,false);assert.equal((await signalChain.grant(signal,grant.grantId)).finalized,true);
  if(process.env.CLAUS_SIGNAL_FIXTURE)await writeFile(process.env.CLAUS_SIGNAL_FIXTURE,JSON.stringify({consumer:snapshot.consumer,proposal,projectId:'prj_signal-local'})+'\n');
 });

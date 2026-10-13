@@ -36,6 +36,10 @@ export function createVaults({ store, identity, jobs, chain, now = () => Date.no
         const { policy, admission } = await binding(tx, projectId, cap);
         const old = await tx.read('project-vaults', projectId);
         if (old && !['cancelled', 'blocked', 'failed'].includes(old.value.state)) return old.value;
+        requireThat(!await tx.read('project-signals',projectId),'signal_review_context_changed');
+        const consumer=await tx.read('project-consumer-claims',projectId);
+        requireThat(!consumer||consumer.value.profile==='claus-native-principal-v1','signal_review_context_changed');
+        if(!consumer)await tx.write('project-consumer-claims',projectId,{profile:'claus-native-principal-v1'},0);
         // Terminal pre-broadcast failures can retry; uncertain transactions
         // never become a new deployment attempt.
         const attempt = (old?.value.attempt ?? 0) + 1;

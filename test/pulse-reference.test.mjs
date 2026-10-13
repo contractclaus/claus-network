@@ -5,7 +5,7 @@ import {createJobs} from '../src/jobs/index.mjs';
 import {createPulseScheduler} from '../reference/pulse-scheduler.mjs';
 import {createPulsePipeline} from '../reference/pulse-pipeline.mjs';
 import {digest} from '../src/shared/index.mjs';
-import {createPulseProvider,pulseDefinitions} from '../reference/pulse-providers.mjs';
+import {createPulseProvider,createPulseProviderWorker,pulseDefinitions} from '../reference/pulse-providers.mjs';
 import {schemaDefinition,schemaSample,schemaValue} from '../src/services/schema.mjs';
 
 test('three providers satisfy the real manifest schema and reject a mismatched independent source',async()=>{
@@ -76,9 +76,38 @@ test('data pipeline recovers a lost prepare response and never replaces its orig
   consumerProvider:{execute:async()=>evaluation},publisher:{step:async()=>({state:confirmed?'confirmed':'pending',transactionHash:'0xoriginal'})},
   grantId:'grant',signal:{chainId:1},readRule:async()=>({thresholdWei:'10',version:1,maximumAge:7200}),now:()=>time});
  const checkpoint=async x=>{saved=structuredClone(x);};
- await assert.rejects(make().step({id:'run-1',expiresAt:time+7200000,serviceExpiresAt:time+7200000},checkpoint),/lost_response/);
+ await assert.rejects(make().step({id:'run-1',expiresAt:time+3600000,serviceExpiresAt:time+7200000},checkpoint),/lost_response/);
  await make().step(saved,checkpoint);assert.equal(prepared.size,1);assert.equal(orders.size,2);assert.equal(pubCalls,2);
+ assert.equal(prepared.get('run-1').input.validUntil,Math.floor(time/1000)+7200);
+ assert([...publications.values()].every(p=>p.expiresAt===time+7200000));
  time+=8000000;confirmed=true;
  assert.equal((await make().step(saved,checkpoint)).state,'complete');
  assert.deepEqual(submitted,['0xoriginal']);
+});
+
+test('an unsigned failed intent releases the next scheduler slot but an unknown signed transaction retains it',async t=>{
+ const store=openStore(':memory:');t.after(()=>store.close());let time=1800000000000,signed=false;
+ const jobs=createJobs({store,identity:{authorize:async()=>{}},now:()=>time});
+ const config={projectId:'lane',startsAt:time,expiresAt:time+14400000,intervalMs:3600000,maximumRuns:4};
+ const pipeline={async step(run,checkpoint){run.write={operation:{id:'op-'+run.id}};await checkpoint(run);
+   if(signed&&!await store.read('chain-transactions','signal-record:'+run.write.operation.id))await store.transaction(tx=>tx.write('chain-transactions','signal-record:'+run.write.operation.id,{state:'unknown'},0));
+   throw Object.assign(Error('denied'),{code:'signal_budget_exhausted'});
+ }};
+ const tick=()=>createPulseScheduler({store,jobs,pipeline,config,now:()=>time}).tick();
+ assert.equal((await tick()).state,'failed');time+=3600001;signed=true;
+ const first=await tick();assert.equal(first.state,'unavailable');time+=7200001;
+ const next=await tick();assert.equal(next.runId,first.runId);assert.equal(next.state,'unavailable');
+ assert.equal((await store.list('workflow-jobs')).length,2);
+});
+test('a poisoned public order cannot abort unrelated provider deliveries',async()=>{
+ const delivered=[];const client={async call(name,a){
+  if(name==='provider_orders')return {orders:[{id:'bad',serviceId:'s'},{id:'good',serviceId:'s'}]};
+  if(name==='provider_claim')return {state:'working',input:{id:a.orderId},lease:'lease'};
+  if(name==='provider_deliver'){delivered.push(a.orderId);return {};}
+  throw Error(name);
+ }};
+ const result=await createPulseProviderWorker({client,projectId:'provider',serviceId:'s',provider:{async execute(input){
+  if(input.id==='bad')throw Object.assign(Error('source'),{code:'pulse_source_mismatch'});return {status:'ok'};
+ }}}).tick();
+ assert.deepEqual(delivered,['good']);assert.equal(result.failed,1);assert.equal(result.delivered,1);
 });

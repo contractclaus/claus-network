@@ -1,6 +1,7 @@
 import { keccak256, parseTransaction, recoverTransactionAddress } from 'viem';
 import { digest, requireThat, text } from '../src/shared/index.mjs';
 import { authorityDenied } from './authorization.mjs';
+import { finalizedReplacement } from './transaction-replacement.mjs';
 
 
 // Sepolia's Glamsterdam state-creation repricing makes the reviewed executor
@@ -127,7 +128,21 @@ export function createReadonlyTransactions({ store, client, signer, sealer, chai
       if (['confirmed', 'reverted', 'cancelled', 'prepared'].includes(value.state)) return view(value);
       let receipt;
       try { receipt = await client.getTransactionReceipt({ hash: value.hash }); }
-      catch {
+      catch (error) {
+        if(error.name==='TransactionReceiptNotFoundError'&&value.intent.expiresAt<=now()) {
+          const replacement=await finalizedReplacement(client,value);
+          if(replacement)return store.transaction(async tx=>{
+            const current=await tx.read('chain-transactions',id);
+            if(['confirmed','reverted','cancelled'].includes(current.value.state))return view(current.value);
+            requireThat(current.value.hash===value.hash,'transaction_receipt_mismatch');
+            const {sealedRaw,...rest}=current.value;
+            const next={...rest,state:'cancelled',replacement,completedAt:now()};
+            await onFinalize(tx,{id,state:'cancelled',actual:'0'});
+            await tx.write('chain-transactions',id,next,current.revision);await release(tx,id,value.nonce);
+            await tx.event({type:'chain.transaction_replaced',id,hash:value.hash,replacement,chainId:CHAIN,at:now()});
+            return view(next);
+          });
+        }
         // Resend only the same signed bytes, never a new nonce, fee or payment.
         // An RPC may have lost the first write. Revocation/expiry still forbid
         // another send, but cannot release a potentially broadcast reservation.
