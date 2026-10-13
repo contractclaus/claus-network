@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-13T15:46:30.598777+00:00",
+  "scope": "Only the native network review output-token budget; no network API or contract runtime change.",
+  "cause": {
+    "requestId": "network-review:nr_d3fffe3a2ab1593cc42343a127dd3c3073812735a0a421297e71017f4234f3f8",
+    "providerRequestId": "01M4TYQ7YZW2K2CBWDTCBSGV74",
+    "model": "gpt-6-astra",
+    "inputTokens": 135689,
+    "outputTokens": 4096,
+    "reasoningTokens": 4096,
+    "responseStatus": "incomplete",
+    "accountedMicroUSDC": "468507",
+    "decision": "none; original review remains failed"
+  },
+  "change": {
+    "previousOutputTokens": 4096,
+    "newOutputTokens": 16384,
+    "paymentValidation": "Only the trusted native review handler extends the 8192 default to 16384; original request body remains intact. All other validation is reused unchanged.",
+    "unchanged": [
+      "model",
+      "reasoning effort",
+      "full evidence",
+      "review criteria",
+      "2-USDC per-call ceiling",
+      "no quote shrinking",
+      "deadline",
+      "receipt and output validation",
+      "old request identities and outcomes",
+      "ordinary and Builder output caps"
+    ]
+  },
+  "checks": {
+    "at": "2026-10-13T15:46:14.806Z",
+    "passed": true,
+    "targetedTests": 2,
+    "actualPriorInputIdentical": true,
+    "previousMaximumOutputTokens": 4096,
+    "maximumOutputTokens": 16384,
+    "maximumQuoteMicroUSDC": "2000000",
+    "unsignedQuoteMicroUSDC": "526768",
+    "model": "gpt-6-astra",
+    "reasoning": {
+      "effort": "xhigh",
+      "context": "all_turns"
+    },
+    "paidModelCalls": 0,
+    "files": {
+      "agent/src/network-review-schema.ts": "bd3db2efc1ad4e0eb401f4880e9854a18cb36231b88f9910c995337a803dde5c",
+      "payments/src/credit-provider.js": "5f17cbc12179a38a75d5b48956c7cc4084f1abaa2bec15d5e1acd6a6a764fb45",
+      "payments/src/index.js": "f6d9ab8e3e4cc1a5fbb8c91dc91e000c20605a851b457fe8478b6b8050d35bcf"
+    },
+    "typecheck": true,
+    "scope": "Two targeted tests and a typecheck ran in the full private agent/payment worktree; mirrors are not standalone runtime distributions."
+  },
+  "publicationIsActivation": false
+}

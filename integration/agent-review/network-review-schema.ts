@@ -143,7 +143,9 @@ Return exactly JSON with three keys: {"decision":"approve" or "reject","reason":
     meaning:'These complete compiler inputs are identical. Use the included value at both paths. All other evidence is unchanged; this is a lossless representation, not a summary.'}};
  }
  return {model:config.settings.model,provider:config.settings.provider,reasoning:{effort:config.settings.reasoningEffort,context:'all_turns'},
-  max_output_tokens:Math.min(4096,config.settings.maxOutputTokens),stream:false,store:false,
+  // This includes hidden reasoning. Reviews use a separate finite budget;
+  // the conversational reply cap must not exhaust it before the verdict.
+  max_output_tokens:16384,stream:false,store:false,
   instructions:instructions+(modelInput!==input?'\nThe user message uses the fixed claus-review-shared-input-v1 format. Its input is the validated review evidence; input.evidence.chain.consumer.factoryBuild.standardInput is identical to input.evidence.chain.consumer.build.standardInput and is supplied once at the latter path. Read that value at both paths; both compiler inputHash values match. The outer inputHash binds the full original evidence before this lossless substitution. This encoding does not endorse the source or reports, alter your review criteria, or imply approval.':''),
   input:[{role:'user',content:networkCanonical(modelInput)}]};
 }
