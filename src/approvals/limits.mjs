@@ -7,10 +7,18 @@ export async function publicDecisionCapacity(reader, projectId, now, reserve = f
   const pilot = (await reader.read('review-pilots', projectId))?.value;
   if (!await reader.read('public-chain-projects', projectId) && pilot?.enabled && pilot.expiresAt > now) return false;
   const day = Math.floor(now / 86400000);
+  // Operator-only, expiring allocations may extend this project's daily
+  // attempts. Existing counters, lifetime limits and global limits still bind.
+  const allocation = (await reader.read('public-decision-allocations', digest({ projectId, day })))?.value;
+  const allocated = allocation?.projectId === projectId && allocation.day === day &&
+    Number.isSafeInteger(allocation.expiresAt) && allocation.expiresAt > now && allocation.expiresAt <= (day + 1) * 86400000 &&
+    Number.isSafeInteger(allocation.maximumProjectDay) && allocation.maximumProjectDay >= PUBLIC_DECISION_LIMITS.projectDay &&
+    allocation.maximumProjectDay <= PUBLIC_DECISION_LIMITS.projectLifetime;
+  const projectDay = allocated ? allocation.maximumProjectDay : PUBLIC_DECISION_LIMITS.projectDay;
   for (const [scope, subject, period, maximum] of [
     ['lifetime', projectId, null, PUBLIC_DECISION_LIMITS.projectLifetime],
     ['lifetime', 'global', null, PUBLIC_DECISION_LIMITS.globalLifetime],
-    ['day', projectId, day, PUBLIC_DECISION_LIMITS.projectDay],
+    ['day', projectId, day, projectDay],
     ['day', 'global', day, PUBLIC_DECISION_LIMITS.globalDay]
   ]) {
     const key = digest({ scope, subject, period }), row = await reader.read('public-decision-admission', key);

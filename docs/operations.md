@@ -120,3 +120,7 @@ The registration scan intentionally retains its module-based lower bound, includ
 ## Approval recovery in candidate 0.12.5
 
 Execution recovery reads the exact finalized project version transition using `execution:v3:<proposalId>`. Earlier `execution:v2` and original execution cursor rows are retained as historical journals and are not the active cursor for this version. A transition belonging to a different approval closes the pending proposal as `approval_superseded`; it cannot be represented as that proposal's execution. Missing transition logs leave the original job retryable without advancing its history cursor. An unchanged version with a consumed nonce remains `approval_cancelled`. This behavior is not yet deployed. The signing intake host, as well as the chain hosts, requires an explicit HTTPS historical RPC configuration.
+
+## Bounded decision recovery allocation
+
+A failed model request still consumes its original public admission count. An operator may issue a dated, expiring project allocation in `public-decision-allocations`, keyed by the digest of `{projectId, day}`. Its `maximumProjectDay` can be at most the unchanged four-attempt project lifetime ceiling; `expiresAt` must fall within that UTC day. This is operator configuration, not a public API permission. Existing counts are never reset. The eight-attempt global daily cap, all lifetime caps, the separate model budget and the 2-USDC request ceiling still apply. Invalid or expired allocations use the default two-attempt project daily cap.

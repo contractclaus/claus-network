@@ -1,0 +1,83 @@
+--- a/agent/src/network-review.ts
++++ b/agent/src/network-review.ts
+@@ -1,5 +1,6 @@
+ import {configuration,sql} from './store.js';
+ import {networkHash,networkReviewRequest,parseNetworkDecision,validateNetworkReview} from './network-review-schema.js';
++import {inferenceFetch} from './inference-transport.js';
+ 
+ type Query=ReturnType<typeof sql>;
+ const visible=(row:any)=>({id:row.id,state:row.state,inputHash:row.input_hash,proposalHash:row.input.proposalHash,
+@@ -80,7 +81,7 @@
+    WHERE id=${row.id} AND state IN ('running','uncertain')`;
+ }
+ export async function runNetworkReview(id:string,ports:{db?:Query;readConfig?:typeof configuration;fetcher?:typeof fetch}={}) {
+- const db=ports.db??sql(),fetcher=ports.fetcher??fetch,readConfig=ports.readConfig??configuration;
++ const db=ports.db??sql(),fetcher=ports.fetcher??inferenceFetch,readConfig=ports.readConfig??configuration;
+  await expireQueued(db);const row=await rowFor(id,db);
+  if(row.state!=='queued'||Date.parse(row.available_at)>Date.now())return visible(row);
+  const config=await readConfig();
+@@ -101,8 +102,10 @@
+   AND (SELECT (content->'policy'->'capabilities'->>'networkReview')::boolean AND (content->'settings'->>'enabled')::boolean FROM claus_config ORDER BY revision DESC LIMIT 1) IS TRUE RETURNING *`;
+  if(!claimed.length)return visible(await rowFor(id,db));
+  try{
+-  const response=await fetcher(origin+'/api/completion',{method:'POST',headers:{...headers,'Idempotency-Key':effectId,'X-Max-Quote-Micro-USDC':'2000000'},
+-   body:JSON.stringify(row.request),redirect:'error',signal:AbortSignal.timeout(270000)});
++  // Full compiler evidence needs the existing finite research transport. This
++  // changes only delivery time, never the saved request, price cap or retry ID.
++  const response=await fetcher(origin+'/api/completion',{method:'POST',headers:{...headers,'Idempotency-Key':effectId,'X-Max-Quote-Micro-USDC':'2000000','X-Inference-Purpose':'research'},
++   body:JSON.stringify(row.request),redirect:'error',signal:AbortSignal.timeout(650000)});
+   if(!response.ok)throw Error('network_review_inference_uncertain');
+   const body=await json(response);
+   await finish(row,{model:body.model,message:body.choices?.[0]?.message,receipt:body.receipt,telemetry:body.telemetry,
+@@ -125,7 +128,7 @@
+    }else if(body.status==='failed'&&['not_signed','not_settled','settled'].includes(body.outcome?.payment)){
+     await db`UPDATE claus_network_reviews SET state='failed',result=${JSON.stringify({error:'inference_failed',outcome:body.outcome,accounting:body.accounting??null})}::jsonb,updated_at=now() WHERE id=${id} AND state IN ('running','uncertain')`;
+    }
+-  }else if(response.status===404&&Date.now()-Date.parse(row.started_at)>300000&&(await json(response)).error==='not_found'){
++  }else if(response.status===404&&Date.now()-Date.parse(row.started_at)>800000&&(await json(response)).error==='not_found'){
+    // The fixed payer fences missing request IDs against subsequent admission.
+    await db`UPDATE claus_network_reviews SET state='failed',result='{"error":"inference_not_reserved"}'::jsonb,updated_at=now() WHERE id=${id} AND state IN ('running','uncertain')`;
+   }
+--- a/agent/tests/network-review.test.ts
++++ b/agent/tests/network-review.test.ts
+@@ -133,10 +133,20 @@
+ }
+ test('unknown paid inference survives replay and reconciles the same decision without a second send',async t=>{
+  const f=await database(t),x=input();const review=await submitNetworkReview(x,f.query,f.readConfig);
++ const {completionTiming}=await import(new URL('../../payments/vendor/src/response.js',import.meta.url).href);
++ const timeouts:number[]=[],originalTimeout=AbortSignal.timeout.bind(AbortSignal);
++ t.mock.method(AbortSignal,'timeout',(ms:number)=>{timeouts.push(ms);return originalTimeout(ms);});
+  let sends=0;
+- const fetcher:any=async(url:string)=>{
++ const fetcher:any=async(url:string,init:any)=>{
+   if(url.includes('/admission/'))return Response.json({id:'network-review:'+review.id,maximumMicroUsdc:'2000000',ready:true});
+-  if(url.endsWith('/completion')){sends++;throw Error('response lost after admission');}
++  if(url.endsWith('/completion')){
++   sends++;assert.equal(init.headers['X-Inference-Purpose'],'research');
++   assert.equal(init.headers['X-Max-Quote-Micro-USDC'],'2000000');
++   assert.equal(init.headers['Idempotency-Key'],'network-review:'+review.id);
++   const timing=completionTiming(false,init.headers['X-Inference-Purpose']);
++   assert(timeouts.at(-1)!>timing.providerMs&&timeouts.at(-1)!<timing.activeMs);
++   throw Error('response lost after admission');
++  }
+   if(url.includes('/requests/')){const r=result();return Response.json({status:'completed',response:{model:r.model,responseStatus:r.responseStatus,choices:[{message:r.message,finish_reason:r.finishReason}],receipt:{id:'fixture-receipt'}}});}
+   throw Error('unexpected call');
+  };
+@@ -147,6 +157,17 @@
+  assert.equal(final.result.decision,'reject');assert.equal(final.result.proposalHash,x.proposalHash);
+  assert.equal((await submitNetworkReview(x,f.query,f.readConfig)).result.decisionHash,final.result.decisionHash);
+  assert.equal(Object.hasOwn(final,'input'),false);assert.equal(sends,1);
++});
++test('a missing relay row remains pending through the longer delivery window',async t=>{
++ const f=await database(t),review=await submitNetworkReview(input(),f.query,f.readConfig);
++ await f.db.query("UPDATE claus_network_reviews SET state='uncertain',started_at=now()-interval '6 minutes' WHERE id=$1",[review.id]);
++ const fetcher:any=async(url:string)=>{
++  assert(url.includes('/api/requests/'));return Response.json({error:'not_found'},{status:404});
++ };
++ assert.equal((await networkReviewStatus(review.id,{db:f.query,fetcher})).state,'uncertain');
++ await f.db.query("UPDATE claus_network_reviews SET started_at=now()-interval '14 minutes' WHERE id=$1",[review.id]);
++ const final=await networkReviewStatus(review.id,{db:f.query,fetcher});
++ assert.equal(final.state,'failed');assert.equal(final.result.error,'inference_not_reserved');
+ });
+ test('a revoke during provider admission prevents the paid call',async t=>{
+  const f=await database(t),review=await submitNetworkReview(input(),f.query,f.readConfig);let sends=0;
