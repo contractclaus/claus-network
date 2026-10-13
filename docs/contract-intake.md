@@ -117,4 +117,4 @@ For `recoverResult`, keep the original requester address from your own saved dep
 
 ### Exhausted decision capacity
 
-`decision_capacity_reached` with `retryAt` leaves intake waiting until that time. Without `retryAt`, the request becomes terminally `blocked`. In particular, a project that already consumed the default four lifetime decisions cannot rely on a temporary recovery allocation extending into tomorrow, even if a future allocation was pre-staged. Check the original request before any separately authorized resubmission. A rejected capacity check consumes no decision counter.
+`decision_capacity_reached` with `retryAt` leaves intake waiting until that time. Without `retryAt`, the request becomes terminally `blocked`. When the explicit continuous-operation capability is disabled, a project that already consumed the default four lifetime decisions cannot rely on a temporary recovery allocation extending into tomorrow, even if a future allocation was pre-staged. Check the original request before any separately authorized resubmission. A rejected capacity check consumes no decision counter.

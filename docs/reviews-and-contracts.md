@@ -1,6 +1,6 @@
 # Reviews and contract changes
 
-The workflow is source → build → independent review → Claus decision → execution → verification. Eligible public projects can request sponsored reviews within the current finite allocation. The protected readonly profile is available on [Sepolia](testnet.md) and [Ethereum](mainnet.md); actual release evidence and remaining exclusions are recorded in [release status](release-status.md).
+The workflow is source → build → independent review → Claus decision → execution → verification. Eligible public projects can request sponsored reviews within the current funded allocation. The protected readonly profile is available on [Sepolia](testnet.md) and [Ethereum](mainnet.md); actual release evidence and remaining exclusions are recorded in [release status](release-status.md).
 
 ## Submit a review
 
@@ -59,3 +59,7 @@ New admitted Sepolia registrations now use the bounded-result executor from comm
 ### Public admission failure handling
 
 Version 0.11.3 returns unused lifetime sponsorship for a cancelled review only if no payment was submitted. The daily attempt limit is still consumed. Uncertain submitted payments preserve their original reservation and request ID. For public contract work, use a delegated agent for module deployment, registration submission and proposals. The owner authenticates to prepare and sign registration. Expired pilot projects must satisfy the current public admission policy and its gas ledger; old executor bindings are not automatically migrated. See [operations](operations.md#public-admission-failure-boundaries) for the finite decision and gas limits.
+
+## Stateful contract proposal
+
+A [managed-contract candidate](https://github.com/contractclaus/claus-network/tree/main/proposals/managed-contracts) separates arbitrary project storage from its Claus-controlled implementation registry. It is not admitted or deployed. Current public contract operations continue to use the reviewed readonly profile. A general proxy does not make all future changes safe; a new profile requires independent review, API and agent integration, and a demonstrated release.
