@@ -64,7 +64,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   // Reviews retain the native Responses payload and model/effort. Builder's
   // optional Chat adapter must never reinterpret a review. Native nonstreaming
   // returns its final bill; the relay still sends downstream keepalives.
-  const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:false,allowSmallerOutput:false,allowCapacityDeferral:true});
+  const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:false,allowSmallerOutput:false,allowCapacityDeferral:true,maximumOutputTokens:16384});
   const workHandler=id=>/^network-review:nr_[a-f0-9]{64}$/.test(id)?reviewCredit:independentCredit;
   const creditResult=row=>({status:row.status,response:row.response??null,outcome:row.outcome??null});
   const workResult=row=>({...creditResult(row),id:row.id,rail:'surplus_credit',execution:{active:row.active,activeUntil:row.active_until},...(row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed'

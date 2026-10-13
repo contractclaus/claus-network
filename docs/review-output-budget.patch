@@ -1,0 +1,58 @@
+diff --git a/integration/agent-review/network-review-schema.ts b/integration/agent-review/network-review-schema.ts
+index 0a40f82..22a59bd 100644
+--- a/integration/agent-review/network-review-schema.ts
++++ b/integration/agent-review/network-review-schema.ts
+@@ -143,7 +143,9 @@ Return exactly JSON with three keys: {"decision":"approve" or "reject","reason":
+     meaning:'These complete compiler inputs are identical. Use the included value at both paths. All other evidence is unchanged; this is a lossless representation, not a summary.'}};
+  }
+  return {model:config.settings.model,provider:config.settings.provider,reasoning:{effort:config.settings.reasoningEffort,context:'all_turns'},
+-  max_output_tokens:Math.min(4096,config.settings.maxOutputTokens),stream:false,store:false,
++  // This includes hidden reasoning. Reviews use a separate finite budget;
++  // the conversational reply cap must not exhaust it before the verdict.
++  max_output_tokens:16384,stream:false,store:false,
+   instructions:instructions+(modelInput!==input?'\nThe user message uses the fixed claus-review-shared-input-v1 format. Its input is the validated review evidence; input.evidence.chain.consumer.factoryBuild.standardInput is identical to input.evidence.chain.consumer.build.standardInput and is supplied once at the latter path. Read that value at both paths; both compiler inputHash values match. The outer inputHash binds the full original evidence before this lossless substitution. This encoding does not endorse the source or reports, alter your review criteria, or imply approval.':''),
+   input:[{role:'user',content:networkCanonical(modelInput)}]};
+ }
+diff --git a/integration/payment-review/src/credit-provider.js b/integration/payment-review/src/credit-provider.js
+index 4b09230..1de2771 100644
+--- a/integration/payment-review/src/credit-provider.js
++++ b/integration/payment-review/src/credit-provider.js
+@@ -26,7 +26,8 @@ function actualCost(header,result) {
+ // This lane consumes the store's existing finite escrow. An unsigned quote is
+ // only an estimate/filter, not a signed spending ceiling. No x402 signing,
+ // top-up, fallback, retry or provider recovery request belongs here.
+-export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenceFetch,store=creditStore,forceStream,transportProfile,allowSmallerOutput,allowCapacityDeferral=false}) {
++export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenceFetch,store=creditStore,forceStream,transportProfile,allowSmallerOutput,allowCapacityDeferral=false,maximumOutputTokens=8192}) {
++  if(![8192,16384].includes(maximumOutputTokens))throw Error('invalid_credit_output_limit');
+   return async function creditCompletion(c) {
+     const id=c.req.header('idempotency-key');
+     if(!validId(id))return c.json({error:'stable_request_id_required'},400);
+@@ -34,7 +35,14 @@ export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenc
+     try {
+       const raw=await c.req.text();
+       if(Buffer.byteLength(raw)>4200000)return c.json({error:'request_too_large',payment:'not_signed'},413);
+-      request=JSON.parse(raw);validateRequest(request);
++      request=JSON.parse(raw);
++      if(maximumOutputTokens===16384){
++        const output=request?.max_output_tokens;
++        if(!Number.isInteger(output)||output<1||output>16384)throw Error('request_refused');
++        // Reuse every existing request check, widening only this trusted
++        // review lane's output bound. The saved, quoted and sent body stays exact.
++        validateRequest({...request,max_output_tokens:Math.min(output,8192)});
++      }else validateRequest(request);
+     } catch {return c.json({error:'request_refused',payment:'not_signed'},400);}
+     try {
+       const configured=BigInt(env.MAX_INFERENCE_QUOTE_MICRO_USDC??'3000000');
+diff --git a/integration/payment-review/src/index.js b/integration/payment-review/src/index.js
+index ca3e63b..859a6b8 100644
+--- a/integration/payment-review/src/index.js
++++ b/integration/payment-review/src/index.js
+@@ -64,7 +64,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
+   // Reviews retain the native Responses payload and model/effort. Builder's
+   // optional Chat adapter must never reinterpret a review. Native nonstreaming
+   // returns its final bill; the relay still sends downstream keepalives.
+-  const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:false,allowSmallerOutput:false,allowCapacityDeferral:true});
++  const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:false,allowSmallerOutput:false,allowCapacityDeferral:true,maximumOutputTokens:16384});
+   const workHandler=id=>/^network-review:nr_[a-f0-9]{64}$/.test(id)?reviewCredit:independentCredit;
+   const creditResult=row=>({status:row.status,response:row.response??null,outcome:row.outcome??null});
+   const workResult=row=>({...creditResult(row),id:row.id,rail:'surplus_credit',execution:{active:row.active,activeUntil:row.active_until},...(row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed'

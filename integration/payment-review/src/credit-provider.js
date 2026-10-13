@@ -26,7 +26,8 @@ function actualCost(header,result) {
 // This lane consumes the store's existing finite escrow. An unsigned quote is
 // only an estimate/filter, not a signed spending ceiling. No x402 signing,
 // top-up, fallback, retry or provider recovery request belongs here.
-export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenceFetch,store=creditStore,forceStream,transportProfile,allowSmallerOutput,allowCapacityDeferral=false}) {
+export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenceFetch,store=creditStore,forceStream,transportProfile,allowSmallerOutput,allowCapacityDeferral=false,maximumOutputTokens=8192}) {
+  if(![8192,16384].includes(maximumOutputTokens))throw Error('invalid_credit_output_limit');
   return async function creditCompletion(c) {
     const id=c.req.header('idempotency-key');
     if(!validId(id))return c.json({error:'stable_request_id_required'},400);
@@ -34,7 +35,14 @@ export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenc
     try {
       const raw=await c.req.text();
       if(Buffer.byteLength(raw)>4200000)return c.json({error:'request_too_large',payment:'not_signed'},413);
-      request=JSON.parse(raw);validateRequest(request);
+      request=JSON.parse(raw);
+      if(maximumOutputTokens===16384){
+        const output=request?.max_output_tokens;
+        if(!Number.isInteger(output)||output<1||output>16384)throw Error('request_refused');
+        // Reuse every existing request check, widening only this trusted
+        // review lane's output bound. The saved, quoted and sent body stays exact.
+        validateRequest({...request,max_output_tokens:Math.min(output,8192)});
+      }else validateRequest(request);
     } catch {return c.json({error:'request_refused',payment:'not_signed'},400);}
     try {
       const configured=BigInt(env.MAX_INFERENCE_QUOTE_MICRO_USDC??'3000000');
