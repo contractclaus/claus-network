@@ -1,0 +1,24 @@
+--- a/agent/src/network-review.ts
++++ b/agent/src/network-review.ts
+@@ -108,6 +108,9 @@
+    body:JSON.stringify(row.request),redirect:'error',signal:AbortSignal.timeout(650000)});
+   if(!response.ok)throw Error('network_review_inference_uncertain');
+   const body=await json(response);
++  // A streamed relay response commits HTTP 200 before a later failure. That
++  // envelope is not a model result; reconcile its original payment ID.
++  if(body?.error)throw Error('network_review_inference_uncertain');
+   await finish(row,{model:body.model,message:body.choices?.[0]?.message,receipt:body.receipt,telemetry:body.telemetry,
+     responseStatus:body.responseStatus,finishReason:body.choices?.[0]?.finish_reason},db);
+  }catch{
+@@ -118,6 +121,11 @@
+ export async function networkReviewStatus(id:string,ports:{db?:Query;fetcher?:typeof fetch}={}) {
+  const db=ports.db??sql(),fetcher=ports.fetcher??fetch;await expireQueued(db);let row=await rowFor(id,db);
+  if(!['running','uncertain'].includes(row.state))return visible(row);
++ // The payer's negative status response permanently fences a missing ID.
++ // Do not race that lookup against the original POST's admission. The POST
++ // saves normal completion itself; only reconcile after its delivery window.
++ const startedAt=Date.parse(row.started_at);
++ if(!Number.isFinite(startedAt)||Date.now()-startedAt<=800000)return visible(row);
+  const {origin,headers}=relay(),effectId='network-review:'+id;
+  try{
+   const response=await fetcher(origin+'/api/requests/'+encodeURIComponent(effectId),{headers,redirect:'error',signal:AbortSignal.timeout(15000)});
