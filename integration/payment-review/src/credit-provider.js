@@ -66,6 +66,14 @@ export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenc
     const maximum=micro(pool.remaining);
     if(maximum===null||maximum<=0n)return c.json({error:'request_already_reserved'},409);
     if(maximum>callerMaximum)return c.json({error:'credit_exposure_exceeds_request',payment:'not_signed'},503);
+    // Funded account cash and each request's quote/risk reservation are distinct.
+    // Only the independent work ledger can opt into a larger prepaid balance;
+    // the original one-shot escrow and its unresolved request remain unchanged.
+    const fundedWork=pool.reservationKind==='independent_request_risk'&&env.SURPLUS_CREDIT_MAX_BALANCE_MICRO_USDC!==undefined;
+    const balanceCeiling=fundedWork?micro(env.SURPLUS_CREDIT_MAX_BALANCE_MICRO_USDC):maximum;
+    const operatorCeiling=fundedWork?micro(pool.accountBalanceCeiling):maximum;
+    if(balanceCeiling===null||operatorCeiling===null||balanceCeiling<maximum||balanceCeiling>operatorCeiling)
+      return c.json({error:'credit_account_limit_invalid',payment:'not_signed'},503);
     // Even a provider that reflects authorization into its result cannot cause
     // this credential to enter the saved result, operator outcome or agent.
     const redact=value=>JSON.parse(JSON.stringify(value).split(key).join('[redacted]'));
@@ -108,7 +116,8 @@ export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenc
       };
       const balance=await get('balance'),topup=await get('auto-topup'),deposit=await get('deposit-address');
       const available=typeof balance?.credit_balance_usdc==='string'?micro(balance.credit_balance_usdc):null;
-      if(balance?.account_status!=='active'||balance.prefunded_usdc_enabled!==true||topup?.enrolled!==false||available===null||available<BigInt(quoted.requirement.amount)||available>maximum||balance.usdc_available_usdc!==String(available)||balance.allowance_usdc!=='0'||balance.usdc_held_usdc!=='0'||balance.fiat_held_usdc!=='0'||balance.pending_deposit_usdc!=='0'||deposit?.chain_id!==8453||String(deposit?.address).toLowerCase()!==pool.deposit_address.toLowerCase()||String(deposit?.token_address).toLowerCase()!=='0x833589fcd6edb6e08f4c7c32d4f71b54bda02913')throw Error('balance_rejected');
+      const pending=micro(balance?.pending_deposit_usdc);
+      if(balance?.account_status!=='active'||balance.prefunded_usdc_enabled!==true||topup?.enrolled!==false||available===null||available<BigInt(quoted.requirement.amount)||available>balanceCeiling||pending===null||available+pending>balanceCeiling||(!fundedWork&&pending!==0n)||balance.usdc_available_usdc!==String(available)||balance.allowance_usdc!=='0'||balance.usdc_held_usdc!=='0'||balance.fiat_held_usdc!=='0'||deposit?.chain_id!==8453||String(deposit?.address).toLowerCase()!==pool.deposit_address.toLowerCase()||String(deposit?.token_address).toLowerCase()!=='0x833589fcd6edb6e08f4c7c32d4f71b54bda02913')throw Error('balance_rejected');
       outcome={rail:'surplus_credit',failure:'reservation_fenced'};
       // Check the local conservative deadline before the atomic DB lease fence.
       signal(timing.providerMs);
