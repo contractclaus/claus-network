@@ -142,7 +142,9 @@ Return exactly JSON with three keys: {"decision":"approve" or "reject","reason":
     includedAt:'input.evidence.chain.consumer.build.standardInput',
     meaning:'These complete compiler inputs are identical. Use the included value at both paths. All other evidence is unchanged; this is a lossless representation, not a summary.'}};
  }
- return {model:config.settings.model,provider:config.settings.provider,reasoning:{effort:config.settings.reasoningEffort,context:'all_turns'},
+ // Keep contract review independent from the conversational effort setting.
+ // The full evidence and decision criteria stay unchanged within the bounded call.
+ return {model:config.settings.model,provider:config.settings.provider,reasoning:{effort:'high',context:'all_turns'},
   // This includes hidden reasoning. Reviews use a separate finite budget;
   // the conversational reply cap must not exhaust it before the verdict.
   max_output_tokens:16384,stream:false,store:false,
