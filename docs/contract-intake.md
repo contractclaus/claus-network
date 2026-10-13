@@ -114,3 +114,7 @@ The current one-attempt policy also has two operational limits: a worker pause c
 ## Trusted client recovery
 
 For `recoverResult`, keep the original requester address from your own saved deployment and request journal. Verify its source and exact owner/controller before importing the original ID. Do not discover a trusted predecessor solely from an arbitrary contract's `controller()`, `inbox()` or `receipts()` responses: a look-alike contract can return those values. Recovery is an explicit controller action and does not execute a proposal. Callback delivery remains bounded by the operator's finite attempt/gas policy; a contract permitting retries does not authorize unlimited sponsored retries.
+
+### Exhausted decision capacity
+
+`decision_capacity_reached` with `retryAt` leaves intake waiting until that time. Without `retryAt`, the request becomes terminally `blocked`. In particular, a project that already consumed the default four lifetime decisions cannot rely on a temporary recovery allocation extending into tomorrow, even if a future allocation was pre-staged. Check the original request before any separately authorized resubmission. A rejected capacity check consumes no decision counter.

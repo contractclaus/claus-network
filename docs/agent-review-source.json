@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "071b7c918b8dd64066441c3e8245e1e2c19b2ae5",
+  "sha256": {
+    "integration/agent-review/network-review.ts": "068d26646ce48313bd82d6586b7051115c8c5a1fa3a6a4ba5d6c79733562d8b4",
+    "integration/agent-review/network-signal-review.ts": "0f090966d7bd5ab8f25f7008ad1b4ae68c95ed9eef354bf28c4e9e3ffe5d6a88",
+    "integration/agent-review/network-review-schema.ts": "5108433ca60f6c84ec6cb817456b90c9e456faaf7245d57a55e190ed2a0c4688"
+  },
+  "deploymentEvidence": "https://claus.si/docs/reference-phase3-agent.json",
+  "scope": "Exact source candidate; deployment binding requires the separately verified release evidence."
+}

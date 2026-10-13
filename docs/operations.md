@@ -142,3 +142,9 @@ Both failures were reproduced against the actual local payment-admission and str
 ## Shared compiler-input review format
 
 The [agent correction](agent-review-shared-input.patch) represents identical signal Store and Factory compiler inputs once, after full validation and canonical equality of the entire inputs, including settings. Trusted instructions explain the fixed format. Reconstructing the shared value gives the exact original evidence and hash. Different inputs retain both copies; reports, code, signing, model and decision criteria are unchanged. Existing saved requests retain their original bodies and IDs. [Review-boundary source](../integration/agent-review/README.md) is supplied separately from the network runtime. Focused tests cover reconstruction, tampering, different settings and legacy requests. This reduces request size; it does not establish the cause of a provider timeout or guarantee a successful model response.
+
+### Recovery allocation and terminal intake
+
+If a project has consumed the default four lifetime decisions and a day cap blocks it under a temporary lifetime extension, the response has no promised next-day retry. Contract intake then closes that request as `blocked` with `decision_capacity_reached`. A pre-staged future allocation does not keep the original request waiting. The operator must explicitly authorize any later recovery; a new onchain request is required after checking the original result. No counter is consumed by a rejected capacity check, and no old request is replayed.
+
+The exact review-source candidate hashes are recorded in [agent-review-source.json](agent-review-source.json). The final released deployment binding is published in [reference-phase3-agent.json](reference-phase3-agent.json) only after source verification.
