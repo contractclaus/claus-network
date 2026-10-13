@@ -60,13 +60,31 @@ test('one bounded daily allocation preserves used attempts, global limits and li
 
 test('expired, cross-project and excessive allocations do not lift the default daily cap', async t => {
   for (const change of [{ expiresAt: 1 }, { projectId: 'someone-else' }, { maximumProjectDay: 5 },
-    { maximumProjectLifetime: 9 }, { maximumProjectLifetime: '5' }, { maximumProjectLifetime: 3 }]) {
+    { maximumProjectLifetime: 9 }, { maximumProjectLifetime: '5' }, { maximumProjectLifetime: 3 }, { maximumProjectLifetime: null },
+    { maximumProjectDay: undefined, maximumProjectLifetime: 5 }, { maximumProjectDay: 6, maximumProjectLifetime: 5 }]) {
     const store = openStore(':memory:'); t.after(() => store.close()); const now = 1800000000000, day = Math.floor(now / 86400000), projectId = 'reference';
+    const allocation = { projectId, day, expiresAt: (day + 1) * 86400000, maximumProjectDay: 3, ...change };
+    if (allocation.maximumProjectDay === undefined) delete allocation.maximumProjectDay;
     await store.transaction(tx => tx.write('public-decision-allocations', digest({ projectId, day }),
-      { projectId, day, expiresAt: (day + 1) * 86400000, maximumProjectDay: 3, ...change }, 0));
+      allocation, 0));
     for (let n = 0; n < 2; n++) await store.transaction(tx => publicDecisionCapacity(tx, projectId, now, true));
     await assert.rejects(store.transaction(tx => publicDecisionCapacity(tx, projectId, now, true)), { code: 'decision_capacity_reached' });
   }
+});
+
+test('a day limit does not promise next-day capacity supplied only by an expiring lifetime allocation', async t => {
+  const store = openStore(':memory:'); t.after(() => store.close()); const now = 1800000000000;
+  const day = Math.floor(now / 86400000), projectId = 'expiring';
+  await store.transaction(async tx => {
+    await tx.write('public-decision-allocations', digest({ projectId, day }),
+      { projectId, day, expiresAt: (day + 1) * 86400000, maximumProjectDay: 4, maximumProjectLifetime: 5 }, 0);
+    for (const [scope, period] of [['lifetime', null], ['day', day]])
+      await tx.write('public-decision-admission', digest({ scope, subject: projectId, period }), { count: 4 }, 0);
+  });
+  for (const time of [now, (day + 1) * 86400000])
+    await assert.rejects(store.transaction(tx => publicDecisionCapacity(tx, projectId, time, true)),
+      e => e.code === 'decision_capacity_reached' && e.retryAt === undefined);
+  assert.equal((await store.read('public-decision-admission', digest({ scope: 'lifetime', subject: projectId, period: null }))).value.count, 4);
 });
 
 test('a finite recovery allocation adds only its remaining capacity and expires without resetting history', async t => {
