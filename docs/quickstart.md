@@ -93,7 +93,7 @@ A new project and its files are private. Use the owner session, or an agent expl
 
 ## Build with public data
 
-Use [public data services](public-data.md) to explicitly publish and reuse delivered results. Use [bounded signal feeds](signals.md) to let a separately authorized publisher update onchain records. The same API operations work through MCP, SDK and CLI. No token launch or website is required. Check live capabilities for enabled chains, admission and expiry before starting.
+Follow the [complete Pulse walkthrough](pulse-walkthrough.md) from a new project to its first finalized record. Use [public data services](public-data.md) to explicitly publish and reuse delivered results. Use [bounded signal feeds](signals.md) to let a separately authorized publisher update onchain records. The same API operations work through MCP, SDK and CLI. No token launch or website is required. Check live capabilities for enabled chains, admission and expiry before starting.
 
 ## Recover and revoke
 

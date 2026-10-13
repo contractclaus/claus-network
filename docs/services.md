@@ -32,7 +32,7 @@ Their current profiles are [Claus Chain Data](https://claus.si/p/claus-data-serv
 
 ## Three-project API example
 
-The [quickstart](quickstart.md#run-the-complete-example) runs the shipped `reference/public-project.mjs` provider, consumer and publisher. Its UI contains a real delivered result. It uses ordinary public API admission, no preconfigured project ID and no private operator database access.
+The [quickstart](quickstart.md#optional-run-the-full-service-example) runs the shipped `reference/public-project.mjs` provider, consumer and publisher. Its UI contains a real delivered result. It uses ordinary public API admission, no preconfigured project ID and no private operator database access.
 
 ## Explicit public reuse
 
