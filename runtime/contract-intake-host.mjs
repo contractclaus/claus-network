@@ -7,15 +7,16 @@ import { createContractDelivery } from '../adapters/contract-delivery.mjs';
 import { createContractIntakeWorker } from './contract-intake-worker.mjs';
 import { createSealer } from '../adapters/secrets.mjs';
 import { digest, requireThat } from '../src/shared/index.mjs';
-import { contractIntakePorts } from './contract-intake-config.mjs';
+import { contractIntakePorts, intakeCapability } from './contract-intake-config.mjs';
+import { readonlyPorts } from './readonly-ports.mjs';
 
 // Separate signing host. One explicitly admitted lifetime budget is selected;
 // no API request or worker restart creates, replenishes or changes it.
 export async function createHostedContractIntakeWorker(env = process.env) {
-  requireThat(typeof env.CLAUS_SEPOLIA_RPC_URL === 'string' &&
-    new URL(env.CLAUS_SEPOLIA_RPC_URL).protocol === 'https:', 'historical_rpc_required');
   const ports = contractIntakePorts(env);
   requireThat(ports.pin && env.CLAUS_CONTRACT_DISPATCH_BUDGET, 'intake_host_unconfigured');
+  const rpcUrl = ports.pin.chainId === 1 ? env.CLAUS_MAINNET_RPC_URL : env.CLAUS_SEPOLIA_RPC_URL;
+  requireThat(typeof rpcUrl === 'string' && new URL(rpcUrl).protocol === 'https:', 'historical_rpc_required');
   neonConfig.webSocketConstructor = ws;
   const store = await openPostgresStore({ pool: new Pool({ connectionString: env.CLAUS_NETWORK_DATABASE_URL,
     max: 3, connectionTimeoutMillis: 8000 }) });
@@ -26,7 +27,7 @@ export async function createHostedContractIntakeWorker(env = process.env) {
     requireThat(budget && budget.inbox === ports.pin.inbox.toLowerCase() &&
       budget.codeHash === ports.pin.codeHash && budget.chainId === ports.pin.chainId, 'dispatch_budget_mismatch');
     const app = createApplication({ store, origin: env.CLAUS_NETWORK_ORIGIN,
-      rateSalt: env.CLAUS_NETWORK_RATE_SALT, intakePorts: ports });
+      rateSalt: env.CLAUS_NETWORK_RATE_SALT, intakePorts: ports, chainPorts: readonlyPorts(env) });
     const delivery = createContractDelivery({ store, client: ports.client, signer,
       sealer: createSealer(env.CLAUS_NETWORK_SEALING_KEY), chain: ports.chain, identity: app.identity, budget,
       admitted: ports.verifyAdmission });
@@ -35,8 +36,9 @@ export async function createHostedContractIntakeWorker(env = process.env) {
     return { store, async tick() {
       const result = await worker.tick();
       await store.transaction(async tx => {
-        const old = await tx.read('worker-health', 'contract-intake');
-        await tx.write('worker-health', 'contract-intake', { ...result, observedAt: Date.now(),
+        const { key } = await intakeCapability(tx, ports.pin.chainId);
+        const old = await tx.read('worker-health', key);
+        await tx.write('worker-health', key, { ...result, chainId: ports.pin.chainId, observedAt: Date.now(),
           release: env.CLAUS_NETWORK_RELEASE, profileHash: digest(ports.pin) }, old?.revision ?? 0);
       });
       return result;

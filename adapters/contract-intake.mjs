@@ -16,10 +16,11 @@ const boundedNumber = value => {
 
 // Read/prepare only. The host must supply a reviewed, constructor-bound inbox
 // pin. This adapter does not fund, sign, send, or silently choose another RPC.
-export function createContractInboxRead({ client, inbox, codeHash, dispatcher }) {
+export function createContractInboxRead({ client, inbox, codeHash, dispatcher, chainId = 11155111 }) {
+  requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
   for (const value of [inbox, dispatcher]) requireThat(/^0x[0-9a-fA-F]{40}$/.test(value), 'invalid_inbox_pin');
   requireThat(/^0x[0-9a-f]{64}$/.test(codeHash), 'invalid_inbox_pin');
-  const profile = { chainId: 11155111, inbox: lower(inbox), codeHash, capability: PROPOSAL_CAPABILITY };
+  const profile = { chainId, inbox: lower(inbox), codeHash, capability: PROPOSAL_CAPABILITY };
   async function verify(blockNumber) {
     requireThat(await client.getChainId() === profile.chainId, 'wrong_chain');
     const code = await client.getCode({ address: inbox, blockNumber });

@@ -17,7 +17,8 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         jobs: ['workflow-jobs', 'project.read'], reviews: ['review-cases', 'review.read'],
         proposals: ['chain-proposals', 'proposal.read'], services: ['service-versions', 'service.read'],
         orders: ['service-orders', 'service.read'], releases: ['project-releases', 'resource.read'],
-        bindings: ['contract-bindings', 'contract.read'], requests: ['contract-requests', 'contract.read']
+        bindings: ['contract-bindings', 'contract.read'], requests: ['contract-requests', 'contract.read'],
+        signals: ['signal-operations', 'signal.read'], results: ['service-result-publications','service.read']
       };
       requireThat(Object.hasOwn(kinds, kind), 'invalid_resource_kind'); integer(limit, 1, 100);
       const [collection, scope] = kinds[kind];
@@ -169,13 +170,36 @@ export function createProjects({ store, identity, publicDetails = async () => ({
             chainId: item.chainId, status: item.verification, href: href + '#contracts' });
           relations.push({ source: id, target: project.projectId, relation: 'deployed_contract' });
         }
+        for (const result of project.results ?? []) {
+          const id = 'result:' + result.id;
+          resources.push({ id, projectId: project.projectId, kind: 'result', label: 'Published result',
+            href: href + '#results', outputHash: result.outputHash, expiresAt: result.expiresAt,
+            sourceResults: result.sourceResults });
+          relations.push({ source: id, target: project.projectId, relation: 'published_result' });
+          relations.push({ source: project.projectId, target: result.providerProjectId, relation: 'used_service', evidence: result.id });
+          for (const source of result.sourceResults ?? []) relations.push({source:id,target:'result:'+source.id,relation:'derived_from'});
+        }
+        for (const signal of project.signals ?? []) {
+          const id='signal:'+project.projectId;
+          resources.push({id,projectId:project.projectId,kind:'signal',label:'Signal feed',chainId:signal.chainId,
+            address:signal.address,profile:signal.profile,href:href+'#signals',apiHref:signal.href});
+          relations.push({source:id,target:project.projectId,relation:'publishes_signal'});
+        }
+      }
+      const relationMap=new Map(),resourceIds=new Set(resources.map(r=>r.id));
+      for(const edge of relations){
+        if(edge.relation==='derived_from'&&!resourceIds.has(edge.target))continue;
+        const key=[edge.source,edge.target,edge.relation].join('|'),prior=relationMap.get(key);
+        if(prior){if(edge.evidence)prior.evidenceIds.push(edge.evidence);}
+        else relationMap.set(key,{source:edge.source,target:edge.target,relation:edge.relation,
+          ...(edge.evidence?{evidenceIds:[edge.evidence]}:{})});
       }
       return {
         schemaVersion: '1.0', observedAt: now(),
         nodes: [{ id: 'claus', label: 'Claus', kind: 'coordinator', href: '/Home' }, ...projects],
         // Additive resources keep 1.0 project-only clients compatible.
         resources,
-        edges: [...projects.map(p => ({ source: p.id, target: 'claus', relation: 'registered_with' })), ...relations],
+        edges: [...projects.map(p => ({ source: p.id, target: 'claus', relation: 'registered_with' })), ...relationMap.values()],
         nextCursor: records.length === limit ? records.at(-1).id : null
       };
     },

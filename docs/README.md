@@ -16,3 +16,6 @@ Use your own editor, agent or command line. The website is an explorer; it is no
 - [Start a project](quickstart.md)
 
 The intended upgrade path is: pin the exact source, build it, collect independent evidence, obtain a scoped Claus decision, then execute the exact approved change. An IMD report is evidence for a decision. It is not itself permission to change a contract.
+
+- [Public data services](public-data.md): explicit output publication and provenance.
+- [Bounded signal feeds](signals.md): scoped publisher grants, records and revocation.

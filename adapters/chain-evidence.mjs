@@ -1,5 +1,6 @@
 import { keccak256, stringToHex, toHex } from 'viem';
 import { digest, requireThat } from '../src/shared/index.mjs';
+import { captureSignalConsumer } from './signal-evidence.mjs';
 import { captureVaultConsumer } from './vault-evidence.mjs';
 
 export const PROXY_SLOTS = Object.freeze([
@@ -65,8 +66,9 @@ export function createChainEvidence({ client, chainId = 11155111 }) {
         requireThat(!call || typeof call.data === 'string' && call.data.length <= 16386, 'dependency_call_invalid');
         return { ...value, call: call ? { data: dep.callData, result: call.data, gasLimit: 250000 } : null };
       }));
-      requireThat(!consumer || chainId === 11155111, 'unsupported_profile');
-      const usage = consumer ? await captureVaultConsumer({ client, contract, consumer, blockNumber: block.number }) : null;
+      requireThat(!consumer || consumer.signal || chainId === 11155111, 'unsupported_profile');
+      const usage = consumer?.signal ? await captureSignalConsumer({client,consumer,blockNumber:block.number}) :
+        consumer ? await captureVaultConsumer({ client, contract, consumer, blockNumber: block.number }) : null;
       requireThat((await client.getBlock({ blockNumber: block.number })).hash === block.hash, 'evidence_block_changed');
       return { version: 'claus-chain-evidence-v1', chainId, blockNumber: block.number.toString(),
         blockHash: block.hash, blockTimestamp: Number(block.timestamp), blockTag: 'finalized',
@@ -80,10 +82,13 @@ export function createChainEvidence({ client, chainId = 11155111 }) {
       requireThat((await client.getBlock({ blockNumber: BigInt(snapshot.blockNumber) })).hash === snapshot.blockHash,
         'evidence_block_changed');
       const head = await client.getBlock({ blockTag: 'latest' });
-      for (const saved of [snapshot.implementation, ...snapshot.dependencies, ...(snapshot.consumer ? [snapshot.consumer.vault] : [])]) {
+      for (const saved of [snapshot.implementation, ...snapshot.dependencies, ...(snapshot.consumer?.vault ? [snapshot.consumer.vault] : [])]) {
         const current = await contract(saved.address, head.number);
         requireThat(current.codeHash === saved.codeHash && digest(current.proxySlots) === digest(saved.proxySlots),
           'dependency_code_changed');
+      }
+      if(snapshot.consumer?.profile === 'claus-signal-v1') for(const saved of [snapshot.consumer.store,snapshot.consumer.factory]) {
+        requireThat(keccak256(await client.getCode({address:saved.address,blockNumber:head.number})) === saved.codeHash,'dependency_code_changed');
       }
       // Storage values and balanceOf results are intentionally live; only code
       // identity and absence of supported indirection are rechecked here.

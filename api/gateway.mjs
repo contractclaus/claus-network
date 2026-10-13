@@ -56,6 +56,7 @@ export default async function handler(req, res) {
         portabilityExecution: portability?.enabled === true ? publicAccess.collaboration.admission : 'not_enabled',
         inferenceExecution: 'not_enabled',
         contractIntakeExecution: intakeState,
+        mainnetContractIntakeExecution: await contractIntakeHealth(store, intakePorts, Date.now(), 1),
         mainnetExecution: publicAccess.mainnet === 'public_readonly' ?
           controller?.chains?.includes(1) && executor?.chains?.includes(1) &&
           controller.observedAt > Date.now() - 300000 && executor.observedAt > Date.now() - 300000 ? 'public_readonly' : 'worker_unavailable' : 'not_enabled' });

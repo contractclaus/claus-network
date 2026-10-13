@@ -221,6 +221,14 @@
         "policies"
       ],
       "builtins": []
+    },
+    {
+      "id": "signals",
+      "path": "src/signals/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [

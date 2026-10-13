@@ -6,13 +6,14 @@ import { openStore } from '../src/storage/index.mjs';
 import { createIdentity } from '../src/identity/index.mjs';
 import { createArtifactStore } from '../src/artifact-store/index.mjs';
 import { createServices } from '../src/services/index.mjs';
+import { createProjects } from '../src/projects/index.mjs';
 import { schemaDefinition } from '../src/services/schema.mjs';
 import { createServiceConformance } from '../runtime/service-conformance.mjs';
 
 async function fixture(t) {
   const store=openStore(':memory:');t.after(()=>store.close());let time=1800000000000;
   const identity=createIdentity({store,now:()=>time,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
-  const services=createServices({store,identity,artifacts:createArtifactStore({store}),now:()=>time});
+  const services=createServices({store,identity,artifacts:createArtifactStore({store}),admitPublicData:async()=>{},now:()=>time});
   async function project(name){
     const key=privateKeyToAccount(generatePrivateKey()),c=await identity.challenge({address:key.address});
     const login=await identity.session({challengeId:c.id,signature:await key.signMessage({message:c.message})});
@@ -171,4 +172,64 @@ test('a suspended provider does not poison the conformance cursor for another pr
   assert.equal(result.states.find(item => item.id === a.id).state, 'blocked');
   assert.equal(result.states.find(item => item.id === b.id).state, 'proposed');
   assert.equal((await f.services.assigned(f.stranger.actor, f.stranger.id)).orders.length, 1);
+});
+
+async function dataResult(f, {provider=f.provider,buyer=f.buyer,sources=[],key='public'}={}) {
+  const projects=createProjects({store:f.store,identity:f.identity});
+  for(const p of [provider,buyer]) {
+    const current=await projects.get(p.owner,p.id);
+    if(!current.publication.published)await projects.publish(p.owner,p.id,{published:true,expectedRevision:current.publication.revision});
+  }
+  const manifest={...f.manifest(),recipient:provider.key.address,dataPolicy:'public-data-v1'};
+  const service=await f.services.register(provider.actor,provider.id,manifest);
+  const state=await f.services.version(provider.actor,provider.id,service.id);
+  if(state.state==='proposed')await f.services.compatibility(service.id,{manifestHash:service.manifestHash,suite:'claus-pull-service-v1',runId:'fixture',passed:true});
+  if(!state.publication.published)await f.services.publish(provider.actor,provider.id,{serviceId:service.id,published:true,expectedRevision:state.publication.revision});
+  const quote=await f.services.quote(buyer.actor,buyer.id,{serviceId:service.id,input:{value:key},sourceResults:sources,idempotencyKey:key});
+  const order=await f.services.accept(buyer.actor,buyer.id,quote.id);
+  const claim=await f.services.claim(provider.actor,provider.id,order.id);
+  const output=await f.services.deliver(provider.actor,provider.id,{orderId:order.id,lease:claim.lease,output:claim.input});
+  await f.services.acceptResult(buyer.actor,buyer.id,{orderId:order.id,outputHash:output.outputHash,accepted:true});
+  return {service,order,output,expiresAt:manifest.validUntil};
+}
+
+test('public output needs explicit buyer publication, public profiles and a reusable provider policy',async t=>{
+  const f=await fixture(t),r=await dataResult(f);
+  await assert.rejects(f.services.publicResult(r.order.id),{code:'public_result_unavailable'});
+  await assert.rejects(f.services.publishResult(f.stranger.actor,f.buyer.id,{orderId:r.order.id,outputHash:r.output.outputHash,published:true,expectedRevision:0,expiresAt:r.expiresAt}),{code:'scope_denied'});
+  const pub=await f.services.publishResult(f.buyer.actor,f.buyer.id,{orderId:r.order.id,outputHash:r.output.outputHash,published:true,expectedRevision:0,expiresAt:r.expiresAt});
+  const result=await f.services.publicResult(r.order.id);
+  assert.equal(result.revision,pub.revision);assert.equal(result.depth,1);assert.deepEqual(result.output,{value:'public'});
+  assert.equal((await f.services.publicResults(f.buyer.id)).results.length,1);
+  const projects=createProjects({store:f.store,identity:f.identity}),profile=await projects.get(f.provider.owner,f.provider.id);
+  await projects.publish(f.provider.owner,f.provider.id,{published:false,expectedRevision:profile.publication.revision});
+  await assert.rejects(f.services.publicResult(r.order.id),{code:'public_result_unavailable'});
+  assert.deepEqual(await f.services.result(f.buyer.actor,f.buyer.id,r.order.id),{value:'public'});
+});
+
+test('three-project provenance binds source revisions and withdrawal stops forwarding without deleting history',async t=>{
+  const f=await fixture(t),first=await dataResult(f,{key:'first'});
+  const publication=await f.services.publishResult(f.buyer.actor,f.buyer.id,{orderId:first.order.id,outputHash:first.output.outputHash,published:true,expectedRevision:0,expiresAt:first.expiresAt});
+  const sources=[{id:first.order.id,revision:publication.revision,outputHash:first.output.outputHash}];
+  const second=await dataResult(f,{provider:f.stranger,buyer:f.buyer,sources,key:'second'});
+  await f.services.publishResult(f.buyer.actor,f.buyer.id,{orderId:second.order.id,outputHash:second.output.outputHash,published:true,expectedRevision:0,expiresAt:second.expiresAt});
+  assert.equal((await f.services.publicResult(second.order.id)).depth,2);
+  const queued=await f.services.quote(f.buyer.actor,f.buyer.id,{serviceId:second.service.id,input:{value:'queued'},sourceResults:sources,idempotencyKey:'queued'});
+  await f.services.accept(f.buyer.actor,f.buyer.id,queued.id);
+  await f.services.publishResult(f.buyer.actor,f.buyer.id,{orderId:first.order.id,outputHash:first.output.outputHash,published:false,expectedRevision:publication.revision});
+  await assert.rejects(f.services.claim(f.stranger.actor,f.stranger.id,queued.id),{code:'public_result_unavailable'});
+  await assert.rejects(f.services.publicResult(second.order.id),{code:'public_result_unavailable'});
+  assert.deepEqual(await f.services.result(f.buyer.actor,f.buyer.id,second.order.id),{value:'second'});
+  await f.services.publishResult(f.buyer.actor,f.buyer.id,{orderId:first.order.id,outputHash:first.output.outputHash,published:true,expectedRevision:2,expiresAt:first.expiresAt});
+  await assert.rejects(f.services.publicResult(second.order.id),{code:'public_result_unavailable'});
+});
+
+test('legacy private results cannot acquire public rights and changed lineage conflicts with the original quote',async t=>{
+  const f=await fixture(t),v=await f.available();
+  const q=await f.services.quote(f.buyer.actor,f.buyer.id,{serviceId:v.id,input:{value:'private'},idempotencyKey:'private'});
+  const o=await f.services.accept(f.buyer.actor,f.buyer.id,q.id),claim=await f.services.claim(f.provider.actor,f.provider.id,o.id);
+  const d=await f.services.deliver(f.provider.actor,f.provider.id,{orderId:o.id,lease:claim.lease,output:claim.input});
+  await f.services.acceptResult(f.buyer.actor,f.buyer.id,{orderId:o.id,outputHash:d.outputHash,accepted:true});
+  await assert.rejects(f.services.publishResult(f.buyer.actor,f.buyer.id,{orderId:o.id,outputHash:d.outputHash,published:true,expectedRevision:0,expiresAt:f.manifest().validUntil}),{code:'result_not_publishable'});
+  await assert.rejects(f.services.quote(f.buyer.actor,f.buyer.id,{serviceId:v.id,input:{value:'private'},sourceResults:[{id:'missing',revision:1,outputHash:d.outputHash}],idempotencyKey:'private'}),{code:'idempotency_conflict'});
 });

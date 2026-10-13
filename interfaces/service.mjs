@@ -1,6 +1,6 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake}){
+export function createService({access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
   capabilities:()=>access.discovery(),
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
@@ -62,6 +62,10 @@ export function createService({access,identity,projects,builds,jobs,reviews,depl
   service_authorize:(actor,input)=>services.authorizeOrder(actor,input.projectId,input),
   service_cancel:(actor,input)=>services.cancel(actor,input.projectId,input.orderId),
   service_result:(actor,input)=>services.result(actor,input.projectId,input.orderId),
+  service_result_publication:(actor,input)=>services.resultPublication(actor,input.projectId,input.orderId),
+  service_result_publish:(actor,input)=>services.publishResult(actor,input.projectId,input),
+  public_service_result:(_,input)=>services.publicResult(input.orderId),
+  public_service_results:(_,input)=>services.publicResults(input.projectId,input),
   service_accept_result:(actor,input)=>services.acceptResult(actor,input.projectId,input),
   provider_orders:(actor,input)=>services.assigned(actor,input.projectId,input),
   provider_claim:(actor,input)=>services.claim(actor,input.projectId,input.orderId),
@@ -78,6 +82,18 @@ export function createService({access,identity,projects,builds,jobs,reviews,depl
   vault_get:(actor,input)=>vaults.get(actor,input.projectId),
   vault_transaction:(actor,input)=>vaults.transaction(actor,input.projectId,input),
   vault_balance:(actor,input)=>vaults.balance(actor,input.projectId,input.account),
+  signal_store_prepare:(actor,{projectId,...input})=>signals.storePrepare(actor,projectId,input),
+  signal_store:(actor,{projectId,...input})=>signals.get(actor,projectId,input),
+  signal_grant_prepare:(actor,{projectId,...input})=>signals.grantPrepare(actor,projectId,input),
+  signal_grant_register:(actor,{projectId,...input})=>signals.grantRegister(actor,projectId,input),
+  signal_grant_revoke:(actor,{projectId,...input})=>signals.revoke(actor,projectId,input),
+  signal_record_prepare:(actor,{projectId,...input})=>signals.recordPrepare(actor,projectId,input),
+  signal_submit:(actor,{projectId,...input})=>signals.submit(actor,projectId,input),
+  signal_publish:(actor,{projectId,...input})=>signals.publish(actor,projectId,input),
+  signal_grant:(actor,input)=>signals.grant(actor,input.projectId,input.grantId),
+  signal_operation:(actor,input)=>signals.operation(actor,input.projectId,input.operationId),
+  signal_latest:(actor,input)=>signals.latest(actor,input.projectId),
+  public_signal:(_,input)=>signals.public(input.projectId),
   contract_binding_create:(actor,{projectId,...input})=>intake.bind(actor,projectId,input),
   contract_binding_get:(actor,input)=>intake.binding(actor,input.projectId,input.bindingId),
   contract_binding_revoke:(actor,input)=>intake.revoke(actor,input.projectId,input.bindingId),

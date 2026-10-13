@@ -31,18 +31,24 @@ import {createContractIntake} from '../src/contract-intake/index.mjs';
 import {createProjectArchives} from '../src/portability/index.mjs';
 import {createProjectTransfers} from '../src/transfers/index.mjs';
 import {readonlyPorts} from './readonly-ports.mjs';
+import {createSignals} from '../src/signals/index.mjs';
+import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
+import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
 export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={}}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
- let access;
+ let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
   writesEnabled:async reader=>!(await access.policy(reader)).config.paused,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
  access=createAccess({store,identity,now,reviewAdmission:reader=>reviewSystem.flow.admission.active(reader),
+  signalDiscovery:()=>Promise.all([11155111,1].map(chainId=>signals.discovery(chainId))),
+  intakeDiscovery:()=>Promise.all([11155111,1].map(async chainId=>({chainId,capability:'claus.proposal.create.v1',
+   state:await contractIntakeHealth(store,intakePorts,now(),chainId)}))),
   chainAdmission:reader=>deployments.admission.admitted(reader),mainnetAdmission:reader=>deployments.admission.forChain(1).admitted(reader),reviewEligibility:(reader,projectId)=>reviewSystem.flow.admission.eligible(reader,projectId)});
  let services,releases;
  const projects=createProjects({store,identity,now,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicDetails:async projectId=>({
-  services:await services.publicForProject(projectId),releases:await releases.publicForProject(projectId)
+  services:await services.publicForProject(projectId),results:await services.publicResultsForProject(projectId),releases:await releases.publicForProject(projectId),signals:await signals.publicForProject(projectId)
  })});
  let reviewSystem,deployments,approvals,wallets,vaults,inference,intake;
  const jobs=createJobs({store,identity,now,onCancel:async(tx,job)=>{
@@ -59,9 +65,13 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   mainnet:chainPorts.mainnetClient?createChainRead({client:chainPorts.mainnetClient,chainId:1}):null
  });
  deployments=createChainDeployments({store,identity,builds,reviews:reviewSystem.flow,jobs,artifacts,chain,now});
- approvals=createApprovals({store,identity,projects,reviews:reviewSystem.flow,deployments,jobs,artifacts,chain,now});
+ approvals=createApprovals({store,identity,projects,reviews:reviewSystem.flow,deployments,jobs,artifacts,chain,now,signalConsumer:(projectId,reader)=>signals.consumer(projectId,reader)});
  const collaborationAdmission=access.collaboration;
- services=createServices({store,identity,artifacts,limit:access.limit,admit:collaborationAdmission,now});
+ services=createServices({store,identity,artifacts,limit:access.limit,admit:collaborationAdmission,admitPublicData:access.publicData,now});
+ signals=createSignals({store,identity,artifacts,now,publicResult:services.publicResult,chain:chainPorts.signal??createSignalRouter({
+  sepolia:createSignalRead({chainId:11155111,client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})}),
+  mainnet:chainPorts.mainnetClient?createSignalRead({chainId:1,client:chainPorts.mainnetClient}):null
+ })});
  wallets=createWallets({store,identity,jobs,services,now,chain:chainPorts.wallet??createWalletRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})}),now})});
  requireThat(!operatorPorts.siteOrigin || operatorPorts.siteOrigin !== origin, 'release_origin_not_isolated');
@@ -82,9 +92,10 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
    const proposal=(await store.read('chain-proposals',id))?.value;
    requireThat(!proposal||proposal.projectId===projectId,'contract_proposal_mismatch');return proposal??null;
   },
-  enabled:async (reader,projectId)=>intakePorts.enabled===true&&(await reader.read('network-capabilities','contract-intake'))?.value.enabled===true&&
-   (!intakePorts.verifyAdmission||await intakePorts.verifyAdmission(reader,projectId)===true)});
- const service=createService({access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake});
+  enabled:async (reader,projectId)=>intakePorts.enabled===true&&
+   (intakePorts.verifyAdmission?await intakePorts.verifyAdmission(reader,projectId)===true:
+    (await reader.read('network-capabilities','contract-intake'))?.value.enabled===true)});
+ const service=createService({access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>store.transaction(async tx=>{
   const window=Math.floor(now()/300000);
   const group=route.startsWith('auth_')?'auth':'api';
@@ -98,7 +109,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   }
  });
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

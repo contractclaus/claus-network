@@ -1,7 +1,7 @@
 import { canonical, digest, requireThat, text } from '../shared/index.mjs';
 import { publicDecisionCapacity } from './limits.mjs';
 
-export function createApprovals({ store, identity, projects, reviews, deployments, jobs, artifacts, chain, now = () => Date.now() }) {
+export function createApprovals({ store, identity, projects, reviews, deployments, jobs, artifacts, chain, signalConsumer = async () => null, now = () => Date.now() }) {
   function executionEvidence(value) {
     return { id: value.id, ...value.execution,
       verification: value.execution.verification.state === 'verified' ? 'verified' : 'pending',
@@ -19,6 +19,14 @@ export function createApprovals({ store, identity, projects, reviews, deployment
   async function consumerMatches(value, reader) {
     const vault = (await reader.read('project-vaults', value.projectId))?.value;
     const consumer = (await readInput(value, reader)).evidence.chain.consumer;
+    const signal = (await reader.read('project-signals', value.projectId))?.value;
+    if (signal || consumer?.profile === 'claus-signal-v1') {
+      requireThat(!vault && signal?.state === 'verified' && consumer?.profile === 'claus-signal-v1' &&
+        consumer.store.address.toLowerCase() === signal.address.toLowerCase() && consumer.store.codeHash === signal.codeHash &&
+        consumer.factory.address.toLowerCase() === signal.factory.toLowerCase() && consumer.factory.codeHash === signal.factoryCodeHash &&
+        consumer.evaluator.toLowerCase() === value.proposal.target.toLowerCase() && consumer.buildHash === signal.artifactHash &&
+        consumer.review.artifactHash === signal.reviewArtifactHash, 'signal_review_context_changed'); return;
+    }
     requireThat(!vault && !consumer || vault?.state === 'verified' && consumer &&
       consumer.vault.address.toLowerCase() === vault.address.toLowerCase() && consumer.vault.codeHash === vault.codeHash &&
       consumer.policy.toLowerCase() === value.proposal.target.toLowerCase() && consumer.buildHash === vault.artifactHash &&
@@ -57,8 +65,10 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       const vault = (await store.read('project-vaults', projectId))?.value;
       requireThat(!vault || vault.state === 'verified' && vault.artifactProjectId === projectId,
         'vault_review_context_changed');
-      const consumer = vault ? { vault, build: await artifacts.get(projectId, vault.artifactHash),
-        review: await artifacts.get(projectId, vault.reviewArtifactHash) } : undefined;
+      const signal = await signalConsumer(projectId);
+      requireThat(!vault || !signal, 'signal_review_context_changed');
+      const consumer = signal ?? (vault ? { vault, build: await artifacts.get(projectId, vault.artifactHash),
+        review: await artifacts.get(projectId, vault.reviewArtifactHash) } : undefined);
       const snapshot = await chain.captureEvidence({ module, dependencies, consumer });
       const source = { snapshotHash: reviewed.input.sourceHash, buildHash: reviewed.input.buildHash,
         repository: reviewed.input.repoUrl, commit: reviewed.input.baseCommit, entry: reviewed.input.contracts[0], files };
@@ -74,6 +84,8 @@ export function createApprovals({ store, identity, projects, reviews, deployment
         await allowed(actor, projectId, tx);
         requireThat(digest((await tx.read('project-vaults', projectId))?.value ?? null) === digest(vault ?? null),
           'vault_review_context_changed');
+        requireThat(digest((await tx.read('project-signals', projectId))?.value ?? null) === digest(signal?.signal ?? null),
+          'signal_review_context_changed');
         const old = await tx.read('chain-proposals', id);
         if (old) { requireThat(old.value.requestHash === requestHash, 'idempotency_conflict'); return old.value; }
         const active = await tx.read('active-proposals', projectId);
@@ -162,7 +174,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
         const blocked = ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'source_not_published', 'proposal_expiring', 'proposal_stale', 'project_suspended',
-          'vault_review_context_changed', 'dependency_evidence_mismatch', 'evidence_block_changed', 'dependency_code_changed', 'dependency_code_missing',
+          'vault_review_context_changed', 'signal_review_context_changed', 'signal_evidence_invalid', 'dependency_evidence_mismatch', 'evidence_block_changed', 'dependency_code_changed', 'dependency_code_missing',
           'dependency_delegation_unsupported', 'dependency_indirection_unsupported', 'dependency_proxy_unsupported'].includes(error.code);
         return jobs.finish(claim, { state: blocked ? 'blocked' : 'waiting', retryAt: blocked ? null : now() + 60000,
           result: { error: error.code ?? 'decision_unavailable' } }, async tx => {
@@ -203,7 +215,7 @@ export function createApprovals({ store, identity, projects, reviews, deployment
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
         if (['recovery_block_changed', 'recovery_event_mismatch'].includes(error.code) ||
-          claim.mode === 'dispatch' && ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'vault_review_context_changed'].includes(error.code)) {
+          claim.mode === 'dispatch' && ['scope_denied', 'sponsor_not_enabled', 'chain_not_enabled', 'vault_review_context_changed', 'signal_review_context_changed'].includes(error.code)) {
           return jobs.finish(claim, { state: 'blocked', result: { error: error.code } }, async tx => {
             const old = await find(tx, value.projectId, value.id);
             await tx.write('chain-proposals', value.id, { ...old.value, state: 'blocked', error: error.code }, old.revision);

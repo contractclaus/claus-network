@@ -1,6 +1,8 @@
 // Only explicit authority failures are terminal. Transport, storage and lease
 // failures retain the original intent and must not be treated as revocation.
 export const authorityDenied = error => [
+  'signal_not_enabled', 'signal_admission_changed', 'signal_scope_not_reviewed', 'signal_review_context_changed',
+  'public_result_unavailable', 'result_source_changed', 'signal_source_changed', 'signal_api_revoked',
   'chain_public_not_enabled', 'chain_admission_changed', 'chain_scope_not_reviewed', 'project_unavailable', 'project_admission_paused',
   'scope_denied', 'unauthenticated', 'mandate_revoked', 'invalid_mandate',
   'sponsor_not_enabled', 'chain_not_enabled', 'executor_not_enabled', 'source_not_published',

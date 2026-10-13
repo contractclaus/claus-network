@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.12.9 with 105 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.13.0 with 121 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -64,6 +64,10 @@ This source describes API 0.12.9 with 105 operations. Endpoint availability and 
 | `service_authorize` | POST | `/v1/projects/{projectId}/service-orders/{orderId}/authorization` | Bearer credential |
 | `service_cancel` | DELETE | `/v1/projects/{projectId}/service-orders/{orderId}` | Bearer credential |
 | `service_result` | GET | `/v1/projects/{projectId}/service-orders/{orderId}/result` | Bearer credential |
+| `service_result_publication` | GET | `/v1/projects/{projectId}/service-orders/{orderId}/publication` | Bearer credential |
+| `service_result_publish` | PUT | `/v1/projects/{projectId}/service-orders/{orderId}/publication` | Bearer credential |
+| `public_service_result` | GET | `/v1/public/service-results/{orderId}` | Public |
+| `public_service_results` | GET | `/v1/public/service-results` | Public |
 | `service_accept_result` | POST | `/v1/projects/{projectId}/service-orders/{orderId}/acceptance` | Bearer credential |
 | `provider_orders` | GET | `/v1/projects/{projectId}/service-assignments` | Bearer credential |
 | `provider_claim` | POST | `/v1/projects/{projectId}/service-assignments/{orderId}/claim` | Bearer credential |
@@ -80,6 +84,18 @@ This source describes API 0.12.9 with 105 operations. Endpoint availability and 
 | `vault_get` | GET | `/v1/projects/{projectId}/vault` | Bearer credential |
 | `vault_transaction` | POST | `/v1/projects/{projectId}/vault/transaction` | Bearer credential |
 | `vault_balance` | GET | `/v1/projects/{projectId}/vault/balance` | Bearer credential |
+| `signal_store_prepare` | POST | `/v1/projects/{projectId}/signal/store` | Bearer credential |
+| `signal_store` | GET | `/v1/projects/{projectId}/signal/store` | Bearer credential |
+| `signal_grant_prepare` | POST | `/v1/projects/{projectId}/signal/grants` | Bearer credential |
+| `signal_grant_register` | POST | `/v1/projects/{projectId}/signal/grants/register` | Bearer credential |
+| `signal_grant` | GET | `/v1/projects/{projectId}/signal/grants/{grantId}` | Bearer credential |
+| `signal_grant_revoke` | POST | `/v1/projects/{projectId}/signal/grants/{grantId}/revoke` | Bearer credential |
+| `signal_record_prepare` | POST | `/v1/projects/{projectId}/signal/records` | Bearer credential |
+| `signal_submit` | POST | `/v1/projects/{projectId}/signal/operations/{operationId}/transaction` | Bearer credential |
+| `signal_operation` | GET | `/v1/projects/{projectId}/signal/operations/{operationId}` | Bearer credential |
+| `signal_latest` | GET | `/v1/projects/{projectId}/signal/latest` | Bearer credential |
+| `signal_publish` | PUT | `/v1/projects/{projectId}/signal/publication` | Bearer credential |
+| `public_signal` | GET | `/v1/public/signals/{projectId}` | Public |
 | `contract_binding_create` | POST | `/v1/projects/{projectId}/contract-bindings` | Bearer credential |
 | `contract_binding_get` | GET | `/v1/projects/{projectId}/contract-bindings/{bindingId}` | Bearer credential |
 | `contract_binding_revoke` | DELETE | `/v1/projects/{projectId}/contract-bindings/{bindingId}` | Bearer credential |

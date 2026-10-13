@@ -1,8 +1,8 @@
 import { requireThat } from '../src/shared/index.mjs';
 import { validateModule, validateBuildEvidence } from './chain-read.mjs';
 
-// Two explicit non-custodial profiles. Wallet, vault and Inbox adapters remain
-// Sepolia-only. A chain is never selected from an untrusted RPC response.
+// Two explicit chains for the readonly evaluator. Signal stores and Inbox
+// requests have their own chain-pinned adapters. Wallet and vault remain Sepolia-only. A chain is never selected from an untrusted RPC response.
 export function createReadonlyChainRouter({ sepolia, mainnet }) {
   const selected = chainId => {
     requireThat([1, 11155111].includes(chainId), 'unsupported_chain');

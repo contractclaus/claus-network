@@ -7,17 +7,17 @@ import { digest } from '../src/shared/index.mjs';
 import { createSealer } from '../adapters/secrets.mjs';
 import { admitContractDispatchBudget, revokeContractDispatchBudget, createContractDelivery } from '../adapters/contract-delivery.mjs';
 
-async function fixture(t, callback = false, publicAdmission = false) {
+async function fixture(t, callback = false, publicAdmission = false, chainId = 11155111) {
   const store = openStore(':memory:'); t.after(() => store.close());
   const signer = privateKeyToAccount(generatePrivateKey());
   const inbox = '0x' + '22'.repeat(20), codeHash = '0x' + '33'.repeat(32);
   let now = Date.now();
-  const budget = { id: 'fixture-budget', chainId: 11155111, dispatcher: signer.address.toLowerCase(), inbox,
+  const budget = { id: 'fixture-budget', chainId, dispatcher: signer.address.toLowerCase(), inbox,
     codeHash, projectIds: ['project-a'], expiresAt: now + 86400000, maximumTotal: '1000000000000',
     maximumTransaction: '200000000000', maximumGas: '1000000', maximumFeePerGas: '1000000' };
   if (publicAdmission) { budget.projectIds = []; budget.admissionMode = 'public-readonly-v1'; budget.maximumProject = '300000000000'; }
   await admitContractDispatchBudget(store, budget);
-  const observation = { inbox, codeHash, requester: '0x' + '44'.repeat(20), deadline: Math.floor(now / 1000) + 3600 };
+  const observation = { chainId, inbox, codeHash, requester: '0x' + '44'.repeat(20), deadline: Math.floor(now / 1000) + 3600 };
   const request = { id: digest({ fixture: 1 }), projectId: 'project-a', bindingId: 'binding-a', state: 'result_ready',
     observation, observationHash: digest(observation), result: { kind: 'proposal-decision', decision: 'approve', decisionHash: digest('fixture-decision') } };
   await store.transaction(async tx => {
@@ -27,7 +27,7 @@ async function fixture(t, callback = false, publicAdmission = false) {
   });
   let resolved = false, callbackDelivered = false, currentHeight = 99n, broadcasts = 0, identityChecks = 0, denyAt = Infinity;
   const sent = new Map(), receipts = new Map();
-  const client = { getChainId: async () => 11155111, estimateGas: async () => 100000n,
+  const client = { getChainId: async () => chainId, estimateGas: async () => 100000n,
     estimateFeesPerGas: async () => ({ maxFeePerGas: 1000000n, maxPriorityFeePerGas: 0n }),
     getTransactionCount: async () => 0, getBalance: async () => 1000000000000000000n,
     sendRawTransaction: async ({ serializedTransaction }) => {
@@ -38,8 +38,8 @@ async function fixture(t, callback = false, publicAdmission = false) {
     getBlock: async () => ({ number: currentHeight, hash: '0x' + '55'.repeat(32) }),
     getTransaction: async ({ hash }) => { const tx = sent.get(hash); return { ...tx, from: signer.address, input: tx.data, value: tx.value ?? 0n }; }
   };
-  const chain = { profile: async () => ({ chainId: 11155111, inbox, codeHash }),
-    resolution: async r => ({ chainId: 11155111, from: signer.address, to: inbox, value: '0', data: '0x1234',
+  const chain = { profile: async () => ({ chainId, inbox, codeHash }),
+    resolution: async r => ({ chainId, from: signer.address, to: inbox, value: '0', data: '0x1234',
       expiresAt: r.observation.deadline * 1000, callback: callback ? { to: inbox, value: '0', data: '0x5678' } : null }),
     deliveryState: async () => ({ pending: !resolved, resolved, callbackDelivered, closed: false,
       blockNumber: Number(currentHeight), finalized: true }) };
@@ -116,11 +116,11 @@ test('cumulative gas cap rejects fresh work without consuming the wallet slot', 
   await assert.rejects(admitContractDispatchBudget(f.store, { ...f.budget, maximumTotal: '2000000000000' }), { code: 'idempotency_conflict' });
 });
 
-test('changed results and mainnet grants cannot reuse an admitted delivery', async t => {
+test('changed results and unsupported chain grants cannot reuse an admitted delivery', async t => {
   const f = await fixture(t); await f.make().step(f.input);
   await assert.rejects(f.make().step({ ...f.input, request: { ...f.input.request,
     result: { ...f.input.request.result, decision: 'reject' } } }), { code: 'dispatch_intent_mismatch' });
-  await assert.rejects(admitContractDispatchBudget(f.store, { ...f.budget, id: 'mainnet', chainId: 1 }), { code: 'invalid_dispatch_budget' });
+  await assert.rejects(admitContractDispatchBudget(f.store, { ...f.budget, id: 'unsupported', chainId: 10 }), { code: 'invalid_dispatch_budget' });
   assert.equal(f.broadcasts(), 1);
 });
 
@@ -278,4 +278,16 @@ test('a resolved request with expired callback funding has a final delivery fail
   assert.equal((await f.make(next).step(f.input)).state, 'failed');
   assert.equal((await f.store.read('contract-dispatch-budgets', next.id)).value.reserved, '0');
   assert.equal(f.broadcasts(), 1); assert.equal((await f.store.list('chain-transactions')).length, 1);
+});
+
+test('mainnet delivery binds the signing chain and retains its finite reservation after an unknown response', async t => {
+  const f = await fixture(t, true, false, 1);
+  assert.equal((await f.make().step(f.input)).state, 'pending');
+  const rows = await f.store.list('chain-transactions');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].value.intent.chainId, 1);
+  f.confirm(); assert.equal((await f.make().step(f.input)).state, 'pending');
+  f.confirm(); assert.equal((await f.make().step(f.input)).state, 'delivered');
+  assert.equal(f.broadcasts(), 2);
+  assert.equal((await f.ledger()).reserved, '0');
 });
