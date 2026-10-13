@@ -37,7 +37,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
   const read = (address, functionName, args = [], abi = executorAbi) => client.readContract({ address, abi, functionName, args });
   async function transact({ id, to = null, data, authority, expiresAt, authorize, validate = async () => {} }) {
     let currentChainState = true;
-    const queuePreparation = authority.kind === 'queue';
+    const queuePreparation = authority.kind === 'queue' && (chainId === 1 || managed);
     const transactions = createReadonlyTransactions({ store, client, signer, sealer, now, chainId,
       finalized: !queuePreparation && (chainId === 1 || managed),
       onReserve: admission?.reserveGas,
@@ -242,7 +242,8 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       const executeData = encodeFunctionData({ abi: executorAbi, functionName: 'execute', args: [message, p.configuration, signed.signature] });
       const queueData = encodeFunctionData({ abi: executorAbi, functionName: 'queue', args: [message, signed.signature] });
       const existingExecution = (await store.read('chain-transactions', executionId))?.value;
-      const queueProof = await reconcileQueuedGas({ store, client, admission, id: 'queue:' + value.id });
+      const queueProof = chainId === 1 || managed ?
+        await reconcileQueuedGas({ store, client, admission, id: 'queue:' + value.id }) : null;
       if (!existingExecution && queueProof?.canonical === false)
         return { state: 'blocked', error: 'queue_confirmation_reorg' };
       let executed = null;
