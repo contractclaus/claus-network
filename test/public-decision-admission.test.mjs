@@ -5,6 +5,23 @@ import { publicDecisionCapacity } from '../src/approvals/limits.mjs';
 import { createApprovals } from '../src/approvals/index.mjs';
 import { digest } from '../src/shared/index.mjs';
 
+test('continuous operation retains usage and daily caps without a pilot lifetime shutdown', async t => {
+  const store=openStore(':memory:');t.after(()=>store.close());let now=1800000000000;
+  await store.transaction(tx=>tx.write('network-capabilities','continuous-operation',
+    {enabled:true,profile:'claus-operation-v1',expiresAt:null},0));
+  for(let day=0;day<20;day++){
+    for(let n=0;n<2;n++)await store.transaction(tx=>publicDecisionCapacity(tx,'ongoing',now,true));
+    await assert.rejects(store.transaction(tx=>publicDecisionCapacity(tx,'ongoing',now,true)),
+      e=>e.code==='decision_capacity_reached'&&e.retryAt>now);
+    now+=86400000;
+  }
+  const key=digest({scope:'lifetime',subject:'ongoing',period:null});
+  assert.equal((await store.read('public-decision-admission',key)).value.count,40);
+  await store.transaction(tx=>tx.write('network-capabilities','continuous-operation',
+    {enabled:false,profile:'claus-operation-v1',expiresAt:null},1));
+  await assert.rejects(store.transaction(tx=>publicDecisionCapacity(tx,'ongoing',now,true)),{code:'decision_capacity_reached'});
+});
+
 test('public decision limits are atomic and lifetime use survives a new day', async t => {
   const store = openStore(':memory:'); t.after(() => store.close());
   await store.transaction(tx => tx.write('public-chain-projects', 'p1', {}, 0));

@@ -1,4 +1,4 @@
-import { copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
+import { operatingWindowOpen, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
 
 const word = x => typeof x === 'string' && /^0x[0-9a-f]{64}$/.test(x);
 const address = x => typeof x === 'string' && /^0x[0-9a-fA-F]{40}$/.test(x) && !/^0x0{40}$/.test(x);
@@ -24,7 +24,7 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
   async function admission(chainId, reader = store) {
     const config = (await reader.read('network-capabilities', 'signal:' + chainId))?.value;
     requireThat(config?.enabled === true && config.profile === 'claus-signal-v1' && config.chainId === chainId &&
-      config.expiresAt > now(), 'signal_not_enabled');
+      operatingWindowOpen(config.expiresAt, now()), 'signal_not_enabled');
     requireThat(address(config.factory) && address(config.executor) && word(config.factoryCodeHash) &&
       word(config.feedId) && word(config.schemaHash), 'signal_admission_changed');
     const review = (await reader.read('review-cases', config.reviewCaseId))?.value;

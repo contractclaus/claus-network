@@ -1,4 +1,4 @@
-import { digest, requireThat, shape, integer, amount, text } from '../src/shared/index.mjs';
+import { operatingExpiry, operatingWindowOpen, digest, requireThat, shape, integer, amount, text } from '../src/shared/index.mjs';
 import { createReadonlyTransactions } from './sepolia-transactions.mjs';
 
 const address = value => typeof value === 'string' && /^0x[0-9a-f]{40}$/.test(value) && !/^0x0{40}$/.test(value);
@@ -13,7 +13,7 @@ export async function admitContractDispatchBudget(store, config) {
     ...(Object.hasOwn(config, 'admissionMode') ? ['admissionMode'] : [])]);
   const publicAdmission = config.admissionMode === 'public-readonly-v1';
   requireThat(!Object.hasOwn(config, 'admissionMode') || publicAdmission, 'invalid_dispatch_budget');
-  text(config.id); integer(config.expiresAt, 1);
+  text(config.id); operatingExpiry(config.expiresAt);
   requireThat([1, 11155111].includes(config.chainId) && address(config.dispatcher) && address(config.inbox) &&
     /^0x[0-9a-f]{64}$/.test(config.codeHash) && Array.isArray(config.projectIds) &&
     (publicAdmission ? config.projectIds.length === 0 : config.projectIds.length > 0 && config.projectIds.length <= 100) &&
@@ -77,7 +77,7 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
   }
   async function active(reader, request) {
     const row = await budgetRow(reader);
-    if (row.value.revokedAt || budget.expiresAt <= now() ||
+    if (row.value.revokedAt || !operatingWindowOpen(budget.expiresAt, now()) ||
       (!publicAdmission && !budget.projectIds.includes(request.projectId))) return false;
     if (admitted && await admitted(reader, request.projectId) !== true) return false;
     const binding = (await reader.read('contract-bindings', request.bindingId))?.value;
@@ -99,7 +99,7 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
   }
   async function reserve(tx, { id, intent, maximum }) {
     const row = await budgetRow(tx), value = row.value;
-    requireThat(!value.revokedAt && budget.expiresAt > now(), 'transaction_not_authorized');
+    requireThat(!value.revokedAt && operatingWindowOpen(budget.expiresAt, now()), 'transaction_not_authorized');
     requireThat(!await tx.read(RESERVATIONS, id), 'dispatch_reservation_exists');
     requireThat(amount(maximum) <= amount(budget.maximumTransaction) &&
       amount(value.spent) + amount(value.reserved) + amount(maximum) <= amount(budget.maximumTotal),
@@ -153,7 +153,9 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
       const intent = action === 'resolve' ? resolution : resolution.callback;
       requireThat(intent.to.toLowerCase() === budget.inbox && intent.value === '0', 'dispatch_intent_mismatch');
       const transactionId = 'contract-delivery:' + id + ':' + action;
-      const expiresAt = action === 'resolve' ? Math.min(resolution.expiresAt, budget.expiresAt) : budget.expiresAt;
+      const prior = (await store.read('chain-transactions', transactionId))?.value;
+      const budgetDeadline = budget.expiresAt ?? prior?.intent?.expiresAt ?? now() + 3600000;
+      const expiresAt = action === 'resolve' ? Math.min(resolution.expiresAt, budgetDeadline) : budgetDeadline;
       const authority = { kind: 'contract-result', requestId: request.id, resultHash, action, budgetId: budget.id, configHash };
       // RPC calls stay outside the PostgreSQL transaction. The callback below
       // rechecks current database authority, and the inbox enforces chain state.

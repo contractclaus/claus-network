@@ -1,4 +1,4 @@
-import { amount, contentHash, digest, integer, requireThat, shape } from '../shared/index.mjs';
+import { operatingExpiry, operatingWindowOpen, amount, contentHash, digest, integer, requireThat, shape } from '../shared/index.mjs';
 import { createPolicies } from '../policies/index.mjs';
 
 export function createChainAdmission({ store, identity, now, chainId = 11155111 }) {
@@ -22,7 +22,7 @@ export function createChainAdmission({ store, identity, now, chainId = 11155111 
         /^0x[0-9a-fA-F]{64}$/.test(config.executorCodeHash), 'invalid_chain_admission');
       contentHash(config.targetArtifactHash); contentHash(config.reviewArtifactHash);
       requireThat(typeof config.reviewProjectId === 'string' && typeof config.reviewCaseId === 'string', 'invalid_chain_admission');
-      integer(config.expiresAt, 1); integer(config.maximumProjects, 1, 64);
+      operatingExpiry(config.expiresAt); integer(config.maximumProjects, 1, 64);
       requireThat(amount(config.maximumTransactionGasWei) > 0n && amount(config.maximumTransactionGasWei) <= 10000000000000000n &&
         amount(config.maximumProjectGasWei) >= amount(config.maximumTransactionGasWei) &&
         amount(config.maximumTotalGasWei) >= amount(config.maximumProjectGasWei), 'invalid_chain_admission');
@@ -34,7 +34,7 @@ export function createChainAdmission({ store, identity, now, chainId = 11155111 
   }
   async function admitted(reader = store) {
     const policy = await active(reader), config = policy?.config;
-    requireThat(config?.enabled === true && config.expiresAt > now(), 'chain_public_not_enabled');
+    requireThat(config?.enabled === true && operatingWindowOpen(config.expiresAt, now()), 'chain_public_not_enabled');
     const cap = (await reader.read('network-capabilities', capKey))?.value;
     requireThat(cap?.enabled && cap.chainId === chainId && cap.profile === 'claus-readonly-v1' &&
       cap.executor.toLowerCase() === config.executor.toLowerCase() && cap.executorCodeHash === config.executorCodeHash &&
@@ -67,7 +67,7 @@ export function createChainAdmission({ store, identity, now, chainId = 11155111 
     active, admitted,
     async get(actor) { await owner(actor); return { policy: await active(), usage: (await store.read('public-chain-usage', usageKey))?.value ?? null }; },
     publish: (actor, input) => {
-      requireThat(input.config.expiresAt <= now() + 30 * 86400000, 'invalid_chain_admission');
+      requireThat(input.config.expiresAt === null || input.config.expiresAt <= now() + 30 * 86400000, 'invalid_chain_admission');
       return policies.publish({ actor, module: policyKey, version: input.version, config: input.config });
     },
     activate: (actor, input) => policies.activate({ actor, module: policyKey, version: input.version, expectedGeneration: input.expectedGeneration }),

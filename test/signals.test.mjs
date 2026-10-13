@@ -49,6 +49,19 @@ async function fixture(t) {
   return f;
 }
 
+test('continuing signal admission retains exact review bindings and can be disabled',async t=>{
+  const f=await fixture(t),config={...f.config,expiresAt:null};
+  await f.store.transaction(async tx=>{
+    const old=await tx.read('signal-admission-assessments',digest(f.config));
+    await tx.write('signal-admission-assessments',digest(config),{...old.value,profileHash:digest(config)},0);
+    await tx.write('network-capabilities','signal:1',config,1);
+  });
+  f.now+=365*86400000;
+  assert.equal((await f.api.discovery(1)).admission,'public');
+  await f.store.transaction(tx=>tx.write('network-capabilities','signal:1',{...config,enabled:false},2));
+  assert.equal((await f.api.discovery(1)).admission,'not_enabled');
+});
+
 test('signal deployment keeps the exact action and unknown transaction through restart; read scope cannot inject a receipt',async t=>{
   const f=await fixture(t),input={idempotencyKey:'store'};
   const a=await f.api.storePrepare('owner','p',input);
