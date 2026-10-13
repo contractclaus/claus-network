@@ -27,7 +27,7 @@ export async function prepareContractRequest({ api, chain, projectId, bindingId,
     bindingId.startsWith('sha256:') && binding.onchainBinding === '0x' + bindingId.slice(7) &&
     /^0x[0-9a-f]{64}$/.test(binding.onchainBinding), 'binding_mismatch');
   requireThat(!binding.revokedAt && binding.expiresAt > now && binding.used < binding.maxRequests, 'binding_inactive');
-  requireThat(pin.chainId === 11155111 && binding.chainId === pin.chainId &&
+  requireThat([1,11155111].includes(pin.chainId) && binding.chainId === pin.chainId &&
     sameAddress(binding.inbox, pin.inbox) && binding.codeHash === pin.codeHash &&
     sameAddress(binding.requester, pin.requester) && binding.capability === capability, 'deployment_pin_mismatch');
   requireThat(Number.isSafeInteger(deadline) && deadline * 1000 > now && deadline * 1000 <= binding.expiresAt &&
