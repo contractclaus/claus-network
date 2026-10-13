@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-13T15:20:04.692477+00:00",
+  "originalReview": "6fe2d959-fa84-46d9-9c7a-b3b9b63497a7",
+  "reviewedCommit": "07def425130b9e2e2f721030cef305c080a74f52",
+  "fixed": [
+    "All explicit workAdmission pre-reservation refusals return exact-ID unsigned deferral; allowlist includes every current reason.",
+    "Only SQLSTATE23505 on claus_credit_work_one_active maps to deferral because its atomic statement rolls back. Payment-ID collisions and lost acknowledgements stay uncertain."
+  ],
+  "acceptedUnchangedBoundaries": [
+    "Global counters are ceilings, not reserved project quotas.",
+    "Unresolved monetary holds remain until separately proven accounting; no budget reset.",
+    "Existing controller polling drives status reconciliation.",
+    "Production uses ISO Postgres timestamps; observed current samples parse successfully.",
+    "Source mirrors are review context, not a runnable standalone agent/payment distribution."
+  ],
+  "checks": {
+    "passed": 3,
+    "typecheck": true,
+    "log": "credit-deferral-check.log"
+  }
+}

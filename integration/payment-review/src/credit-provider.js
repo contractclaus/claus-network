@@ -62,8 +62,15 @@ export function createCreditCompletion({env,sql,fetcher=fetch,paidFetch=inferenc
     // this credential to enter the saved result, operator outcome or agent.
     const redact=value=>JSON.parse(JSON.stringify(value).split(key).join('[redacted]'));
     const timing=transport??completionTiming(false,'research'),started=Date.now(),deadline=started+timing.activeMs;
-    const reserved=await store.reserveCredit(db,{id,hash,maximum,activeMs:timing.activeMs,binding:{address:pool.deposit_address,keyId:pool.key_id,transaction:pool.deposit_tx,
-      ...(transport?{transport:{profile:transport.profile,endpoint:target,provider:'openrouter',model:request.model,effort:transport.request.reasoning_effort}}:{})}});
+    let reserved;
+    try{reserved=await store.reserveCredit(db,{id,hash,maximum,activeMs:timing.activeMs,binding:{address:pool.deposit_address,keyId:pool.key_id,transaction:pool.deposit_tx,
+      ...(transport?{transport:{profile:transport.profile,endpoint:target,provider:'openrouter',model:request.model,effort:transport.request.reasoning_effort}}:{})}});}
+    catch(error){
+      // This named unique-index violation rolls back the entire atomic claim.
+      // Unknown acknowledgements and already-claimed IDs never imply deferral.
+      if(!allowCapacityDeferral||error?.code!=='23505'||error?.constraint!=='claus_credit_work_one_active')throw error;
+      reserved=[];
+    }
     if(!reserved.length)return allowCapacityDeferral
       ?c.json({id,error:'credit_capacity_wait',admission:'deferred',payment:'not_signed'},503)
       :c.json({error:'request_already_reserved'},409);

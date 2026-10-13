@@ -1,0 +1,43 @@
+--- a/integration/agent-review/network-review.ts
++++ b/integration/agent-review/network-review.ts
+@@ -118,7 +118,8 @@
+   // Only the trusted payer's explicit pre-reservation deferral can return
+   // this same ID to the queue. Lost acknowledgements are never retried.
+   if(body?.id===effectId&&body?.admission==='deferred'&&body?.payment==='not_signed'&&
+-    ['credit_busy','credit_capacity_wait'].includes(body?.error)){
++    ['credit_busy','credit_capacity_wait','credit_exhausted','credit_unavailable','credit_pilot_wait',
++     'credit_profile_unavailable','credit_not_configured','credit_ceiling_mismatch'].includes(body?.error)){
+    await db`UPDATE claus_network_reviews SET state='queued',started_at=NULL,available_at=now()+interval '60 seconds',updated_at=now() WHERE id=${id} AND state='running'`;
+    return visible(await rowFor(id,db));
+   }
+--- a/integration/payment-review/src/index.js
++++ b/integration/payment-review/src/index.js
+@@ -154,7 +154,7 @@
+     if(!rows.length&&workCandidate(env,id)&&path==='/api/completion'){
+       if(c.req.header('x-inference-purpose')!=='research')return c.json({error:'credit_purpose_required',payment:'not_signed'},400);
+       const admission=await workAdmission(db,env,id,c.req.header('x-max-quote-micro-usdc'));
+-      if(!admission.ready)return c.json({id,error:admission.reason,payment:'not_signed',...(admission.reason==='credit_busy'?{admission:'deferred'}:{})},503);
++      if(!admission.ready)return c.json({id,error:admission.reason,payment:'not_signed',admission:'deferred'},503);
+       return deliver(workHandler(id));
+     }
+     if(!rows.length&&creditCandidate(env,id)&&path==='/api/completion') {
+--- a/integration/payment-review/src/credit-provider.js
++++ b/integration/payment-review/src/credit-provider.js
+@@ -62,8 +62,15 @@
+     // this credential to enter the saved result, operator outcome or agent.
+     const redact=value=>JSON.parse(JSON.stringify(value).split(key).join('[redacted]'));
+     const timing=transport??completionTiming(false,'research'),started=Date.now(),deadline=started+timing.activeMs;
+-    const reserved=await store.reserveCredit(db,{id,hash,maximum,activeMs:timing.activeMs,binding:{address:pool.deposit_address,keyId:pool.key_id,transaction:pool.deposit_tx,
+-      ...(transport?{transport:{profile:transport.profile,endpoint:target,provider:'openrouter',model:request.model,effort:transport.request.reasoning_effort}}:{})}});
++    let reserved;
++    try{reserved=await store.reserveCredit(db,{id,hash,maximum,activeMs:timing.activeMs,binding:{address:pool.deposit_address,keyId:pool.key_id,transaction:pool.deposit_tx,
++      ...(transport?{transport:{profile:transport.profile,endpoint:target,provider:'openrouter',model:request.model,effort:transport.request.reasoning_effort}}:{})}});}
++    catch(error){
++      // This named unique-index violation rolls back the entire atomic claim.
++      // Unknown acknowledgements and already-claimed IDs never imply deferral.
++      if(!allowCapacityDeferral||error?.code!=='23505'||error?.constraint!=='claus_credit_work_one_active')throw error;
++      reserved=[];
++    }
+     if(!reserved.length)return allowCapacityDeferral
+       ?c.json({id,error:'credit_capacity_wait',admission:'deferred',payment:'not_signed'},503)
+       :c.json({error:'request_already_reserved'},409);

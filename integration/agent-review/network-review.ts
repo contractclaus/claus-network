@@ -118,7 +118,8 @@ export async function runNetworkReview(id:string,ports:{db?:Query;readConfig?:ty
   // Only the trusted payer's explicit pre-reservation deferral can return
   // this same ID to the queue. Lost acknowledgements are never retried.
   if(body?.id===effectId&&body?.admission==='deferred'&&body?.payment==='not_signed'&&
-    ['credit_busy','credit_capacity_wait'].includes(body?.error)){
+    ['credit_busy','credit_capacity_wait','credit_exhausted','credit_unavailable','credit_pilot_wait',
+     'credit_profile_unavailable','credit_not_configured','credit_ceiling_mismatch'].includes(body?.error)){
    await db`UPDATE claus_network_reviews SET state='queued',started_at=NULL,available_at=now()+interval '60 seconds',updated_at=now() WHERE id=${id} AND state='running'`;
    return visible(await rowFor(id,db));
   }
