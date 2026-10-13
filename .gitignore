@@ -8,3 +8,5 @@ contracts/cache/
 market-contracts/out/
 market-contracts/cache/
 market-contracts/broadcast/
+proposals/managed-contracts/out/
+proposals/managed-contracts/cache/

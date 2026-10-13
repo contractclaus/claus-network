@@ -10,14 +10,17 @@ import { createReadonlyChainRouter } from '../adapters/readonly-chain-router.mjs
 import { createClausController } from '../adapters/claus-controller.mjs';
 import { createChainExecutor } from '../adapters/chain-executor.mjs';
 import { createSourceVerification } from '../adapters/source-verification.mjs';
+import { chainProfile, MANAGED_PROFILE, READONLY_PROFILE } from '../src/chain-deployments/profiles.mjs';
 import { requireThat } from '../src/shared/index.mjs';
 
 export async function checkChainWorkerRoles(store, role, signers) {
   for(const [chainId,signer] of signers){
-    const cap=(await store.read('network-capabilities',chainId===1?'chain:1':'chain'))?.value;
+    for (const profile of [READONLY_PROFILE, MANAGED_PROFILE]) {
+    const cap=(await store.read('network-capabilities',chainProfile(chainId,profile).capability))?.value;
     if(!cap)continue;
     const expected=role==='controller'?cap.approvalSigner:cap.executorPayer;
     requireThat(expected?.toLowerCase()===signer.address.toLowerCase(),'worker_role_mismatch');
+    }
   }
 }
 
@@ -43,19 +46,23 @@ export async function createChainWorker(role, env = process.env) {
   if (mainnetSigner) requireThat(mainnetSigner.address.toLowerCase() === env.CLAUS_MAINNET_SIGNER?.toLowerCase() &&
     mainnetSigner.address.toLowerCase() !== signer.address.toLowerCase(), 'worker_signer_mismatch');
   const mainnet = configuredMainnet ? createChainRead({ client: mainnetClient, chainId: 1 }) : null;
-  const chain = createReadonlyChainRouter({ sepolia, mainnet });
+  const managedSepolia = createChainRead({ client, profile: MANAGED_PROFILE });
+  const managedMainnet = configuredMainnet ? createChainRead({ client: mainnetClient, chainId: 1, profile: MANAGED_PROFILE }) : null;
+  const chain = createReadonlyChainRouter({ sepolia, mainnet, managedSepolia, managedMainnet });
   const app = createApplication({ store, origin: env.CLAUS_NETWORK_ORIGIN, rateSalt: env.CLAUS_NETWORK_RATE_SALT, chainPorts: { chain, client, mainnetClient } });
   const ports = new Map();
-  for (const [chainId, reader, rpc, key] of [[11155111, sepolia, client, signer], [1, mainnet, mainnetClient, mainnetSigner]]) {
+  for (const [chainId, reader, rpc, key, profile] of [[11155111, sepolia, client, signer, READONLY_PROFILE], [1, mainnet, mainnetClient, mainnetSigner, READONLY_PROFILE],
+    [11155111, managedSepolia, client, signer, MANAGED_PROFILE], [1, managedMainnet, mainnetClient, mainnetSigner, MANAGED_PROFILE]]) {
     if (!reader) continue;
-    ports.set(chainId, role === 'controller' ? createClausController({ store, chain: reader, client: rpc, signer: key, chainId,
-      secret: env.CLAUS_NETWORK_REVIEW_SECRET }) : createChainExecutor({ store, chain: reader, client: rpc, signer: key, sealer, chainId,
-      artifacts: app.artifacts, admission: app.deployments.admission.forChain(chainId),
+    ports.set(chainProfile(chainId, profile).capability, role === 'controller' ? createClausController({ store, chain: reader, client: rpc, signer: key, chainId, profile,
+      secret: env.CLAUS_NETWORK_REVIEW_SECRET }) : createChainExecutor({ store, chain: reader, client: rpc, signer: key, sealer, chainId, profile,
+      artifacts: app.artifacts, admission: app.deployments.admission.forChain(chainId, profile),
       verification: createSourceVerification({ store, etherscanKey: env.ETHERSCAN_API_KEY, chainId }) }));
   }
   const selected = value => {
     const chainId = value.proposal?.chainId ?? value.chainId ?? 11155111;
-    const port = ports.get(chainId); requireThat(port, 'chain_not_configured'); return port;
+    const profile = value.proposal?.profile ?? value.profile ?? READONLY_PROFILE;
+    const port = ports.get(chainProfile(chainId, profile).capability); requireThat(port, 'chain_not_configured'); return port;
   };
   const preflight = value => { selected(value); };
   const controller = { preflight, step: input => selected(input.value).step(input) };
@@ -71,7 +78,7 @@ export async function createChainWorker(role, env = process.env) {
       deployment: work.deployment.state ?? 'idle', execution: work.execution.state ?? 'idle' };
     await store.transaction(async tx => {
       const old = await tx.read('worker-health', role);
-      await tx.write('worker-health', role, { ...result, chains: [...ports.keys()], observedAt: Date.now(), release: env.CLAUS_NETWORK_RELEASE }, old?.revision ?? 0);
+      await tx.write('worker-health', role, { ...result, chains: [11155111, ...(mainnet ? [1] : [])], observedAt: Date.now(), release: env.CLAUS_NETWORK_RELEASE }, old?.revision ?? 0);
     });
     return result;
   } };

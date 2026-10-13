@@ -1,11 +1,10 @@
 import { operatingExpiry, operatingWindowOpen, amount, contentHash, digest, integer, requireThat, shape } from '../shared/index.mjs';
 import { createPolicies } from '../policies/index.mjs';
+import { chainProfile, READONLY_PROFILE } from './profiles.mjs';
 
-export function createChainAdmission({ store, identity, now, chainId = 11155111 }) {
-  requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
-  const policyKey = chainId === 1 ? 'chain.mainnet.admission' : 'chain.admission';
-  const capKey = chainId === 1 ? 'chain:1' : 'chain';
-  const usageKey = chainId === 1 ? 'mainnet' : 'global';
+export function createChainAdmission({ store, identity, now, chainId = 11155111, profile = READONLY_PROFILE }) {
+  const selection = chainProfile(chainId, profile);
+  const { policy: policyKey, capability: capKey, usage: usageKey } = selection;
   async function owner(actor, reader = store) {
     const who = await identity.credential(actor, reader);
     const principal = (await reader.read('principals', who.principalId))?.value;
@@ -36,7 +35,7 @@ export function createChainAdmission({ store, identity, now, chainId = 11155111 
     const policy = await active(reader), config = policy?.config;
     requireThat(config?.enabled === true && operatingWindowOpen(config.expiresAt, now()), 'chain_public_not_enabled');
     const cap = (await reader.read('network-capabilities', capKey))?.value;
-    requireThat(cap?.enabled && cap.chainId === chainId && cap.profile === 'claus-readonly-v1' &&
+    requireThat(cap?.enabled && cap.chainId === chainId && cap.profile === profile &&
       cap.executor.toLowerCase() === config.executor.toLowerCase() && cap.executorCodeHash === config.executorCodeHash &&
       cap.targetArtifactHash === config.targetArtifactHash, 'chain_admission_changed');
     const review = (await reader.read('review-cases', config.reviewCaseId))?.value;
@@ -45,10 +44,10 @@ export function createChainAdmission({ store, identity, now, chainId = 11155111 
     // A policy switch cannot turn a generic completed review into public-scope approval.
     const assessment = (await reader.read('chain-admission-assessments', digest({
       executor: config.executor.toLowerCase(), targetArtifactHash: config.targetArtifactHash,
-      reviewCaseId: config.reviewCaseId, ...(chainId === 1 ? { chainId } : {})
+      reviewCaseId: config.reviewCaseId, ...selection.assessment
     })))?.value;
     requireThat(assessment?.accepted === true && assessment.publicAdmission === true &&
-      assessment.chainId === chainId && assessment.executorCodeHash === config.executorCodeHash &&
+      assessment.chainId === chainId && (assessment.profile ?? READONLY_PROFILE) === profile && assessment.executorCodeHash === config.executorCodeHash &&
       assessment.reviewArtifactHash === config.reviewArtifactHash &&
       assessment.reviewedBuildHash === review.input?.buildHash, 'chain_scope_not_reviewed');
     return config;
@@ -56,11 +55,14 @@ export function createChainAdmission({ store, identity, now, chainId = 11155111 
   async function reserveProject(tx, projectId) {
     const config = await admitted(tx);
     const oldProject = await tx.read('public-chain-projects', projectId);
-    if (oldProject) { requireThat((oldProject.value.chainId ?? 11155111) === chainId, 'project_chain_mismatch'); return; }
+    if (oldProject) {
+      requireThat((oldProject.value.chainId ?? 11155111) === chainId, 'project_chain_mismatch');
+      requireThat((oldProject.value.profile ?? READONLY_PROFILE) === profile, 'project_profile_mismatch'); return;
+    }
     const old = await tx.read('public-chain-usage', usageKey);
     const used = old?.value ?? { projects: 0, reserved: '0', spent: '0' };
     requireThat(used.projects < config.maximumProjects, 'capacity_reached');
-    await tx.write('public-chain-projects', projectId, { projectId, chainId, admittedAt: now(), reserved: '0', spent: '0' }, 0);
+    await tx.write('public-chain-projects', projectId, { projectId, chainId, ...(profile !== READONLY_PROFILE ? { profile } : {}), admittedAt: now(), reserved: '0', spent: '0' }, 0);
     await tx.write('public-chain-usage', usageKey, { ...used, projects: used.projects + 1 }, old?.revision ?? 0);
   }
   return {
@@ -77,17 +79,18 @@ export function createChainAdmission({ store, identity, now, chainId = 11155111 
       requireThat(projectId, 'chain_project_missing');
       if (!await tx.read('public-chain-projects', projectId)) {
         const pilot = (await tx.read('review-pilots', projectId))?.value;
-        if (chainId === 11155111 && pilot?.enabled && pilot.expiresAt > now()) return;
+        if (profile === READONLY_PROFILE && chainId === 11155111 && pilot?.enabled && pilot.expiresAt > now()) return;
         const config = await admitted(tx);
         const binding = (await tx.read('chain-bindings', projectId))?.value;
         const registrationId = intent.authority.registrationId;
         const registration = registrationId && (await tx.read('chain-registrations', registrationId))?.value;
-        requireThat((!binding || binding.executor?.toLowerCase() === config.executor.toLowerCase()) &&
-          (!registration || registration.executor?.toLowerCase() === config.executor.toLowerCase()), 'chain_admission_changed');
+        requireThat((!binding || binding.executor?.toLowerCase() === config.executor.toLowerCase() && (binding.profile ?? READONLY_PROFILE) === profile) &&
+          (!registration || registration.executor?.toLowerCase() === config.executor.toLowerCase() && (registration.profile ?? READONLY_PROFILE) === profile), 'chain_admission_changed');
         await reserveProject(tx, projectId);
       }
       requireThat(intent.chainId === undefined && chainId === 11155111 || intent.chainId === chainId, 'project_chain_mismatch');
       requireThat(((await tx.read('public-chain-projects', projectId)).value.chainId ?? 11155111) === chainId, 'project_chain_mismatch');
+      requireThat(((await tx.read('public-chain-projects', projectId)).value.profile ?? READONLY_PROFILE) === profile, 'project_profile_mismatch');
       const config = await admitted(tx), n = amount(maximum);
       requireThat(n <= amount(config.maximumTransactionGasWei), 'chain_gas_exhausted');
       const key = digest({ id });
@@ -98,12 +101,13 @@ export function createChainAdmission({ store, identity, now, chainId = 11155111 
         requireThat(amount(value.spent) + amount(value.reserved) + n <= amount(ceiling), 'chain_gas_exhausted');
         await tx.write(collection, key, { ...value, reserved: (amount(value.reserved) + n).toString() }, row.revision);
       }
-      await tx.write('public-chain-reservations', key, { projectId, chainId, maximum, settled: false }, 0);
+      await tx.write('public-chain-reservations', key, { projectId, chainId, ...(profile !== READONLY_PROFILE ? { profile } : {}), maximum, settled: false }, 0);
     },
     async finalizeGas(tx, { id, actual }) {
       const key = digest({ id }), reservation = await tx.read('public-chain-reservations', key);
       if (!reservation || reservation.value.settled) return;
       requireThat((reservation.value.chainId ?? 11155111) === chainId, 'project_chain_mismatch');
+      requireThat((reservation.value.profile ?? READONLY_PROFILE) === profile, 'project_profile_mismatch');
       const { projectId, maximum } = reservation.value;
       requireThat(amount(actual) <= amount(maximum), 'chain_gas_receipt_mismatch');
       for (const [collection, key] of [['public-chain-projects', projectId], ['public-chain-usage', usageKey]]) {

@@ -15,7 +15,7 @@ export const ACCESS_DEFAULTS = Object.freeze({
 export const ACCESS_MAXIMA = Object.freeze(Object.fromEntries(Object.entries(ACCESS_DEFAULTS)
   .filter(([, value]) => typeof value === 'number').map(([key, value]) => [key, value * 4])));
 
-export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, mainnetAdmission, signalDiscovery = async () => [], intakeDiscovery = async () => [], now = () => Date.now() }) {
+export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, mainnetAdmission, managedDiscovery = async () => [], signalDiscovery = async () => [], intakeDiscovery = async () => [], now = () => Date.now() }) {
   async function owner(actor, reader = store) {
     const who = await identity.credential(actor, reader);
     const principal = (await reader.read('principals', who.principalId))?.value;
@@ -89,7 +89,7 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       transfers: { enabled: (await cap('portability'))?.enabled === true, trustedDestinationRequired: true },
       reviews: { admission: !reviewEnabled ? 'not_enabled' : reviews?.config.enabled && (reviews.config.expiresAt === null || reviews.config.expiresAt > now()) ? 'public_sponsored' : 'restricted_pilot', reservationRequired: true, projectPrice: '0', asset: 'IMD', chainId: 1 },
       chainProfiles: [{ chainId: 11155111, profile: 'claus-readonly-v1', admission: chainState },
-        { chainId: 1, profile: 'claus-readonly-v1', admission: mainnetState }],
+        { chainId: 1, profile: 'claus-readonly-v1', admission: mainnetState }, ...await managedDiscovery()],
       signalProfiles: await signalDiscovery(), contractIntake: await intakeDiscovery(),
       mainnet: mainnetState, publicInference: 'not_enabled', limits: copy(active.config) };
   }

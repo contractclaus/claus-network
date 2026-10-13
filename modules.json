@@ -156,7 +156,8 @@
       "id": "approvals",
       "path": "src/approvals/",
       "imports": [
-        "shared"
+        "shared",
+        "chain-deployments"
       ],
       "builtins": []
     },

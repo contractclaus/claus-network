@@ -1371,7 +1371,8 @@
                     "type": "string",
                     "enum": [
                       "solidity-static-compile-v1",
-                      "solidity-0.8.26-static-v1"
+                      "solidity-0.8.26-static-v1",
+                      "solidity-managed-compile-v1"
                     ]
                   },
                   "sourceRoot": {
@@ -1897,6 +1898,20 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256
+                  },
+                  "chainId": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      11155111
+                    ]
+                  },
+                  "profile": {
+                    "type": "string",
+                    "enum": [
+                      "claus-readonly-v1",
+                      "claus-managed-v1"
+                    ]
                   }
                 },
                 "required": [
@@ -2346,6 +2361,18 @@
                 11155111
               ]
             }
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "claus-readonly-v1",
+                "claus-managed-v1"
+              ]
+            }
           }
         ],
         "responses": {
@@ -2418,6 +2445,13 @@
                     "enum": [
                       1,
                       11155111
+                    ]
+                  },
+                  "profile": {
+                    "type": "string",
+                    "enum": [
+                      "claus-readonly-v1",
+                      "claus-managed-v1"
                     ]
                   },
                   "version": {
@@ -2566,6 +2600,13 @@
                       11155111
                     ]
                   },
+                  "profile": {
+                    "type": "string",
+                    "enum": [
+                      "claus-readonly-v1",
+                      "claus-managed-v1"
+                    ]
+                  },
                   "version": {
                     "type": "string",
                     "minLength": 1,
@@ -2649,6 +2690,13 @@
                     "enum": [
                       1,
                       11155111
+                    ]
+                  },
+                  "profile": {
+                    "type": "string",
+                    "enum": [
+                      "claus-readonly-v1",
+                      "claus-managed-v1"
                     ]
                   }
                 },

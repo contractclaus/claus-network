@@ -4,6 +4,7 @@ const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
 const boolean={type:'boolean'};
 const readonlyChain={type:'integer',enum:[1,11155111]};
+const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1']};
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:48000}});
 const descriptions = {
@@ -76,7 +77,7 @@ export const ROUTES=Object.freeze([
  route('snapshot_create','POST','/v1/projects/{projectId}/snapshots',{projectId:string(),files:{type:'array',items:file,minItems:1,maxItems:64},expectedProjectRevision:integer}),
  route('snapshot_get','GET','/v1/projects/{projectId}/snapshots/{snapshotId}',{projectId:string(),snapshotId:string()}),
  route('build_create','POST','/v1/projects/{projectId}/builds',{projectId:string(),snapshotId:string(),entry:string(180),contract:string(128),idempotencyKey:string(),
-  compilerProfile:{type:'string',enum:['solidity-static-compile-v1','solidity-0.8.26-static-v1']},sourceRoot:string(160)},['projectId','snapshotId','entry','contract','idempotencyKey']),
+  compilerProfile:{type:'string',enum:['solidity-static-compile-v1','solidity-0.8.26-static-v1','solidity-managed-compile-v1']},sourceRoot:string(160)},['projectId','snapshotId','entry','contract','idempotencyKey']),
  route('build_get','GET','/v1/projects/{projectId}/builds/{buildId}',{projectId:string(),buildId:string()}),
  route('build_artifact','GET','/v1/projects/{projectId}/builds/{buildId}/artifact',{projectId:string(),buildId:string()}),
  route('job_get','GET','/v1/projects/{projectId}/jobs/{jobId}',{projectId:string(),jobId:string()}),
@@ -84,17 +85,17 @@ export const ROUTES=Object.freeze([
  route('review_admission_get','GET','/v1/admin/review-admission'),
  route('review_admission_publish','POST','/v1/admin/review-admission/versions',{version:string(64),config:object({enabled:boolean,expiresAt:operatingDeadline,maximumPerReview:string(18),maximumLifetime:string(30),perOwnerDay:integer,perProjectDay:integer,globalDay:integer,activeGlobal:integer})}),
  route('review_admission_activate','PUT','/v1/admin/review-admission/active',{version:string(64),expectedGeneration:integer}),
- route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string()}),
+ route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string(),chainId:readonlyChain,profile:contractProfile},['projectId','buildId','repoUrl','baseCommit','idempotencyKey']),
  route('review_pilot_get','GET','/v1/admin/review-pilots/{projectId}',{projectId:string()}),
  route('review_pilot_set','PUT','/v1/admin/review-pilots/{projectId}',{projectId:string(),enabled:boolean,expiresAt:integer,maximumPerReview:string(18),expectedRevision:integer,perProjectDay:integer,globalDay:integer},['projectId','enabled','expiresAt','maximumPerReview','expectedRevision']),
  route('review_get','GET','/v1/projects/{projectId}/reviews/{caseId}',{projectId:string(),caseId:string()}),
  route('review_accept','POST','/v1/projects/{projectId}/reviews/{caseId}/accept',{projectId:string(),caseId:string(),quoteId:string(),idempotencyKey:string()}),
  route('review_artifact','GET','/v1/projects/{projectId}/reviews/{caseId}/artifact',{projectId:string(),caseId:string()}),
  route('review_publish','PUT','/v1/projects/{projectId}/reviews/{caseId}/publication',{projectId:string(),caseId:string(),published:boolean,expectedRevision:integer}),
- route('chain_admission_get','GET','/v1/admin/chain-admission',{chainId:readonlyChain},[]),
- route('chain_admission_publish','POST','/v1/admin/chain-admission/versions',{chainId:readonlyChain,version:string(64),config:object({enabled:boolean,expiresAt:operatingDeadline,executor:string(42),executorCodeHash:string(66),targetArtifactHash:string(71),reviewProjectId:string(),reviewCaseId:string(),reviewArtifactHash:string(71),maximumProjects:integer,maximumTransactionGasWei:string(30),maximumProjectGasWei:string(30),maximumTotalGasWei:string(30)})},['version','config']),
- route('chain_admission_activate','PUT','/v1/admin/chain-admission/active',{chainId:readonlyChain,version:string(64),expectedGeneration:integer},['version','expectedGeneration']),
- route('module_deploy','POST','/v1/projects/{projectId}/modules',{projectId:string(),caseId:string(),chainId:readonlyChain},['projectId','caseId']),
+ route('chain_admission_get','GET','/v1/admin/chain-admission',{chainId:readonlyChain,profile:contractProfile},[]),
+ route('chain_admission_publish','POST','/v1/admin/chain-admission/versions',{chainId:readonlyChain,profile:contractProfile,version:string(64),config:object({enabled:boolean,expiresAt:operatingDeadline,executor:string(42),executorCodeHash:string(66),targetArtifactHash:string(71),reviewProjectId:string(),reviewCaseId:string(),reviewArtifactHash:string(71),maximumProjects:integer,maximumTransactionGasWei:string(30),maximumProjectGasWei:string(30),maximumTotalGasWei:string(30)})},['version','config']),
+ route('chain_admission_activate','PUT','/v1/admin/chain-admission/active',{chainId:readonlyChain,profile:contractProfile,version:string(64),expectedGeneration:integer},['version','expectedGeneration']),
+ route('module_deploy','POST','/v1/projects/{projectId}/modules',{projectId:string(),caseId:string(),chainId:readonlyChain,profile:contractProfile},['projectId','caseId']),
  route('module_get','GET','/v1/projects/{projectId}/modules/{moduleId}',{projectId:string(),moduleId:string()}),
  route('registration_prepare','POST','/v1/projects/{projectId}/chain/registrations/prepare',{projectId:string(),moduleId:string(),configuration:string(16386),mandateId:string(),minDelaySeconds:{type:'integer',minimum:0,maximum:432000}}),
  route('registration_submit','POST','/v1/projects/{projectId}/chain/registrations/{registrationId}/submit',{projectId:string(),registrationId:string(),signature:string(132)}),

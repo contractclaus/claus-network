@@ -42,6 +42,12 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
   writesEnabled:async reader=>!(await access.policy(reader)).config.paused,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
  access=createAccess({store,identity,now,reviewAdmission:reader=>reviewSystem.flow.admission.active(reader),
+  managedDiscovery:()=>Promise.all([11155111,1].map(async chainId=>{
+   let admission='not_enabled';
+   try { await deployments.admission.forChain(chainId,'claus-managed-v1').admitted();admission='public_managed'; }
+   catch(error){if(!['chain_public_not_enabled','chain_admission_changed','chain_scope_not_reviewed'].includes(error.code))throw error;}
+   return {chainId,profile:'claus-managed-v1',admission};
+  })),
   signalDiscovery:()=>Promise.all([11155111,1].map(chainId=>signals.discovery(chainId))),
   intakeDiscovery:()=>Promise.all([11155111,1].map(async chainId=>({chainId,capability:'claus.proposal.create.v1',
    state:await contractIntakeHealth(store,intakePorts,now(),chainId)}))),
@@ -59,10 +65,12 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  }});
  const artifacts=createArtifactStore({store});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
- reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,validatePublicBuild:artifact=>chain.validateModule(artifact),...reviewPorts});
+ reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,validatePublicBuild:(artifact,profile)=>chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>deployments.reviewProfile(reader,projectId,input),...reviewPorts});
  const chain=chainPorts.chain??createReadonlyChainRouter({
   sepolia:createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})}),
-  mainnet:chainPorts.mainnetClient?createChainRead({client:chainPorts.mainnetClient,chainId:1}):null
+  mainnet:chainPorts.mainnetClient?createChainRead({client:chainPorts.mainnetClient,chainId:1}):null,
+  managedSepolia:createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})}),profile:'claus-managed-v1'}),
+  managedMainnet:chainPorts.mainnetClient?createChainRead({client:chainPorts.mainnetClient,chainId:1,profile:'claus-managed-v1'}):null
  });
  deployments=createChainDeployments({store,identity,builds,reviews:reviewSystem.flow,jobs,artifacts,chain,now});
  approvals=createApprovals({store,identity,projects,reviews:reviewSystem.flow,deployments,jobs,artifacts,chain,now,signalConsumer:(projectId,reader)=>signals.consumer(projectId,reader)});

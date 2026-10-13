@@ -1,47 +1,49 @@
+export { MANAGED_PROFILE, READONLY_PROFILE, chainProfile, projectProfile } from './profiles.mjs';
 import { createChainAdmission } from './admission.mjs';
 export { createChainAdmission } from './admission.mjs';
 import { digest, requireThat, text } from '../shared/index.mjs';
+import { chainProfile, projectProfile, READONLY_PROFILE, MANAGED_PROFILE } from './profiles.mjs';
 
 export function createChainDeployments({ store, identity, builds, reviews, jobs, artifacts, chain, now = () => Date.now() }) {
-  const sepoliaAdmission = createChainAdmission({ store, identity, now });
-  const mainnetAdmission = createChainAdmission({ store, identity, now, chainId: 1 });
-  function forChain(chainId = 11155111) {
-    requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
-    return chainId === 1 ? mainnetAdmission : sepoliaAdmission;
+  const admissions = new Map();
+  function forChain(chainId = 11155111, profile = READONLY_PROFILE) {
+    const selected = chainProfile(chainId, profile);
+    if (!admissions.has(selected.capability)) admissions.set(selected.capability,
+      createChainAdmission({ store, identity, now, chainId, profile }));
+    return admissions.get(selected.capability);
   }
-  const admission = { ...sepoliaAdmission, forChain,
-    get: (actor, input = {}) => forChain(input.chainId).get(actor),
-    publish: (actor, input) => forChain(input.chainId).publish(actor, input),
-    activate: (actor, input) => forChain(input.chainId).activate(actor, input) };
-  async function projectChain(reader, projectId, requested) {
-    const selected = (await reader.read('chain-project-profiles', projectId))?.value.chainId ??
-      (await reader.read('chain-bindings', projectId))?.value.chainId ??
-      ((await reader.read('public-chain-projects', projectId))?.value ?
-        (await reader.read('public-chain-projects', projectId)).value.chainId ?? 11155111 : null);
-    requireThat(requested === undefined || [1, 11155111].includes(requested), 'unsupported_chain');
-    requireThat(!selected || requested === undefined || selected === requested, 'project_chain_mismatch');
-    if (!selected && requested === 1) requireThat((await reader.list('chain-modules', { projectId, limit: 1 })).length === 0, 'project_chain_mismatch');
-    return selected ?? requested ?? 11155111;
-  }
+  const admission = { ...forChain(), forChain,
+    get: (actor, input = {}) => forChain(input.chainId, input.profile).get(actor),
+    publish: (actor, input) => forChain(input.chainId, input.profile).publish(actor, input),
+    activate: (actor, input) => forChain(input.chainId, input.profile).activate(actor, input) };
+  const selection = (reader, projectId, chainId, profile) => projectProfile(reader, projectId, { chainId, profile });
+  const projectChain = async (reader, projectId, requested) => (await selection(reader, projectId, requested)).chainId;
   async function find(reader, collection, projectId, id) {
     const row = await reader.read(collection, text(id));
     requireThat(row?.value.projectId === projectId, 'not_found'); return row;
   }
-  async function allowed(actor, projectId, reader = store, requestedChain) {
+  async function allowed(actor, projectId, reader = store, requestedChain, requestedProfile) {
     await identity.authorize(actor, 'proposal.execute', { projectId }, reader);
-    const chainId = await projectChain(reader, projectId, requestedChain);
+    const { chainId, profile, capability: capKey } = await selection(reader, projectId, requestedChain, requestedProfile);
     const pilot = (await reader.read('review-pilots', projectId))?.value;
-    const capability = (await reader.read('network-capabilities', chainId === 1 ? 'chain:1' : 'chain'))?.value;
-    requireThat(capability?.enabled === true && capability.chainId === chainId, 'chain_not_enabled');
-    if (chainId === 1 || !pilot?.enabled || pilot.expiresAt <= now() || await reader.read('public-chain-projects', projectId)) {
-      const config = await forChain(chainId).admitted(reader);
+    const capability = (await reader.read('network-capabilities', capKey))?.value;
+    requireThat(capability?.enabled === true && capability.chainId === chainId && capability.profile === profile, 'chain_not_enabled');
+    if (profile !== READONLY_PROFILE || chainId === 1 || !pilot?.enabled || pilot.expiresAt <= now() || await reader.read('public-chain-projects', projectId)) {
+      const config = await forChain(chainId, profile).admitted(reader);
       const binding = (await reader.read('chain-bindings', projectId))?.value;
-      requireThat(!binding || binding.executor?.toLowerCase() === config.executor.toLowerCase(), 'chain_admission_changed');
+      requireThat(!binding || binding.executor?.toLowerCase() === config.executor.toLowerCase() && (binding.profile ?? READONLY_PROFILE) === profile, 'chain_admission_changed');
     }
     return capability;
   }
   const api = {
     allowed, admission, projectChain,
+    async reviewProfile(reader, projectId, requested) {
+      const selected = await selection(reader, projectId, requested.chainId, requested.profile);
+      if (selected.profile === MANAGED_PROFILE) {
+        await forChain(selected.chainId, selected.profile).admitted(reader);
+      }
+      return { chainId: selected.chainId, profile: selected.profile };
+    },
     async onCancel(tx, job) {
       const moduleJob = job.kind === 'module-deploy';
       if (!moduleJob && job.kind !== 'project-register') return;
@@ -54,28 +56,28 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
       await identity.authorize(actor, 'proposal.read', { projectId });
       return (await find(store, 'chain-modules', projectId, moduleId)).value;
     },
-    async deployModule(actor, projectId, { caseId, chainId: requestedChain }) {
+    async deployModule(actor, projectId, { caseId, chainId: requestedChain, profile: requestedProfile }) {
       const reviewed = await reviews.get(actor, projectId, caseId);
       requireThat(reviewed.state === 'reviewed' && reviewed.artifactHash, 'review_not_complete');
       const build = await builds.get(actor, projectId, reviewed.buildId);
       requireThat(build.state === 'compiled' && build.artifactHash === reviewed.input.buildHash, 'build_mismatch');
       const artifact = await artifacts.get(projectId, build.artifactHash);
-      chain.validateModule(artifact);
       return store.transaction(async tx => {
-        const chainId = await projectChain(tx, projectId, requestedChain);
-        await allowed(actor, projectId, tx, chainId);
-        const id = digest({ projectId, caseId, kind: 'module-deploy', ...(chainId === 1 ? { chainId } : {}) });
+        const { chainId, profile } = await selection(tx, projectId, requestedChain, requestedProfile);
+        await allowed(actor, projectId, tx, chainId, profile);
+        chain.validateModule(artifact, profile);
+        const id = digest({ projectId, caseId, kind: 'module-deploy', ...(chainId === 1 ? { chainId } : {}), ...(profile !== READONLY_PROFILE ? { profile } : {}) });
         const old = await tx.read('chain-modules', id); if (old) return old.value;
         const pilot = (await tx.read('review-pilots', projectId))?.value;
-        if (chainId === 1 || !pilot?.enabled || pilot.expiresAt <= now() || await tx.read('public-chain-projects', projectId)) await forChain(chainId).reserveProject(tx, projectId);
-        const profile = await tx.read('chain-project-profiles', projectId);
-        if (!profile) await tx.write('chain-project-profiles', projectId, { chainId }, 0);
+        if (profile !== READONLY_PROFILE || chainId === 1 || !pilot?.enabled || pilot.expiresAt <= now() || await tx.read('public-chain-projects', projectId)) await forChain(chainId, profile).reserveProject(tx, projectId);
+        const bound = await tx.read('chain-project-profiles', projectId);
+        if (!bound) await tx.write('chain-project-profiles', projectId, { chainId, profile }, 0);
         if (await tx.read('public-chain-projects', projectId))
           requireThat((await identity.credential(actor, tx)).kind === 'agent', 'durable_agent_required');
         const job = await jobs.enqueue(tx, { projectId, kind: 'module-deploy', payload: { moduleId: id },
           authority: { actor }, idempotencyKey: id });
         const value = { id, projectId, caseId, buildId: build.id, artifactHash: build.artifactHash,
-          state: 'queued', jobId: job.id, chainId, expiresAt: now() + 86400000, createdAt: now() };
+          state: 'queued', jobId: job.id, chainId, profile, expiresAt: now() + 86400000, createdAt: now() };
         await tx.write('chain-modules', id, value, 0); return value;
       });
     },
@@ -86,7 +88,7 @@ export function createChainDeployments({ store, identity, builds, reviews, jobs,
       requireThat(credential.kind === 'owner' && credential.principalId === project.ownerId, 'scope_denied');
       const owner = (await store.read('principals', project.ownerId))?.value;
       const module = (await find(store, 'chain-modules', projectId, moduleId)).value;
-      requireThat(module.state === 'verified' && module.chainId === capability.chainId, 'module_not_verified');
+      requireThat(module.state === 'verified' && module.chainId === capability.chainId && (module.profile ?? READONLY_PROFILE) === capability.profile, 'module_not_verified');
       const mandate = (await store.read('mandates', text(mandateId)))?.value;
       requireThat(mandate?.projectId === projectId && !mandate.revokedAt && mandate.expiresAt > now() &&
         mandate.scopes.includes('proposal.execute'), 'invalid_mandate');

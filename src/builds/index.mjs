@@ -14,7 +14,7 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
   return {
     async submit(actor, projectId, { snapshotId, entry, contract, idempotencyKey, compilerProfile, sourceRoot }) {
       text(idempotencyKey);
-      requireThat(compilerProfile === undefined || ['solidity-static-compile-v1', 'solidity-0.8.26-static-v1'].includes(compilerProfile), 'unsupported_compiler_profile');
+      requireThat(compilerProfile === undefined || ['solidity-static-compile-v1', 'solidity-0.8.26-static-v1', 'solidity-managed-compile-v1'].includes(compilerProfile), 'unsupported_compiler_profile');
       requireThat(sourceRoot === undefined || (typeof sourceRoot === 'string' && sourceRoot.length <= 160 &&
         /^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*$/.test(sourceRoot) &&
         sourceRoot.split('/').every(part => part !== '.' && part !== '..')), 'invalid_source_root');
@@ -27,7 +27,7 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
         const id = digest({ projectId, kind: 'compile', idempotencyKey });
         // Keep the original default payload and idempotency hash byte-for-byte.
         const payload = { snapshotId, entry, contract,
-          ...(compilerProfile === 'solidity-0.8.26-static-v1' ? { compilerProfile } : {}),
+          ...(compilerProfile && compilerProfile !== 'solidity-static-compile-v1' ? { compilerProfile } : {}),
           ...(sourceRoot === undefined ? {} : { sourceRoot }) }, requestHash = digest(payload);
         const old = await tx.read('builds', id);
         if (old) { requireThat(old.value.requestHash === requestHash, 'idempotency_conflict'); return visible(tx, old); }

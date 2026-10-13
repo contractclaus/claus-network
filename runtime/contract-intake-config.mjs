@@ -54,14 +54,19 @@ export function contractIntakePorts(env = process.env, suppliedClient) {
       requireThat(assessment?.accepted === true && assessment.profileHash === digest(pin) &&
         review?.projectId === pin.reviewProjectId && review.state === 'reviewed' &&
         review.artifactHash === pin.reviewArtifactHash, 'intake_review_not_admitted');
-      if (capability.admissionMode === 'public-readonly-v1') {
+      if (['public-readonly-v1','public-reviewed-v1'].includes(capability.admissionMode)) {
         requireThat(assessment.publicAdmission === true, 'intake_review_not_admitted');
-        const config = await createChainAdmission({ store: reader, now: () => Date.now(), chainId: pin.chainId }).admitted(reader);
+        const binding = projectId === undefined ? null : (await reader.read('chain-bindings', projectId))?.value;
+        const profile = binding?.profile ?? 'claus-readonly-v1';
+        if (profile !== 'claus-readonly-v1') {
+          requireThat(capability.admissionMode === 'public-reviewed-v1' && profile === 'claus-managed-v1' &&
+            capability.profiles?.includes(profile) && assessment.profiles?.includes(profile), 'intake_profile_not_admitted');
+        }
+        const config = await createChainAdmission({ store: reader, now: () => Date.now(), chainId: pin.chainId, profile }).admitted(reader);
         if (projectId === undefined) return true;
         const admitted = await reader.read('public-chain-projects', projectId);
-        const binding = (await reader.read('chain-bindings', projectId))?.value;
         return !!admitted && (admitted.value.chainId ?? 11155111) === pin.chainId &&
-          binding?.chainId === pin.chainId && binding.profile === 'claus-readonly-v1' &&
+          binding?.chainId === pin.chainId && binding.profile === profile && (admitted.value.profile ?? 'claus-readonly-v1') === profile &&
           binding.executor?.toLowerCase() === config.executor.toLowerCase();
       }
       requireThat(Array.isArray(capability.projectIds) && capability.projectIds.length > 0 &&
@@ -92,5 +97,5 @@ export async function contractIntakeHealth(store, allPorts, now = Date.now(), ch
   const worker = (await store.read('worker-health', key))?.value;
   return worker?.state === 'active' && !worker.scanError && worker.observedAt > now - 300000 && worker.observedAt <= now &&
     worker.profileHash === digest(ports.pin) && typeof capability?.workerRelease === 'string' &&
-    worker.release === capability.workerRelease ? capability.admissionMode === 'public-readonly-v1' ? 'public_readonly' : 'restricted_pilot' : 'worker_unavailable';
+    worker.release === capability.workerRelease ? capability.admissionMode === 'public-reviewed-v1' ? 'public_reviewed' : capability.admissionMode === 'public-readonly-v1' ? 'public_readonly' : 'restricted_pilot' : 'worker_unavailable';
 }

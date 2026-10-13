@@ -2,7 +2,7 @@ import { createReviewAdmission } from './admission.mjs';
 import { digest, requireThat, text } from '../shared/index.mjs';
 
 export function createReviewFlow({ store, identity, projects, builds, jobs, artifacts, reviews,
-  workerActor, verifySource, validatePublicBuild, now = () => Date.now() }) {
+  workerActor, verifySource, validatePublicBuild, selectReviewProfile, now = () => Date.now() }) {
   async function getCase(reader, projectId, id) {
     const record = await reader.read('review-cases', text(id));
     requireThat(record?.value.projectId === projectId, 'not_found');
@@ -50,7 +50,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         return { projectId, ...value, revision: record.revision };
       });
     },
-    async request(actor, projectId, { buildId, repoUrl, baseCommit, idempotencyKey }) {
+    async request(actor, projectId, { buildId, repoUrl, baseCommit, idempotencyKey, chainId, profile }) {
       text(idempotencyKey);
       requireThat(/^https:\/\/github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+$/.test(repoUrl) && /^[0-9a-f]{40}$/.test(baseCommit), 'unsupported_source_host');
       const build = await builds.get(actor, projectId, buildId);
@@ -62,6 +62,9 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         const value = { id, projectId, buildId, input, inputHash, createdAt: now(), quoteId: null, reviewJobId: null, state: 'preparing' };
         await identity.authorize(actor, 'review.quote', { projectId }, tx);
         await sourceIsPublished(tx, value);
+        const scope = selectReviewProfile ? await selectReviewProfile(tx, projectId, { chainId, profile }) : null;
+        requireThat(scope || chainId === undefined && profile === undefined, 'unsupported_profile');
+        if (scope) { value.chainId = scope.chainId; value.profile = scope.profile; }
         const old = await tx.read('review-cases', id);
         if (old) { requireThat(old.value.inputHash === inputHash, 'idempotency_conflict'); return old.value; }
         const candidates = await tx.list('review-cases', { projectId, limit: 1000 });
@@ -86,7 +89,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         const eligibility = await sponsor(tx, projectId);
         if (eligibility.kind === 'public') {
           requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
-          validatePublicBuild(await artifacts.get(projectId, build.artifactHash, tx));
+          await validatePublicBuild(await artifacts.get(projectId, build.artifactHash, tx), scope?.profile);
         }
         const active = await tx.read('active-review-case', projectId);
         if (active) {
