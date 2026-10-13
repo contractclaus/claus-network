@@ -15,14 +15,14 @@ test('managed registration, activation evidence and upgrades retain exact source
  const path='reference/managed-counter/Counter.sol',content=await readFile(new URL('../'+path,import.meta.url),'utf8');
  const build=await compileSnapshot({files:[{path,content}],entry:path,contract:'Counter',compilerProfile:'solidity-managed-compile-v1'});
  const registry=address(2),target=address(3),impl=address(4),registryCode='0x6001',targetCode='0x6002';
- let version=0,config='0x';
+ let version=0,config='0x',delay=0n;
  const module={id:'module',profile:'claus-managed-v1',chainId:1,state:'verified',address:impl,codeHash:build.runtimeTemplateHash};
  const capability={profile:module.profile,chainId:1,enabled:true,executor:registry,executorCodeHash:keccak256(registryCode)};
  const binding={profile:module.profile,chainId:1,owner:owner.address,executor:registry,target,codeHash:keccak256(targetCode),projectKey:word};
  const client={getChainId:async()=>1,getBlockNumber:async()=>50n,getBlock:async()=>({number:50n,hash:word,timestamp:1800000000n}),
   getStorageAt:async()=>zero,getCode:async({address})=>address===registry?registryCode:address===target?targetCode:build.runtimeTemplate,
   readContract:async({functionName})=>{
-   const values={MIN_UPGRADE_DELAY:0n,projects:[owner.address,target,word,word,0n,1n,1n,true],
+   const values={MIN_UPGRADE_DELAY:0n,projects:[owner.address,target,word,word,delay,1n,1n,true],
     version:BigInt(version),implementation:version?impl:empty,implementationCodeHash:version?build.runtimeTemplateHash:zero,
     clausGeneration:1n,pendingSigner:empty,pendingProjectOwners:empty,executor:registry,projectId:word,
     moduleState:[version?impl:empty,version?build.runtimeTemplateHash:zero,BigInt(version),config],
@@ -47,4 +47,11 @@ test('managed registration, activation evidence and upgrades retain exact source
  assert.equal(upgrade.managed.previous.codeHash,build.runtimeTemplateHash);
  const next=await chain.proposal({binding,module,configuration:'0x',dependencySnapshot:upgrade,nonceSeed:'next',now:1800000000});
  assert.equal(next.fromVersion,1);await chain.validateProposal(next,binding,upgrade);
+ // The review and queue budget must not shrink as the owner delay increases.
+ for(const seconds of [0,79200,86400,432000]){
+  delay=BigInt(seconds);
+  const delayed=await chain.proposal({binding,module,configuration:'0x',dependencySnapshot:upgrade,nonceSeed:'delayed-'+seconds,now:1800000000});
+  const readyAfterTwoHourReview=1800000000+7200+seconds;
+  assert.equal(delayed.expiresAt-readyAfterTwoHourReview,79200);
+ }
 });

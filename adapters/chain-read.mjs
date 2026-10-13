@@ -131,7 +131,7 @@ export function createChainRead({ client, chainId = CHAIN_ID, profile = PROFILE 
         toCodeHash: module.codeHash, configuration, dependencySnapshotHash: '0x' + digest(dependencySnapshot).slice(7),
         policyVersion: s.policyVersion, policyGeneration: s.policyGeneration, authorityGeneration: s.authorityGeneration,
         clausGeneration: s.clausGeneration, mandateHash: s.mandateHash, nonce: BigInt('0x' + digest(nonceSeed).slice(7)).toString(),
-        notBefore: now, expiresAt: now + Math.max(86400, s.minDelaySeconds + 7200) };
+        notBefore: now, expiresAt: now + s.minDelaySeconds + 86400 };
       if (managed) assertManagedSnapshot(dependencySnapshot, proposal, binding);
       return proposal;
     },
