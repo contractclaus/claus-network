@@ -8,6 +8,26 @@ import { chainProfile, MANAGED_PROFILE, READONLY_PROFILE } from '../src/chain-de
 import { authorityDenied } from './authorization.mjs';
 import { recoverChainEvent } from './chain-event-recovery.mjs';
 
+// Queuing is reversible preparation. Keep its full gas reservation until its
+// receipt is final, even when three confirmations allow execution to start.
+export async function reconcileQueuedGas({ store, client, admission, id }) {
+  const queued = (await store.read('chain-transactions', id))?.value;
+  if (!queued?.receipt) return null;
+  const block = await client.getBlock({ blockNumber: BigInt(queued.receipt.blockNumber) });
+  if (block.hash !== queued.receipt.blockHash) return { canonical: false, finalized: false };
+  const final = await client.getBlock({ blockTag: 'finalized' });
+  if (final.number < BigInt(queued.receipt.blockNumber)) return { canonical: true, finalized: false };
+  const receipt = await client.getTransactionReceipt({ hash: queued.hash });
+  requireThat(receipt.transactionHash === queued.hash && receipt.blockHash === queued.receipt.blockHash &&
+    receipt.blockNumber === BigInt(queued.receipt.blockNumber) &&
+    receipt.gasUsed <= BigInt(queued.gas) && receipt.effectiveGasPrice <= BigInt(queued.maxFeePerGas),
+    'transaction_receipt_mismatch');
+  if (admission) await store.transaction(tx => admission.finalizeGas(tx, {
+    id, actual: (receipt.gasUsed * receipt.effectiveGasPrice).toString()
+  }));
+  return { canonical: true, finalized: true };
+}
+
 export function createChainExecutor({ store, client, signer, sealer, chain, verification, artifacts, admission, chainId = 11155111, profile = READONLY_PROFILE, now = () => Date.now() }) {
   requireThat([1, 11155111].includes(chainId), 'unsupported_chain');
   const capKey = chainProfile(chainId, profile).capability;
@@ -17,8 +37,15 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
   const read = (address, functionName, args = [], abi = executorAbi) => client.readContract({ address, abi, functionName, args });
   async function transact({ id, to = null, data, authority, expiresAt, authorize, validate = async () => {} }) {
     let currentChainState = true;
-    const transactions = createReadonlyTransactions({ store, client, signer, sealer, now, chainId, finalized: chainId === 1 || managed,
-      onReserve: admission?.reserveGas, onFinalize: admission?.finalizeGas,
+    const queuePreparation = authority.kind === 'queue';
+    const transactions = createReadonlyTransactions({ store, client, signer, sealer, now, chainId,
+      finalized: !queuePreparation && (chainId === 1 || managed),
+      onReserve: admission?.reserveGas,
+      onFinalize: queuePreparation ? async (tx, result) => {
+        // Unsent cancellation is certain; mined costs remain reserved until
+        // reconcileQueuedGas observes finality. No provisional refund.
+        if (result.state === 'cancelled') await admission?.finalizeGas(tx, result);
+      } : admission?.finalizeGas,
       authorize: async (intent, reader) => {
         requireThat(intent.to === to && intent.data === data && intent.value === '0' &&
           digest(intent.authority) === digest(authority), 'executor_intent_mismatch');
@@ -215,6 +242,9 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
       const executeData = encodeFunctionData({ abi: executorAbi, functionName: 'execute', args: [message, p.configuration, signed.signature] });
       const queueData = encodeFunctionData({ abi: executorAbi, functionName: 'queue', args: [message, signed.signature] });
       const existingExecution = (await store.read('chain-transactions', executionId))?.value;
+      const queueProof = await reconcileQueuedGas({ store, client, admission, id: 'queue:' + value.id });
+      if (!existingExecution && queueProof?.canonical === false)
+        return { state: 'blocked', error: 'queue_confirmation_reorg' };
       let executed = null;
       if (existingExecution) {
         const tx = await transact({ id: executionId, to: p.executor, data: executeData,
