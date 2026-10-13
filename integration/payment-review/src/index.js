@@ -64,10 +64,10 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   // Reviews retain the native Responses payload and model/effort. Builder's
   // optional Chat adapter must never reinterpret a review. Native nonstreaming
   // returns its final bill; the relay still sends downstream keepalives.
-  const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:false});
+  const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:false,allowSmallerOutput:false,allowCapacityDeferral:true});
   const workHandler=id=>/^network-review:nr_[a-f0-9]{64}$/.test(id)?reviewCredit:independentCredit;
   const creditResult=row=>({status:row.status,response:row.response??null,outcome:row.outcome??null});
-  const workResult=row=>({...creditResult(row),...(row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed'
+  const workResult=row=>({...creditResult(row),id:row.id,rail:'surplus_credit',execution:{active:row.active,activeUntil:row.active_until},...(row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed'
     ?{accounting:{requestId:row.id,amount:'0',maximumMicroUsdc:row.reserved_max,basis:'verified_nonpayment'}}:{})});
   const workStatus=async(db,id)=>{const row=await creditWork.readCredit(db,id);if(!row)return null;await creditWork.expireCredit(db);return creditWork.readCredit(db,id);};
   const recovery={payer,outcome};
@@ -105,7 +105,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     const id=c.req.param('id'),maximumMicroUsdc=c.req.query('maximumMicroUsdc');
     c.header('Cache-Control','no-store');
     if(!/^[1-9]\d{0,6}$/.test(maximumMicroUsdc??'')||BigInt(maximumMicroUsdc)>3000000n)return c.json({error:'invalid_request_budget'},400);
-    const waiting=reason=>({id,maximumMicroUsdc,ready:false,rail:creditCandidate(env,id)?'surplus_credit':'x402',reason,retryAfterSeconds:60});
+    const waiting=reason=>({id,maximumMicroUsdc,ready:false,rail:creditCandidate(env,id)||workCandidate(env,id)?'surplus_credit':'x402',reason,retryAfterSeconds:60});
     if(!enabled()||!configured(env))return c.json(waiting('payment_unavailable'));
     try {
       const db=sql(),saved=await db`SELECT status FROM claus_inference WHERE id=${id}`;
@@ -154,7 +154,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     if(!rows.length&&workCandidate(env,id)&&path==='/api/completion'){
       if(c.req.header('x-inference-purpose')!=='research')return c.json({error:'credit_purpose_required',payment:'not_signed'},400);
       const admission=await workAdmission(db,env,id,c.req.header('x-max-quote-micro-usdc'));
-      if(!admission.ready)return c.json({error:admission.reason,payment:'not_signed'},503);
+      if(!admission.ready)return c.json({id,error:admission.reason,payment:'not_signed',...(admission.reason==='credit_busy'?{admission:'deferred'}:{})},503);
       return deliver(workHandler(id));
     }
     if(!rows.length&&creditCandidate(env,id)&&path==='/api/completion') {
