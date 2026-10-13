@@ -1,7 +1,7 @@
 import {encodeFunctionData,keccak256} from 'viem';
 import {amount,digest,integer,requireThat,shape,text} from '../src/shared/index.mjs';
 import {createReadonlyTransactions} from './sepolia-transactions.mjs';
-import {signalAbi} from './signal-read.mjs';
+import {signalAbi,SIGNAL_TRANSACTION_GAS_LIMIT} from './signal-read.mjs';
 
 // Host-only finite allocation for the Claus reference. Public users bring their
 // own signer/gas. Changing a configuration never refills an old allocation.
@@ -13,7 +13,7 @@ export async function admitSignalPublisherBudget(store,config){
   [config.storeCodeHash,config.grantId].every(x=>/^0x[0-9a-f]{64}$/.test(x)),'invalid_signal_budget');
  requireThat(amount(config.maximumTransactionWei)>0n&&amount(config.maximumTransactionWei)<=1000000000000000n&&
   amount(config.maximumTotalWei)>=amount(config.maximumTransactionWei)&&amount(config.maximumTotalWei)<=20000000000000000n&&
-  amount(config.maximumGas)>0n&&amount(config.maximumGas)<=1000000n&&amount(config.maximumFeePerGas)>0n&&
+  amount(config.maximumGas)>0n&&amount(config.maximumGas)<=SIGNAL_TRANSACTION_GAS_LIMIT&&amount(config.maximumFeePerGas)>0n&&
   amount(config.maximumFeePerGas)<=50000000000n,'invalid_signal_budget');
  return store.transaction(async tx=>{
   const row=await tx.read('signal-publisher-budgets',config.id);
