@@ -44,7 +44,7 @@ export async function createChainWorker(role, env = process.env) {
     mainnetSigner.address.toLowerCase() !== signer.address.toLowerCase(), 'worker_signer_mismatch');
   const mainnet = configuredMainnet ? createChainRead({ client: mainnetClient, chainId: 1 }) : null;
   const chain = createReadonlyChainRouter({ sepolia, mainnet });
-  const app = createApplication({ store, origin: env.CLAUS_NETWORK_ORIGIN, rateSalt: env.CLAUS_NETWORK_RATE_SALT, chainPorts: { chain } });
+  const app = createApplication({ store, origin: env.CLAUS_NETWORK_ORIGIN, rateSalt: env.CLAUS_NETWORK_RATE_SALT, chainPorts: { chain, client, mainnetClient } });
   const ports = new Map();
   for (const [chainId, reader, rpc, key] of [[11155111, sepolia, client, signer], [1, mainnet, mainnetClient, mainnetSigner]]) {
     if (!reader) continue;
