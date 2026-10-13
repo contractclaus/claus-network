@@ -11,7 +11,7 @@ export async function admitContractDispatchBudget(store, config) {
     'maximumTotal', 'maximumTransaction', 'maximumGas', 'maximumFeePerGas',
     ...(Object.hasOwn(config, 'maximumProject') ? ['maximumProject'] : []),
     ...(Object.hasOwn(config, 'admissionMode') ? ['admissionMode'] : [])]);
-  const publicAdmission = config.admissionMode === 'public-readonly-v1';
+  const publicAdmission = ['public-readonly-v1', 'public-reviewed-v1'].includes(config.admissionMode);
   requireThat(!Object.hasOwn(config, 'admissionMode') || publicAdmission, 'invalid_dispatch_budget');
   text(config.id); operatingExpiry(config.expiresAt);
   requireThat([1, 11155111].includes(config.chainId) && address(config.dispatcher) && address(config.inbox) &&
@@ -66,7 +66,7 @@ export function createContractDelivery(options) {
 function createBoundContractDelivery({ store, client, signer, sealer, chain, identity, budget,
   admitted = null, now = () => Date.now() }) {
   requireThat(signer.address.toLowerCase() === budget.dispatcher, 'dispatch_signer_mismatch');
-  const publicAdmission = budget.admissionMode === 'public-readonly-v1';
+  const publicAdmission = ['public-readonly-v1', 'public-reviewed-v1'].includes(budget.admissionMode);
   requireThat(!publicAdmission || typeof admitted === 'function', 'dispatch_admission_required');
   const configHash = digest(budget);
   async function budgetRow(reader) {
@@ -79,6 +79,9 @@ function createBoundContractDelivery({ store, client, signer, sealer, chain, ide
     const row = await budgetRow(reader);
     if (row.value.revokedAt || !operatingWindowOpen(budget.expiresAt, now()) ||
       (!publicAdmission && !budget.projectIds.includes(request.projectId))) return false;
+    if (budget.admissionMode === 'public-readonly-v1' &&
+      ((await reader.read('chain-bindings', request.projectId))?.value.profile ?? 'claus-readonly-v1') !== 'claus-readonly-v1')
+      return false;
     if (admitted && await admitted(reader, request.projectId) !== true) return false;
     const binding = (await reader.read('contract-bindings', request.bindingId))?.value;
     if (!binding || binding.projectId !== request.projectId || binding.revokedAt || binding.expiresAt <= now() ||

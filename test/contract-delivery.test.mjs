@@ -304,3 +304,15 @@ test('mainnet delivery binds the signing chain and retains its finite reservatio
   assert.equal(f.broadcasts(), 2);
   assert.equal((await f.ledger()).reserved, '0');
 });
+
+test('managed callbacks require a reviewed-profile allocation and leave the readonly budget untouched', async t => {
+  const f=await fixture(t,false,true);
+  await f.store.transaction(tx=>tx.write('chain-bindings','project-a',{chainId:11155111,profile:'claus-managed-v1'},0));
+  await f.make().step(f.input);
+  assert.equal(f.broadcasts(),0);assert.equal((await f.ledger()).reserved,'0');
+  const next={...f.budget,id:'reviewed-profile-budget',admissionMode:'public-reviewed-v1'};
+  await admitContractDispatchBudget(f.store,next);
+  assert.equal((await f.make(next).step(f.input)).state,'pending');
+  assert.equal(f.broadcasts(),1);assert.equal((await f.ledger()).reserved,'0');
+  assert.equal((await f.store.read('contract-dispatch-budgets',next.id)).value.reserved,'135000000000');
+});
