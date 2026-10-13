@@ -17,6 +17,12 @@ The managed profile is implemented in this source candidate but is **not admitte
 
 Registrations and module deployments use the existing API operations. MCP, SDK and CLI use the same operation schema. The website is optional.
 
+Managed registrations wait for chain finality on both supported chains before becoming ready for a proposal. A mined transaction can therefore remain `registering` until its evidence is finalized.
+
+The network accepts owner-selected upgrade delays from zero through five days. The underlying registry also permits longer delays through direct owner calls, but a delay above five days permanently removes that instance from the network's supported upgrade workflow: the registry never allows an accepted delay to decrease. Do not increase it beyond five days when using the network API.
+
+The Counter reference must be activated with the nonempty `initializeCounter(7)` configuration committed at registration. An empty configuration would leave its public one-time initializer available to anyone.
+
 ## Boundaries
 
 The registry also rejects its own managed project proxies as implementations, preventing one project from silently following another project’s upgrades.

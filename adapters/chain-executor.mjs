@@ -17,7 +17,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
   const read = (address, functionName, args = [], abi = executorAbi) => client.readContract({ address, abi, functionName, args });
   async function transact({ id, to = null, data, authority, expiresAt, authorize, validate = async () => {} }) {
     let currentChainState = true;
-    const transactions = createReadonlyTransactions({ store, client, signer, sealer, now, chainId, finalized: chainId === 1,
+    const transactions = createReadonlyTransactions({ store, client, signer, sealer, now, chainId, finalized: chainId === 1 || managed,
       onReserve: admission?.reserveGas, onFinalize: admission?.finalizeGas,
       authorize: async (intent, reader) => {
         requireThat(intent.to === to && intent.data === data && intent.value === '0' &&
@@ -117,7 +117,7 @@ export function createChainExecutor({ store, client, signer, sealer, chain, veri
     requireThat(receipt.status === 'success' && receipt.blockHash === logs[0].blockHash &&
       (await client.getBlock({ blockNumber: receipt.blockNumber })).hash === receipt.blockHash, 'registration_receipt_mismatch');
     const final = (await client.getBlockNumber()) - receipt.blockNumber >= 2n &&
-      (chainId !== 1 || (await client.getBlock({ blockTag: 'finalized' })).number >= receipt.blockNumber);
+      (chainId !== 1 && !managed || (await client.getBlock({ blockTag: 'finalized' })).number >= receipt.blockNumber);
     return { state: final ? 'confirmed' : 'submitted', hash: receipt.transactionHash,
       receipt: { blockNumber: receipt.blockNumber.toString(), blockHash: receipt.blockHash }, relayed: true };
   }
