@@ -61,6 +61,7 @@ test('data pipeline recovers a lost prepare response and never replaces its orig
   if(name==='service_result_publish'){pubCalls++;const value={...a,revision:1};publications.set(a.orderId,value);return value;}
   if(name==='public_service_result')return publications.get(a.orderId);
   if(name==='signal_latest')return {finalized:true,record:{sequence:'0'}};
+  if(name==='signal_grant')return {finalized:true,revoked:false,terms:{expiresAt:1800005400}};
   if(name==='signal_record_prepare'){
    const prior=prepared.get(a.idempotencyKey);
    if(prior)assert.equal(digest(prior.input),digest(a));
@@ -78,8 +79,8 @@ test('data pipeline recovers a lost prepare response and never replaces its orig
  const checkpoint=async x=>{saved=structuredClone(x);};
  await assert.rejects(make().step({id:'run-1',expiresAt:time+3600000,serviceExpiresAt:time+7200000},checkpoint),/lost_response/);
  await make().step(saved,checkpoint);assert.equal(prepared.size,1);assert.equal(orders.size,2);assert.equal(pubCalls,2);
- assert.equal(prepared.get('run-1').input.validUntil,Math.floor(time/1000)+7200);
- assert([...publications.values()].every(p=>p.expiresAt===time+7200000));
+ assert.equal(prepared.get('run-1').input.validUntil,Math.floor(time/1000)+5400);
+ assert([...publications.values()].every(p=>p.expiresAt===time+5400000));
  time+=8000000;confirmed=true;
  assert.equal((await make().step(saved,checkpoint)).state,'complete');
  assert.deepEqual(submitted,['0xoriginal']);
@@ -98,6 +99,10 @@ test('an unsigned failed intent releases the next scheduler slot but an unknown 
  const first=await tick();assert.equal(first.state,'unavailable');time+=7200001;
  const next=await tick();assert.equal(next.runId,first.runId);assert.equal(next.state,'unavailable');
  assert.equal((await store.list('workflow-jobs')).length,2);
+ for(const row of await store.list('chain-transactions'))await store.transaction(tx=>tx.write('chain-transactions',row.id,{state:'cancelled'},row.revision));
+ time+=60001;assert.equal((await tick()).state,'failed');signed=false;
+ assert.equal((await tick()).state,'failed');
+ assert.equal((await store.list('workflow-jobs')).length,3);
 });
 test('a poisoned public order cannot abort unrelated provider deliveries',async()=>{
  const delivered=[];const client={async call(name,a){
