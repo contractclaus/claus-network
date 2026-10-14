@@ -1,7 +1,16 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  network_operations:()=>discovery.operations(),
+  app_metrics:(actor,input)=>apps.metrics(actor,input.projectId),
+  network_discover:(_,input)=>discovery.search(input),
+  public_task_receipt:(_,input)=>apps.taskReceipt(input.projectId,input.taskId),
+  workflow_create:(actor,input)=>workflows.create(actor,input.projectId,input),
+  workflow_list:(actor,input)=>workflows.list(actor,input.projectId,input),
+  workflow_get:(actor,input)=>workflows.get(actor,input.projectId,input.workflowId),
+  workflow_cancel:(actor,input)=>workflows.cancel(actor,input.projectId,input.workflowId,input),
+  workflow_receipts:(actor,input)=>workflows.receipts(actor,input.projectId,input.workflowId,input),
   content_admin_grant:(actor,input)=>contentAdmin.grant(actor,input),
   app_session_create:(actor,input)=>apps.session(actor,input.projectId,input),
   app_session_revoke:(actor,input)=>identity.revokeAppSession(actor,input.projectId,input.sessionId),
@@ -29,7 +38,7 @@ export function createService({apps,contentAdmin,access,identity,projects,builds
   content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
   content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
 
-  capabilities:async()=>({...await access.discovery(),applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
+  capabilities:async()=>({...await access.discovery(),workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),

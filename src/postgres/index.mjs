@@ -43,6 +43,11 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
   }
   return {
     ...reader(pool),
+    async dueWorkflows({at,limit=4}) {
+      integer(at);integer(limit,1,4);
+      const {rows}=await pool.query(`SELECT id,revision,body FROM ${documents} WHERE collection='app-workflows' AND body->>'state'='active' AND (body->>'nextAt')::bigint <= $1 ORDER BY (body->>'nextAt')::bigint,id LIMIT $2`,[at,limit]);
+      return rows.map(row=>({id:row.id,revision:Number(row.revision),value:row.body}));
+    },
     async pruneEphemeral() {
       const { rows } = await pool.query(`SELECT "${schema}".prune_ephemeral() AS removed`);
       return { removed: Number(rows[0].removed) };

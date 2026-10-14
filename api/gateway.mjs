@@ -11,7 +11,7 @@ import { contractIntakePorts, contractIntakeHealth } from '../runtime/contract-i
 
 neonConfig.webSocketConstructor = ws;
 let loaded;
-function application() {
+export function application() {
   if (!loaded) loaded = (async () => {
     if (!process.env.CLAUS_NETWORK_DATABASE_URL || !process.env.CLAUS_NETWORK_ORIGIN) throw Error('runtime_unconfigured');
     const pool = new Pool({ connectionString: process.env.CLAUS_NETWORK_DATABASE_URL, max: 3, connectionTimeoutMillis: 8000 });

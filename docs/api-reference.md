@@ -1,9 +1,18 @@
 # API reference
 
-This source describes API 0.17.0 with 148 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.18.0 with 157 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `network_operations` | GET | `/v1/public/operations` | Public |
+| `app_metrics` | GET | `/v1/projects/{projectId}/app/metrics` | Bearer credential |
+| `network_discover` | GET | `/v1/public/discover` | Public |
+| `public_task_receipt` | GET | `/v1/public/apps/{projectId}/tasks/{taskId}/receipt` | Public |
+| `workflow_create` | POST | `/v1/projects/{projectId}/workflows` | Bearer credential |
+| `workflow_list` | GET | `/v1/projects/{projectId}/workflows` | Bearer credential |
+| `workflow_get` | GET | `/v1/projects/{projectId}/workflows/{workflowId}` | Bearer credential |
+| `workflow_cancel` | DELETE | `/v1/projects/{projectId}/workflows/{workflowId}` | Bearer credential |
+| `workflow_receipts` | GET | `/v1/projects/{projectId}/workflows/{workflowId}/receipts` | Bearer credential |
 | `content_admin_grant` | PUT | `/v1/admin/content-operators/{principalId}` | Bearer credential |
 | `app_session_create` | POST | `/v1/apps/{projectId}/sessions` | Bearer credential |
 | `app_session_revoke` | DELETE | `/v1/apps/{projectId}/sessions/{sessionId}` | Bearer credential |
