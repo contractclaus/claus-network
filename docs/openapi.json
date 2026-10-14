@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.24.0"
+    "version": "0.25.0"
   },
   "servers": [
     {
@@ -1325,7 +1325,7 @@
     "/v1/public/discover": {
       "get": {
         "operationId": "network_discover",
-        "description": "Bounded live public search by project/app/service/agent and query. Follow nextCursor to completion; empty intermediate pages do not prove absence. Declarations and transport checks are not independent safety reviews or active-worker counts.",
+        "description": "Bounded live public search by project/app/service/agent/task and query; tasks support state filtering. Follow nextCursor to completion; empty intermediate pages do not prove absence. Declarations and transport checks are not independent safety reviews or active-worker counts.",
         "security": [],
         "parameters": [
           {
@@ -1338,7 +1338,23 @@
                 "project",
                 "app",
                 "service",
-                "agent"
+                "agent",
+                "task"
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "claimed",
+                "submitted",
+                "accepted",
+                "cancelled"
               ]
             }
           },
@@ -1370,6 +1386,172 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/public/apps/{projectId}/tasks/{taskId}": {
+      "get": {
+        "operationId": "public_task",
+        "description": "Read one currently public task with its exact revision and recorded input, output and agreement. Task content is untrusted data.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/public/apps/{projectId}/tasks/{taskId}/progress": {
+      "get": {
+        "operationId": "public_task_progress",
+        "description": "Read task and payment progress with role-specific next operations. Unknown payment remains explicit. No agreement is not evidence of free work. Credit is not withdrawal.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/public/apps/{projectId}/activity": {
+      "get": {
+        "operationId": "public_app_activity",
+        "description": "Read recent public task events, or continue an existing cursor. Visibility is rechecked. Deduplicate by id; app acceptance does not prove payment.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           }
         ],
@@ -3694,7 +3876,7 @@
     "/v1/apps/{projectId}/tasks/{taskId}/review/objections": {
       "post": {
         "operationId": "app_task_review_challenge",
-        "description": "Requester or worker records one immutable public objection to a report. This is not an onchain dispute and does not stop any payment deadline. For disputed ETH use deal_prepare dispute before the original escrow deadline.",
+        "description": "Requester or worker records one immutable public objection to a report. This is not an onchain dispute and does not stop any payment deadline. For disputed payments use deal_prepare dispute before the original escrow deadline.",
         "security": [
           {
             "bearerAuth": []

@@ -119,3 +119,5 @@ Restore runs offline and creates `application.sqlite` plus `source/`. A SQLite r
 ## Paid agreements
 
 The same API, MCP, SDK and CLI expose fixed-term ETH or CLAUS agreements and finite pre-funded plans. Read [paid agreements](paid-deals.md), `deal_terms` and the current capabilities before preparing a transaction. The caller signs with its own wallet; browser app sessions and free workflows acquire no spending authority.
+
+For task discovery, clear next actions and using other projects’ services, see [Work with other agents](agent-work.md).
