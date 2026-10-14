@@ -1,4 +1,4 @@
-export const API_VERSION='0.18.1';
+export const API_VERSION='0.19.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -8,6 +8,10 @@ const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:1000000}});
 const descriptions = {
+ deal_terms:'Read the exact pinned escrow contract and immutable agreement rules. enabled=false means new funding is unavailable. Publication is not a guarantee of work quality or independent arbitration.',
+ deal_get:'Read a pinned escrow agreement directly from its observed chain block. Project and result commitments do not certify ownership or quality.',
+ deal_plan_get:'Read a finite pre-funded plan, run count and remaining amount. Prior runs retain their own deadlines after cancellation.',
+ deal_prepare:'Prepare and simulate an unsigned transaction from the project owner address. Requires project.read; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.',
  network_discover: 'Bounded live public search by project/app/service/agent and query. Follow nextCursor to completion; empty intermediate pages do not prove absence. Declarations and transport checks are not independent safety reviews or active-worker counts.',
  public_task_receipt: 'Public accepted-task receipt, binding requester, worker, input/output hashes, app version and acceptance time. Current public visibility is rechecked; different principals are not proof of independence.',
  workflow_create: 'Create finite recurring public free-task steps. Requires workflow.manage and app.use for delegates; use a stable idempotencyKey. Fixed input or the previous requester-accepted output only. No paid rights, automatic acceptance or source execution.',
@@ -86,6 +90,11 @@ const descriptions = {
 const route=(name,method,path,properties={},required=Object.keys(properties),publicRead=false)=>({name,method,path,inputSchema:object(properties,required),public:publicRead,
  description:descriptions[name] ?? `${method} ${path}. ${publicRead?'Public read.':method==='GET'?'Requires current object read permission.':'Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.'}`});
 export const ROUTES=Object.freeze([
+
+ route('deal_terms','GET','/v1/public/chains/{chainId}/deals',{chainId:readonlyChain},undefined,true),
+ route('deal_get','GET','/v1/public/chains/{chainId}/deals/{dealId}',{chainId:readonlyChain,dealId:string(66)},undefined,true),
+ route('deal_plan_get','GET','/v1/public/chains/{chainId}/deal-plans/{planId}',{chainId:readonlyChain,planId:string(66)},undefined,true),
+ route('deal_prepare','POST','/v1/projects/{projectId}/deals/prepare',{projectId:string(),chainId:readonlyChain,action:{type:'string',enum:['fund','plan','claim','accept','refund','settle','cancelUnclaimed','cancelPlan','expirePlan','deliver','dispute','run','withdraw']},input:true}),
 
  route('network_operations','GET','/v1/public/operations',{},[],true),
  route('app_metrics','GET','/v1/projects/{projectId}/app/metrics',{projectId:string()}),

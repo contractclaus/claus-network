@@ -1,7 +1,11 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  deal_terms:(_,input)=>deals.terms(input.chainId),
+  deal_get:(_,input)=>deals.read(input.chainId,input.dealId,'deal'),
+  deal_plan_get:(_,input)=>deals.read(input.chainId,input.planId,'plan'),
+  deal_prepare:(actor,input)=>deals.prepare(actor,input.projectId,input),
   network_operations:()=>discovery.operations(),
   app_metrics:(actor,input)=>apps.metrics(actor,input.projectId),
   network_discover:(_,input)=>discovery.search(input),
