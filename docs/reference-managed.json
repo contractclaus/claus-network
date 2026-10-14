@@ -1,0 +1,285 @@
+{
+  "at": "2026-10-14T00:05:52.212Z",
+  "sourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce",
+  "profile": "claus-managed-v1",
+  "chains": [
+    {
+      "chainId": 1,
+      "address": "0xacb81e7e3575f696a27d57342209180b9a2f8ea5",
+      "codeHash": "0xd3b24ea720bf7442ac8e72c7a9876b72d0ae006027e3280b394249402add5624",
+      "transactionHash": "0x91b8497ec873f58c48e1a80e8f6d70a97a9bac9327407a7719668b5ad3df68f8",
+      "approvalSigner": "0x40411C03F0E0160A09dde6D75f1B1cf36aeD651f",
+      "recoveryOwner": "0xBb145cA83272c3806D4dDc75cA1D5514789cF1C5",
+      "recoveryDelaySeconds": 86400,
+      "explorer": "https://etherscan.io/address/0xACb81e7E3575f696a27d57342209180B9A2f8eA5#code",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "targetArtifactHash": "sha256:7c47b106975b2048302ebe7a48d168347a7ef02c5041d71fbf3094826d15ad14"
+    },
+    {
+      "chainId": 11155111,
+      "address": "0x76790efe14c059a3d01d51093d808fab13445645",
+      "codeHash": "0x9821bea8fb394051ab75b0aa492320085bc5e951e9de15ee01f0162c9d07a7fd",
+      "transactionHash": "0x975b73488034dc7ad82b1f2dd66b2265ceb327f7bd90a7c296c5407522304de6",
+      "approvalSigner": "0x7C6Fd554E6CA80914374C56A62351786053c0329",
+      "recoveryOwner": "0xBb145cA83272c3806D4dDc75cA1D5514789cF1C5",
+      "recoveryDelaySeconds": 86400,
+      "explorer": "https://sepolia.etherscan.io/address/0x76790eFe14C059a3D01D51093D808faB13445645#code",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "targetArtifactHash": "sha256:7c47b106975b2048302ebe7a48d168347a7ef02c5041d71fbf3094826d15ad14"
+    }
+  ],
+  "hosts": {
+    "api": {
+      "deployment": "dpl_DrUrDKUbRwXgErDMYAfQGHKnVsvB",
+      "release": "07732bac4cac78edf41452e43eb75aca8219fe20c959b96ee5b8b8f373f350c1",
+      "verifiedFiles": 127,
+      "sourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce"
+    },
+    "review": {
+      "deployment": "dpl_Fbqm9jbZZZ7Rjfg21u6NVzDRTMBK",
+      "release": "fb63915f89fdb435c6422d9f856139188fd00f3071a5569227981e68f187f03a",
+      "verifiedFiles": 104,
+      "sourceCommit": "f697ba06be5e8a2ff590f781eeca807cad7f4c7b",
+      "maintenance": {
+        "kind": "explicit-review-subjects",
+        "baseSourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce",
+        "independentAudit": false
+      }
+    },
+    "controller": {
+      "deployment": "dpl_4RQ6SsNyHcdPSM1GMq48Qiywhkx5",
+      "release": "202b2aa11cdfb447f76cce9c0d86ab8a109fa5cf6050810c3034d85d5420bb93",
+      "verifiedFiles": 104,
+      "sourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce"
+    },
+    "executor": {
+      "deployment": "dpl_3kgaXndXbNkFTYSAkYnFMtosKXER",
+      "release": "74f5b87e5206a9f6e2f69682e2b600a9143c2a011be983a01b072b872e238ce3",
+      "verifiedFiles": 104,
+      "sourceCommit": "f48db277727d17c0d84079861c1cca7a3abbd243",
+      "maintenance": {
+        "kind": "queue-confirmations",
+        "baseSourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce",
+        "priorSourceCommit": "e9cae15115da34632d04a94f3d018846d0da58ee",
+        "previousMaintenance": {
+          "kind": "queue-confirmations",
+          "baseSourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce",
+          "priorSourceCommit": "451ca19533f6b249ac721f45e9293418c996e45e",
+          "previousMaintenance": {
+            "kind": "queue-confirmations",
+            "baseSourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce",
+            "priorSourceCommit": "6fe925b22c36883f6a3e5cb5178a495d87aef5a3",
+            "previousMaintenance": {
+              "kind": "metadata-free-verification",
+              "baseSourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce",
+              "independentAudit": false
+            },
+            "independentAudit": false
+          },
+          "independentAudit": false
+        },
+        "independentAudit": false
+      }
+    },
+    "intake": {
+      "deployment": "dpl_DvnoWoNof6bqsR2ctAXyqPgiasqG",
+      "release": "b6d862ffb3680b9df13f5483c9d34041fe49b92a7022a3e51080a7c3521b2739",
+      "verifiedFiles": 127,
+      "sourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce"
+    },
+    "intake-mainnet": {
+      "deployment": "dpl_HyVEBx7N68LUUeofwEme2YYmWT8j",
+      "release": "0cd12a43da719fd7eb5ae8f45f2fa195a1dd4880e2697ba22192a5135d6dbc67",
+      "verifiedFiles": 102,
+      "sourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce"
+    },
+    "pulse-consumer": {
+      "deployment": "dpl_9ahJMNn1DCJTdEnHieSwTTw7947S",
+      "release": "910599c8cae897c164bde88c0c1d12be019fd7d47b66cf79b19d64d6838d89fc",
+      "verifiedFiles": 102,
+      "sourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce"
+    },
+    "agent": {
+      "deployment": "dpl_GCE3zXuJccW7N5t38cDw3MGdpycF",
+      "release": "76b93e02f5b622e6942c3ba89589b9bd6e9bf3179ae1e34072a5ffb2f6010c67",
+      "verifiedFiles": 158,
+      "sourceCommit": "601b318f95d4dd9b911f18b8efeead53eb9579ce"
+    }
+  },
+  "review": {
+    "jobId": "6ad906d6-bba9-4621-99bd-e5f5f3b26014",
+    "artifactHash": "sha256:9b74b6197058d7534d501b89cbef3e8acf8f631adc15951e43a6a1bd2322b2df"
+  },
+  "reference": {
+    "at": "2026-10-14T00:05:17.155Z",
+    "state": "complete",
+    "projectId": "prj_7250aac3-cc31-4a43-8573-f54045cdfa90",
+    "owner": "0x88f7B44AC2f119d3e2E25eb1C0191750cDe4Bf2d",
+    "sourceCommit": "f697ba06be5e8a2ff590f781eeca807cad7f4c7b",
+    "chainId": 1,
+    "profile": "claus-managed-v1",
+    "binding": {
+      "owner": "0x88f7b44ac2f119d3e2e25eb1c0191750cde4bf2d",
+      "target": "0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+      "chainId": 1,
+      "profile": "claus-managed-v1",
+      "codeHash": "0x2de140740301afca894ac4932ad721cf1a687affd7faabb2d6de41450176c7d1",
+      "executor": "0xacb81e7e3575f696a27d57342209180b9a2f8ea5",
+      "moduleId": "sha256:9d3ac804bc57ea81b69c05091a641c2b57dd6bbfd6228024bd1e01defd2e380a",
+      "projectId": "prj_7250aac3-cc31-4a43-8573-f54045cdfa90",
+      "projectKey": "0x5b58a571dec5c495342c649d07dfec215bf9152e793427e12b98c15d3416f35b",
+      "verification": {
+        "id": "sha256:c41e24feef77976f9ca387093aa8061ab5bcd31b55f336bd2e861769589fa9df",
+        "state": "verified",
+        "address": "0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+        "chainId": 1,
+        "checkedAt": 1791930548314,
+        "inputHash": "sha256:714d3710078d4a7e1ae42c0ce92d0e67bb6cbd6797db849e1a0068208b80691d",
+        "sourcifyId": "f6b8f2e6-b9b9-4f73-8ce2-d6edaf125528",
+        "explorerUrl": "https://etherscan.io/address/0xe1cE2345d25462996AE27F58E3e001245e043EA4#code",
+        "sourcifyUrl": "https://repo.sourcify.dev/1/0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+        "runtimeMatch": "exact_match",
+        "creationMatch": "exact_match",
+        "etherscanGuid": "dweyef97bug6bnr2gmdhp1gfkgvg3i8uu63nkxwz9did2bvj4f",
+        "etherscanMatch": "exact",
+        "etherscanState": "verified",
+        "etherscanRefusals": 0,
+        "etherscanVerified": true,
+        "etherscanAttemptAt": 1791930489086,
+        "metadataFreeEvidence": null,
+        "etherscanRetryExhausted": false,
+        "sourcifyAlreadyVerified": false,
+        "etherscanSubmissionCount": 1
+      },
+      "registrationId": "sha256:35bf1fee0df050ea00a1ab9f500692bb62874b3a86c66d497629644e3940722a",
+      "registrationTransaction": "0x26d1fe3af19e95246f1267dd548052db29ca2b17e03445d97e1a417868c38ac1"
+    },
+    "activation": {
+      "address": "0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+      "chainId": 1,
+      "profile": "claus-managed-v1",
+      "version": 1,
+      "codeHash": "0x0405c946af0da544e113e995df1036e46999eda14b14713613f5e812543632dd",
+      "blockHash": "0x7c01534a756411653ca2c539f833adf9a388a0a43707d3ba92cefca531e74930",
+      "blockNumber": "26186633",
+      "explorerUrl": "https://etherscan.io/tx/0xe777cccb883221be5d4f605519041938ad430a83a392f3f022156563d1d41a23",
+      "approvalHash": "0x10337e9b8c38236c8774fcd61997a53a7d3be02f90a1bd08881fe65817a33896",
+      "verification": {
+        "id": "sha256:c41e24feef77976f9ca387093aa8061ab5bcd31b55f336bd2e861769589fa9df",
+        "state": "verified",
+        "address": "0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+        "chainId": 1,
+        "checkedAt": 1791930548314,
+        "inputHash": "sha256:714d3710078d4a7e1ae42c0ce92d0e67bb6cbd6797db849e1a0068208b80691d",
+        "sourcifyId": "f6b8f2e6-b9b9-4f73-8ce2-d6edaf125528",
+        "explorerUrl": "https://etherscan.io/address/0xe1cE2345d25462996AE27F58E3e001245e043EA4#code",
+        "sourcifyUrl": "https://repo.sourcify.dev/1/0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+        "runtimeMatch": "exact_match",
+        "creationMatch": "exact_match",
+        "etherscanGuid": "dweyef97bug6bnr2gmdhp1gfkgvg3i8uu63nkxwz9did2bvj4f",
+        "etherscanMatch": "exact",
+        "etherscanState": "verified",
+        "etherscanRefusals": 0,
+        "etherscanVerified": true,
+        "etherscanAttemptAt": 1791930489086,
+        "metadataFreeEvidence": null,
+        "etherscanRetryExhausted": false,
+        "sourcifyAlreadyVerified": false,
+        "etherscanSubmissionCount": 1
+      },
+      "implementation": "0xc177e1be6e01ae0ca1214520af436435b4a20b66",
+      "transactionHash": "0xe777cccb883221be5d4f605519041938ad430a83a392f3f022156563d1d41a23"
+    },
+    "increment": {
+      "transactionHash": "0x4501edd64eed4ab9d9c95c9799956c7f1486f98b66976f40dc51216c8bb43af8",
+      "receipt": {
+        "transactionHash": "0x4501edd64eed4ab9d9c95c9799956c7f1486f98b66976f40dc51216c8bb43af8",
+        "blockNumber": "26186720",
+        "blockHash": "0x8c235099b87d83f66c9776de17b6bd0201eaadaf57df375551a65326ba87cd00",
+        "contractAddress": null,
+        "status": "success",
+        "gasUsed": "37816",
+        "effectiveGasPrice": "71891933"
+      },
+      "finalized": true
+    },
+    "upgrade": {
+      "address": "0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+      "chainId": 1,
+      "profile": "claus-managed-v1",
+      "version": 2,
+      "codeHash": "0xb5cb621c7de202b00612d01d7505d0c50a77867a11e01b14496395bba46638ae",
+      "blockHash": "0x09050d33d9414e35c50de739105adcc02a5f9c370b82ff927d8bdad56cf17a90",
+      "blockNumber": "26186827",
+      "explorerUrl": "https://etherscan.io/tx/0xaa975bd151f9ca0ffbf2c018be753442e4b58a47aba72c0e8764eb9026e9d7fe",
+      "approvalHash": "0xf3337d94c079c5c30560f1b2cf0406281ea75b6f74b0110b13f80cf4ae174224",
+      "verification": {
+        "id": "sha256:c41e24feef77976f9ca387093aa8061ab5bcd31b55f336bd2e861769589fa9df",
+        "state": "verified",
+        "address": "0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+        "chainId": 1,
+        "checkedAt": 1791930548314,
+        "inputHash": "sha256:714d3710078d4a7e1ae42c0ce92d0e67bb6cbd6797db849e1a0068208b80691d",
+        "sourcifyId": "f6b8f2e6-b9b9-4f73-8ce2-d6edaf125528",
+        "explorerUrl": "https://etherscan.io/address/0xe1cE2345d25462996AE27F58E3e001245e043EA4#code",
+        "sourcifyUrl": "https://repo.sourcify.dev/1/0xe1cE2345d25462996AE27F58E3e001245e043EA4",
+        "runtimeMatch": "exact_match",
+        "creationMatch": "exact_match",
+        "etherscanGuid": "dweyef97bug6bnr2gmdhp1gfkgvg3i8uu63nkxwz9did2bvj4f",
+        "etherscanMatch": "exact",
+        "etherscanState": "verified",
+        "etherscanRefusals": 0,
+        "etherscanVerified": true,
+        "etherscanAttemptAt": 1791930489086,
+        "metadataFreeEvidence": null,
+        "etherscanRetryExhausted": false,
+        "sourcifyAlreadyVerified": false,
+        "etherscanSubmissionCount": 1
+      },
+      "implementation": "0xc2f10e8bdd63277a235b255cb1e840a34b50e98a",
+      "transactionHash": "0xaa975bd151f9ca0ffbf2c018be753442e4b58a47aba72c0e8764eb9026e9d7fe"
+    },
+    "revocation": {
+      "transactionHash": "0xdae456748421e418e4880ce220381b3cfda7bf3e361551c5189541a4c669c1c4",
+      "receipt": {
+        "transactionHash": "0xdae456748421e418e4880ce220381b3cfda7bf3e361551c5189541a4c669c1c4",
+        "blockNumber": "26186942",
+        "blockHash": "0xed73010551d88e43638300aa867d06c893ea81e144fd35d9b360ffb8d72f0b73",
+        "contractAddress": null,
+        "status": "success",
+        "gasUsed": "35028",
+        "effectiveGasPrice": "58564145"
+      },
+      "finalized": true
+    },
+    "retainedCount": "8",
+    "callback": {
+      "requestId": "sha256:d9f162d6e12bfab213e56e111743946ef24c587d652356b78b26a72ae010fa14",
+      "requestTransaction": "0x094cd13bb5b0a2840c47e601a48b9358479f37de01219971ca47e31e10f56a23",
+      "requester": "0x5cb607880a43ac23888b97b6865017fe5ca0ca6b",
+      "callbackVerified": true,
+      "bindingRevoked": true
+    },
+    "onchainRevocation": true,
+    "apiRevocation": true,
+    "operatorAttribution": "Claus-operated reference, not an independent customer"
+  },
+  "gasCeilings": {
+    "1": {
+      "maximumProjects": 16,
+      "maximumTransactionGasWei": "1000000000000000",
+      "maximumProjectGasWei": "3000000000000000",
+      "maximumTotalGasWei": "6000000000000000"
+    },
+    "11155111": {
+      "maximumProjects": 16,
+      "maximumTransactionGasWei": "300000000000000",
+      "maximumProjectGasWei": "1000000000000000",
+      "maximumTotalGasWei": "2500000000000000"
+    }
+  },
+  "scope": "Reviewed stateful project logic; no customer custody, financial products, token launches or public inference.",
+  "attribution": "Claus-operated reference, not independent customer adoption."
+}

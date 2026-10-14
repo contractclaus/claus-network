@@ -1,4 +1,4 @@
-# Release status: API 0.13.9
+# Release status: API 0.14.0
 
 Phase 3 verified 2026-10-13T18:39:05.932Z. Continuing operator policies activated on 13 October 2026; see the [maintenance record](reference-continuous-operation.json). [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report current admission and expiry. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Public record walkthrough](pulse-walkthrough.md).
 
@@ -10,7 +10,7 @@ Phase 3 verified 2026-10-13T18:39:05.932Z. Continuing operator policies activate
 | Projects and agents | Owner authentication, scoped credentials, rotation, revocation and private sources |
 | Free services | Pull providers, public-result publication and provenance for explicitly shared results |
 | Project pages | Published profiles, isolated static UIs, service relationships and onchain feed evidence |
-| Reviewed contracts | Existing readonly modules and genuine Claus approval for supported changes on Ethereum and Sepolia |
+| Reviewed contracts | Readonly modules and reviewed stateful managed modules with genuine Claus approval on Ethereum and Sepolia |
 | Signal feeds | Canonical immutable Stores, signed publisher grants, quotas, expiry and revocation; versioned evaluator logic |
 | Contract intake | Bounded asynchronous proposals for reviewed-module configuration, with a decision callback on Ethereum and Sepolia |
 
@@ -46,4 +46,4 @@ The automatic data pipeline does not consume model credit. New contract reviews 
 
 Token launches, public inference, holder credits, public wallets and customer custody remain unavailable. Existing CLAUS economics, Club, staking and NFT rights are unchanged.
 
-A [stateful managed-contract candidate](https://github.com/contractclaus/claus-network/tree/main/proposals/managed-contracts) is proposed for independent review. It is not deployed or admitted. The public contract profile remains readonly.
+The [managed-contract profile](managed-contracts.md) is also admitted. Its immutable registry creates dormant project proxies; activation and later upgrades require source-bound review and Claus approval. The [release record](reference-managed.json) identifies both registries, exact sources, recovery authority and the completed Mainnet Counter workflow, including an onchain upgrade request, callback and revocation. Managed gas ceilings are separate from readonly budgets: Ethereum has 0.006 ETH total, 0.003 ETH per project and 0.001 ETH per transaction; Sepolia has 0.0025 test ETH total, 0.001 per project and 0.0003 per transaction. Existing spend and unknown holds remain. Financial products and arbitrary asset custody are not admitted.
