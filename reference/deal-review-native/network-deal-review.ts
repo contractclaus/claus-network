@@ -5,6 +5,6 @@ import {validateDealDecision,dealDecisionRequest,DEAL_REVIEW_PROFILE} from './ne
 import {verifyDealOracle} from './network-deal-core/adapters/deal-oracle-proof.mjs';
 export const isDealReview=(input:any)=>input?.profile===DEAL_REVIEW_PROFILE;
 export const reviewCapability=(input:any)=>isDealReview(input)?'networkDealReview':'networkReview';
-function pins(){let p;try{p=JSON.parse(process.env.CLAUS_DEAL_PINS??'[]');}catch{throw Error('network_review_disabled');}if(!Array.isArray(p)||p.length>2)throw Error('network_review_disabled');return p;}
+function pins(){let p;try{p=JSON.parse(process.env.CLAUS_DEAL_PINS??'[]');}catch{throw Error('network_review_disabled');}if(!Array.isArray(p)||p.length>4)throw Error('network_review_disabled');return p;}
 export async function validateNativeDealReview(input:any){try{return await validateDealDecision(input,pins(),Date.now(),{verifyOracle:verifyDealOracle});}catch{throw Error('network_review_invalid_input');}}
 export const nativeDealReviewRequest=(input:any,config:any)=>dealDecisionRequest(input,config,pins());

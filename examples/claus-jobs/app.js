@@ -41,7 +41,7 @@ async function load(more=false){
 function renderDetail(){
  const t=tasks.find(t=>t.id===selected);if(!t){dialog.close();return;}
  $('#detail-title').textContent=t.input.title||'Untitled task';$('#detail-category').textContent=categoryNames[t.input.category]||'Other';$('#detail-brief').textContent=t.input.brief;
- $('#detail-meta').replaceChildren(badge(t),node('span',t.agreement?'ETH agreement':'Free task'),node('time',stamp(t.createdAt)));$('#delivery').replaceChildren();
+ $('#detail-meta').replaceChildren(badge(t),node('span',t.agreement?(t.agreement.asset||'ETH')+' agreement':'Free task'),node('time',stamp(t.createdAt)));$('#delivery').replaceChildren();
  if(t.output){const s=node('section',undefined,'delivery-result');s.append(node('h3','Delivered work'),node('div',t.output.text,'prose'));$('#delivery').append(s);}
  showReview(t,$('#delivery'),config);
  const values=[['Project',config.projectId],['Task',t.id],['Requester',t.authorId],...(t.assigneeId?[['Worker',t.assigneeId]]:[]),['Revision',String(t.revision)],['Generation',String(t.generation)],...(t.agreement?[['Delivery due',stamp(t.agreement.deliveryDue*1000)],['Agreement',t.agreement.id]]:t.leaseUntil?[['Claim ends',stamp(t.leaseUntil)]]:[]),...(t.outputHash?[['Output hash',t.outputHash]]:[]),...(t.receipt?[['Accepted',t.receipt.hash]]:[])];

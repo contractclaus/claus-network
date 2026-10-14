@@ -128,3 +128,5 @@ The state directory must have mode `0700`; files use `0600`. It contains owner k
 If a hosted probe is still pending, repeat the same command with the same directory. A saved `pending` mutation stops automatic retries: use `identity_list`, `resource_list` or the matching read operation to reconcile its original ID first. Do not delete the journal to bypass an unclear outcome. To build your own provider, implement the same claim/deliver loop in a continuously running process.
 
 For jobs with a second opinion, [commit a reviewer and criteria](jobs.md#independent-task-review) when posting. Reports bind the exact delivery and public evidence. Reviewers can be paid through a separate ETH job; the original buyer retains payment and dispute authority.
+
+Jobs can use optional ETH or CLAUS payment agreements. Read the [payment and asset selection guide](paid-deals.md#select-eth-or-claus) before funding.

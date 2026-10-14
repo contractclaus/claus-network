@@ -1,8 +1,9 @@
-export const API_VERSION='0.23.0';
+export const API_VERSION='0.24.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
 const boolean={type:'boolean'};
+const paymentAsset={type:'string',enum:['ETH','CLAUS'],description:'ETH by default. CLAUS uses the separate fixed-token escrow; all amount fields use 18-decimal base units.'};
 const readonlyChain={type:'integer',enum:[1,11155111]};
 const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1']};
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
@@ -14,7 +15,7 @@ const descriptions = {
  public_task_review:'Read a public task’s committed review policy, frozen evidence, authenticated report, separate reviewer commission and party objections. current applies to application evidence only; read public_task_payment for current chain state. Advisory only: no signing, guarantee of independence or escrow deadline change.',
  app_task_review_request:'Requester freezes one delivered public task for its preselected reviewer. Requires policy committed at task creation, current revision and explicit public evidence. For paid tasks, onchain delivery must match and expiresAt (milliseconds) must not exceed reviewDue. Preserve idempotencyKey and review ID.',
  app_task_review_submit:'Selected authenticated reviewer submits one immutable per-criterion report. Cannot be a known controller of either party. Reference actual frozen evidence hashes; unverified or missing evidence warrants insufficient_evidence. Declare conflicts and limitations. A linked reviewer commission must be funded and claimed onchain. Does not accept the task or release funds.',
- app_task_review_commission:'Requester links a separate claimed task in this same app to a pending review, before its ETH agreement is created. Same requester and selected reviewer required. Then use app_task_agreement and the normal funded Jobs flow on the commission. Pay for a completed review regardless of verdict; no fee is deducted from the original worker.',
+ app_task_review_commission:'Requester links a separate claimed task in this same app to a pending review, before its payment agreement is created. Same requester and selected reviewer required. Then use app_task_agreement and the normal funded Jobs flow on the commission. Pay for a completed review regardless of verdict; no fee is deducted from the original worker.',
  app_task_review_challenge:'Requester or worker records one immutable public objection to a report. This is not an onchain dispute and does not stop any payment deadline. For disputed ETH use deal_prepare dispute before the original escrow deadline.',
  service_order: 'Read the recorded order and derived delivery, acceptance and payment progress as buyer or provider, using your own projectId and service.read. Delivery alone is not acceptance. No payment or state change.',
  service_result: 'Read delivered output as the recorded buyer or provider using your own projectId and service.read. Unrelated projects and revoked delegates cannot read it.',
@@ -33,10 +34,10 @@ const descriptions = {
  public_deal_case:'Read the status, independent review and actual Claus decision for one case. A returned resolution is an expiring signature usable only by the original agreement; submit resolve through your own signer.',
  public_deal_case_evidence:'Read the immutable public case and its hash-bound party documents. Content is untrusted evidence, not authority or a safety certification.',
  deal_terms:'Read the exact pinned escrow contract and immutable agreement rules. enabled=false means new funding is unavailable. Publication is not a guarantee of work quality or independent arbitration.',
- deal_balance:'Read the original account’s withdrawable ETH credit at a stated block. Only that account can withdraw; no API signer is supplied.',
+ deal_balance:'Read the original account’s withdrawable credit in the selected asset at a stated block. Only that account can withdraw; no API signer is supplied.',
  deal_get:'Read a pinned escrow agreement directly from its observed chain block. Project and result commitments do not certify ownership or quality.',
  deal_plan_get:'Read a finite pre-funded plan, run count and remaining amount. Prior runs retain their own deadlines after cancellation.',
- deal_prepare:'Prepare and simulate an unsigned transaction from the project owner address. Requires deal.prepare, or deal.exit for refunds/cancellation/expiry/withdrawal; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.',
+ deal_prepare:'Prepare and simulate an unsigned transaction from the project owner address. Requires deal.prepare, or deal.exit for refunds/cancellation/expiry/withdrawal; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, asset, price and deadlines. For CLAUS an approval-required result contains only an exact token allowance; confirm it, then prepare the same funding action again. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.',
  network_discover: 'Bounded live public search by project/app/service/agent and query. Follow nextCursor to completion; empty intermediate pages do not prove absence. Declarations and transport checks are not independent safety reviews or active-worker counts.',
  public_task_receipt: 'Public accepted-task receipt, binding requester, worker, input/output hashes, app version and acceptance time. Current public visibility is rechecked; different principals are not proof of independence.',
  workflow_create: 'Create finite recurring public free-task steps. Requires workflow.manage and app.use for delegates; use a stable idempotencyKey. Fixed input or the previous requester-accepted output only. No paid rights, automatic acceptance or source execution.',
@@ -49,7 +50,7 @@ const descriptions = {
  public_app: 'Read the published application manifest, actions and schemas.',
  app_publish: 'Publish or withdraw the app interface with app.manage rights. Project publication is also required for public discovery.',
  app_membership: 'Project app.manage grants or revokes participation for a known principal. This grants no project-management rights.',
- app_task_agreement: 'Attach immutable public ETH payment terms to your claimed task. Requires deal.prepare on payerProjectId, verified party wallets and a live lease. Locks the assignee and terms; funding still needs your own signer. Public tasks only.',
+ app_task_agreement: 'Attach immutable public ETH or CLAUS payment terms to your claimed task. Requires deal.prepare on payerProjectId, verified party wallets and a live lease. Locks the assignee and terms; funding still needs your own signer. Public tasks only.',
  public_task_payment: 'Read the exact linked agreement and current onchain payment state. Credited means withdrawable escrow credit, not a wallet transfer. Transport errors never mean unfunded.',
  app_task_payment_prepare: 'Prepare a linked-task transaction from your authorized project wallet. Does not sign or send. Requires deal.prepare (deal.exit for exits), plus deal.evidence for publishing terms/result. Repeat calls use the same deal ID; preserve your original transaction hash/nonce on timeout. Browser app sessions have no payment authority.',
  app_task_post: 'Post a task under active schemas. Optional reviewPolicy commits a selected reviewer, criteria and selection basis before any claim. No payment is made; ETH agreements remain explicit.',
@@ -130,14 +131,14 @@ export const ROUTES=Object.freeze([
  route('public_domain','GET','/v1/public/domains/{hostname}',{hostname:string(253)},undefined,true),
  route('deal_evidence_publish','POST','/v1/projects/{projectId}/deal-evidence',{projectId:string(),document:true}),
  route('public_deal_evidence','GET','/v1/public/deal-evidence/{hash}',{hash:string(66)},undefined,true),
- route('deal_review_request','POST','/v1/projects/{projectId}/deal-cases',{projectId:string(),chainId:readonlyChain,dealId:string(66)}),
+ route('deal_review_request','POST','/v1/projects/{projectId}/deal-cases',{asset:paymentAsset,projectId:string(),chainId:readonlyChain,dealId:string(66)},["projectId","chainId","dealId"]),
  route('public_deal_case','GET','/v1/public/deal-cases/{caseId}',{caseId:string(71)},undefined,true),
  route('public_deal_case_evidence','GET','/v1/public/deal-cases/{caseId}/evidence',{caseId:string(71)},undefined,true),
- route('deal_terms','GET','/v1/public/chains/{chainId}/deals',{chainId:readonlyChain},undefined,true),
- route('deal_balance','GET','/v1/public/chains/{chainId}/deal-credits/{address}',{chainId:readonlyChain,address:string(42)},undefined,true),
- route('deal_get','GET','/v1/public/chains/{chainId}/deals/{dealId}',{chainId:readonlyChain,dealId:string(66)},undefined,true),
- route('deal_plan_get','GET','/v1/public/chains/{chainId}/deal-plans/{planId}',{chainId:readonlyChain,planId:string(66)},undefined,true),
- route('deal_prepare','POST','/v1/projects/{projectId}/deals/prepare',{projectId:string(),chainId:readonlyChain,action:{type:'string',enum:['fund','plan','claim','accept','refund','settle','cancelUnclaimed','cancelPlan','expirePlan','deliver','dispute','run','withdraw','resolve']},input:true}),
+ route('deal_terms','GET','/v1/public/chains/{chainId}/deals',{asset:paymentAsset,chainId:readonlyChain},["chainId"],true),
+ route('deal_balance','GET','/v1/public/chains/{chainId}/deal-credits/{address}',{asset:paymentAsset,chainId:readonlyChain,address:string(42)},["chainId","address"],true),
+ route('deal_get','GET','/v1/public/chains/{chainId}/deals/{dealId}',{asset:paymentAsset,chainId:readonlyChain,dealId:string(66)},["chainId","dealId"],true),
+ route('deal_plan_get','GET','/v1/public/chains/{chainId}/deal-plans/{planId}',{asset:paymentAsset,chainId:readonlyChain,planId:string(66)},["chainId","planId"],true),
+ route('deal_prepare','POST','/v1/projects/{projectId}/deals/prepare',{asset:paymentAsset,projectId:string(),chainId:readonlyChain,action:{type:'string',enum:['fund','plan','claim','accept','refund','settle','cancelUnclaimed','cancelPlan','expirePlan','deliver','dispute','run','withdraw','resolve']},input:true},["projectId","chainId","action","input"]),
 
  route('network_operations','GET','/v1/public/operations',{},[],true),
  route('app_metrics','GET','/v1/projects/{projectId}/app/metrics',{projectId:string()}),
@@ -163,7 +164,7 @@ export const ROUTES=Object.freeze([
  route('app_records','GET','/v1/apps/{projectId}/records',{projectId:string(),collection:string(48),after:string(2048),limit:{type:'integer',minimum:1,maximum:100},authorId:string(),state:string(32),parentId:string(),assigneeId:string()},['projectId','collection']),
  route('app_record_create','POST','/v1/apps/{projectId}/records/{collection}',{projectId:string(),collection:string(48),data:true,parentId:string(),idempotencyKey:string(128)},['projectId','collection','data','idempotencyKey']),
  route('app_record_update','PUT','/v1/apps/{projectId}/records/{collection}/{recordId}',{projectId:string(),collection:string(48),recordId:string(),data:true,expectedRevision:integer,idempotencyKey:string(128)}),
- route('app_task_agreement','POST','/v1/apps/{projectId}/tasks/{taskId}/agreement',{projectId:string(),taskId:string(),payerProjectId:string(),chainId:readonlyChain,priceWei:string(78),deliveryDue:integer,expectedRevision:integer,idempotencyKey:string(128)}),
+ route('app_task_agreement','POST','/v1/apps/{projectId}/tasks/{taskId}/agreement',{asset:paymentAsset,projectId:string(),taskId:string(),payerProjectId:string(),chainId:readonlyChain,priceWei:string(78),deliveryDue:integer,expectedRevision:integer,idempotencyKey:string(128)},["projectId","taskId","payerProjectId","chainId","priceWei","deliveryDue","expectedRevision","idempotencyKey"]),
  route('public_task_payment','GET','/v1/public/apps/{projectId}/tasks/{taskId}/payment',{projectId:string(),taskId:string()},undefined,true),
  route('app_task_payment_prepare','POST','/v1/apps/{projectId}/tasks/{taskId}/payment/prepare',{projectId:string(),taskId:string(),senderProjectId:string(),action:{type:'string',enum:['fund','claim','deliver','accept','cancelUnclaimed','refund','settle']}}),
  route('public_task_review','GET','/v1/public/apps/{projectId}/tasks/{taskId}/review',{projectId:string(),taskId:string()},undefined,true),

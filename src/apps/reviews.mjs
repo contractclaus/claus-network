@@ -76,7 +76,7 @@ export function createTaskReviews({storage,app,participant,effect,event,countRec
      const commission=await publicTask(tx,projectId,commissionTaskId),c=commission.value;
      requireThat(commission.revision===expectedRevision,'revision_conflict');
      requireThat(c.id!==taskId&&c.authorId===who&&c.assigneeId===request.policy.reviewerId&&c.state==='claimed'&&c.leaseUntil>now()&&!c.agreement&&!c.reviewPolicy&&!c.reviewCommission,'task_review_commission_invalid');
-     const link={profile,projectId,taskId,reviewId,requestHash:reviewId,commissionTaskId,reviewExpiresAt:request.expiresAt,linkedAt:now(),compensation:'separate_eth_agreement_for_review_not_verdict'};
+     const link={profile,projectId,taskId,reviewId,requestHash:reviewId,commissionTaskId,reviewExpiresAt:request.expiresAt,linkedAt:now(),compensation:'separate_agreement_for_review_not_verdict'};
      await countRecord(tx);await tx.write('task-review-commissions',reviewId,link,0);
      const result=await tx.write('tasks',c.id,{...c,reviewCommission:link,updatedAt:now()},commission.revision);
      await event(tx,{type:'task.review.commissioned',collection:'tasks',id:c.id,actorId:who});return {...copy(result.value),revision:result.revision};
