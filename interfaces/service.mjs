@@ -175,7 +175,7 @@ export function createService({arbitration,workers,domains,deals,workflows,disco
   project_import_page:(actor,input)=>transfers.receive(actor,input),
   project_import_commit:(actor,input)=>transfers.commit(actor,input.archiveId),
   project_import_history:(actor,input)=>transfers.history(actor,input.projectId,input),
-  public_project:(_,input)=>projects.publicProject(input.slug),
+  public_project:(_,input)=>projects.publicProject(input.slug,{view:input.view}),
   public_source:(_,input)=>projects.publicSource(input.sourceId),
   public_review:(_,input)=>reviews.publicReport(input.caseId),
   network_graph:(_,input)=>projects.graph(input)

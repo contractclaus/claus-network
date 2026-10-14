@@ -57,10 +57,16 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
     async publicForProject(projectId){
       if(!await visible(projectId))return [];
       const override=(await store.read('content-controls',projectId))?.value.releaseId;
-      const rows=await store.list('project-public-releases',{prefix:projectId+':',limit:1000}),result=[];
-      for(const row of rows)if((!override||row.value.releaseId===override)&&row.value.published&&sitePublicationActive(row.value.expiresAt,now())){
-        const release=(await store.read('project-releases',row.value.releaseId)).value;
-        result.push({id:release.id,url:release.url,createdAt:release.createdAt,expiresAt:row.value.expiresAt,isolation:release.isolation});
+      const rows=(await store.list('project-public-releases',{prefix:projectId+':',limit:1000}))
+        .filter(row=>(!override||row.value.releaseId===override)&&row.value.published&&sitePublicationActive(row.value.expiresAt,now()));
+      const ids=rows.map(row=>row.value.releaseId),result=[];
+      const releases=store.readMany?await store.readMany('project-releases',ids):new Map();
+      if(!store.readMany)for(const id of ids)releases.set(id,await store.read('project-releases',id));
+      for(const row of rows){
+        const release=releases.get(row.value.releaseId)?.value;
+        requireThat(release?.projectId===projectId,'not_found');
+        // Recheck expiry after the reads: a release can expire while they run.
+        if(sitePublicationActive(row.value.expiresAt,now()))result.push({id:release.id,url:release.url,createdAt:release.createdAt,expiresAt:row.value.expiresAt,isolation:release.isolation});
       }
       return result;
     },

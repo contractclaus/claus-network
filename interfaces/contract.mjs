@@ -1,4 +1,4 @@
-export const API_VERSION='0.21.1';
+export const API_VERSION='0.21.2';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -288,7 +288,7 @@ export const ROUTES=Object.freeze([
  route('project_import_page','PUT','/v1/imports/{archiveId}/pages/{page}',{archiveId:string(),page:integer,records:{type:'array',minItems:1,maxItems:100,items:true}}),
  route('project_import_commit','POST','/v1/imports/{archiveId}/commit',{archiveId:string()}),
  route('project_import_history','GET','/v1/projects/{projectId}/import-history',{projectId:string(),page:integer},['projectId']),
- route('public_project','GET','/v1/public/projects/{slug}',{slug:string(63)},undefined,true),
+ route('public_project','GET','/v1/public/projects/{slug}',{slug:string(63),view:{type:'string',enum:['full','appearance']}},['slug'],true),
  route('public_source','GET','/v1/public/sources/{sourceId}',{sourceId:string()},undefined,true),
  route('public_review','GET','/v1/public/reviews/{caseId}',{caseId:string()},undefined,true),
  route('network_graph','GET','/v1/public/graph',{after:string(),limit:{type:'integer',minimum:1,maximum:100},view:{type:'string',enum:['full','projects']}},[],true)

@@ -66,7 +66,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const artifacts=createArtifactStore({store});
  const contentAdmin=createContentAdmin({store,identity,artifacts,now,origin:operatorPorts.siteOrigin});
  const apps=createApps({storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
- const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicDetails:async projectId=>{
+ const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicDetails:async projectId=>{
   const [application,publicServices,results,publicReleases,publicSignals]=await Promise.all([
     appStorage?apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,
     services.publicForProject(projectId),services.publicResultsForProject(projectId),releases.publicForProject(projectId),signals.publicForProject(projectId)
