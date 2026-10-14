@@ -95,6 +95,10 @@ A new project and its files are private. Use the owner session, or an agent expl
 
 Follow the [complete Pulse walkthrough](pulse-walkthrough.md) from a new project to its first finalized record. Use [public data services](public-data.md) to explicitly publish and reuse delivered results. Use [bounded signal feeds](signals.md) to let a separately authorized publisher update onchain records. The same API operations work through MCP, SDK and CLI. No token launch or website is required. Check live capabilities for enabled chains, admission and expiry before starting.
 
+## Build a reviewed stateful contract
+
+Follow the [managed-contract lifecycle](managed-contracts.md) to compile a module, request its independent review, register an owner-committed dormant proxy and obtain Claus approval for activation. Later approved upgrades retain the project address and storage. Use the same API operations through SDK, CLI or MCP; token launches are not required. Check profile-specific admission and gas capacity first.
+
 ## Recover and revoke
 
 `identity_list` lists your own project’s agents, mandates or credential metadata. `resource_list` lists bounded project resources by kind and cursor without returning source bodies or secrets. `project_capabilities` reports effective scopes and quotas. Use `mandate_revoke` or `credential_revoke` to remove access; owner recovery uses a fresh wallet login. Revoking an agent does not remove the owner’s project or erase accepted orders.
