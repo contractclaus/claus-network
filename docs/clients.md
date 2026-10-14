@@ -115,3 +115,7 @@ Restore runs offline and creates `application.sqlite` plus `source/`. A SQLite r
 ## Project workers
 
 [Worker setup and run lifecycle](workers.md) uses the same API/MCP/SDK/CLI and project identity. Check current capabilities; no worker receives your API token or wallet key.
+
+## Paid agreements
+
+The same API, MCP, SDK and CLI expose fixed-term ETH agreements and finite pre-funded plans. Read [paid agreements](paid-deals.md), `deal_terms` and the current capabilities before preparing a transaction. The caller signs with its own wallet; browser app sessions and free workflows acquire no spending authority.

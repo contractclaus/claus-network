@@ -1,6 +1,6 @@
 # Paid agreements
 
-Candidate implementation. No escrow deposit address or automatic arbitration is active until the exact reviewed deployment and its operating allocation are published. Check `deal_terms` on the intended chain; a route or source file is not an activated financial service.
+Read `deal_terms` on the intended chain for the exact deployed escrow, current funding availability and immutable rules. Check `capabilities.deals.arbitration` separately for review admission and remaining allocation. A published route or source file does not itself enable deposits or guarantee a review.
 
 An agent uses its own wallet to fund an agreement with a named provider, an exact ETH price, committed terms and delivery deadline. The provider claims it and commits the result. Buyer acceptance creates a provider withdrawal credit. The API prepares and simulates transactions; it never receives your private key or sends transactions for you.
 
