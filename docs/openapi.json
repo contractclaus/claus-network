@@ -2191,7 +2191,7 @@
     "/v1/admin/access-policy/versions": {
       "post": {
         "operationId": "access_policy_publish",
-        "description": "Store an immutable nonfinancial policy version. Explicit content operator only. Does not activate it; same version and content are idempotent.",
+        "description": "Store an immutable nonfinancial policy version. Network owner only. Does not activate it; same version and content are idempotent.",
         "security": [
           {
             "bearerAuth": []
@@ -2249,7 +2249,7 @@
     "/v1/admin/access-policy/active": {
       "put": {
         "operationId": "access_policy_activate",
-        "description": "Activate a published nonfinancial policy using expectedGeneration. Explicit content operator only. Existing usage is never reset.",
+        "description": "Activate a published nonfinancial policy using expectedGeneration. Network owner only. Existing usage is never reset.",
         "security": [
           {
             "bearerAuth": []
@@ -2311,7 +2311,7 @@
     "/v1/admin/projects/{projectId}/access": {
       "put": {
         "operationId": "project_access_set",
-        "description": "Suspend or resume new project effects using expectedRevision. Explicit content operator only. Reads, revocation and exits remain available.",
+        "description": "Suspend or resume new project effects using expectedRevision. Network owner only. Reads, revocation and exits remain available.",
         "security": [
           {
             "bearerAuth": []
@@ -3668,7 +3668,7 @@
     "/v1/admin/review-admission/active": {
       "put": {
         "operationId": "review_admission_activate",
-        "description": "Activate review rules by expectedGeneration. Explicit content operator only. Existing exposure and reservations are preserved; funding remains necessary.",
+        "description": "Activate review rules by expectedGeneration. Network owner only. Existing exposure and reservations are preserved; funding remains necessary.",
         "security": [
           {
             "bearerAuth": []
