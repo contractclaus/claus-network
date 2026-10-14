@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { amount, canonical, contentHash, copy, digest, integer, requireThat, text } from '../src/shared/index.mjs';
+import {validateOraclePrepared}from'../src/deals/decision.mjs';
 
 export const IMD_ORACLE = Object.freeze({ origin: 'https://api.imd.fun', network: 'eip155:1',
   asset: '0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7',
@@ -31,7 +32,8 @@ export async function boundedResponse(response, maximum = 1048576) {
   return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks));
 }
 
-export function createImdOracleProvider({ store, sealer, resolveInput, fetch: fetcher = globalThis.fetch, now = () => Date.now() }) {
+export function createImdOracleProvider({ store, sealer, resolveInput, verifyPinned, fetch: fetcher = globalThis.fetch, now = () => Date.now() }) {
+  requireThat(typeof verifyPinned==='function','oracle_chain_verifier_required');
   async function call(path, { body, token, method = 'GET', statuses = [200], headers = {}, json = true } = {}) {
     let response;
     try {
@@ -57,7 +59,7 @@ export function createImdOracleProvider({ store, sealer, resolveInput, fetch: fe
     requireThat(amount(quote.payment.amount) > 0n && amount(quote.payment.amount) <= amount(IMD_ORACLE.maximum), 'provider_price_exceeds_profile');
     requireThat(quote.expiresAt > quote.issuedAt && quote.expiresAt - quote.issuedAt <= 600 &&
       quote.issuedAt <= Math.floor(now() / 1000) + 5, 'invalid_provider_expiry');
-    requireThat(/^[0-9a-f]{64}$/.test(quote.quoteHash) && quote.inputHash === hash(request.input), 'provider_input_mismatch');
+    requireThat(/^[0-9a-f]{64}$/.test(quote.quoteHash) && /^[0-9a-f]{64}$/.test(quote.inputHash), 'provider_input_mismatch');
   }
   async function record(offerId) {
     const mapping = (await store.read('imd-offer-index', id(offerId)))?.value;
@@ -79,28 +81,34 @@ export function createImdOracleProvider({ store, sealer, resolveInput, fetch: fe
           sealed: sealer.seal(key, { requestToken: randomBytes(32).toString('hex') }), createdAt: now() };
         await tx.write('imd-orders', key, value, 0); return value;
       });
-      let quote = intent.quote;
+      let quote = intent.quote,preparedInput=intent.preparedInput;
       if (!quote) {
         const secret = sealer.open(key, intent.sealed);
         const out = await call('/requests/quote', { method: 'POST', token: secret.requestToken,
           body: { ...request, requestKey: intent.requestKey }, statuses: [200, 201] });
         requireThat(out.order?.requestKey === intent.requestKey, 'provider_order_mismatch');
         quote = out.order.quote; validateQuote(quote, request);
+      }
+      if(!preparedInput){
+        const secret=sealer.open(key,intent.sealed),challenge=await call('/requests/'+id(quote.id)+'/submit',{method:'POST',token:secret.requestToken,statuses:[402]});
+        requireThat(canonical(challenge.quote)===canonical(quote),'provider_order_changed');preparedInput=validateOraclePrepared(challenge.input,request.input);
+        requireThat(quote.inputHash===hash(preparedInput),'provider_input_mismatch');await verifyPinned(request.input,preparedInput.pinned);
         await store.transaction(async tx => {
           const old = await tx.read('imd-orders', key);
-          if (old.value.quote) { requireThat(canonical(old.value.quote) === canonical(quote), 'provider_order_changed'); return; }
-          await tx.write('imd-orders', key, { ...old.value, quote }, old.revision);
-          await tx.write('imd-offer-index', quote.id, { id: key }, 0);
+          if(old.value.preparedInput){requireThat(canonical(old.value.quote)===canonical(quote)&&canonical(old.value.preparedInput)===canonical(preparedInput),'provider_order_changed');return;}
+          if(old.value.quote)requireThat(canonical(old.value.quote)===canonical(quote),'provider_order_changed');
+          await tx.write('imd-orders', key, { ...old.value, quote,preparedInput }, old.revision);
+          const index=await tx.read('imd-offer-index',quote.id);if(index)requireThat(index.value.id===key,'provider_order_changed');else await tx.write('imd-offer-index', quote.id, { id: key }, 0);
         });
       }
       return { id: quote.id, provider: 'imd-deal-oracle-v1', inputHash, asset: 'eip155:1/erc20:' + IMD_ORACLE.asset,
-        maximum: quote.payment.amount, expiresAt: quote.expiresAt * 1000 };
+        maximum: quote.payment.amount, expiresAt: quote.expiresAt * 1000,preparedInput,providerInputHash:quote.inputHash };
     },
     async challenge(offerId) {
       const saved = await record(offerId);
       const result = await call('/requests/' + id(offerId) + '/submit', { method: 'POST', token: saved.credentials.requestToken, statuses: [402] });
       validateQuote(result.quote, saved.request);
-      requireThat(canonical(result.quote) === canonical(saved.quote) && canonical(result.input) === canonical(saved.request.input), 'provider_challenge_mismatch');
+      validateOraclePrepared(result.input,saved.request.input);requireThat(canonical(result.quote)===canonical(saved.quote)&&canonical(result.input)===canonical(saved.preparedInput)&&result.quote.inputHash===hash(result.input),'provider_challenge_mismatch');await verifyPinned(saved.request.input,result.input.pinned);
       requireThat(result.x402Version === 2 && result.resourceUrl === IMD_ORACLE.origin + '/requests/' + offerId &&
         result.resource?.url === result.resourceUrl && /^[0-9a-f]{64}$/.test(result.requesterScopeHash) &&
         Array.isArray(result.accepts) && result.accepts.length === 1, 'provider_challenge_mismatch');
