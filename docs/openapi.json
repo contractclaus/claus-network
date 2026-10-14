@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.21.1"
+    "version": "0.21.2"
   },
   "servers": [
     {
@@ -11857,6 +11857,18 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 63
+            }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "appearance"
+              ]
             }
           }
         ],
