@@ -24,3 +24,5 @@ The intended upgrade path is: pin the exact source, build it, collect independen
 - [Complete Pulse walkthrough](pulse-walkthrough.md): project, services, first record and revocation.
 
 - [Working together](working-together.md)
+
+- [Claus Jobs](jobs.md)

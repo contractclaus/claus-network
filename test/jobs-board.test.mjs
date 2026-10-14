@@ -1,0 +1,31 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+import {fixture} from './apps-fixture.mjs';
+import {stateOf} from '../examples/claus-jobs/model.js';
+import {schemaDefinition} from '../src/services/schema.mjs';
+const manifest=JSON.parse(fs.readFileSync(new URL('../examples/claus-jobs/claus-app.json',import.meta.url)));
+test('Jobs board uses the real task lifecycle, reconciles a lost post and fences concurrent/expired workers',async t=>{
+ const {owner,bob,eve,advance}=await fixture(t);
+ schemaDefinition(manifest.tasks.inputSchema);schemaDefinition(manifest.tasks.outputSchema);
+ const p=await owner.call('project_create',{slug:'jobs-board',name:'Jobs',idempotencyKey:'jobs-board'});
+ const projectId=p.id;await owner.call('project_publish',{projectId,published:true,expectedRevision:0});
+ const a=await owner.call('app_configure',{projectId,manifest,expectedRevision:0,idempotencyKey:'cfg'});
+ await owner.call('app_publish',{projectId,published:true,expectedRevision:a.revision,idempotencyKey:'pub'});
+ for(const c of[bob,eve])await c.call('app_join',{projectId,idempotencyKey:'join'});
+ const principal=(await owner.call('principal_me')).principal.id;
+ const input={projectId,input:{title:'Inspect the supplied public source',category:'research',brief:'Return a concise explanation with evidence.'},idempotencyKey:'original-post'};
+ await owner.call('app_task_post',input); // Ignore the first response to model lost delivery.
+ const posted=await owner.call('app_task_post',input);
+ assert.equal((await owner.call('public_app_records',{projectId,collection:'tasks'})).items.length,1);
+ await assert.rejects(owner.call('app_task_post',{...input,input:{...input.input,title:'Changed'}}),e=>e.code==='idempotency_conflict');
+ const claims=await Promise.allSettled([bob,eve].map(c=>c.call('app_task_claim',{projectId,taskId:posted.id,expectedRevision:posted.revision,idempotencyKey:'claim'})));
+ assert.equal(claims.filter(r=>r.status==='fulfilled').length,1);
+ const idx=claims.findIndex(r=>r.status==='fulfilled'),first=claims[idx].value,worker=[bob,eve][idx],replacement=[bob,eve][1-idx];
+ assert.equal(stateOf(first,first.leaseUntil),'open');advance(3600001);
+ const next=await replacement.call('app_task_claim',{projectId,taskId:first.id,expectedRevision:first.revision,idempotencyKey:'reclaim'});
+ await assert.rejects(worker.call('app_task_deliver',{projectId,taskId:first.id,expectedRevision:next.revision,generation:first.generation,output:{text:'Stale'},idempotencyKey:'old-delivery'}),e=>e.code==='lease_lost');
+ const delivery=await replacement.call('app_task_deliver',{projectId,taskId:next.id,expectedRevision:next.revision,generation:next.generation,output:{text:'The requested explanation.'},idempotencyKey:'deliver'});
+ await assert.rejects(replacement.call('app_task_accept',{projectId,taskId:delivery.id,expectedRevision:delivery.revision,idempotencyKey:'bad-accept'}),e=>e.code==='scope_denied');
+ const accepted=await owner.call('app_task_accept',{projectId,taskId:delivery.id,expectedRevision:delivery.revision,idempotencyKey:'accept'});
+ assert.equal(accepted.state,'accepted');await assert.rejects(owner.call('app_task_cancel',{projectId,taskId:accepted.id,expectedRevision:accepted.revision,idempotencyKey:'cancel-accepted'}),e=>e.code==='scope_denied');
+ const receipt=await owner.call('public_task_receipt',{projectId,taskId:accepted.id});assert.equal(receipt.workerId,next.assigneeId);assert.equal(receipt.requesterId,principal);
+});
