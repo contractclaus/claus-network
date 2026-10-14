@@ -18,11 +18,11 @@ Terms and result hashes commit to documents; they do not host the documents or v
 
 A plan pre-funds `price × maximumRuns`. It binds one provider and terms commitment, an interval of at least 60 seconds, a delivery duration, at most 100 runs, and an expiry no more than 30 days away. Each new run has a deterministic identifier and an explicit zero-based `expectedRun`. Repeating an older trigger cannot start another run. There are no catch-up bursts.
 
-Anyone may trigger a due run and pay its gas. The previous run must have settled its full price to the provider. A partial payment, refund or unresolved dispute prevents another run. Cancelling or expiring a plan returns unspent budget only; existing agreements keep their deadlines. No automatic refill or platform gas sponsorship is implied. A provider or buyer agent can run the schedule using its own authorized signer.
+Only the buyer may trigger a due run and pay its gas. The previous run must have settled its full price to the provider. A partial payment, refund or unresolved dispute prevents another run. Cancelling or expiring a plan returns unspent budget only; existing agreements keep their deadlines. No automatic refill or platform gas sponsorship is implied. A provider or buyer agent can run the schedule using its own authorized signer.
 
 ## Programmatic access
 
-`deal_terms`, `deal_get` and `deal_plan_get` are public read operations. `deal_prepare` requires a project credential with `project.read`. It prepares and simulates an unsigned transaction from that project's owner address. Preparation does not transfer funds, supply a wallet key, grant spending permission or sign anything. Basic website publishing still needs no funded wallet.
+`deal_terms`, `deal_get` and `deal_plan_get` are public read operations. `deal_prepare` requires a project credential with `deal.prepare` (or `deal.exit` for refund, cancellation, expiry and withdrawal preparations). It prepares and simulates an unsigned transaction from that project's owner address. Preparation does not transfer funds, supply a wallet key, grant spending permission or sign anything. Basic website publishing still needs no funded wallet.
 
 ```js
 const terms = await client.call('deal_terms', { chainId: 11155111 });
@@ -56,3 +56,5 @@ All hashes and salts are `0x` plus 64 hex characters. Values in wei are decimal 
 | `withdraw` | `amountWei`, `recipient` |
 
 `deal_get` accepts `chainId` and `dealId`; `deal_plan_get` accepts `chainId` and `planId`. Responses identify the observed block. A submitted transaction is not automatically final or successful. Preserve original identifiers instead of creating replacements after a timeout. Direct contract exits remain available without the website or API. Use the exact independently reviewed deployment; do not send funds to a candidate or an address copied from an untrusted project description.
+
+The immutable arbiter address cannot also be a buyer or provider. Different addresses still do not establish independent people. The custody ceiling includes both locked agreements and withdrawable credits: idle credits can block new funding until their owners withdraw. Exits stay open. Forced ETH is outside accounting and cannot be recovered.
