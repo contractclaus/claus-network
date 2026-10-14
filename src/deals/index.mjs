@@ -46,7 +46,8 @@ export function createDeals({store,identity,ports={}}){
    if(isTokenDeal(asset))value=0n;
    if(isTokenDeal(asset)&&deposit>0n){
     const stamp=Number(c.public.observedBlockTime),due=action==='fund'?input.deliveryDue:input.expiresAt;
-    requireThat(c.public.enabled&&amount(input.priceWei)<=BigInt(c.public.maximumDealWei)&&due>stamp&&due<=stamp+2592000&&!/^0x0+$/.test(input.termsHash)&&![sender,c.public.arbiter].some(a=>a.toLowerCase()===input.worker.toLowerCase())&&sender.toLowerCase()!==c.public.arbiter.toLowerCase(),'invalid_deal_input');
+    requireThat(c.public.enabled,'deals_not_enabled');
+    requireThat(amount(input.priceWei)<=BigInt(c.public.maximumDealWei)&&due>stamp&&due<=stamp+2592000&&!/^0x0+$/.test(input.termsHash)&&![sender,c.public.arbiter].some(a=>a.toLowerCase()===input.worker.toLowerCase())&&sender.toLowerCase()!==c.public.arbiter.toLowerCase(),'invalid_deal_input');
     let existing;try{existing=await ports.read(c,action==='fund'?'deal':'plan',id);}catch(e){if(e.code!=='not_found')throw e;}requireThat(!existing,'deal_already_funded');
     const approval=await ports.approval(c,{sender,amount:deposit});
     if(approval){requireThat(approval.transaction.chainId===chainId&&approval.transaction.to.toLowerCase()===c.public.token.toLowerCase()&&approval.transaction.from.toLowerCase()===sender.toLowerCase()&&approval.transaction.value==='0'&&approval.approval.spender.toLowerCase()===c.public.contract.toLowerCase()&&approval.approval.amountUnits===String(deposit),'deal_pin_mismatch');

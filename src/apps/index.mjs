@@ -107,7 +107,7 @@ export function createApps({storage,identity,store,taskPayments,schemaDefinition
     async taskReceipt(projectId,taskId){ready();const tx=storage.reader(projectId),a=await app(tx,projectId,{publicOnly:true});requireThat(a.value.manifest.tasks?.visibility==='public','not_found');const row=await tx.read('tasks',taskId);requireThat(row&&!row.value.hidden&&row.value.state==='accepted'&&row.value.receipt,'not_found');return {...copy(row.value.receipt),scope:'Requester accepted this output. Distinct principals do not establish independent humans or a security review.'};},
     async agreement(actor,projectId,{taskId,payerProjectId,chainId,priceWei,deliveryDue,expectedRevision,idempotencyKey,asset}){ready();return storage.transaction(projectId,async tx=>{
       const {who}=await participant(tx,projectId,actor);await app(tx,projectId,{publicOnly:true});
-      return effect(tx,projectId,actor,'task.agreement',idempotencyKey,{taskId,payerProjectId,chainId,priceWei,deliveryDue,expectedRevision,...(asset?{asset}:{})},async()=>{
+      return effect(tx,projectId,actor,'task.agreement',idempotencyKey,{taskId,payerProjectId,chainId,priceWei,deliveryDue,expectedRevision,...(asset&&asset!=='ETH'?{asset}:{})},async()=>{
         const row=await tx.read('tasks',taskId);requireThat(row&&!row.value.hidden,'not_found');requireThat(row.revision===expectedRevision,'revision_conflict');
         const version=await tx.read('versions',String(row.value.version)),spec=version.value.manifest.tasks;requireThat(spec.visibility==='public','scope_denied');
         const agreement=await taskPayments.create(actor,tx.network,projectId,row.value,spec,{payerProjectId,chainId,priceWei,deliveryDue,asset});
