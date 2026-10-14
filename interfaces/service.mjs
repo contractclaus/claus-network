@@ -1,6 +1,6 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
   worker_configure:(actor,input)=>workers.configure(actor,input.projectId,input),
   worker_get:(actor,input)=>workers.get(actor,input.projectId,input.workerId),
@@ -11,7 +11,13 @@ export function createService({workers,domains,deals,workflows,discovery,apps,co
   domain_get:(actor,input)=>domains.get(actor,input.projectId,input.hostname),
   domain_remove:(actor,input)=>domains.remove(actor,input.projectId,input),
   public_domain:(_,input)=>domains.resolve(input.hostname),
+  deal_evidence_publish:(actor,input)=>arbitration.evidence.publish(actor,input.projectId,input.document),
+  public_deal_evidence:(_,input)=>arbitration.evidence.read(input.hash),
+  deal_review_request:(actor,input)=>arbitration.request(actor,input.projectId,input.chainId,input.dealId),
+  public_deal_case:(_,input)=>arbitration.read(input.caseId),
+  public_deal_case_evidence:(_,input)=>arbitration.bundle(input.caseId),
   deal_terms:(_,input)=>deals.terms(input.chainId),
+  deal_balance:(_,input)=>deals.balance(input.chainId,input.address),
   deal_get:(_,input)=>deals.read(input.chainId,input.dealId,'deal'),
   deal_plan_get:(_,input)=>deals.read(input.chainId,input.planId,'plan'),
   deal_prepare:(actor,input)=>deals.prepare(actor,input.projectId,input),
@@ -51,7 +57,7 @@ export function createService({workers,domains,deals,workflows,discovery,apps,co
   content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
   content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
 
-  capabilities:async()=>({...await access.discovery(),domains:await domains.discovery(),workers:await workers.discovery(),workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
+  capabilities:async()=>({...await access.discovery(),domains:await domains.discovery(),workers:await workers.discovery(),deals:{chains:[1,11155111].map(chainId=>({chainId,terms:'/v1/public/chains/'+chainId+'/deals',funding:'Read the pinned chain terms; route availability does not imply active deposits.'})),arbitration:await arbitration.discovery()},workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),

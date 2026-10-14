@@ -24,7 +24,7 @@ export function checkImports(sources, modules) {
     if (/\b(?:import|require)\s*\(|\b(?:eval|Function)\s*\(|\bfetch\s*\(|\bprocess\.env\b/.test(source)) {
       throw Error('dynamic_or_external_access: ' + file);
     }
-    for (const match of source.matchAll(/(?:import|export)\s+(?:[^;'"]*?\s+from\s*)?['"]([^'"]+)['"]/g)) {
+    for (const match of source.matchAll(/(?:^|[;\n])\s*(?:import|export)\s*(?:[^;'"]*?\bfrom\s*)?['"]([^'"]+)['"]/g)) {
       imports++;
       const specifier = match[1];
       if (specifier.startsWith('node:')) {
