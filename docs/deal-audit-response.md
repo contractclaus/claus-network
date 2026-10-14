@@ -15,3 +15,16 @@ The independent IMD job `b9c4399e-2616-411c-86e3-415b1e889f29` reviewed source `
 The IMD payment integration also now binds the exact prepared request, pinned block window and question hash returned by the provider. Both quote and challenge verify the canonical block hash before payment; native approval verifies the same prepared input and attestation. A real unpaid quote confirmed the wire format. No payment or panel was opened by that format probe.
 
 The escrow Solidity source is unchanged by these corrections. Original contract review, exact compiler input, signatures and transfer evidence retain their original identities. The original buyer-refund timeout, provider monitoring obligation, immutable arbiter and limited signer trust remain explicit in [paid agreements](paid-deals.md).
+
+## Follow-up review corrections
+
+IMD job `fdf7534f-bfb0-4c8f-9763-c41bcec01d81` reviews `be5069c2e7cded57f786657a36453afe2aa98f2d`. Its accepted specialist findings prompted these further corrections; they are not a claim that the corrected source is approved or live.
+
+- Transient capability reads propagate as transient failures and retain the original case. Only an observed authority change blocks it.
+- A disabled worker preserves admitted cases and publishes disabled health. Enabled health includes actual verified escrow targets; mismatched or unhealthy targets cannot admit new cases.
+- Original provider quotes are persisted before wrapper validation. Explicit null ambiguity is rejected. Deterministic proof/input failures end visibly; unknown transport outcomes keep their original identifiers.
+- Unsent holds for active cases are released only after quote expiry, avoiding cancellation of an in-flight prepare/submit. Expired cancellations are reported as expiry, not operator revocation.
+- Attestations bind the three signed block-window fields while preserving additional response metadata as untrusted evidence.
+- The dedicated worker package contains only its own endpoint and imported modules; the repository root must never be used as the signer deployment.
+
+The allocation scan is bounded at eight because this product has exactly eight lifetime cases and one immutable offer per case across both chains and all capability generations. Increasing that limit requires changing the scan; no capacity reset is permitted. The requester's per-owner limits are not proof of independent people: sybil operators remain possible within the finite total. Global project pause versus dedicated financial revocation, and the one-hour processing cutoff, are explicitly documented.
