@@ -28,3 +28,15 @@ IMD job `fdf7534f-bfb0-4c8f-9763-c41bcec01d81` reviews `be5069c2e7cded57f786657a
 - The dedicated worker package contains only its own endpoint and imported modules; the repository root must never be used as the signer deployment.
 
 The allocation scan is bounded at eight because this product has exactly eight lifetime cases and one immutable offer per case across both chains and all capability generations. Increasing that limit requires changing the scan; no capacity reset is permitted. The requester's per-owner limits are not proof of independent people: sybil operators remain possible within the finite total. Global project pause versus dedicated financial revocation, and the one-hour processing cutoff, are explicitly documented.
+
+## Operational remediation after review of `1e0c367`
+
+IMD job `68880fc4-a728-4761-9e94-59e22682a4e9` reviews `1e0c367f4aefb9d8c0ebc95253d9706d8ffa0de0`. Its recommendations are applied in the subsequent operational patch; that patch is local remediation, not a claim of a separately purchased independent audit. The escrow Solidity, compiler input, financial limits and signature authority are unchanged.
+
+- Native host pauses, infrastructure denials and unknown errors preserve the original paid case. Only explicit permanent native input/expiry/revocation responses end it.
+- Fixed-artifact validation errors and invalid signatures end visibly. They do not trigger replacement quotes or repeat purchases.
+- The worker binds its configured arbiter to its actual signing identity before processing. Each chain contributes its own verified health target; one chain outage cannot prevent the others from progressing. Hash casing does not change identity.
+- Provider clock lead and insufficient RPC confirmations are transient. Structural expiry violations and an actual pinned-block mismatch remain final. Saved unpaid quotes are checked for remaining validity before another challenge request, retaining the original order after expiry.
+- Six focused behavioral cases cover these boundaries, including the original paid-offer identity, absent payment attempts, mixed-case pins, malformed proof, chain outage and native pause.
+
+A case uses one of the eight lifetime admission slots even if its provider offer expires before payment. The original order and case stay visible; there is no automatic replacement or capacity reset. Requiring a longer-lived quote cannot guarantee eventual completion after network delays. Provider errors may therefore consume admission capacity without spending the reserved subsidy. This finite-attempt policy is separate from the financial ledger.

@@ -57,8 +57,7 @@ export function createImdOracleProvider({ store, sealer, resolveInput, verifyPin
       quote.terms?.purchase === 'action-admission' && quote.terms.resultGuaranteed === false, 'provider_terms_changed');
     id(quote.id); integer(quote.issuedAt); integer(quote.expiresAt);
     requireThat(amount(quote.payment.amount) > 0n && amount(quote.payment.amount) <= amount(IMD_ORACLE.maximum), 'provider_price_exceeds_profile');
-    requireThat(quote.expiresAt > quote.issuedAt && quote.expiresAt - quote.issuedAt <= 600 &&
-      quote.issuedAt <= Math.floor(now() / 1000) + 5, 'invalid_provider_expiry');
+    requireThat(quote.expiresAt > quote.issuedAt && quote.expiresAt - quote.issuedAt <= 600, 'invalid_provider_expiry');
     requireThat(/^[0-9a-f]{64}$/.test(quote.quoteHash) && /^[0-9a-f]{64}$/.test(quote.inputHash), 'provider_input_mismatch');
   }
   async function record(offerId) {
@@ -91,6 +90,8 @@ export function createImdOracleProvider({ store, sealer, resolveInput, verifyPin
         // Keep the original provider ID even when later wrapper validation fails.
         await store.transaction(async tx=>{const old=await tx.read('imd-orders',key);if(old.value.quote){requireThat(canonical(old.value.quote)===canonical(quote),'provider_order_changed');return;}await tx.write('imd-orders',key,{...old.value,quote},old.revision);});
       }
+      requireThat(quote.issuedAt<=Math.floor(now()/1000)+5,'provider_clock_ahead');
+      requireThat(quote.expiresAt*1000>now()+60000,'oracle_quote_expired');
       if(!preparedInput){
         const secret=sealer.open(key,intent.sealed),challenge=await call('/requests/'+id(quote.id)+'/submit',{method:'POST',token:secret.requestToken,statuses:[402]});
         requireThat(canonical(challenge.quote)===canonical(quote),'provider_order_changed');preparedInput=validateOraclePrepared(challenge.input,request.input);
