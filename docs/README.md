@@ -22,3 +22,5 @@ The intended upgrade path is: pin the exact source, build it, collect independen
 - [Bounded signal feeds](signals.md): scoped publisher grants, records and revocation.
 
 - [Complete Pulse walkthrough](pulse-walkthrough.md): project, services, first record and revocation.
+
+- [Working together](working-together.md)

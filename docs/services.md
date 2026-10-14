@@ -37,3 +37,9 @@ The [quickstart](quickstart.md#optional-run-the-full-service-example) runs the s
 ## Explicit public reuse
 
 The additional [public-data-v1 lifecycle](public-data.md) supports separately authorized result publication and bounded provenance. Existing no-delegation manifests retain their original meaning. [Signal feeds](signals.md) can consume exact published observations with a finite owner-signed grant.
+
+## Shared order status
+
+Both recorded parties can call `service_order` and `service_result` with their **own** project ID and `service.read` permission, including after delivery. Keep the order ID from the quote/claim; `provider_orders` is the pending queue, not history. The derived `progress` object separates delivery, buyer acceptance and payment, and identifies the next actor. It never makes a payment or changes an order. A provider can read acceptance but cannot accept its own work on the buyer's behalf. Revoked credentials lose access.
+
+An accepted, explicitly published `public-data-v1` result includes the two public project identities, service version and the same progress projection. Its readable receipt is `https://claus.si/read/work/ORDER_ID`. Publication is optional and revocable; private orders stay private. See [Working together](working-together.md) for the full sequence.

@@ -75,10 +75,22 @@ test('two independent project clients exchange schema-bound results and accept t
   await assert.rejects(f.services.deliver(f.provider.actor,f.provider.id,{orderId:order.id,lease:claim.lease,output:{value:'x',injected:true}}),{code:'service_schema_mismatch'});
   const delivered=await f.services.deliver(f.provider.actor,f.provider.id,{orderId:order.id,lease:claim.lease,output:{value:'result'}});
   assert.equal(delivered.acceptance,'pending');assert.equal('leaseHash' in delivered,false);
+  const providerView=await f.services.get(f.provider.actor,f.provider.id,order.id);
+  assert.equal(providerView.progress.phase,'awaiting_acceptance');
+  assert.equal(providerView.progress.nextActor,'buyer');
+  assert.equal(providerView.progress.payment.mode,'free');
+  assert.equal('buyerActor' in providerView,false);assert.equal('leaseHash' in providerView,false);
+  assert.deepEqual(await f.services.result(f.provider.actor,f.provider.id,order.id),{value:'result'});
+  await assert.rejects(f.services.get(f.stranger.actor,f.stranger.id,order.id),{code:'not_found'});
+  await assert.rejects(f.services.result(f.stranger.actor,f.stranger.id,order.id),{code:'not_found'});
+  await assert.rejects(f.services.acceptResult(f.provider.actor,f.provider.id,{orderId:order.id,outputHash:delivered.outputHash,accepted:true}),{code:'not_found'});
   await assert.rejects(f.services.result(f.stranger.actor,f.buyer.id,order.id),{code:'scope_denied'});
   assert.deepEqual(await f.services.result(f.buyer.actor,f.buyer.id,order.id),{value:'result'});
   const accepted=await f.services.acceptResult(f.buyer.actor,f.buyer.id,{orderId:order.id,outputHash:delivered.outputHash,accepted:true});
   assert.equal(accepted.acceptance,'accepted');
+  assert.equal((await f.services.get(f.provider.actor,f.provider.id,order.id)).progress.phase,'accepted');
+  await f.identity.revoke(f.provider.owner,'mandate',f.provider.mandate.id);
+  await assert.rejects(f.services.get(f.provider.actor,f.provider.id,order.id),{code:'scope_denied'});
   await assert.rejects(f.services.acceptResult(f.buyer.actor,f.buyer.id,{orderId:order.id,outputHash:delivered.outputHash,accepted:false}),{code:'acceptance_conflict'});
 });
 test('paid requests pin exact price and refuse provider access before a verified receipt',async t=>{
@@ -199,6 +211,7 @@ test('public output needs explicit buyer publication, public profiles and a reus
   await assert.rejects(f.services.publishResult(f.stranger.actor,f.buyer.id,{orderId:r.order.id,outputHash:r.output.outputHash,published:true,expectedRevision:0,expiresAt:r.expiresAt}),{code:'scope_denied'});
   const pub=await f.services.publishResult(f.buyer.actor,f.buyer.id,{orderId:r.order.id,outputHash:r.output.outputHash,published:true,expectedRevision:0,expiresAt:r.expiresAt});
   const result=await f.services.publicResult(r.order.id);
+  assert.equal(result.progress.phase,'accepted');assert.equal(result.parties.buyer.projectId,f.buyer.id);assert.equal(result.parties.provider.projectId,f.provider.id);assert.equal(result.progress.payment.amountWei,'0');
   assert.equal(result.revision,pub.revision);assert.equal(result.depth,1);assert.deepEqual(result.output,{value:'public'});
   assert.equal((await f.services.publicResults(f.buyer.id)).results.length,1);
   const projects=createProjects({store:f.store,identity:f.identity}),profile=await projects.get(f.provider.owner,f.provider.id);

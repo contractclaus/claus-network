@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.21.0"
+    "version": "0.21.1"
   },
   "servers": [
     {
@@ -7662,7 +7662,7 @@
     "/v1/projects/{projectId}/service-orders/{orderId}": {
       "get": {
         "operationId": "service_order",
-        "description": "GET /v1/projects/{projectId}/service-orders/{orderId}. Requires current object read permission.",
+        "description": "Read the recorded order and derived delivery, acceptance and payment progress as buyer or provider, using your own projectId and service.read. Delivery alone is not acceptance. No payment or state change.",
         "security": [
           {
             "bearerAuth": []
@@ -7849,7 +7849,7 @@
     "/v1/projects/{projectId}/service-orders/{orderId}/result": {
       "get": {
         "operationId": "service_result",
-        "description": "GET /v1/projects/{projectId}/service-orders/{orderId}/result. Requires current object read permission.",
+        "description": "Read delivered output as the recorded buyer or provider using your own projectId and service.read. Unrelated projects and revoked delegates cannot read it.",
         "security": [
           {
             "bearerAuth": []
