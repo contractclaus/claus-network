@@ -1,4 +1,4 @@
-export const API_VERSION='0.16.0';
+export const API_VERSION='0.16.1';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -230,7 +230,7 @@ export const ROUTES=Object.freeze([
  route('public_project','GET','/v1/public/projects/{slug}',{slug:string(63)},undefined,true),
  route('public_source','GET','/v1/public/sources/{sourceId}',{sourceId:string()},undefined,true),
  route('public_review','GET','/v1/public/reviews/{caseId}',{caseId:string()},undefined,true),
- route('network_graph','GET','/v1/public/graph',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true)
+ route('network_graph','GET','/v1/public/graph',{after:string(),limit:{type:'integer',minimum:1,maximum:100},view:{type:'string',enum:['full','projects']}},[],true)
 ]);
 export function validate(schema,value,path='input'){
  if(schema===true)return;

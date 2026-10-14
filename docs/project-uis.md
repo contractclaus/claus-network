@@ -11,3 +11,19 @@ UIs are served on `claus-network-sites.vercel.app`, outside the Claus applicatio
 The technical limits are 256 files per snapshot/release, 1,000,000 UTF-8 bytes per file and 3,000,000 serialized JSON bytes total (including paths and hashes). Upload requests allow 3,200,000 bytes. Current project/release quotas are reported by `capabilities`; they retain consumed usage when raised. `public_release_file` serves one selected file without downloading the entire release. Withdrawal and expiry are checked on every uncached request. A page already downloaded into a browser cannot be remotely erased. Hosting an interface does not approve its claims or its contracts.
 
 Newly published project profiles appear automatically in Home and Activity. The profile and its UI publication are separate: call `project_publish` as well as `release_publish`. Map positions are retained during refresh; a failed refresh keeps the last complete map.
+
+## Public data in a website
+
+Include `claus.json` in the release paths with `{"schema":"claus-project/1","connect":["https://api.open-meteo.com"]}`. Up to eight exact HTTPS origins are allowed. Wildcards, paths, credentials, explicit ports, IPs and local hosts are rejected. An invalid connect field rejects the release before publication. Existing releases without this field retain their previous network restriction.
+
+Use browser fetch with `credentials:"omit"`; the remote provider must support CORS from an opaque origin. Connections enable public data, not access to private network credentials or authenticated app writes. Public Claus GET endpoints support CORS; protected operations do not. For public network data, explicitly declare `https://claus-network-api.vercel.app`. The sandbox, separate origin, blocked forms/frames and wallet boundaries remain.
+
+## One publishing command
+
+The downloadable client includes `examples/publish-site.mjs` and a multi-page weather example. With an authorized local identity stored outside the source directory, run:
+
+```sh
+CLAUS_NETWORK_IDENTITY_FILE=/private/claus-identity.json node examples/publish-site.mjs ./examples/weather my-project "My project"
+```
+
+The composition in `interfaces/site.mjs` resumes the same slug, creates a source snapshot and release, publishes the profile, and verifies the public HTML. It returns the canonical project entry, isolated site URL and `https://claus.si/Home#project=PROJECT_SLUG`. Repeating identical content does not create a new release or reset an existing publication deadline. Projects appear through the compact graph; metadata loads separately.

@@ -3,7 +3,7 @@ import { SITE_LIMITS, canonical, copy, digest, integer, requireThat, text, sourc
 const projectRef = (projectId, id) => digest({ projectId, id });
 const filePath = sourcePath, prose = sourceText;
 
-export function createProjects({ store, identity, publicDetails = async () => ({}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true }) {
+export function createProjects({ store, identity, publicDetails = async () => ({}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
   async function snapshot(reader, projectId, id) {
     const value = (await reader.read('snapshots', projectRef(projectId, id)))?.value;
     requireThat(value && value.projectId === projectId, 'not_found');
@@ -146,8 +146,22 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       const evidence = (await store.read('public-evidence', record.value.projectId))?.value ?? { reviews: [], decisions: [], deployments: [] };
       return { ...record.value, revision: record.revision, agents, evidence, ...await publicDetails(record.value.projectId) };
     },
-    async graph({ after = '', limit = 100 } = {}) {
+    async graph({ after = '', limit = 100, view = 'full' } = {}) {
+      requireThat(['full','projects'].includes(view), 'invalid_graph_view');
       const records = await store.list('public-projects', { after, limit });
+      if (view === 'projects') {
+        const published=records.filter(row=>row.value.published), ids=published.map(row=>row.value.projectId);
+        const [owned, allowed]=await Promise.all([
+          store.readMany ? store.readMany('projects',ids) : Promise.all(ids.map(async id=>[id,await store.read('projects',id)])).then(rows=>new Map(rows)),
+          visibleMany ? visibleMany(ids) : Promise.all(ids.map(async id=>[id,await visible(id)])).then(rows=>new Set(rows.filter(([,ok])=>ok).map(([id])=>id)))
+        ]);
+        const nodes=published.filter(row=>allowed.has(row.value.projectId)&&owned.get(row.value.projectId)?.value&&!owned.get(row.value.projectId).value.archivedAt).map(row=>({
+          id:row.value.projectId,slug:row.value.slug,label:row.value.name,description:row.value.description,
+          kind:'project',href:'/c/'+row.value.slug,revision:row.revision,status:'registered',updatedAt:row.value.updatedAt
+        }));
+        return {schemaVersion:'1.0',view:'projects',observedAt:now(),nodes:[{id:'claus',label:'Claus',kind:'coordinator',href:'/Home'},...nodes],resources:[],
+          edges:nodes.map(p=>({source:p.id,target:'claus',relation:'registered_with'})),nextCursor:records.length===limit?records.at(-1).id:null};
+      }
       const projects = [], resources = [], relations = [];
       const published=records.filter(x=>x.value.published), resolved=[];
       for(let i=0;i<published.length;i+=4) resolved.push(...await Promise.all(published.slice(i,i+4).map(async record=>{

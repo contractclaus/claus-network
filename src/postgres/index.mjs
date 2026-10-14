@@ -20,6 +20,12 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
         const { rows } = await client.query(`SELECT revision,body FROM ${documents} WHERE collection=$1 AND id=$2`, [collection, id]);
         return rows[0] ? { revision: integer(Number(rows[0].revision), 1), value: rows[0].body } : null;
       },
+      async readMany(collection, ids) {
+        assertActive(); text(collection); requireThat(Array.isArray(ids) && ids.length <= 1000, 'invalid_ids'); ids.forEach(id=>text(id));
+        if (!ids.length) return new Map();
+        const { rows } = await client.query(`SELECT id,revision,body FROM ${documents} WHERE collection=$1 AND id=ANY($2::text[])`, [collection, ids]);
+        return new Map(rows.map(row => [row.id, {revision:integer(Number(row.revision),1),value:row.body}]));
+      },
       async list(collection, { prefix = '', after = '', limit = 100, projectId } = {}) {
         assertActive(); text(collection); integer(limit, 1, 1000);
         requireThat(typeof prefix === 'string' && typeof after === 'string', 'invalid_cursor');

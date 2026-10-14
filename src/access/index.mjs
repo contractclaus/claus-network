@@ -85,7 +85,7 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       projectAccess: active.config.paused ? 'paused' : 'public',
       collaboration: { admission: active.config.paused ? 'paused' : !collaborationEnabled ? 'not_enabled' :
         active.config.publicCollaboration ? 'public' : 'restricted_pilot', worker: await fresh('services') ? 'ready' : 'unavailable' },
-      staticHosting: { isolated: true, backendExecution: false,limits:SITE_LIMITS,publication:{defaultExpiry:null,withdrawable:true} },
+      staticHosting: { isolated: true, backendExecution: false,limits:SITE_LIMITS,publication:{defaultExpiry:null,withdrawable:true},publicData:{manifest:'claus.json',field:'connect',maxOrigins:8,httpsOnly:true,browserCredentials:false,providerCorsRequired:true} },
       publicDataServices: { enabled: collaborationEnabled && !active.config.paused && active.config.publicDataServices === true,
         policy: 'public-data-v1', maximumLineageDepth: 3, explicitResultPublication: true },
       transfers: { enabled: (await cap('portability'))?.enabled === true, trustedDestinationRequired: true },

@@ -1,4 +1,5 @@
-import { SITE_LIMITS, sitePublicationActive, sourcePath, canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
+import { manifestConnections, SITE_LIMITS, sitePublicationActive, sourcePath, canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
+
 
 export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, limit = async () => undefined, now = () => Date.now(),
   visible = async () => true, origin = 'https://claus-network-sites.vercel.app' }) {
@@ -17,6 +18,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
         requireThat(file&&/\.(html|css|js|json|svg)$/.test(path),'invalid_release_files');
         return{path:file.path,content:file.content,hash:file.hash};}).sort((a,b)=>a.path.localeCompare(b.path,'en'));
       requireThat(Buffer.byteLength(canonical(files))<=SITE_LIMITS.totalBytes,'release_too_large');
+      let connect;try{connect=manifestConnections(files);}catch{requireThat(false,'invalid_site_connect');}
       const id=digest({projectId,snapshotId,paths:files.map(f=>f.path)});
       return store.transaction(async tx=>{
         await identity.authorize(actor,'release.publish',{projectId},tx);
@@ -26,7 +28,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
         requireThat((capacity?.value.count??0)<(await limit('releasesPerProject',tx)??32),'capacity_reached');
         const contentHash=await artifacts.put(tx,projectId,files);
         const value={id,projectId,snapshotId,contentHash,paths:files.map(f=>f.path),createdAt:now(),
-          isolation:'opaque-origin-static-v1',url:origin+'/r/'+id.slice(7)+'/index.html'};
+          isolation:'opaque-origin-static-v1',connect,url:origin+'/r/'+id.slice(7)+'/index.html'};
         await tx.write('project-releases',id,value,0);
         await tx.write('release-capacity',projectId,{count:(capacity?.value.count??0)+1},capacity?.revision??0);
         return value;
@@ -77,7 +79,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
         file={path:artifact.path,content:artifact.content,hash:artifact.hash};
       }else file=(await artifacts.get(release.projectId,release.contentHash)).find(f=>f.path===path);
       requireThat(file,'not_found');
-      return {id:release.id,projectId:release.projectId,url:release.url,expiresAt:publication.expiresAt,paths:release.paths,file};
+      return {id:release.id,projectId:release.projectId,url:release.url,expiresAt:publication.expiresAt,paths:release.paths,connect:release.connect??[],file};
     },
     async public(releaseId){
       const publication=(await store.read('release-publications',text(releaseId)))?.value;

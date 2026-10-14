@@ -61,10 +61,11 @@ export function createHttp({service,origin='https://claus.si',admit=async()=>{}}
  return async(request,context={})=>{
   try{
    const url=new URL(request.url),callerOrigin=request.headers.get('origin');
-   if(callerOrigin&&callerOrigin!==origin)return json({error:'wrong_origin',retryable:false},403);
-   if(request.method==='GET'&&url.pathname==='/openapi.json')return json(openapi({origin}));
+   if(request.method==='GET'&&url.pathname==='/openapi.json')return json(openapi({origin}),200,{'access-control-allow-origin':'*'});
    const matched=routes.find(r=>r.method===request.method&&r.pattern.test(url.pathname));
    if(!matched)return json({error:'not_found',retryable:false},404);
+   const publicRead=matched.public&&request.method==='GET';
+   if(callerOrigin&&callerOrigin!==origin&&!publicRead)return json({error:'wrong_origin',retryable:false},403);
    await admit({route:matched.name,peer:context.peer??'unknown'});
    const match=url.pathname.match(matched.pattern),input={};
    for(let i=0;i<matched.names.length;i++){
@@ -89,7 +90,7 @@ export function createHttp({service,origin='https://claus.si',admit=async()=>{}}
    }
    const auth=request.headers.get('authorization');
    const token=auth?.match(/^Bearer (cln_[A-Za-z0-9_-]{43})$/)?.[1];
-   return json(await service.execute(matched.name,input,token));
+   return json(await service.execute(matched.name,input,token),200,publicRead?{'access-control-allow-origin':'*'}:{});
   }catch(error){const status=errorStatus(error);return json(errorBody(error),status,status===401?{'www-authenticate':'Bearer realm="Claus Network"'}:status===429?{'retry-after':'60'}:{});}
  };
 }

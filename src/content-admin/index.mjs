@@ -1,4 +1,5 @@
-import { SITE_LIMITS, sitePublicationActive, canonical, copy, digest, integer, requireThat, sourcePath, sourceText, text } from '../shared/index.mjs';
+import { manifestConnections, SITE_LIMITS, sitePublicationActive, canonical, copy, digest, integer, requireThat, sourcePath, sourceText, text } from '../shared/index.mjs';
+
 
 export function createContentAdmin({store,identity,artifacts,now=()=>Date.now(),origin='https://claus-network-sites.vercel.app'}) {
   async function operator(actor,reader=store,action='inspect',ownerOnly=false){
@@ -19,6 +20,10 @@ export function createContentAdmin({store,identity,artifacts,now=()=>Date.now(),
         await audit(tx,op,'network','grant',principalId+':'+saved.revision,{reason,before,after:saved});return {...saved.value,revision:saved.revision};});
     },
     visible:async(projectId,reader=store)=>!(await reader.read('content-controls',projectId))?.value.held,
+    async visibleMany(ids) {
+      const controls = store.readMany ? await store.readMany('content-controls',ids) : new Map(await Promise.all(ids.map(async id=>[id,await store.read('content-controls',id)])));
+      return new Set(ids.filter(id=>!controls.get(id)?.value.held));
+    },
     async control(actor,projectId,{held,releaseId,reason,expectedRevision,idempotencyKey}){reasonCheck(reason);text(idempotencyKey);integer(expectedRevision);requireThat(typeof held==='boolean'&&(releaseId===null||typeof releaseId==='string'),'invalid_content_control');return store.transaction(async tx=>{
       const op=await operator(actor,tx,'publish');requireThat(await tx.read('projects',projectId),'not_found');
       const hash=digest({held,releaseId,reason,expectedRevision}),key=digest({projectId,op,idempotencyKey,action:'control'}),oldRequest=await tx.read('content-requests',key);
@@ -39,10 +44,11 @@ export function createContentAdmin({store,identity,artifacts,now=()=>Date.now(),
     async correct(actor,projectId,{files,reason,expectedRevision,idempotencyKey}){reasonCheck(reason);text(idempotencyKey);integer(expectedRevision);requireThat(Array.isArray(files)&&files.length>0&&files.length<=SITE_LIMITS.files,'invalid_files');
       const clean=files.map(f=>{requireThat(Object.keys(f).length===2,'invalid_file');const path=sourcePath(f.path),content=sourceText(f.content,SITE_LIMITS.fileBytes);requireThat(/\.(html|css|js|json|svg)$/.test(path)&&Buffer.byteLength(content)<=SITE_LIMITS.fileBytes,'invalid_file');return {path,content,hash:digest({path,content})};}).sort((a,b)=>a.path.localeCompare(b.path,'en'));
       requireThat(clean.some(f=>f.path==='index.html')&&new Set(clean.map(f=>f.path)).size===clean.length&&Buffer.byteLength(canonical(clean))<=SITE_LIMITS.totalBytes,'invalid_release_files');
+      let connect;try{connect=manifestConnections(clean);}catch{requireThat(false,'invalid_site_connect');}
       return store.transaction(async tx=>{const op=await operator(actor,tx,'publish');requireThat(await tx.read('projects',projectId),'not_found');const key=digest({projectId,op,idempotencyKey,action:'correct'}),hash=digest({clean,reason,expectedRevision}),prior=await tx.read('content-requests',key);if(prior){requireThat(prior.value.hash===hash,'idempotency_conflict');return prior.value.result;}
         const old=await tx.read('content-controls',projectId);requireThat((old?.revision??0)===expectedRevision,'revision_conflict');const usage=await tx.read('content-capacity',projectId);requireThat((usage?.value.count??0)<32,'capacity_reached');
         const releaseId=digest({projectId,key,hash}),contentHash=await artifacts.put(tx,projectId,clean),expiresAt=null;
-        await tx.write('project-releases',releaseId,{id:releaseId,projectId,snapshotId:null,contentHash,paths:clean.map(f=>f.path),createdAt:now(),isolation:'opaque-origin-static-v1',url:origin+'/r/'+releaseId.slice(7)+'/index.html',administration:{actorId:op,reason}},0);
+        await tx.write('project-releases',releaseId,{id:releaseId,projectId,snapshotId:null,contentHash,paths:clean.map(f=>f.path),createdAt:now(),isolation:'opaque-origin-static-v1',connect,url:origin+'/r/'+releaseId.slice(7)+'/index.html',administration:{actorId:op,reason}},0);
         await tx.write('release-publications',releaseId,{projectId,published:true,expiresAt,updatedAt:now()},0);await tx.write('project-public-releases',projectId+':'+releaseId,{releaseId,published:true,expiresAt},0);
         const control=await tx.write('content-controls',projectId,{held:old?.value.held??false,releaseId,actorId:op,reason,updatedAt:now()},expectedRevision);
         const result={projectId,releaseId,expiresAt,revision:control.revision,held:control.value.held};await audit(tx,op,projectId,'correct',idempotencyKey,{reason,before:old,after:result});await tx.write('content-capacity',projectId,{count:(usage?.value.count??0)+1},usage?.revision??0);await tx.write('content-requests',key,{hash,result},0);return result;
