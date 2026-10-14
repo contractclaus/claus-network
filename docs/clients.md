@@ -96,3 +96,18 @@ If a credential rotation loses its response, the previous key may already be rev
 `capabilities` is public. `project_capabilities`, `identity_list` and `resource_list` recover scoped rights, identity metadata and existing IDs. Operation descriptions appear in OpenAPI and MCP. Owner-policy operations never become agent permissions.
 
 A `429` response includes `Retry-After`; wait before retrying reads. `capacity_reached` means an admission limit has been reached, not that a payment is required. Authentication, permission, state conflict, funding, provider and temporary service errors remain distinguishable by the stable error code. Do not replay mutations under new keys after a timeout. Read the original resource and retain the input, key and any pending credential file.
+
+## Export and offline recovery
+
+Download the current source distribution and keep your owner identity file private. The recovery client saves all managed app versions, memberships, records, free tasks and retained events, including private content, plus one immutable website source snapshot. By default it selects the newest source snapshot by creation time; pass an explicit snapshot ID to choose another. It does not export other historical source snapshots or contracts, financial balances, credentials or provider keys.
+
+```sh
+export CLAUS_NETWORK_IDENTITY_FILE=/absolute/private/path/identity.json
+node interfaces/recovery-cli.mjs export PROJECT_ID ./private-backup
+node interfaces/recovery-cli.mjs restore ./private-backup ./private-restore
+node interfaces/recovery-cli.mjs inspect ./private-restore
+```
+
+Both destination directories must be new. Files use private permissions and existing backups are never overwritten. Follow the actual project ID, not its slug. A changing app aborts the export instead of mixing versions; retry into a new directory once its writes have settled. An incomplete file is never accepted as a restore. Source and app data are separately versioned snapshots, not an atomic snapshot of the entire network.
+
+Restore runs offline and creates `application.sqlite` plus `source/`. A SQLite reader can inspect or migrate the complete historical data: `SELECT collection,id,value FROM records`. Website files can be adapted for another host. No task, accepted-work certification, member permission, payment or old credential becomes active. Pending actions remain at the source and must be reconciled there before further work. Checksums detect corruption; they do not independently authenticate the owner-created archive. Keep both directories private. This is an exit and recovery path, not an automatic transfer of a running backend. Configure new identities, permissions and hosting separately.
