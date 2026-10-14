@@ -1,5 +1,6 @@
 import {canonical,digest,requireThat,shape}from'../shared/index.mjs';
 import {validateDealEvidence}from'./evidence.mjs';
+import {dealAsset,isTokenDeal,amountDescription} from './assets.mjs';
 import {caseId,caseQuestion}from'./arbitration.mjs';
 
 export const DEAL_REVIEW_PROFILE='claus-deal-resolution-v1';
@@ -15,8 +16,8 @@ export function oracleInput(value){
  const toBlock=Number(value.observation.blockNumber)-3;
  requireThat(Number.isSafeInteger(toBlock)&&toBlock>5,'invalid_deal_observation');
  const bundleUrl='https://claus-network-api.vercel.app/v1/public/deal-cases/'+encodeURIComponent(value.id)+'/evidence';
- return {v:1,question:caseQuestion(value.id,bundleUrl,value.deal.amount),chainId:value.chainId,window:{fromBlock:toBlock-1,toBlock},answerType:'uint256',evidence:'panel',panelSize:5,quorum:4,toleranceBps:0,validForSeconds:86400,
-  definitions:{evidence:'Use the immutable case bundle and its hash-bound public documents. Onchain commitments show what the parties signed, not whether their claims are true.',amount:'Return only the exact provider payout in native ETH wei within the original amount. The rest refunds the original buyer. Respect explicit milestone prices; do not invent subjective percentage scores.',objection:'A missing or wrong-kind buyer objection is explicitly marked in the bundle; it cannot prevent reviewing available terms and result. It does not prove either party is right. Decide only from sufficient objective delivery evidence.',uncertainty:'If source evidence is unavailable, contradictory or insufficient, report inability. A missing web response is not evidence that the work was not delivered.'},
+ return {v:1,question:caseQuestion(value.id,bundleUrl,value.deal.amount,value.observation.asset),chainId:value.chainId,window:{fromBlock:toBlock-1,toBlock},answerType:'uint256',evidence:'panel',panelSize:5,quorum:4,toleranceBps:0,validForSeconds:86400,
+  definitions:{evidence:'Use the immutable case bundle and its hash-bound public documents. Onchain commitments show what the parties signed, not whether their claims are true.',amount:`Return only the exact provider payout in ${amountDescription(value.observation.asset)} within the original amount. The rest refunds the original buyer. Respect explicit milestone prices; do not invent subjective percentage scores.`,objection:'A missing or wrong-kind buyer objection is explicitly marked in the bundle; it cannot prevent reviewing available terms and result. It does not prove either party is right. Decide only from sufficient objective delivery evidence.',uncertainty:'If source evidence is unavailable, contradictory or insufficient, report inability. A missing web response is not evidence that the work was not delivered.'},
   guards:{min:'0',max:value.deal.amount},consumer:{chainId:value.chainId,verifyingContract:value.contract.toLowerCase()}};
 }
 export function decisionInput(value,oracle,proof){
@@ -28,7 +29,8 @@ export function decisionInput(value,oracle,proof){
 export function validateDealDecisionShape(input,pins,now=Date.now()){
  shape(input,['profile','projectId','caseId','dealId','deal','bundle','observation','oracle','proposal','proposalHash','review']);
  requireThat(input.profile===DEAL_REVIEW_PROFILE&&/^prj_[a-z0-9-]{1,80}$/.test(input.projectId??'')&&Buffer.byteLength(canonical(input))<=220000,'network_review_invalid_input');
- const p=input.proposal,d=input.deal,o=input.observation,pin=pins.find(x=>x.chainId===p.chainId);
+ const p=input.proposal,d=input.deal,o=input.observation,pin=pins.find(x=>x.chainId===p.chainId&&x.contract.toLowerCase()===p.contract);
+ requireThat(dealAsset(pin?.asset)===dealAsset(o.asset)&&(!isTokenDeal(o.asset)||(pin.token?.toLowerCase()===o.token?.toLowerCase()&&pin.decimals===18&&o.decimals===18)),'network_review_invalid_input');
  shape(p,['profile','caseId','chainId','contract','dealId','workerAmount','evidenceHash','expiresAt']);
  requireThat(pin?.reviewed===true&&pin.contract.toLowerCase()===p.contract&&pin.codeHash===o.codeHash&&pin.arbiter.toLowerCase()===o.arbiter.toLowerCase()&&o.chainId===p.chainId&&o.contract.toLowerCase()===p.contract&&p.profile===DEAL_REVIEW_PROFILE&&digest(p)===input.proposalHash&&p.caseId===input.caseId&&p.dealId===input.dealId&&caseId(p.chainId,p.contract,p.dealId)===input.caseId,'network_review_invalid_input');
  requireThat(/^[1-9][0-9]*$/.test(pin.maximumDealWei??'')&&pin.maximumDealWei===o.maximumDealWei&&d.state===4&&/^0x[0-9a-fA-F]{40}$/.test(d.buyer)&&/^0x[0-9a-fA-F]{40}$/.test(d.worker)&&d.buyer.toLowerCase()!==d.worker.toLowerCase()&&![d.buyer.toLowerCase(),d.worker.toLowerCase()].includes(pin.arbiter.toLowerCase())&&/^[1-9][0-9]*$/.test(d.amount)&&BigInt(d.amount)<=BigInt(pin.maximumDealWei)&&/^(0|[1-9][0-9]*)$/.test(p.workerAmount)&&BigInt(p.workerAmount)<=BigInt(d.amount)&&Number.isSafeInteger(p.expiresAt)&&p.expiresAt>Math.floor(now/1000)+3600&&p.expiresAt<=Number(d.resolutionDue),'network_review_invalid_input');

@@ -1,4 +1,5 @@
 import {amount,canonical,copy,digest,integer,requireThat} from '../shared/index.mjs';
+import {dealAsset,assetFields} from './assets.mjs';
 import {validateDealEvidence} from './evidence.mjs';
 const commitment=value=>'0x'+digest(value).slice(7);
 const same=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.toLowerCase()===b.toLowerCase();
@@ -22,7 +23,7 @@ export function createTaskPayments({identity,store,ports,deals,evidence,now=()=>
  const resultDocument=task=>document('result',{version:1,appId:task.agreement.appId,taskId:task.id,agreementId:task.agreement.id,output:task.output});
  async function observe(task){
   const a=task.agreement;requireThat(a,'task_payment_missing');
-  const c=await ports.context(a.chainId,{fresh:true});
+  const c=await ports.context(a.chainId,{fresh:true,asset:a.asset});
   requireThat(same(c.public.contract,a.contract)&&same(c.public.codeHash,a.codeHash),'deal_pin_mismatch');
   let value;try{value=await ports.read(c,'deal',a.id);}catch(e){if(e.code!=='not_found')throw e;}
   if(value){requireThat(same(value.buyer,a.buyer)&&same(value.worker,a.worker)&&same(value.termsHash,a.termsHash)&&same(value.projectId,a.projectHash)&&String(value.amount)===a.priceWei&&Number(value.deliveryDue)===a.deliveryDue,'payment_mismatch');
@@ -35,17 +36,18 @@ export function createTaskPayments({identity,store,ports,deals,evidence,now=()=>
    settlement:'credited means withdrawable escrow credit, not a wallet transfer. Use deal_balance and deal_prepare withdraw with your own signer.'};
  }
  return {
-  async create(actor,reader,appId,task,spec,{payerProjectId,chainId,priceWei,deliveryDue}){
+  async create(actor,reader,appId,task,spec,{payerProjectId,chainId,priceWei,deliveryDue,asset}){
+   dealAsset(asset);
    requireThat(!task.agreement&&task.state==='claimed'&&task.leaseUntil>now(),'app_task_busy');
    const who=await sender(actor,payerProjectId,'deal.prepare',reader);requireThat(who.principalId===task.authorId,'scope_denied');
    if(task.reviewCommission)requireThat(deliveryDue*1000<=task.reviewCommission.reviewExpiresAt,'task_review_deadline');
    integer(chainId);requireThat([1,11155111].includes(chainId),'unsupported_chain');integer(deliveryDue,Math.floor(now()/1000)+1,Math.floor(now()/1000)+2592000);
-   requireThat(ports.context,'deals_not_enabled');const c=await ports.context(chainId,{fresh:true});requireThat(c.public.enabled,'deals_not_enabled');
+   requireThat(ports.context,'deals_not_enabled');const c=await ports.context(chainId,{fresh:true,asset});requireThat(c.public.enabled,'deals_not_enabled');
    const price=amount(priceWei);requireThat(price>0n&&price<=BigInt(c.public.maximumDealWei),'invalid_amount');
    const worker=await wallet(reader,task.assigneeId);requireThat(!same(worker,who.address)&&!same(worker,c.public.arbiter)&&!same(who.address,c.public.arbiter),'deal_party_required');
-   const terms=document('terms',{version:1,appId,taskId:task.id,appVersion:task.version,generation:task.generation,requesterId:task.authorId,workerId:task.assigneeId,buyer:who.address,worker,input:task.input,outputSchema:spec.outputSchema,chainId,contract:c.public.contract,priceWei,deliveryDue,reviewSeconds:86400,disputeSeconds:259200,...(task.reviewPolicy?{reviewPolicy:task.reviewPolicy,reviewAuthority:'advisory_only'}:{}),...(task.reviewCommission?{reviewCommission:task.reviewCommission}:{})});
+   const terms=document('terms',{version:1,...assetFields(asset),...(c.public.token?{token:c.public.token}:{}),appId,taskId:task.id,appVersion:task.version,generation:task.generation,requesterId:task.authorId,workerId:task.assigneeId,buyer:who.address,worker,input:task.input,outputSchema:spec.outputSchema,chainId,contract:c.public.contract,priceWei,deliveryDue,reviewSeconds:86400,disputeSeconds:259200,...(task.reviewPolicy?{reviewPolicy:task.reviewPolicy,reviewAuthority:'advisory_only'}:{}),...(task.reviewCommission?{reviewCommission:task.reviewCommission}:{})});
    const termsHash=validateDealEvidence(terms),salt=commitment({kind:'claus-task-payment/1',appId,taskId:task.id,generation:task.generation});
-   return {version:1,appId,payerProjectId,requesterId:task.authorId,workerId:task.assigneeId,buyer:who.address,worker,chainId,contract:c.public.contract,codeHash:c.public.codeHash,projectHash:commitment({projectId:payerProjectId}),priceWei,deliveryDue,salt,termsHash,terms,id:await ports.id(c,'deal',who.address,salt)};
+   return {version:1,...assetFields(asset),...(c.public.token?{token:c.public.token}:{}),appId,payerProjectId,requesterId:task.authorId,workerId:task.assigneeId,buyer:who.address,worker,chainId,contract:c.public.contract,codeHash:c.public.codeHash,projectHash:commitment({projectId:payerProjectId}),priceWei,deliveryDue,salt,termsHash,terms,id:await ports.id(c,'deal',who.address,salt)};
   },
   observe,
   async checkTaskAction(task,action){
@@ -73,7 +75,7 @@ export function createTaskPayments({identity,store,ports,deals,evidence,now=()=>
     const result=await evidence.publish(actor,senderProjectId,resultDocument(task));input.contentHash=result.hash;
    }
    if(action==='accept')requireThat(task.state==='accepted','task_payment_not_ready');
-   const prepared=await deals.prepare(actor,senderProjectId,{chainId:a.chainId,action,input});
+   const prepared=await deals.prepare(actor,senderProjectId,{chainId:a.chainId,action,input,asset:a.asset});
    requireThat(prepared.id===a.id,'payment_mismatch');return {...prepared,payment};
   }
  };

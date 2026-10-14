@@ -24,5 +24,5 @@ export default async function handler(req,res){
 }
 
 export async function verifiedDealTargets(chain,pins,arbiter){
- const targets=[];for(const pin of pins){try{const c=await chain.context(pin.chainId,{fresh:true});if(c.public.arbiter.toLowerCase()!==arbiter.toLowerCase())throw Error('deal_arbiter_mismatch');targets.push({chainId:pin.chainId,contract:c.public.contract,codeHash:c.public.codeHash});}catch{/* One unavailable chain cannot stop the other cases. */}}return targets;
+ const targets=[];for(const pin of pins){try{const c=await chain.context(pin.chainId,{fresh:true,asset:pin.asset});if(c.public.arbiter.toLowerCase()!==arbiter.toLowerCase())throw Error('deal_arbiter_mismatch');targets.push({chainId:pin.chainId,contract:c.public.contract,codeHash:c.public.codeHash});}catch{/* One unavailable chain cannot stop the other cases. */}}return targets;
 }

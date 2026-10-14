@@ -32,7 +32,7 @@ export function showReview(task,host,{api,projectId}){
     if(!data.current)fragment.append(text('p','Recorded report. Recheck the current task and payment before acting.','review-copy'));
    }
    for(const challenge of data.challenges??[]){const objection=text('div',undefined,'review-criterion');objection.append(text('strong','Objection'),text('p',challenge.reason,'review-copy'));fragment.append(objection);}
-   if(data.commission)fragment.append(text('p',data.commission.agreement?'Reviewer has a separate ETH agreement.':'Reviewer commission awaits its ETH agreement.','review-copy'));
+   if(data.commission)fragment.append(text('p',data.commission.agreement?'Reviewer has a separate '+(data.commission.agreement.asset||'ETH')+' agreement.':'Reviewer commission awaits its payment agreement.','review-copy'));
    fragment.append(text('p','The buyer approves payment. Reviews and objections do not pause escrow deadlines.','review-copy'));
    content.replaceChildren(fragment);
   }catch{if(active===request&&section.isConnected){content.replaceChildren();status.textContent='Review could not load. Try again.';}}

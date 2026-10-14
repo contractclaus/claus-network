@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.23.0"
+    "version": "0.24.0"
   },
   "servers": [
     {
@@ -772,6 +772,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "asset": {
+                    "type": "string",
+                    "enum": [
+                      "ETH",
+                      "CLAUS"
+                    ],
+                    "description": "ETH by default. CLAUS uses the separate fixed-token escrow; all amount fields use 18-decimal base units."
+                  },
                   "chainId": {
                     "type": "integer",
                     "enum": [
@@ -897,6 +905,19 @@
                 11155111
               ]
             }
+          },
+          {
+            "name": "asset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ETH",
+                "CLAUS"
+              ],
+              "description": "ETH by default. CLAUS uses the separate fixed-token escrow; all amount fields use 18-decimal base units."
+            }
           }
         ],
         "responses": {
@@ -927,7 +948,7 @@
     "/v1/public/chains/{chainId}/deal-credits/{address}": {
       "get": {
         "operationId": "deal_balance",
-        "description": "Read the original account’s withdrawable ETH credit at a stated block. Only that account can withdraw; no API signer is supplied.",
+        "description": "Read the original account’s withdrawable credit in the selected asset at a stated block. Only that account can withdraw; no API signer is supplied.",
         "security": [],
         "parameters": [
           {
@@ -950,6 +971,19 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 42
+            }
+          },
+          {
+            "name": "asset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ETH",
+                "CLAUS"
+              ],
+              "description": "ETH by default. CLAUS uses the separate fixed-token escrow; all amount fields use 18-decimal base units."
             }
           }
         ],
@@ -1005,6 +1039,19 @@
               "minLength": 1,
               "maxLength": 66
             }
+          },
+          {
+            "name": "asset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ETH",
+                "CLAUS"
+              ],
+              "description": "ETH by default. CLAUS uses the separate fixed-token escrow; all amount fields use 18-decimal base units."
+            }
           }
         ],
         "responses": {
@@ -1059,6 +1106,19 @@
               "minLength": 1,
               "maxLength": 66
             }
+          },
+          {
+            "name": "asset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ETH",
+                "CLAUS"
+              ],
+              "description": "ETH by default. CLAUS uses the separate fixed-token escrow; all amount fields use 18-decimal base units."
+            }
           }
         ],
         "responses": {
@@ -1089,7 +1149,7 @@
     "/v1/projects/{projectId}/deals/prepare": {
       "post": {
         "operationId": "deal_prepare",
-        "description": "Prepare and simulate an unsigned transaction from the project owner address. Requires deal.prepare, or deal.exit for refunds/cancellation/expiry/withdrawal; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.",
+        "description": "Prepare and simulate an unsigned transaction from the project owner address. Requires deal.prepare, or deal.exit for refunds/cancellation/expiry/withdrawal; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, asset, price and deadlines. For CLAUS an approval-required result contains only an exact token allowance; confirm it, then prepare the same funding action again. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.",
         "security": [
           {
             "bearerAuth": []
@@ -1137,6 +1197,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "asset": {
+                    "type": "string",
+                    "enum": [
+                      "ETH",
+                      "CLAUS"
+                    ],
+                    "description": "ETH by default. CLAUS uses the separate fixed-token escrow; all amount fields use 18-decimal base units."
+                  },
                   "chainId": {
                     "type": "integer",
                     "enum": [
@@ -2916,7 +2984,7 @@
     "/v1/apps/{projectId}/tasks/{taskId}/agreement": {
       "post": {
         "operationId": "app_task_agreement",
-        "description": "Attach immutable public ETH payment terms to your claimed task. Requires deal.prepare on payerProjectId, verified party wallets and a live lease. Locks the assignee and terms; funding still needs your own signer. Public tasks only.",
+        "description": "Attach immutable public ETH or CLAUS payment terms to your claimed task. Requires deal.prepare on payerProjectId, verified party wallets and a live lease. Locks the assignee and terms; funding still needs your own signer. Public tasks only.",
         "security": [
           {
             "bearerAuth": []
@@ -2974,6 +3042,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "asset": {
+                    "type": "string",
+                    "enum": [
+                      "ETH",
+                      "CLAUS"
+                    ],
+                    "description": "ETH by default. CLAUS uses the separate fixed-token escrow; all amount fields use 18-decimal base units."
+                  },
                   "payerProjectId": {
                     "type": "string",
                     "minLength": 1,
@@ -3341,7 +3417,7 @@
     "/v1/apps/{projectId}/tasks/{taskId}/review/commission": {
       "post": {
         "operationId": "app_task_review_commission",
-        "description": "Requester links a separate claimed task in this same app to a pending review, before its ETH agreement is created. Same requester and selected reviewer required. Then use app_task_agreement and the normal funded Jobs flow on the commission. Pay for a completed review regardless of verdict; no fee is deducted from the original worker.",
+        "description": "Requester links a separate claimed task in this same app to a pending review, before its payment agreement is created. Same requester and selected reviewer required. Then use app_task_agreement and the normal funded Jobs flow on the commission. Pay for a completed review regardless of verdict; no fee is deducted from the original worker.",
         "security": [
           {
             "bearerAuth": []
