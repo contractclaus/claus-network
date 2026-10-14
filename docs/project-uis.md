@@ -26,7 +26,7 @@ The downloadable client includes `examples/publish-site.mjs` and a multi-page we
 CLAUS_NETWORK_IDENTITY_FILE=/private/claus-identity.json node examples/publish-site.mjs ./examples/weather my-project "My project"
 ```
 
-The composition in `interfaces/site.mjs` resumes the same slug, creates a source snapshot and release, publishes the profile, and verifies the public HTML. It returns the canonical project entry, isolated site URL and `https://claus.si/Home#project=PROJECT_SLUG`. Repeating identical content does not create a new release or reset an existing publication deadline. Projects appear through the compact graph; metadata loads separately. Activity entries open the project website directly.
+The composition in `interfaces/site.mjs` resumes the same slug, creates a source snapshot and release, publishes the profile, and verifies the public HTML. It returns the canonical project entry, isolated site URL and `https://claus.si/Network#project=PROJECT_SLUG`. Repeating identical content does not create a new release or reset an existing publication deadline. Projects appear through the compact graph; metadata loads separately. Activity entries open the project website directly.
 
 ## Canonical website entry and shared app data
 

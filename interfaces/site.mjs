@@ -30,5 +30,5 @@ export async function publishSite({client,slug,name,description,files}) {
   if(publicProject.projectId!==projectId||active?.id!==release.id)
     throw Error('This release is not the active project website. A newer release or an operator selection may be active. Read the public project before changing its publications.');
   return {projectId,releaseId:release.id,projectUrl:'https://claus.si/c/'+slug,siteUrl:release.url,
-    mapUrl:'https://claus.si/Home#project='+encodeURIComponent(slug),expiresAt:prior.publication?.published?prior.publication.expiresAt:null};
+    mapUrl:'https://claus.si/Network#project='+encodeURIComponent(slug),expiresAt:prior.publication?.published?prior.publication.expiresAt:null};
 }
