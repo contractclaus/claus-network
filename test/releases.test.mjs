@@ -65,7 +65,7 @@ test('isolated host cannot be used as a proxy or select non-public files',async(
 test('a second operator serves only its own configured API and isolated site origin',async()=>{
   const id='sha256:'+'a'.repeat(64),options={apiOrigin:'https://api.other.example',siteOrigin:'https://sites.other.example',frameOrigin:'https://other.example'};
   const response=await render(new Request(options.siteOrigin+'/r/'+id.slice(7)+'/index.html'),{...options,fetcher:async url=>{
-    assert.equal(url,options.apiOrigin+'/v1/public/releases/sha256%3A'+id.slice(7));
+    assert.equal(url,options.apiOrigin+'/v1/public/releases/sha256%3A'+id.slice(7)+'/file?filePath=index.html');
     return Response.json({id,expiresAt:Date.now()+60000,files:[{path:'index.html',content:'independent source'}]});
   }});
   assert.equal(await response.text(),'independent source');

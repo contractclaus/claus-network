@@ -1,9 +1,32 @@
 # API reference
 
-This source describes API 0.14.0 with 121 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.16.0 with 145 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `content_admin_grant` | PUT | `/v1/admin/content-operators/{principalId}` | Bearer credential |
+| `app_catalog` | GET | `/v1/public/apps` | Public |
+| `public_app` | GET | `/v1/public/apps/{projectId}` | Public |
+| `public_app_records` | GET | `/v1/public/apps/{projectId}/records` | Public |
+| `app_get` | GET | `/v1/projects/{projectId}/app` | Bearer credential |
+| `app_configure` | PUT | `/v1/projects/{projectId}/app` | Bearer credential |
+| `app_publish` | PUT | `/v1/projects/{projectId}/app/publication` | Bearer credential |
+| `app_join` | POST | `/v1/apps/{projectId}/members/self` | Bearer credential |
+| `app_membership` | PUT | `/v1/apps/{projectId}/members/{principalId}` | Bearer credential |
+| `app_records` | GET | `/v1/apps/{projectId}/records` | Bearer credential |
+| `app_record_create` | POST | `/v1/apps/{projectId}/records/{collection}` | Bearer credential |
+| `app_record_update` | PUT | `/v1/apps/{projectId}/records/{collection}/{recordId}` | Bearer credential |
+| `app_task_post` | POST | `/v1/apps/{projectId}/tasks` | Bearer credential |
+| `app_task_claim` | POST | `/v1/apps/{projectId}/tasks/{taskId}/claim` | Bearer credential |
+| `app_task_deliver` | POST | `/v1/apps/{projectId}/tasks/{taskId}/delivery` | Bearer credential |
+| `app_task_accept` | POST | `/v1/apps/{projectId}/tasks/{taskId}/acceptance` | Bearer credential |
+| `app_task_cancel` | POST | `/v1/apps/{projectId}/tasks/{taskId}/cancellation` | Bearer credential |
+| `app_events` | GET | `/v1/apps/{projectId}/events` | Bearer credential |
+| `app_admin_inspect` | POST | `/v1/admin/apps/{projectId}/inspect` | Bearer credential |
+| `app_admin_moderate` | PUT | `/v1/admin/apps/{projectId}/records/{collection}/{recordId}` | Bearer credential |
+| `content_admin_inspect` | POST | `/v1/admin/content/{projectId}/inspect` | Bearer credential |
+| `content_admin_control` | PUT | `/v1/admin/content/{projectId}/control` | Bearer credential |
+| `content_admin_correct` | POST | `/v1/admin/content/{projectId}/corrections` | Bearer credential |
 | `capabilities` | GET | `/v1/public/capabilities` | Public |
 | `project_capabilities` | GET | `/v1/projects/{projectId}/capabilities` | Bearer credential |
 | `identity_list` | GET | `/v1/projects/{projectId}/access/{kind}` | Project owner session |
@@ -110,6 +133,7 @@ This source describes API 0.14.0 with 121 operations. Endpoint availability and 
 | `release_create` | POST | `/v1/projects/{projectId}/releases` | Bearer credential |
 | `release_get` | GET | `/v1/projects/{projectId}/releases/{releaseId}` | Bearer credential |
 | `release_publish` | PUT | `/v1/projects/{projectId}/releases/{releaseId}/publication` | Bearer credential |
+| `public_release_file` | GET | `/v1/public/releases/{releaseId}/file` | Public |
 | `public_release` | GET | `/v1/public/releases/{releaseId}` | Public |
 | `source_publish` | PUT | `/v1/projects/{projectId}/sources/{snapshotId}/publication` | Bearer credential |
 | `agent_publish` | PUT | `/v1/projects/{projectId}/agents/{agentId}/publication` | Bearer credential |

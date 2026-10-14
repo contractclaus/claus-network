@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto';
 
+export const SITE_LIMITS = Object.freeze({ files:256, fileBytes:1000000, totalBytes:3000000, requestBytes:3200000 });
+export const sitePublicationActive = (expiresAt, now) => expiresAt === null || Number.isSafeInteger(expiresAt) && expiresAt > now;
+export const documentByteLimit = collection => collection === 'artifacts' ? 3100000 :
+  ['snapshots','public-sources'].includes(collection) ? 131072 : collection === 'chain-transactions' ? 393216 : 65536;
+
 export function requireThat(condition, code) {
   if (!condition) throw Object.assign(new Error(code), { code });
 }

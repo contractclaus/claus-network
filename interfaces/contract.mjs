@@ -1,4 +1,4 @@
-export const API_VERSION='0.15.0';
+export const API_VERSION='0.16.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -6,7 +6,7 @@ const boolean={type:'boolean'};
 const readonlyChain={type:'integer',enum:[1,11155111]};
 const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1']};
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
-const file=object({path:string(180),content:{type:'string',maxLength:48000}});
+const file=object({path:string(180),content:{type:'string',maxLength:1000000}});
 const descriptions = {
  app_catalog: 'List published managed applications. Follow nextCursor as after.',
  public_app: 'Read the published application manifest, actions and schemas.',
@@ -71,7 +71,7 @@ const descriptions = {
  service_register: 'Register an immutable service manifest. Requires service.manage. Host creates an unpaid transport probe before availability.',
  service_accept: 'Accept exact unexpired quote with service.call. Zero-price quotes need no payment; paid quotes await independent receipt verification. Same quoteId recovers order.',
  release_create: 'Select static files from own snapshot with release.publish and artifact.read. Does not publish the UI or expose other snapshot files.',
- release_publish: 'Publish, renew or withdraw isolated static UI using expectedRevision. Requires release.publish. No backend or private API access is granted.',
+ release_publish: 'Publish or withdraw isolated static UI using expectedRevision. Omit expiresAt or use null for no automatic expiry; an explicit future deadline is also supported. Requires release.publish. No backend or private API access is granted.',
  project_publish: 'Explicitly publish or withdraw a project profile using expectedRevision. Requires project.publish; private files and agents stay private.',
  project_export: 'Export own selected snapshot and files. Requires project.export and artifact.read. No side effects or destination operator needed.'
 };
@@ -101,7 +101,7 @@ export const ROUTES=Object.freeze([
  route('app_admin_moderate','PUT','/v1/admin/apps/{projectId}/records/{collection}/{recordId}',{projectId:string(),collection:string(48),recordId:string(),hidden:boolean,data:true,expectedRevision:integer,reason:string(500),idempotencyKey:string(128)},['projectId','collection','recordId','hidden','expectedRevision','reason','idempotencyKey']),
  route('content_admin_inspect','POST','/v1/admin/content/{projectId}/inspect',{projectId:string(),kind:{type:'string',enum:['profile','release','snapshot','audit']},id:string(),after:string(),reason:string(500),idempotencyKey:string(128)},['projectId','kind','reason','idempotencyKey']),
  route('content_admin_control','PUT','/v1/admin/content/{projectId}/control',{projectId:string(),held:boolean,releaseId:{type:['string','null'],maxLength:256},reason:string(500),expectedRevision:integer,idempotencyKey:string(128)}),
- route('content_admin_correct','POST','/v1/admin/content/{projectId}/corrections',{projectId:string(),files:{type:'array',items:file,minItems:1,maxItems:32},reason:string(500),expectedRevision:integer,idempotencyKey:string(128)}),
+ route('content_admin_correct','POST','/v1/admin/content/{projectId}/corrections',{projectId:string(),files:{type:'array',items:file,minItems:1,maxItems:256},reason:string(500),expectedRevision:integer,idempotencyKey:string(128)}),
  route('capabilities','GET','/v1/public/capabilities',{},[],true),
  route('project_capabilities','GET','/v1/projects/{projectId}/capabilities',{projectId:string()}),
  route('identity_list','GET','/v1/projects/{projectId}/access/{kind}',{projectId:string(),kind:{type:'string',enum:['agents','mandates','credentials']},after:string(),limit:{type:'integer',minimum:1,maximum:100}},['projectId','kind']),
@@ -122,7 +122,7 @@ export const ROUTES=Object.freeze([
  route('credential_create','POST','/v1/credentials',{mandateId:string()}),
  route('credential_rotate','POST','/v1/credentials/{credentialId}/rotate',{credentialId:string()}),
  route('credential_revoke','DELETE','/v1/credentials/{credentialId}',{credentialId:string()}),
- route('snapshot_create','POST','/v1/projects/{projectId}/snapshots',{projectId:string(),files:{type:'array',items:file,minItems:1,maxItems:64},expectedProjectRevision:integer}),
+ route('snapshot_create','POST','/v1/projects/{projectId}/snapshots',{projectId:string(),files:{type:'array',items:file,minItems:1,maxItems:256},expectedProjectRevision:integer}),
  route('snapshot_get','GET','/v1/projects/{projectId}/snapshots/{snapshotId}',{projectId:string(),snapshotId:string()}),
  route('build_create','POST','/v1/projects/{projectId}/builds',{projectId:string(),snapshotId:string(),entry:string(180),contract:string(128),idempotencyKey:string(),
   compilerProfile:{type:'string',enum:['solidity-static-compile-v1','solidity-0.8.26-static-v1','solidity-managed-compile-v1']},sourceRoot:string(160)},['projectId','snapshotId','entry','contract','idempotencyKey']),
@@ -212,9 +212,10 @@ export const ROUTES=Object.freeze([
  route('inference_get','GET','/v1/projects/{projectId}/inference/requests/{requestId}',{projectId:string(),requestId:string()}),
  route('inference_output','GET','/v1/projects/{projectId}/inference/requests/{requestId}/output',{projectId:string(),requestId:string()}),
  route('inference_cancel','DELETE','/v1/projects/{projectId}/inference/requests/{requestId}',{projectId:string(),requestId:string()}),
- route('release_create','POST','/v1/projects/{projectId}/releases',{projectId:string(),snapshotId:string(),paths:{type:'array',items:string(180),minItems:1,maxItems:32}}),
+ route('release_create','POST','/v1/projects/{projectId}/releases',{projectId:string(),snapshotId:string(),paths:{type:'array',items:string(180),minItems:1,maxItems:256}}),
  route('release_get','GET','/v1/projects/{projectId}/releases/{releaseId}',{projectId:string(),releaseId:string()}),
- route('release_publish','PUT','/v1/projects/{projectId}/releases/{releaseId}/publication',{projectId:string(),releaseId:string(),published:boolean,expiresAt:integer,expectedRevision:integer}),
+ route('release_publish','PUT','/v1/projects/{projectId}/releases/{releaseId}/publication',{projectId:string(),releaseId:string(),published:boolean,expiresAt:{type:['integer','null'],minimum:0},expectedRevision:integer},['projectId','releaseId','published','expectedRevision']),
+ route('public_release_file','GET','/v1/public/releases/{releaseId}/file',{releaseId:string(),filePath:string(180)},undefined,true),
  route('public_release','GET','/v1/public/releases/{releaseId}',{releaseId:string()},undefined,true),
  route('source_publish','PUT','/v1/projects/{projectId}/sources/{snapshotId}/publication',{projectId:string(),snapshotId:string(),published:boolean,expectedRevision:integer}),
  route('agent_publish','PUT','/v1/projects/{projectId}/agents/{agentId}/publication',{projectId:string(),agentId:string(),published:boolean,expectedRevision:integer}),

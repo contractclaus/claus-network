@@ -1,3 +1,4 @@
+import {documentByteLimit} from '../shared/index.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { setTimeout as delay } from 'node:timers/promises';
 import { canonical, copy, integer, requireThat, text } from '../shared/index.mjs';
@@ -69,7 +70,7 @@ export function openStore(path) {
           assertActive(); text(collection); text(id); integer(expectedRevision);
           const body = canonical(value);
           // Match PostgreSQL: bounded transaction intent plus sealed raw bytes.
-          requireThat(Buffer.byteLength(body) <= (collection === 'chain-transactions' ? 393216 : 65536), 'document_too_large');
+          requireThat(Buffer.byteLength(body) <= documentByteLimit(collection), 'document_too_large');
           requireThat((read(collection, id)?.revision ?? 0) === expectedRevision, 'revision_conflict');
           if (!expectedRevision) db.prepare('INSERT INTO documents VALUES (?,?,1,?)').run(collection, id, body);
           else requireThat(db.prepare(`UPDATE documents SET revision=revision+1,body=?
