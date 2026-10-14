@@ -4,7 +4,7 @@ import {copy,digest,integer,requireThat} from '../shared/index.mjs';
 // callers continue until nextCursor=null before interpreting absence.
 export function createDiscovery({store,projects,apps,services,now=()=>Date.now()}) {
   return {async operations(){
-    const roles=['compile','review','controller','executor','services','wallets','vaults','workflows'];
+    const roles=['compile','review','controller','executor','services','wallets','vaults','workflows','domains','workers'];
     const rows=await store.readMany('worker-health',roles),at=now();
     return {observedAt:at,workers:roles.map(role=>{const v=rows.get(role)?.value,age=Number.isFinite(v?.observedAt)?Math.max(0,at-v.observedAt):null;return {role,lastObservedAt:v?.observedAt??null,ageMs:age,status:age===null?'unknown':age<300000?'recent':'stale',release:v?.release??null,...(role==='workflows'?{lastBatch:v?{processed:v.processed??null,durationMs:v.durationMs??null,retries:v.retryCount??null}:null}:{})};}),scope:'Last host worker observations, not user-agent presence, independent uptime certification or an end-to-end SLA.'};
   },async search({kind='project',query='',after='',limit=20}={}) {

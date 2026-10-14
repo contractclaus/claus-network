@@ -16,9 +16,10 @@ export function createDeals({store,identity,ports={}}){
  const context=async (chainId,options)=>{integer(chainId);requireThat([1,11155111].includes(chainId),'unsupported_chain');requireThat(ports.context,'deals_not_enabled');return ports.context(chainId,options);};
  return {
   async terms(chainId){if(!ports.context)return {enabled:false,chainId,rules:DEAL_RULES};try{const c=await context(chainId);return {...c.public,rules:DEAL_RULES};}catch(e){if(e.code==='deals_not_enabled')return {enabled:false,chainId,rules:DEAL_RULES};throw e;}},
+  async balance(chainId,account){address(account);const c=await context(chainId);return{chainId,contract:c.public.contract,blockNumber:c.public.blockNumber,address:account,creditWei:String(await ports.credit(c,account))};},
   async read(chainId,id,kind='deal'){hash(id);requireThat(['deal','plan'].includes(kind),'invalid_deal_input');const c=await context(chainId);return {chainId,contract:c.public.contract,blockNumber:c.public.blockNumber,kind,id,value:await ports.read(c,kind,id),evidence:'Onchain agreement state; project commitment is not independent verification.'};},
   async prepare(actor,projectId,{chainId,action,input}){
-   const exit=['refund','settle','cancelUnclaimed','cancelPlan','expirePlan','withdraw'].includes(action);await identity.authorize(actor,exit?'deal.exit':'deal.prepare',{projectId});const p=(await store.read('projects',projectId)).value,owner=(await store.read('principals',p.ownerId))?.value;
+   const exit=['refund','settle','cancelUnclaimed','cancelPlan','expirePlan','withdraw','resolve'].includes(action);await identity.authorize(actor,exit?'deal.exit':'deal.prepare',{projectId});const p=(await store.read('projects',projectId)).value,owner=(await store.read('principals',p.ownerId))?.value;
    requireThat(owner?.address,'wallet_not_verified');const sender=address(owner.address),c=await context(chainId,{fresh:true}),projectHash='0x'+digest({projectId}).slice(7);
    let method,args,value=0n,id=null;requireThat(input&&typeof input==='object'&&!Array.isArray(input),'invalid_deal_input');
    if(action==='fund'){
@@ -34,6 +35,8 @@ export function createDeals({store,identity,ports={}}){
     exact(input,['id','contentHash']);id=hash(input.id);method=action;args=[id,hash(input.contentHash)];
    }else if(action==='run'){
     exact(input,['id','expectedRun']);id=hash(input.id);integer(input.expectedRun,0,99);method='runPlan';args=[id,input.expectedRun];
+   }else if(action==='resolve'){
+    exact(input,['caseId']);const record=(await store.read('deal-cases',input.caseId))?.value,r=record?.resolution;requireThat(record?.state==='resolution-ready'&&r?.chainId===chainId&&r.contract.toLowerCase()===c.public.contract.toLowerCase(),'resolution_unavailable');method='resolve';id=r.dealId;args=[id,BigInt(r.workerAmount),r.evidenceHash,r.expiresAt,r.signature];
    }else if(action==='withdraw'){
     exact(input,['amountWei','recipient']);method='withdraw';args=[amount(input.amountWei),address(input.recipient)];
    }else requireThat(false,'invalid_deal_action');

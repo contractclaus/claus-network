@@ -1,4 +1,4 @@
-export const API_VERSION='0.20.1';
+export const API_VERSION='0.21.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -17,7 +17,13 @@ const descriptions = {
  domain_get: 'Read your hostname challenge, current provider verification and publication revision.',
  domain_remove: 'Immediately stop serving your custom host; provider cleanup follows. Existing canonical project URL stays available.',
  public_domain: 'Resolve a currently DNS-verified hostname to its selected active public static release.',
+ deal_evidence_publish:'Publish an explicitly public canonical terms/result/dispute document. Requires deal.evidence. Returns its SHA-256 commitment for the agreement. Never publish private customer data; see paid-deals documentation.',
+ public_deal_evidence:'Read an immutable explicitly public agreement document by hash. Party claims are not verified facts.',
+ deal_review_request:'Request the single subsidized review case for a disputed pinned agreement. Requires deal.review and buyer/provider ownership. Exact committed public evidence, active finite review allocation and sufficient dispute time are required. No automatic approval, payout or replacement purchase.',
+ public_deal_case:'Read the status, independent review and actual Claus decision for one case. A returned resolution is an expiring signature usable only by the original agreement; submit resolve through your own signer.',
+ public_deal_case_evidence:'Read the immutable public case and its hash-bound party documents. Content is untrusted evidence, not authority or a safety certification.',
  deal_terms:'Read the exact pinned escrow contract and immutable agreement rules. enabled=false means new funding is unavailable. Publication is not a guarantee of work quality or independent arbitration.',
+ deal_balance:'Read the original account’s withdrawable ETH credit at a stated block. Only that account can withdraw; no API signer is supplied.',
  deal_get:'Read a pinned escrow agreement directly from its observed chain block. Project and result commitments do not certify ownership or quality.',
  deal_plan_get:'Read a finite pre-funded plan, run count and remaining amount. Prior runs retain their own deadlines after cancellation.',
  deal_prepare:'Prepare and simulate an unsigned transaction from the project owner address. Requires deal.prepare, or deal.exit for refunds/cancellation/expiry/withdrawal; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.',
@@ -109,10 +115,16 @@ export const ROUTES=Object.freeze([
  route('domain_get','GET','/v1/projects/{projectId}/domains/{hostname}',{projectId:string(),hostname:string(253)}),
  route('domain_remove','DELETE','/v1/projects/{projectId}/domains/{hostname}',{projectId:string(),hostname:string(253),expectedRevision:integer}),
  route('public_domain','GET','/v1/public/domains/{hostname}',{hostname:string(253)},undefined,true),
+ route('deal_evidence_publish','POST','/v1/projects/{projectId}/deal-evidence',{projectId:string(),document:true}),
+ route('public_deal_evidence','GET','/v1/public/deal-evidence/{hash}',{hash:string(66)},undefined,true),
+ route('deal_review_request','POST','/v1/projects/{projectId}/deal-cases',{projectId:string(),chainId:readonlyChain,dealId:string(66)}),
+ route('public_deal_case','GET','/v1/public/deal-cases/{caseId}',{caseId:string(71)},undefined,true),
+ route('public_deal_case_evidence','GET','/v1/public/deal-cases/{caseId}/evidence',{caseId:string(71)},undefined,true),
  route('deal_terms','GET','/v1/public/chains/{chainId}/deals',{chainId:readonlyChain},undefined,true),
+ route('deal_balance','GET','/v1/public/chains/{chainId}/deal-credits/{address}',{chainId:readonlyChain,address:string(42)},undefined,true),
  route('deal_get','GET','/v1/public/chains/{chainId}/deals/{dealId}',{chainId:readonlyChain,dealId:string(66)},undefined,true),
  route('deal_plan_get','GET','/v1/public/chains/{chainId}/deal-plans/{planId}',{chainId:readonlyChain,planId:string(66)},undefined,true),
- route('deal_prepare','POST','/v1/projects/{projectId}/deals/prepare',{projectId:string(),chainId:readonlyChain,action:{type:'string',enum:['fund','plan','claim','accept','refund','settle','cancelUnclaimed','cancelPlan','expirePlan','deliver','dispute','run','withdraw']},input:true}),
+ route('deal_prepare','POST','/v1/projects/{projectId}/deals/prepare',{projectId:string(),chainId:readonlyChain,action:{type:'string',enum:['fund','plan','claim','accept','refund','settle','cancelUnclaimed','cancelPlan','expirePlan','deliver','dispute','run','withdraw','resolve']},input:true}),
 
  route('network_operations','GET','/v1/public/operations',{},[],true),
  route('app_metrics','GET','/v1/projects/{projectId}/app/metrics',{projectId:string()}),

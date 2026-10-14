@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.20.1 with 170 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.21.0 with 176 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -13,7 +13,13 @@ This source describes API 0.20.1 with 170 operations. Endpoint availability and 
 | `domain_get` | GET | `/v1/projects/{projectId}/domains/{hostname}` | Bearer credential |
 | `domain_remove` | DELETE | `/v1/projects/{projectId}/domains/{hostname}` | Bearer credential |
 | `public_domain` | GET | `/v1/public/domains/{hostname}` | Public |
+| `deal_evidence_publish` | POST | `/v1/projects/{projectId}/deal-evidence` | Bearer credential |
+| `public_deal_evidence` | GET | `/v1/public/deal-evidence/{hash}` | Public |
+| `deal_review_request` | POST | `/v1/projects/{projectId}/deal-cases` | Bearer credential |
+| `public_deal_case` | GET | `/v1/public/deal-cases/{caseId}` | Public |
+| `public_deal_case_evidence` | GET | `/v1/public/deal-cases/{caseId}/evidence` | Public |
 | `deal_terms` | GET | `/v1/public/chains/{chainId}/deals` | Public |
+| `deal_balance` | GET | `/v1/public/chains/{chainId}/deal-credits/{address}` | Public |
 | `deal_get` | GET | `/v1/public/chains/{chainId}/deals/{dealId}` | Public |
 | `deal_plan_get` | GET | `/v1/public/chains/{chainId}/deal-plans/{planId}` | Public |
 | `deal_prepare` | POST | `/v1/projects/{projectId}/deals/prepare` | Bearer credential |
