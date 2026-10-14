@@ -280,6 +280,16 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "domains",
+      "path": "src/domains/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": [
+        "node:crypto"
+      ]
     }
   ],
   "planned": [
