@@ -82,3 +82,7 @@ All processing, including binding an existing native approval and issuing its si
 ## Optional Jobs reviews
 
 Public Jobs can commit a selected reviewer and rubric before work begins, retain a report bound to the exact delivery, and pay the reviewer through a separate ETH or CLAUS task. See [Independent task review](jobs.md#independent-task-review). These reports and objections are advisory and do not pause the contract's settlement clock. They do not replace the onchain dispute or grant signing authority to reviewers.
+
+## CLAUS deployment record
+
+Ethereum escrow: [`0xc2292af8b51109a27a4b4e28e9cf9f3aede4190c`](https://etherscan.io/address/0xc2292af8b51109a27a4b4e28e9cf9f3aede4190c#code). The [deployment record](token-deal-deployment.json) includes the reviewed source, independent report identity, exact verification and dated token authority observation. Query `deal_terms` for current admission.
