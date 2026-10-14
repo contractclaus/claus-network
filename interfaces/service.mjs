@@ -1,7 +1,11 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  domain_set:(actor,input)=>domains.set(actor,input.projectId,input),
+  domain_get:(actor,input)=>domains.get(actor,input.projectId,input.hostname),
+  domain_remove:(actor,input)=>domains.remove(actor,input.projectId,input),
+  public_domain:(_,input)=>domains.resolve(input.hostname),
   deal_terms:(_,input)=>deals.terms(input.chainId),
   deal_get:(_,input)=>deals.read(input.chainId,input.dealId,'deal'),
   deal_plan_get:(_,input)=>deals.read(input.chainId,input.planId,'plan'),
@@ -42,7 +46,7 @@ export function createService({deals,workflows,discovery,apps,contentAdmin,acces
   content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
   content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
 
-  capabilities:async()=>({...await access.discovery(),workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
+  capabilities:async()=>({...await access.discovery(),domains:{enabled:domains?.enabled===true,limits:domains?.limits,profile:'dns-verified-static-hosts-v1'},workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),

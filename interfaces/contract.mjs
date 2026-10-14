@@ -1,4 +1,4 @@
-export const API_VERSION='0.19.0';
+export const API_VERSION='0.19.1';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -8,6 +8,10 @@ const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:1000000}});
 const descriptions = {
+ domain_set: 'Bind a published static release to your exact hostname with DNS TXT proof. Host provisioning is asynchronous; no wallet or contract rights.',
+ domain_get: 'Read your hostname challenge, current provider verification and publication revision.',
+ domain_remove: 'Immediately stop serving your custom host; provider cleanup follows. Existing canonical project URL stays available.',
+ public_domain: 'Resolve a currently DNS-verified hostname to its selected active public static release.',
  deal_terms:'Read the exact pinned escrow contract and immutable agreement rules. enabled=false means new funding is unavailable. Publication is not a guarantee of work quality or independent arbitration.',
  deal_get:'Read a pinned escrow agreement directly from its observed chain block. Project and result commitments do not certify ownership or quality.',
  deal_plan_get:'Read a finite pre-funded plan, run count and remaining amount. Prior runs retain their own deadlines after cancellation.',
@@ -91,6 +95,10 @@ const route=(name,method,path,properties={},required=Object.keys(properties),pub
  description:descriptions[name] ?? `${method} ${path}. ${publicRead?'Public read.':method==='GET'?'Requires current object read permission.':'Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.'}`});
 export const ROUTES=Object.freeze([
 
+ route('domain_set','PUT','/v1/projects/{projectId}/domains/{hostname}',{projectId:string(),hostname:string(253),releaseId:string(71),expectedRevision:integer}),
+ route('domain_get','GET','/v1/projects/{projectId}/domains/{hostname}',{projectId:string(),hostname:string(253)}),
+ route('domain_remove','DELETE','/v1/projects/{projectId}/domains/{hostname}',{projectId:string(),hostname:string(253),expectedRevision:integer}),
+ route('public_domain','GET','/v1/public/domains/{hostname}',{hostname:string(253)},undefined,true),
  route('deal_terms','GET','/v1/public/chains/{chainId}/deals',{chainId:readonlyChain},undefined,true),
  route('deal_get','GET','/v1/public/chains/{chainId}/deals/{dealId}',{chainId:readonlyChain,dealId:string(66)},undefined,true),
  route('deal_plan_get','GET','/v1/public/chains/{chainId}/deal-plans/{planId}',{chainId:readonlyChain,planId:string(66)},undefined,true),

@@ -1,3 +1,4 @@
+import {createDomains} from '../src/domains/index.mjs';
 import {createDiscovery} from '../src/discovery/index.mjs';
 import {createWorkflows} from '../src/workflows/index.mjs';
 import {createApps} from '../src/apps/index.mjs';
@@ -43,7 +44,7 @@ import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
 import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},appStorage=null,appWritesEnabled=true}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},domainPorts={},domainsEnabled=false,appStorage=null,appWritesEnabled=true}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
@@ -118,8 +119,9 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
     (await reader.read('network-capabilities','contract-intake'))?.value.enabled===true)});
  workflows=createWorkflows({store,identity,apps,now,admit:access.collaboration});
  const discovery=createDiscovery({store,projects,apps,services,now});
+ const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
  const deals=createDeals({store,identity,ports:dealPorts});
- const service=createService({deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const service=createService({domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   if(appStorage?.admit&&(route.startsWith('app_')||route.startsWith('public_app')||route==='mcp'))return appStorage.admit(digest({rateSalt,peer}),now(),(await access.policy()).config);
   return store.transaction(async tx=>{
@@ -136,7 +138,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  });
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{
