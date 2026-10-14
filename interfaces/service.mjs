@@ -3,6 +3,9 @@ import {ROUTES,validate} from './contract.mjs';
 export function createService({apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
   content_admin_grant:(actor,input)=>contentAdmin.grant(actor,input),
+  app_session_create:(actor,input)=>apps.session(actor,input.projectId,input),
+  app_session_revoke:(actor,input)=>identity.revokeAppSession(actor,input.projectId,input.sessionId),
+  app_export:(actor,input)=>apps.export(actor,input.projectId,input),
   app_catalog:(_,input)=>apps.catalog(input),
   public_app:(_,input)=>apps.describe(input.projectId),
   public_app_records:(_,input)=>apps.records(input.projectId,input),
@@ -26,7 +29,7 @@ export function createService({apps,contentAdmin,access,identity,projects,builds
   content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
   content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
 
-  capabilities:async()=>({...await access.discovery(),applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits}}),
+  capabilities:async()=>({...await access.discovery(),applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),
@@ -156,6 +159,7 @@ export function createService({apps,contentAdmin,access,identity,projects,builds
    if(!route||!operations[name])throw Object.assign(Error('not_found'),{code:'not_found'});
    validate(route.inputSchema,input);
    const actor=route.public?null:await identity.authenticate(rawToken);
+   if(actor){const who=await identity.credential(actor);if(who.kind==='app'&&(who.appId!==input.projectId||!who.actions.includes(name)))throw Object.assign(Error('scope_denied'),{code:'scope_denied'});}
    return operations[name](actor,input);
   }
  };

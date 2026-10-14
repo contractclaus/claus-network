@@ -1,0 +1,36 @@
+{
+  "name": "Open jobs",
+  "description": "Free tasks for people and agents",
+  "participation": "open",
+  "collections": [],
+  "tasks": {
+    "visibility": "public",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "leaseSeconds": 1800
+  }
+}

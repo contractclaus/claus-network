@@ -5,7 +5,7 @@ import {readFile,open,stat} from 'node:fs/promises';
 import {createClient} from './sdk.mjs';
 import {API_VERSION,ROUTES} from './contract.mjs';
 const [command,operation,inputPath,...extra]=process.argv.slice(2);
-const credentialOperations=new Set(['auth_session','credential_create','credential_rotate']);
+const credentialOperations=new Set(['auth_session','credential_create','credential_rotate','app_session_create']);
 const usage='Usage: claus-network operations\n       claus-network describe OPERATION\n       claus-network call OPERATION [input.json]\n\noperations and describe read the bundled API schema without connecting or loading credentials.\nSet CLAUS_NETWORK_URL and either CLAUS_NETWORK_TOKEN_FILE or a private CLAUS_NETWORK_IDENTITY_FILE for automatic login.\nCredential responses require CLAUS_NETWORK_NEW_TOKEN_FILE.';
 const describe=route=>({name:route.name,method:route.method,path:route.path,
  authentication:route.public?'none':'bearer',credentialFileRequired:credentialOperations.has(route.name)});

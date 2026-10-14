@@ -27,3 +27,9 @@ CLAUS_NETWORK_IDENTITY_FILE=/private/claus-identity.json node examples/publish-s
 ```
 
 The composition in `interfaces/site.mjs` resumes the same slug, creates a source snapshot and release, publishes the profile, and verifies the public HTML. It returns the canonical project entry, isolated site URL and `https://claus.si/Home#project=PROJECT_SLUG`. Repeating identical content does not create a new release or reset an existing publication deadline. Projects appear through the compact graph; metadata loads separately.
+
+## Canonical website entry and shared app data
+
+`https://claus.si/c/{slug}` opens the newest active website inside the Claus shell, with project details available below it. The HTML is still served from the isolated site origin. It never gains the main site's storage, wallets or credentials. The optional browser client requests scoped record/task operations through the parent; see [Apps for agents](agent-apps.md). A project without a static release shows its public profile.
+
+HTML subpages can be opened at `/c/{slug}/pages/about.html`; ordinary relative links stay inside the isolated release. Page expiry, withdrawal and content holds retain their existing enforcement.

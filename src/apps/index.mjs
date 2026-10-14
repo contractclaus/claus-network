@@ -10,8 +10,9 @@ function afterCursor(value,appId,actor,collection){if(!value)return '';let p;try
 
 export function createApps({storage,identity,store,schemaDefinition,schemaValue,now=()=>Date.now(),visible=async()=>true,admit=async()=>{},authorizeOperator,writesEnabled=true}) {
   const ready=()=>requireThat(storage,'apps_not_enabled');
-  async function visitor(actor,reader) {
+  async function visitor(actor,reader,projectId) {
     const who=await identity.credential(actor,reader);
+    if(who.kind==='app'){requireThat(who.appId===projectId,'scope_denied');return who.principalId;}
     if(who.kind!=='owner')await identity.authorize(actor,'app.use',{projectId:who.projectId},reader);
     return who.principalId;
   }
@@ -31,13 +32,13 @@ export function createApps({storage,identity,store,schemaDefinition,schemaValue,
     if(publicOnly){const pub=(await tx.network.read('public-projects',project.slug))?.value;requireThat(row.value.published&&pub?.published,'not_found');}
     return row;
   }
-  async function participant(tx,projectId,actor){const who=await visitor(actor,tx.network),a=await app(tx,projectId);const own=await identity.allowed(actor,'app.manage',{projectId},tx.network);const member=(await tx.read('members',who))?.value;requireThat(own||member?.active,'app_membership_required');return {who,a,own};}
+  async function participant(tx,projectId,actor){const who=await visitor(actor,tx.network,projectId),a=await app(tx,projectId);const own=await identity.allowed(actor,'app.manage',{projectId},tx.network);const member=(await tx.read('members',who))?.value;requireThat(own||member?.active||(await tx.network.read('projects',projectId))?.value.ownerId===who,'app_membership_required');return {who,a,own};}
   async function writable(tx,projectId,actor){requireThat(writesEnabled,'app_writes_paused');await admit(projectId,tx.network);
     const usage=await tx.read('meta','usage'),day=Math.floor(now()/86400000),count=usage?.value.day===day?usage.value.count:0;
     requireThat(count<APP_LIMITS.mutationsPerDay,'capacity_reached');await tx.write('meta','usage',{day,count:count+1},usage?.revision??0);
     const row=await tx.read('usage',actor),own=row?.value.day===day?row.value.count:0;requireThat(own<APP_LIMITS.mutationsPerActorDay,'capacity_reached');await tx.write('usage',actor,{day,count:own+1},row?.revision??0);
   }
-  async function effect(tx,projectId,actor,op,key,input,run){bounded(key,128);const p=await visitor(actor,tx.network),k=digest({p,op,key}),hash=digest(input),old=await tx.read('requests',k);if(old){requireThat(old.value.hash===hash,'idempotency_conflict');return copy(old.value.result);}if(!['moderate','withdraw','revoke'].includes(op))await writable(tx,projectId,p);const result=await run(p);await tx.write('requests',k,{hash,result},0);return result;}
+  async function effect(tx,projectId,actor,op,key,input,run){bounded(key,128);const p=await visitor(actor,tx.network,projectId),k=digest({p,op,key}),hash=digest(input),old=await tx.read('requests',k);if(old){requireThat(old.value.hash===hash,'idempotency_conflict');return copy(old.value.result);}if(!['moderate','withdraw','revoke'].includes(op))await writable(tx,projectId,p);const result=await run(p);await tx.write('requests',k,{hash,result},0);return result;}
   async function event(tx,value){const seq=await tx.read('meta','sequence'),next=(seq?.value.next??0)+1;requireThat(next<=APP_LIMITS.events,'capacity_reached');await tx.write('meta','sequence',{next},seq?.revision??0);await tx.write('events',String(next).padStart(12,'0'),{...value,sequence:next,at:now()},0);}
   const api={
     enabled:!!storage,writesEnabled,limits:APP_LIMITS,
@@ -54,11 +55,23 @@ export function createApps({storage,identity,store,schemaDefinition,schemaValue,
       });});},
     async publish(actor,projectId,{published,expectedRevision,idempotencyKey}){ready();requireThat(typeof published==='boolean','invalid_publication');return storage.transaction(projectId,async tx=>{await manager(actor,projectId,tx.network);return effect(tx,projectId,actor,published?'publish':'withdraw',idempotencyKey,{published,expectedRevision},async who=>{const a=await app(tx,projectId);const result=rowValue(await tx.write('meta','app',{...a.value,published,updatedAt:now()},expectedRevision));await event(tx,{type:'app.publication',actorId:who,published});return result;});});},
     async describe(projectId,actor=null){ready();const tx=storage.reader(projectId);const a=await app(tx,projectId,{publicOnly:!actor});if(actor)await participant(tx,projectId,actor);return {...rowValue(a),limits:APP_LIMITS,actions:['app_join','app_records','app_record_create','app_record_update',...(a.value.manifest.tasks?['app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel']:[]),'app_events'],backend:'managed-records-and-tasks-v1'};},
+    async session(actor,projectId,{actions,expiresAt}){ready();const tx=storage.reader(projectId);await participant(tx,projectId,actor);return identity.appSession(actor,{appId:projectId,actions,expiresAt});},
+    async export(actor,projectId,{after='',limit=25}={}){ready();integer(limit,1,25);return storage.transaction(projectId,async tx=>{
+      const {who}=await identity.owner(actor,projectId,tx.network),a=await tx.read('meta','app');requireThat(a,'not_found');
+      const sequence=(await tx.read('meta','sequence'))?.value.next??0,stamp=digest({revision:a.revision,sequence});
+      const collections=['versions','members','tasks',...a.value.manifest.collections.map(c=>'records:'+c.id),'events'];
+      let index=0,last='';if(after){let saved;try{saved=JSON.parse(afterCursor(after,projectId,who.principalId,'export'));}catch{requireThat(false,'invalid_cursor');}
+        requireThat(saved.stamp===stamp,'app_export_changed');integer(saved.index,0,collections.length-1);requireThat(typeof saved.last==='string','invalid_cursor');index=saved.index;last=saved.last;}
+      const collection=collections[index],rows=await tx.list(collection,{after:last,limit});
+      let next=null;if(rows.length===limit)next={index,last:rows.at(-1).id,stamp};else if(index+1<collections.length)next={index:index+1,last:'',stamp};
+      return {schemaVersion:'claus-app-export/1',projectId,manifest:rowValue(a),contentVersion:stamp,sequence,collection,items:rows.map(r=>({id:r.id,...rowValue(r)})),
+        nextCursor:next?cursor(projectId,who.principalId,'export',JSON.stringify(next)):null,exportedAt:now(),scope:'Owner application data, versions, members, tasks and events. No credentials, payments or operator private audit. Changed content requires restarting the export.'};
+    });},
     async catalog({after='',limit=50}={}){ready();const ids=await storage.catalog({after,limit}),items=[];for(const projectId of ids){try{const a=await api.describe(projectId);items.push({projectId,name:a.manifest.name,description:a.manifest.description,version:a.version});}catch(e){if(!['not_found','project_unavailable'].includes(e.code))throw e;}}return {items,nextCursor:ids.length===limit?ids.at(-1):null};},
     async join(actor,projectId,{idempotencyKey}) {
       ready();
       return storage.transaction(projectId,async tx=>{
-        const who=await visitor(actor,tx.network),a=await app(tx,projectId,{publicOnly:true});
+        const who=await visitor(actor,tx.network,projectId),a=await app(tx,projectId,{publicOnly:true});
         requireThat(a.value.manifest.participation==='open','scope_denied');
         const membership=await tx.read('members',who);
         // A cached successful join must not contradict a later revocation.
@@ -68,7 +81,7 @@ export function createApps({storage,identity,store,schemaDefinition,schemaValue,
           const n=await tx.read('meta','members');
           requireThat((n?.value.count??0)<APP_LIMITS.members,'capacity_reached');
           await tx.write('meta','members',{count:(n?.value.count??0)+1},n?.revision??0);
-          return rowValue(await tx.write('members',who,{principalId:who,active:true,joinedAt:now()},0));
+          const member=rowValue(await tx.write('members',who,{principalId:who,active:true,joinedAt:now()},0));await event(tx,{type:'member.joined',actorId:who,principalId:who});return member;
         });
       });
     },
@@ -98,7 +111,7 @@ export function createApps({storage,identity,store,schemaDefinition,schemaValue,
     async moderate(actor,projectId,{collection,recordId,hidden,data,expectedRevision,reason,idempotencyKey}){ready();bounded(reason,500);requireThat(typeof hidden==='boolean','invalid_moderation');return storage.transaction(projectId,async tx=>{const op=await operator(actor,tx.network,'moderate');return effect(tx,projectId,actor,'moderate',idempotencyKey,{collection,recordId,hidden,data:data??null,expectedRevision,reason},async()=>{
       const col=collection==='tasks'?'tasks':'records:'+name(collection),old=await tx.read(col,recordId);requireThat(old,'not_found');const value={...old.value,hidden};
       if(data!==undefined){requireThat(collection!=='tasks','scope_denied');const a=(await tx.read('meta','app')).value,spec=a.manifest.collections.find(c=>c.id===collection);schemaValue(spec.schema,data);requireThat(Buffer.byteLength(canonical(data))<=APP_LIMITS.recordBytes,'document_too_large');value.data=copy(data);}
-      value.adminChange={actorId:op,reason,at:now()};const result=rowValue(await tx.write(col,recordId,value,expectedRevision));await audit(tx,op,'moderate',{collection,recordId,reason,before:old,after:result});return result;
+      value.adminChange={actorId:op,reason,at:now()};const result=rowValue(await tx.write(col,recordId,value,expectedRevision));await audit(tx,op,'moderate',{collection,recordId,reason,before:old,after:result});await event(tx,{type:'record.moderated',collection,id:recordId,actorId:op});return result;
     });});},
     async inspect(actor,projectId,{collection,after='',limit=50,reason}){ready();bounded(reason,500);return storage.transaction(projectId,async tx=>{const op=await operator(actor,tx.network);const col=collection==='tasks'?'tasks':collection==='audit'?'audit':'records:'+name(collection),rows=await tx.list(col,{after,limit});await audit(tx,op,'inspect',{collection,reason,after});return {items:rows.map(rowValue),nextCursor:rows.length===limit?rows.at(-1).id:null};});}
   };
