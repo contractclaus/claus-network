@@ -1,4 +1,4 @@
-import {createPublicClient,http,keccak256,encodeFunctionData}from'viem';
+import {createPublicClient,http,fallback,keccak256,encodeFunctionData}from'viem';
 import {requireThat}from'../src/shared/index.mjs';
 import {dealAbi}from'../src/deals/index.mjs';
 const json=value=>JSON.parse(JSON.stringify(value,(_,v)=>typeof v==='bigint'?v.toString():v));
@@ -8,7 +8,10 @@ export function dealPorts(env=process.env,{clientFactory=createPublicClient,now=
 }
 function configured(env,clientFactory,now){
  const pins=env.CLAUS_DEAL_PINS?JSON.parse(env.CLAUS_DEAL_PINS):[];requireThat(Array.isArray(pins)&&pins.length<=2,'invalid_deal_pins');const chains=new Map();
- for(const p of pins){requireThat([1,11155111].includes(p.chainId)&&!chains.has(p.chainId)&&/^0x[0-9a-fA-F]{40}$/.test(p.contract)&&/^0x[0-9a-fA-F]{64}$/.test(p.codeHash)&&/^0x[0-9a-fA-F]{40}$/.test(p.arbiter)&&/^0x[0-9a-fA-F]{40}$/.test(p.admissionController)&&/^[1-9][0-9]*$/.test(p.maximumDealWei??'')&&p.reviewed===true,'invalid_deal_pins');const raw=p.chainId===1?env.CLAUS_MAINNET_RPC_URL:env.CLAUS_SEPOLIA_RPC_URL;requireThat(raw,'chain_not_configured');const url=new URL(raw);requireThat(url.protocol==='https:','invalid_deal_pins');chains.set(p.chainId,{pin:p,client:clientFactory({transport:http(url.href,{retryCount:0,timeout:10000}),cacheTime:0}),immutable:null,cache:null,pending:null});}
+ for(const p of pins){requireThat([1,11155111].includes(p.chainId)&&!chains.has(p.chainId)&&/^0x[0-9a-fA-F]{40}$/.test(p.contract)&&/^0x[0-9a-fA-F]{64}$/.test(p.codeHash)&&/^0x[0-9a-fA-F]{40}$/.test(p.arbiter)&&/^0x[0-9a-fA-F]{40}$/.test(p.admissionController)&&/^[1-9][0-9]*$/.test(p.maximumDealWei??'')&&p.reviewed===true,'invalid_deal_pins');const raw=p.chainId===1?env.CLAUS_MAINNET_RPC_URL:env.CLAUS_SEPOLIA_RPC_URL;requireThat(raw,'chain_not_configured');const url=new URL(raw);requireThat(url.protocol==='https:','invalid_deal_pins');
+  const backup=p.chainId===1?'https://ethereum-rpc.publicnode.com':'https://ethereum-sepolia-rpc.publicnode.com';
+  const urls=[...new Set([url.href,new URL(backup).href])];
+  chains.set(p.chainId,{pin:p,client:clientFactory({transport:fallback(urls.map(u=>http(u,{retryCount:0,timeout:5000})),{retryCount:0,rank:false}),cacheTime:0}),immutable:null,cache:null,pending:null});}
  const call=(c,functionName,args=[])=>c.client.readContract({address:c.pin.contract,abi:dealAbi,functionName,args,blockNumber:c.block.number});
  async function verified(entry,chainId,confirmations=1){
   requireThat([1,3].includes(confirmations),'invalid_confirmation_policy');

@@ -14,6 +14,8 @@ export function readonlyPorts(env = process.env) {
   if (!env.CLAUS_MAINNET_RPC_URL) return ports;
   const url = new URL(env.CLAUS_MAINNET_RPC_URL);
   requireThat(url.protocol === 'https:', 'invalid_mainnet_rpc');
-  ports.mainnetClient = createPublicClient({ transport: http(url.href, { retryCount: 0, timeout: 15000 }), cacheTime: 0 });
+  const urls = [...new Set([url.href, 'https://ethereum-rpc.publicnode.com/'])];
+  ports.mainnetClient = createPublicClient({ transport: fallback(urls.map(endpoint =>
+    http(endpoint, { retryCount: 0, timeout: 5000 })), { retryCount: 0, rank: false }), cacheTime: 0 });
   return ports;
 }
