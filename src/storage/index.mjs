@@ -41,6 +41,10 @@ export function openStore(path) {
   };
   return {
     read: (...args) => enqueue(() => read(...args)),
+    readMany: (collection, ids) => enqueue(() => {
+      text(collection); requireThat(Array.isArray(ids) && ids.length <= 1000, 'invalid_ids'); ids.forEach(id=>text(id));
+      return new Map(ids.map(id => [id,read(collection,id)]).filter(([,row]) => row));
+    }),
     list: (...args) => enqueue(() => list(...args)),
     events: options => enqueue(() => events(options)),
     pruneEphemeral: (now = Date.now()) => enqueue(() => {

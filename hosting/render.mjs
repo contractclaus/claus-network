@@ -1,3 +1,4 @@
+import {connectSources} from '../src/shared/site-connect.mjs';
 const contentTypes={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',
   json:'application/json; charset=utf-8',svg:'image/svg+xml'};
 export async function render(request,{fetcher=fetch,apiOrigin='https://claus-network-api.vercel.app',
@@ -20,6 +21,8 @@ export async function render(request,{fetcher=fetch,apiOrigin='https://claus-net
     if(release.id!=='sha256:'+match[1]||!(release.expiresAt===null||Number.isSafeInteger(release.expiresAt)&&release.expiresAt>Date.now()))throw Error('invalid_release');
     const file=release.file??release.files?.find(file=>file.path===match[2]);
     if(!file||file.path!==match[2]||typeof file.content!=='string'||Buffer.byteLength(file.content)>1000000)return new Response('Not found',{status:404,headers});
-    return new Response(request.method==='HEAD'?null:file.content,{headers:{...headers,'content-type':contentTypes[match[3]]}});
+    const connect=connectSources(release.connect);
+    const csp=connect.length?headers['content-security-policy'].replace("connect-src 'none'",'connect-src '+connect.join(' ')):headers['content-security-policy'];
+    return new Response(request.method==='HEAD'?null:file.content,{headers:{...headers,'content-security-policy':csp,'content-type':contentTypes[match[3]]}});
   }catch{return new Response('Temporarily unavailable',{status:503,headers});}
 }

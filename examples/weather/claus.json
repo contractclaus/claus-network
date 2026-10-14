@@ -1,0 +1,8 @@
+{
+  "schema": "claus-project/1",
+  "name": "Claus weather reference",
+  "description": "Claus-owned technical reference for public data and multi-page hosting.",
+  "connect": [
+    "https://api.open-meteo.com"
+  ]
+}

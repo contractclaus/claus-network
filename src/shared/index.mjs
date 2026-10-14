@@ -82,3 +82,5 @@ export function contentHash(value) {
 export async function authorize(check, actor, action, scope = {}, reader) {
   requireThat(await check(actor, action, copy(scope), reader) === true, 'access_denied');
 }
+
+export {connectSources,manifestConnections} from './site-connect.mjs';
