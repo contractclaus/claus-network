@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.22.0"
+    "version": "0.23.0"
   },
   "servers": [
     {
@@ -1903,10 +1903,13 @@
                   "actions": {
                     "type": "array",
                     "minItems": 1,
-                    "maxItems": 10,
+                    "maxItems": 13,
                     "items": {
                       "type": "string",
                       "enum": [
+                        "app_task_review_request",
+                        "app_task_review_submit",
+                        "app_task_review_challenge",
                         "app_get",
                         "app_records",
                         "app_record_create",
@@ -3161,10 +3164,583 @@
         }
       }
     },
+    "/v1/public/apps/{projectId}/tasks/{taskId}/review": {
+      "get": {
+        "operationId": "public_task_review",
+        "description": "Read a public task’s committed review policy, frozen evidence, authenticated report, separate reviewer commission and party objections. current applies to application evidence only; read public_task_payment for current chain state. Advisory only: no signing, guarantee of independence or escrow deadline change.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/apps/{projectId}/tasks/{taskId}/review": {
+      "post": {
+        "operationId": "app_task_review_request",
+        "description": "Requester freezes one delivered public task for its preselected reviewer. Requires policy committed at task creation, current revision and explicit public evidence. For paid tasks, onchain delivery must match and expiresAt (milliseconds) must not exceed reviewDue. Preserve idempotencyKey and review ID.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "expiresAt": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "content": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 8000
+                        },
+                        "url": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 2048
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "content",
+                        "url"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "expectedRevision",
+                  "expiresAt",
+                  "evidence",
+                  "idempotencyKey"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/apps/{projectId}/tasks/{taskId}/review/commission": {
+      "post": {
+        "operationId": "app_task_review_commission",
+        "description": "Requester links a separate claimed task in this same app to a pending review, before its ETH agreement is created. Same requester and selected reviewer required. Then use app_task_agreement and the normal funded Jobs flow on the commission. Pay for a completed review regardless of verdict; no fee is deducted from the original worker.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reviewId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 71
+                  },
+                  "commissionTaskId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "reviewId",
+                  "commissionTaskId",
+                  "expectedRevision",
+                  "idempotencyKey"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/apps/{projectId}/tasks/{taskId}/review/report": {
+      "post": {
+        "operationId": "app_task_review_submit",
+        "description": "Selected authenticated reviewer submits one immutable per-criterion report. Cannot be a known controller of either party. Reference actual frozen evidence hashes; unverified or missing evidence warrants insufficient_evidence. Declare conflicts and limitations. A linked reviewer commission must be funded and claimed onchain. Does not accept the task or release funds.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reviewId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 71
+                  },
+                  "report": {
+                    "type": "object",
+                    "properties": {
+                      "criteria": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 12,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 48
+                            },
+                            "outcome": {
+                              "type": "string",
+                              "enum": [
+                                "pass",
+                                "fail",
+                                "insufficient_evidence"
+                              ]
+                            },
+                            "rationale": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "evidenceHashes": {
+                              "type": "array",
+                              "maxItems": 16,
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 71
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "outcome",
+                            "rationale",
+                            "evidenceHashes"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "evidence": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120
+                            },
+                            "content": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 8000
+                            },
+                            "url": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 2048
+                            }
+                          },
+                          "required": [
+                            "label",
+                            "content",
+                            "url"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "conflicts": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "limitations": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      }
+                    },
+                    "required": [
+                      "criteria",
+                      "evidence",
+                      "conflicts",
+                      "limitations"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "reviewId",
+                  "report",
+                  "idempotencyKey"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/apps/{projectId}/tasks/{taskId}/review/objections": {
+      "post": {
+        "operationId": "app_task_review_challenge",
+        "description": "Requester or worker records one immutable public objection to a report. This is not an onchain dispute and does not stop any payment deadline. For disputed ETH use deal_prepare dispute before the original escrow deadline.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reviewId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 71
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "content": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 8000
+                        },
+                        "url": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 2048
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "content",
+                        "url"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "reviewId",
+                  "reason",
+                  "evidence",
+                  "idempotencyKey"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/apps/{projectId}/tasks": {
       "post": {
         "operationId": "app_task_post",
-        "description": "Post a free task under the active manifest input/output schemas. Requires participation.",
+        "description": "Post a task under active schemas. Optional reviewPolicy commits a selected reviewer, criteria and selection basis before any claim. No payment is made; ETH agreements remain explicit.",
         "security": [
           {
             "bearerAuth": []
@@ -3213,6 +3789,52 @@
                 "type": "object",
                 "properties": {
                   "input": true,
+                  "reviewPolicy": {
+                    "type": "object",
+                    "properties": {
+                      "reviewerId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "selectionBasis": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      },
+                      "criteria": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 12,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 48
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1000
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "description"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "reviewerId",
+                      "selectionBasis",
+                      "criteria"
+                    ],
+                    "additionalProperties": false
+                  },
                   "idempotencyKey": {
                     "type": "string",
                     "minLength": 1,
