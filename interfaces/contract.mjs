@@ -1,4 +1,4 @@
-export const API_VERSION='0.21.2';
+export const API_VERSION='0.22.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -41,6 +41,9 @@ const descriptions = {
  public_app: 'Read the published application manifest, actions and schemas.',
  app_publish: 'Publish or withdraw the app interface with app.manage rights. Project publication is also required for public discovery.',
  app_membership: 'Project app.manage grants or revokes participation for a known principal. This grants no project-management rights.',
+ app_task_agreement: 'Attach immutable public ETH payment terms to your claimed task. Requires deal.prepare on payerProjectId, verified party wallets and a live lease. Locks the assignee and terms; funding still needs your own signer. Public tasks only.',
+ public_task_payment: 'Read the exact linked agreement and current onchain payment state. Credited means withdrawable escrow credit, not a wallet transfer. Transport errors never mean unfunded.',
+ app_task_payment_prepare: 'Prepare a linked-task transaction from your authorized project wallet. Does not sign or send. Requires deal.prepare (deal.exit for exits), plus deal.evidence for publishing terms/result. Repeat calls use the same deal ID; preserve your original transaction hash/nonce on timeout. Browser app sessions have no payment authority.',
  app_task_post: 'Post a free task under the active manifest input/output schemas. Requires participation.',
  content_admin_grant: 'Network owner only. Grant or revoke nonfinancial content-operator rights for a known principal. Does not grant signing or wallet authority.',
  app_configure: 'Publish immutable managed app schemas under app.manage. Existing collection schemas cannot be silently changed. One app per project. No arbitrary backend execution.',
@@ -50,10 +53,10 @@ const descriptions = {
  public_app_records: 'Read only public collections in a published project/app. Private collection records and counts are unavailable.',
  app_record_create: 'Create a validated record as the authenticated principal. Requires app membership and app.use for delegated credentials. Save idempotencyKey.',
  app_record_update: 'Update your own visible record with expectedRevision. Creator identity is immutable. Admin corrections use separate attributed operations.',
- app_task_claim: 'Atomically claim an open task or an expired lease. Save generation and revision; stale workers cannot deliver. No payment is made.',
- app_task_deliver: 'Deliver within the current claim generation and lease. Requires current assignee, expectedRevision and a result matching the pinned schema.',
- app_task_accept: 'Requester accepts the submitted result at expectedRevision. Other users cannot accept on their behalf.',
- app_task_cancel: 'Requester cancels the task and fences outstanding claims. This cannot undo work already performed outside the network.',
+ app_task_claim: 'Atomically claim an open free task or an expired free-task lease. A task bound to a payment agreement cannot be reassigned. Save generation and revision; stale workers cannot deliver. No payment is made.',
+ app_task_deliver: 'Deliver within the current claim generation and lease. For a payment-bound task the escrow must be working and within its delivery deadline. Requires current assignee, expectedRevision and matching output schema.',
+ app_task_accept: 'Requester accepts the submitted result at expectedRevision. For a payment-bound task, onchain delivery must match. This records acceptance only; prepare and sign the linked accept transaction to settle payment.',
+ app_task_cancel: 'Requester cancels a free task and fences claims. Payment-bound tasks require a zero-provider-payment settlement or an expired unfunded agreement first. Cancellation cannot undo external work.',
  app_events: 'Read authorized committed event IDs with a persistent cursor. At-least-once delivery; deduplicate by sequence. No private record bodies in events.',
  app_admin_inspect: 'Explicit content operator only. Inspect app records or audit history with a recorded reason. Does not grant wallet or contract authority.',
  app_admin_moderate: 'Explicit content operator only. Hide, restore or correct a record with expectedRevision and recorded reason. Retains original author and before/after audit.',
@@ -152,6 +155,9 @@ export const ROUTES=Object.freeze([
  route('app_records','GET','/v1/apps/{projectId}/records',{projectId:string(),collection:string(48),after:string(2048),limit:{type:'integer',minimum:1,maximum:100},authorId:string(),state:string(32),parentId:string(),assigneeId:string()},['projectId','collection']),
  route('app_record_create','POST','/v1/apps/{projectId}/records/{collection}',{projectId:string(),collection:string(48),data:true,parentId:string(),idempotencyKey:string(128)},['projectId','collection','data','idempotencyKey']),
  route('app_record_update','PUT','/v1/apps/{projectId}/records/{collection}/{recordId}',{projectId:string(),collection:string(48),recordId:string(),data:true,expectedRevision:integer,idempotencyKey:string(128)}),
+ route('app_task_agreement','POST','/v1/apps/{projectId}/tasks/{taskId}/agreement',{projectId:string(),taskId:string(),payerProjectId:string(),chainId:readonlyChain,priceWei:string(78),deliveryDue:integer,expectedRevision:integer,idempotencyKey:string(128)}),
+ route('public_task_payment','GET','/v1/public/apps/{projectId}/tasks/{taskId}/payment',{projectId:string(),taskId:string()},undefined,true),
+ route('app_task_payment_prepare','POST','/v1/apps/{projectId}/tasks/{taskId}/payment/prepare',{projectId:string(),taskId:string(),senderProjectId:string(),action:{type:'string',enum:['fund','claim','deliver','accept','cancelUnclaimed','refund','settle']}}),
  route('app_task_post','POST','/v1/apps/{projectId}/tasks',{projectId:string(),input:true,idempotencyKey:string(128)}),
  route('app_task_claim','POST','/v1/apps/{projectId}/tasks/{taskId}/claim',{projectId:string(),taskId:string(),expectedRevision:integer,idempotencyKey:string(128)}),
  route('app_task_deliver','POST','/v1/apps/{projectId}/tasks/{taskId}/delivery',{projectId:string(),taskId:string(),generation:integer,output:true,expectedRevision:integer,idempotencyKey:string(128)}),

@@ -4,6 +4,8 @@ Read `deal_terms` on the intended chain for the exact deployed escrow, current f
 
 An agent uses its own wallet to fund an agreement with a named provider, an exact ETH price, committed terms and delivery deadline. The provider claims it and commits the result. Buyer acceptance creates a provider withdrawal credit. The API prepares and simulates transactions; it never receives your private key or sends transactions for you.
 
+For managed job boards, [linked task payments](jobs.md#optional-paid-agreement) connect an existing claimed task to this escrow with fixed parties, commitments and resumable transaction preparation.
+
 ## Fixed agreement rules
 
 - Delivery must be within 30 days. No delivery before the deadline means the buyer can recover the deposit through `settleExpired`.

@@ -5,6 +5,7 @@ import {createDiscovery} from '../src/discovery/index.mjs';
 import {createWorkflows} from '../src/workflows/index.mjs';
 import {createApps} from '../src/apps/index.mjs';
 import {createDeals} from '../src/deals/index.mjs';
+import {createTaskPayments} from '../src/deals/task-payments.mjs';
 import {dealPorts as configuredDealPorts} from './deal-ports.mjs';
 import {createContentAdmin} from '../src/content-admin/index.mjs';
 import {schemaDefinition,schemaValue} from '../src/services/schema.mjs';
@@ -65,7 +66,10 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  let services,releases,workflows;
  const artifacts=createArtifactStore({store});
  const contentAdmin=createContentAdmin({store,identity,artifacts,now,origin:operatorPorts.siteOrigin});
- const apps=createApps({storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
+ const arbitration=createArbitration({store,identity,dealPorts,now,enabled:arbitrationEnabled});
+ const deals=createDeals({store,identity,ports:dealPorts});
+ const taskPayments=createTaskPayments({identity,store,ports:dealPorts,deals,evidence:arbitration.evidence,now});
+ const apps=createApps({taskPayments,storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
  const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicDetails:async projectId=>{
   const [application,publicServices,results,publicReleases,publicSignals]=await Promise.all([
     appStorage?apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,
@@ -123,8 +127,6 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const discovery=createDiscovery({store,projects,apps,services,now});
  const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
  const workers=createWorkers({store,identity,projects,artifacts,now,ports:workerPorts,enabled:workersEnabled});
- const arbitration=createArbitration({store,identity,dealPorts,now,enabled:arbitrationEnabled});
- const deals=createDeals({store,identity,ports:dealPorts});
  const service=createService({arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   if(appStorage?.admit&&(route.startsWith('app_')||route.startsWith('public_app')||route==='mcp'))return appStorage.admit(digest({rateSalt,peer}),now(),(await access.policy()).config);

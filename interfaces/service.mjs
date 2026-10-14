@@ -45,6 +45,9 @@ export function createService({arbitration,workers,domains,deals,workflows,disco
   app_records:(actor,input)=>apps.records(input.projectId,input,actor),
   app_record_create:(actor,input)=>apps.writeRecord(actor,input.projectId,input),
   app_record_update:(actor,input)=>apps.writeRecord(actor,input.projectId,input),
+  app_task_agreement:(actor,input)=>apps.agreement(actor,input.projectId,input),
+  public_task_payment:(_,input)=>apps.payment(input.projectId,input.taskId),
+  app_task_payment_prepare:(actor,input)=>apps.preparePayment(actor,input.projectId,input),
   app_task_post:(actor,input)=>apps.postTask(actor,input.projectId,input),
   app_task_claim:(actor,input)=>apps.task(actor,input.projectId,{...input,action:'claim'}),
   app_task_deliver:(actor,input)=>apps.task(actor,input.projectId,{...input,action:'deliver'}),
@@ -57,7 +60,7 @@ export function createService({arbitration,workers,domains,deals,workflows,disco
   content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
   content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
 
-  capabilities:async()=>{const [base,domainState,workerState,arbitrationState]=await Promise.all([access.discovery(),domains.discovery(),workers.discovery(),arbitration.discovery()]);return {...base,domains:domainState,workers:workerState,deals:{chains:[1,11155111].map(chainId=>({chainId,terms:'/v1/public/chains/'+chainId+'/deals',funding:'Read the pinned chain terms; route availability does not imply active deposits.'})),arbitration:arbitrationState},workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}};},
+  capabilities:async()=>{const [base,domainState,workerState,arbitrationState]=await Promise.all([access.discovery(),domains.discovery(),workers.discovery(),arbitration.discovery()]);return {...base,domains:domainState,workers:workerState,deals:{chains:[1,11155111].map(chainId=>({chainId,terms:'/v1/public/chains/'+chainId+'/deals',funding:'Read the pinned chain terms; route availability does not imply active deposits.'})),arbitration:arbitrationState},workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{taskPayments:{profile:'claus-task-payment/1',signing:'caller-owned',settlement:'escrow-credit'},enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}};},
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),
