@@ -7,8 +7,9 @@ export const DEAL_REVIEW_PROFILE='claus-deal-resolution-v1';
 // Only the documented false default is normalized; all substantive fields
 // and the explicit block window must remain the ones chosen by this case.
 export function validateOraclePrepared(value,expected){
- shape(value,['pinned','questionHash','request']);shape(value.pinned,['fromBlock','toBlock','toBlockHash']);
- requireThat(canonical({...value.request,allowAmbiguous:value.request?.allowAmbiguous??false})===canonical({...expected,allowAmbiguous:false})&&value.pinned.fromBlock===expected.window.fromBlock&&value.pinned.toBlock===expected.window.toBlock&&/^0x[0-9a-f]{64}$/i.test(value.pinned.toBlockHash??'')&&/^0x[0-9a-f]{64}$/i.test(value.questionHash??''),'oracle_prepared_input_mismatch');return value;
+ try{shape(value,['pinned','questionHash','request']);shape(value.pinned,['fromBlock','toBlock','toBlockHash']);}catch{requireThat(false,'oracle_prepared_input_mismatch');}
+ requireThat(value.request&&(!Object.hasOwn(value.request,'allowAmbiguous')||value.request.allowAmbiguous===false),'oracle_prepared_input_mismatch');
+ requireThat(canonical({...value.request,allowAmbiguous:value.request.allowAmbiguous??false})===canonical({...expected,allowAmbiguous:false})&&value.pinned.fromBlock===expected.window.fromBlock&&value.pinned.toBlock===expected.window.toBlock&&/^0x[0-9a-f]{64}$/i.test(value.pinned.toBlockHash??'')&&/^0x[0-9a-f]{64}$/i.test(value.questionHash??''),'oracle_prepared_input_mismatch');return value;
 }
 export function oracleInput(value){
  const toBlock=Number(value.observation.blockNumber)-3;

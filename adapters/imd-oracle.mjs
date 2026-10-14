@@ -88,6 +88,8 @@ export function createImdOracleProvider({ store, sealer, resolveInput, verifyPin
           body: { ...request, requestKey: intent.requestKey }, statuses: [200, 201] });
         requireThat(out.order?.requestKey === intent.requestKey, 'provider_order_mismatch');
         quote = out.order.quote; validateQuote(quote, request);
+        // Keep the original provider ID even when later wrapper validation fails.
+        await store.transaction(async tx=>{const old=await tx.read('imd-orders',key);if(old.value.quote){requireThat(canonical(old.value.quote)===canonical(quote),'provider_order_changed');return;}await tx.write('imd-orders',key,{...old.value,quote},old.revision);});
       }
       if(!preparedInput){
         const secret=sealer.open(key,intent.sealed),challenge=await call('/requests/'+id(quote.id)+'/submit',{method:'POST',token:secret.requestToken,statuses:[402]});
