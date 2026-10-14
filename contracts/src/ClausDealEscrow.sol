@@ -175,7 +175,7 @@ contract ClausDealEscrow is EIP712 {
         uint32 maximumRuns, uint64 interval, uint64 deliverySeconds, uint64 expiresAt) external payable returns (bytes32 id)
     {
         _fund();
-        if (worker == address(0) || worker == msg.sender || projectId == 0 || termsHash == 0 || price == 0 || price > maximumDeal
+        if (worker == address(0) || worker == msg.sender || worker == arbiter || msg.sender == arbiter || projectId == 0 || termsHash == 0 || price == 0 || price > maximumDeal
             || maximumRuns == 0 || maximumRuns > 100 || msg.value != price * maximumRuns || interval < 60
             || interval > MAX_DURATION || deliverySeconds == 0 || deliverySeconds > MAX_DURATION
             || expiresAt <= block.timestamp || expiresAt > block.timestamp + MAX_DURATION) revert InvalidTerms();
@@ -187,6 +187,7 @@ contract ClausDealEscrow is EIP712 {
     }
     function runPlan(bytes32 id, uint32 expectedRun) external returns (bytes32 nextDeal) {
         Plan storage p = plans[id];
+        if (msg.sender != p.buyer) revert Unauthorized();
         if (p.buyer == address(0) || p.cancelled || p.runs != expectedRun || p.runs >= p.maximumRuns || block.timestamp < p.nextAt || block.timestamp >= p.expiresAt) revert WrongState();
         if (p.lastDeal != 0 && (deals[p.lastDeal].state != State.Settled || deals[p.lastDeal].workerPaid != p.price)) revert WrongState();
         nextDeal = keccak256(abi.encode(block.chainid, address(this), "run", id, p.runs));
@@ -195,7 +196,7 @@ contract ClausDealEscrow is EIP712 {
         p.nextAt = uint64(block.timestamp + p.interval);
         p.lastDeal = nextDeal;
         _deal(nextDeal, p.buyer, p.worker, p.price, p.projectId, p.termsHash, uint64(block.timestamp + p.deliverySeconds));
-        emit PlanRun(id, p.runs, nextDeal);
+        emit PlanRun(id, expectedRun, nextDeal);
     }
     function cancelPlan(bytes32 id) external {
         Plan storage p = plans[id];
@@ -218,11 +219,13 @@ contract ClausDealEscrow is EIP712 {
     function _fund() private {
         if (!fundingEnabled) revert FundingPaused();
         if (msg.value == 0) revert InvalidTerms();
+        // Accounted custody includes withdrawable credits; idle credits can block new admission.
+        // Existing withdrawals and settlement remain available even at this ceiling.
         if (totalLocked + totalCredits + msg.value > maximumPrincipal) revert CapacityReached();
         totalLocked += msg.value;
     }
     function _deal(bytes32 id, address buyer, address worker, uint256 amount, bytes32 projectId, bytes32 termsHash, uint64 due) private {
-        if (worker == address(0) || worker == buyer || amount == 0 || amount > maximumDeal || projectId == 0 || termsHash == 0) revert InvalidTerms();
+        if (worker == address(0) || worker == buyer || worker == arbiter || buyer == arbiter || amount == 0 || amount > maximumDeal || projectId == 0 || termsHash == 0) revert InvalidTerms();
         if (deals[id].state != State.Missing) revert WrongState();
         Deal storage d = deals[id];
         d.buyer = buyer; d.worker = worker; d.amount = amount; d.projectId = projectId; d.termsHash = termsHash; d.deliveryDue = due; d.state = State.Funded;

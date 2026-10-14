@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.20.0"
+    "version": "0.20.1"
   },
   "servers": [
     {
@@ -771,7 +771,7 @@
     "/v1/projects/{projectId}/deals/prepare": {
       "post": {
         "operationId": "deal_prepare",
-        "description": "Prepare and simulate an unsigned transaction from the project owner address. Requires project.read; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.",
+        "description": "Prepare and simulate an unsigned transaction from the project owner address. Requires deal.prepare, or deal.exit for refunds/cancellation/expiry/withdrawal; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.",
         "security": [
           {
             "bearerAuth": []

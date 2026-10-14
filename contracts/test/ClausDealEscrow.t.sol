@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {ClausDealEscrow} from "../src/ClausDealEscrow.sol";
 
 contract RefusingDealRecipient { receive() external payable { revert(); } }
@@ -67,18 +68,18 @@ contract ClausDealEscrowTest is Test {
     }
     function testRecurringCancellationFiniteRunsAndStableIdentities() public {
         vm.prank(buyer);bytes32 plan=escrow.createPlan{value:3 ether}(bytes32(uint256(1)),project,terms,worker,1 ether,3,60,1 days,uint64(block.timestamp+7 days));
-        bytes32 first=escrow.runPlan(plan,0);
-        vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.runPlan(plan,0);
+        vm.prank(buyer);bytes32 first=escrow.runPlan(plan,0);
+        vm.prank(buyer);vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.runPlan(plan,0);
         delivered(first);vm.prank(buyer);escrow.accept(first);vm.warp(block.timestamp+61);
-        vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.runPlan(plan,0);
-        bytes32 second=escrow.runPlan(plan,1);assertTrue(second!=first);delivered(second);
+        vm.prank(buyer);vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.runPlan(plan,0);
+        vm.prank(buyer);bytes32 second=escrow.runPlan(plan,1);assertTrue(second!=first);delivered(second);
         vm.prank(buyer);escrow.cancelPlan(plan);assertEq(escrow.credits(buyer),1 ether);assertEq(escrow.getPlan(plan).remaining,0);
         vm.prank(buyer);escrow.accept(second);assertEq(escrow.credits(worker),2 ether);
-        vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.runPlan(plan,2);
+        vm.prank(buyer);vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.runPlan(plan,2);
         vm.prank(buyer);vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.createPlan{value:1 ether}(bytes32(uint256(1)),project,terms,worker,1 ether,1,60,1 days,uint64(block.timestamp+7 days));
         vm.prank(buyer);bytes32 other=escrow.createPlan{value:1 ether}(bytes32(uint256(2)),project,terms,worker,1 ether,1,60,1 days,uint64(block.timestamp+7 days));
-        bytes32 last=escrow.runPlan(other,0);delivered(last);vm.prank(buyer);escrow.accept(last);vm.warp(block.timestamp+61);
-        vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.runPlan(other,1);assertEq(escrow.totalLocked(),0);assertEq(escrow.totalCredits(),4 ether);
+        vm.prank(buyer);bytes32 last=escrow.runPlan(other,0);delivered(last);vm.prank(buyer);escrow.accept(last);vm.warp(block.timestamp+61);
+        vm.prank(buyer);vm.expectRevert(ClausDealEscrow.WrongState.selector);escrow.runPlan(other,1);assertEq(escrow.totalLocked(),0);assertEq(escrow.totalCredits(),4 ether);
     }
     function testRefundsBudgetsAndReentrancyCannotInventOrTrapPrincipal() public {
         NestedDealRecipient receiver=new NestedDealRecipient(escrow);
@@ -91,4 +92,22 @@ contract ClausDealEscrowTest is Test {
         vm.warp(block.timestamp+1 days);escrow.expirePlan(plan);assertEq(escrow.credits(buyer),5 ether);
         vm.prank(buyer);escrow.withdraw(5 ether,payable(buyer));assertEq(escrow.totalLocked()+escrow.totalCredits(),0);assertEq(address(escrow).balance,0);
     }
+    function testAuditArbiterCannotBePartyAndOnlyBuyerStartsZeroIndexedRuns() public {
+        address arbiter = vm.addr(signerKey);
+        vm.prank(buyer);vm.expectRevert(ClausDealEscrow.InvalidTerms.selector);
+        escrow.createDeal{value:1 ether}(bytes32(uint256(90)),project,terms,arbiter,uint64(block.timestamp+1 days));
+        vm.deal(arbiter,1 ether);vm.prank(arbiter);vm.expectRevert(ClausDealEscrow.InvalidTerms.selector);
+        escrow.createDeal{value:1 ether}(bytes32(uint256(91)),project,terms,worker,uint64(block.timestamp+1 days));
+        vm.prank(buyer);vm.expectRevert(ClausDealEscrow.InvalidTerms.selector);
+        escrow.createPlan{value:1 ether}(bytes32(uint256(92)),project,terms,arbiter,1 ether,1,60,1 days,uint64(block.timestamp+7 days));
+        vm.prank(buyer);bytes32 plan=escrow.createPlan{value:1 ether}(bytes32(uint256(93)),project,terms,worker,1 ether,1,60,1 days,uint64(block.timestamp+7 days));
+        vm.prank(worker);vm.expectRevert(ClausDealEscrow.Unauthorized.selector);escrow.runPlan(plan,0);
+        vm.recordLogs();vm.prank(buyer);bytes32 run=escrow.runPlan(plan,0);
+        Vm.Log[] memory logs=vm.getRecordedLogs();bool found;
+        for(uint256 i;i<logs.length;i++) if(logs[i].topics[0]==keccak256("PlanRun(bytes32,uint32,bytes32)")){
+            assertEq(abi.decode(logs[i].data,(uint32)),0);assertEq(logs[i].topics[2],run);found=true;
+        }
+        assertTrue(found);assertEq(run,keccak256(abi.encode(block.chainid,address(escrow),"run",plan,uint32(0))));
+    }
+
 }

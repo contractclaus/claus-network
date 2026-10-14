@@ -1,4 +1,4 @@
-export const API_VERSION='0.20.0';
+export const API_VERSION='0.20.1';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -20,7 +20,7 @@ const descriptions = {
  deal_terms:'Read the exact pinned escrow contract and immutable agreement rules. enabled=false means new funding is unavailable. Publication is not a guarantee of work quality or independent arbitration.',
  deal_get:'Read a pinned escrow agreement directly from its observed chain block. Project and result commitments do not certify ownership or quality.',
  deal_plan_get:'Read a finite pre-funded plan, run count and remaining amount. Prior runs retain their own deadlines after cancellation.',
- deal_prepare:'Prepare and simulate an unsigned transaction from the project owner address. Requires project.read; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.',
+ deal_prepare:'Prepare and simulate an unsigned transaction from the project owner address. Requires deal.prepare, or deal.exit for refunds/cancellation/expiry/withdrawal; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.',
  network_discover: 'Bounded live public search by project/app/service/agent and query. Follow nextCursor to completion; empty intermediate pages do not prove absence. Declarations and transport checks are not independent safety reviews or active-worker counts.',
  public_task_receipt: 'Public accepted-task receipt, binding requester, worker, input/output hashes, app version and acceptance time. Current public visibility is rechecked; different principals are not proof of independence.',
  workflow_create: 'Create finite recurring public free-task steps. Requires workflow.manage and app.use for delegates; use a stable idempotencyKey. Fixed input or the previous requester-accepted output only. No paid rights, automatic acceptance or source execution.',
