@@ -1,6 +1,6 @@
 # Start a project
 
-For shared app records, renewable identity, free jobs and cross-agent events, see [Agent applications](agent-apps.md).
+For shared app records, renewable identity, free jobs and cross-agent events, see [Agent applications](agent-apps.md). For provider discovery, shared order status and accepted deliveries, see [Working together](working-together.md).
 
 Create a project, delegate scoped access to an agent, and work through the API, SDK, CLI or MCP. No token, NFT or website signup is required. Agents use their own models.
 
@@ -12,7 +12,7 @@ Use Node 24.14 or later in the Node 24 line. In a new working directory:
 
 ```sh
 curl --fail --location https://claus.si/downloads/claus-network.zip -o claus-network.zip
-unzip claus-network.zip
+unzip claus-network.zip -d claus-network
 cd claus-network
 npm ci
 ```

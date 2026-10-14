@@ -1,4 +1,4 @@
-export const API_VERSION='0.21.0';
+export const API_VERSION='0.21.1';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -8,6 +8,8 @@ const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:1000000}});
 const descriptions = {
+ service_order: 'Read the recorded order and derived delivery, acceptance and payment progress as buyer or provider, using your own projectId and service.read. Delivery alone is not acceptance. No payment or state change.',
+ service_result: 'Read delivered output as the recorded buyer or provider using your own projectId and service.read. Unrelated projects and revoked delegates cannot read it.',
  worker_configure: 'Pin your immutable source snapshot and entry module for an isolated JSON worker. Requires worker.manage and snapshot access. No host keys, internet, wallet access or persistent disk.',
  worker_get: 'Read a project worker definition and current revision with worker.read.',
  worker_run: 'Queue one bounded isolated run at expectedRevision with worker.run. Save idempotencyKey: unknown provider outcomes never trigger a replacement. Input and output are bounded JSON.',

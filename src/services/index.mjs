@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { amount, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
 import { schemaDefinition, schemaValue, schemaSample } from './schema.mjs';
 import { createPublicResults, PUBLIC_DATA_POLICY, PUBLIC_DATA_POLICY_HASH } from './public-results.mjs';
+import { serviceProgress } from './progress.mjs';
 
 export function createServices({ store, identity, artifacts, admit = async () => {}, admitPublicData = async () => { requireThat(false, 'public_data_not_enabled'); }, limit = async () => undefined, now = () => Date.now() }) {
   const results = createPublicResults({ store, identity, artifacts, enabled: admitPublicData, now });
@@ -212,7 +213,10 @@ export function createServices({ store, identity, artifacts, admit = async () =>
       });
     },
     async get(actor, projectId, orderId) {
-      await scoped(actor, 'service.read', projectId); return publicOrder((await order(store, projectId, orderId)).value);
+      await scoped(actor, 'service.read', projectId);
+      const value = (await store.read('service-orders', text(orderId)))?.value;
+      requireThat(value && [value.projectId, value.providerProjectId].includes(projectId), 'not_found');
+      return { ...publicOrder(value), progress: serviceProgress(value, now()) };
     },
     async authorizeOrder(actor, projectId, {orderId,quoteHash}) {
       return store.transaction(async tx=>{
@@ -280,8 +284,10 @@ export function createServices({ store, identity, artifacts, admit = async () =>
       });
     },
     async result(actor, projectId, orderId) {
-      await scoped(actor, 'service.read', projectId); const value = (await order(store, projectId, orderId)).value;
-      requireThat(value.outputHash, 'result_not_ready'); return artifacts.get(projectId, value.outputHash);
+      await scoped(actor, 'service.read', projectId);
+      const value = (await store.read('service-orders', text(orderId)))?.value;
+      requireThat(value && [value.projectId, value.providerProjectId].includes(projectId), 'not_found');
+      requireThat(value.outputHash, 'result_not_ready'); return artifacts.get(value.projectId, value.outputHash);
     },
     async acceptResult(actor, projectId, { orderId, outputHash, accepted }) {
       requireThat(typeof accepted === 'boolean', 'invalid_acceptance');

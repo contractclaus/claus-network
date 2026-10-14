@@ -1,4 +1,5 @@
 import { copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
+import { serviceProgress } from './progress.mjs';
 
 export const PUBLIC_DATA_POLICY = Object.freeze({
   id: 'public-data-v1', publicInputs: true, outputReuse: 'public-including-onchain',
@@ -13,7 +14,7 @@ export function createPublicResults({ store, identity, artifacts, enabled, now }
     const p = (await reader.read('projects', id))?.value;
     return !!p && !p.archivedAt && !p.transfer && !(await reader.read('content-controls', id))?.value.held &&
       !(await reader.read('project-access', id))?.value.suspended &&
-      (await reader.read('public-projects', p.slug))?.value.published === true;
+      (await reader.read('public-projects', p.slug))?.value.published === true && p;
   }
   async function read(id, reader = store, trail = new Set(), includeOutput = true) {
     text(id); requireThat(trail.size < 3 && !trail.has(id), 'result_lineage_invalid');
@@ -21,12 +22,15 @@ export function createPublicResults({ store, identity, artifacts, enabled, now }
     requireThat(p?.published && p.expiresAt > now(), 'public_result_unavailable');
     const order = (await reader.read('service-orders', id))?.value;
     const version = order && (await reader.read('service-versions', order.serviceId))?.value;
+    const [buyer, provider] = order ? await Promise.all([
+      projectPublished(reader, order.projectId), projectPublished(reader, order.providerProjectId)
+    ]) : [];
     requireThat(order?.purpose !== 'conformance' && order?.state === 'delivered' && order.acceptance === 'accepted' &&
       order.outputHash === p.outputHash && order.dataPolicyHash === PUBLIC_DATA_POLICY_HASH &&
       version?.manifest.dataPolicy === PUBLIC_DATA_POLICY.id && version.manifestHash === order.manifestHash &&
       version.state === 'available' && version.manifest.validUntil > now() &&
       (await reader.read('service-publications', order.serviceId))?.value.published === true &&
-      await projectPublished(reader, order.projectId) && await projectPublished(reader, order.providerProjectId), 'public_result_unavailable');
+      buyer && provider, 'public_result_unavailable');
     const path = new Set([...trail, id]);
     for (const source of p.sourceResults) {
       const actual = await read(source.id, reader, path, false);
@@ -36,7 +40,11 @@ export function createPublicResults({ store, identity, artifacts, enabled, now }
       serviceId: order.serviceId, manifestHash: order.manifestHash, outputHash: p.outputHash,
       dataPolicy: PUBLIC_DATA_POLICY.id, dataPolicyHash: PUBLIC_DATA_POLICY_HASH,
       sourceResults: copy(p.sourceResults), depth: p.depth, revision: row.revision,
-      deliveredAt: order.deliveredAt, publishedAt: p.publishedAt, expiresAt: p.expiresAt };
+      deliveredAt: order.deliveredAt, publishedAt: p.publishedAt, expiresAt: p.expiresAt,
+      service: { name: version.manifest.name, capability: version.manifest.capability, version: version.manifest.version },
+      parties: { buyer: { projectId: buyer.id, slug: buyer.slug, name: buyer.name },
+        provider: { projectId: provider.id, slug: provider.slug, name: provider.name } },
+      progress: serviceProgress(order, now()) };
     if (includeOutput) value.output = await artifacts.get(order.projectId, p.outputHash, reader);
     return value;
   }

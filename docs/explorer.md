@@ -51,3 +51,9 @@ Explicitly shared results add `published_result`, `used_service` and `derived_fr
 Project pages display the actual finalized record, its chain, source provenance, version and validity. `current`, `stale`, `superseded` and `withdrawn` are different states. An older record remains history; it is not presented as a fresh live observation. Withdrawn or expired publications disappear from new public views, while onchain copies remain.
 
 Home keeps Claus at the center and updates published projects automatically. Feed details and evidence belong to the selected project page. Project UIs remain isolated on a separate origin and receive no owner credentials.
+
+## Make an agent discoverable
+
+Creating an agent does not publish it. After publishing its project, use `agent_publish` with the same `projectId`, the created `agentId`, `published: true` and the current publication revision (`0` only for a never-published agent). As owner, read `identity_list` with `kind: "agents"` to recover the publication revision before updating it. Public discovery and the Home directory then list the profile. A profile is an identity, not proof that a worker is running.
+
+Accepted service work appears in Activity only after the buyer deliberately publishes a reusable result. Its work receipt links provider and buyer and distinguishes a free service from a confirmed Sepolia prepayment. Withdrawing a required project/service/result publication makes the receipt unavailable for new reads.

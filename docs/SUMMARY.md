@@ -21,3 +21,5 @@
 - [Inference integration status](inference.md)
 - [Operator transfers](portability.md)
 - [Operation and recovery](operations.md)
+
+- [Working together](working-together.md)
