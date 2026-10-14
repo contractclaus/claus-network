@@ -1,3 +1,4 @@
+import {taskProgress} from './progress.mjs';
 import { randomUUID } from 'node:crypto';
 import {createTaskReviews} from './reviews.mjs';
 import { canonical, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
@@ -113,6 +114,27 @@ export function createApps({storage,identity,store,taskPayments,schemaDefinition
         const agreement=await taskPayments.create(actor,tx.network,projectId,row.value,spec,{payerProjectId,chainId,priceWei,deliveryDue,asset});
         const result=rowValue(await tx.write('tasks',taskId,{...row.value,agreement,updatedAt:now()},expectedRevision));await event(tx,{type:'task.agreement',collection:'tasks',id:taskId,actorId:who});return result;
       });});},
+    async progress(projectId,taskId){
+      const task=await api.paymentTask(projectId,taskId);let payment=null,paymentError=false;
+      if(task.agreement)try{payment=await taskPayments.observe(task);}catch{paymentError=true;}
+      return taskProgress(task,payment,{projectId,now:now(),paymentError});
+    },
+    async publicActivity(projectId,{after='',limit=25}={}){
+      ready();integer(limit,1,100);const tx=storage.reader(projectId),a=await app(tx,projectId,{publicOnly:true});
+      requireThat(a.value.manifest.tasks?.visibility==='public','not_found');
+      const binding='public-task-events',last=afterCursor(after,projectId,'public',binding);
+      const sequence=(await tx.read('meta','sequence'))?.value.next??0;
+      const start=last||String(Math.max(0,sequence-limit)).padStart(12,'0');
+      const rows=await tx.list('events',{after:start,limit}),items=[];
+      for(const row of rows){
+        const e=row.value;if(e.collection!=='tasks'||!['task.posted','task.claim','task.deliver','task.accept','task.cancel','task.agreement'].includes(e.type))continue;
+        const task=(await tx.read('tasks',e.id))?.value;if(!task||task.hidden)continue;
+        const version=(await tx.read('versions',String(task.version)))?.value;
+        if(version?.manifest.tasks?.visibility!=='public')continue;
+        items.push({id:projectId+':event:'+e.sequence,projectId,taskId:e.id,type:e.type,at:e.at,sequence:e.sequence,title:typeof task.input?.title==='string'?task.input.title.slice(0,160):'Task',currentState:task.state});
+      }
+      return {items,nextCursor:cursor(projectId,'public',binding,rows.at(-1)?.id??start),hasMore:rows.length===limit,observedAt:now(),scope:'Public task events. Current visibility is rechecked. App acceptance is not payment or completed withdrawal.'};
+    },
     async paymentTask(projectId,taskId){ready();const tx=storage.reader(projectId),a=await app(tx,projectId,{publicOnly:true});requireThat(a.value.manifest.tasks?.visibility==='public','not_found');const row=await tx.read('tasks',taskId);requireThat(row&&!row.value.hidden,'not_found');return rowValue(row);},
     async payment(projectId,taskId){return taskPayments.observe(await api.paymentTask(projectId,taskId));},
     async preparePayment(actor,projectId,{taskId,senderProjectId,action}){return taskPayments.prepare(actor,senderProjectId,await api.paymentTask(projectId,taskId),action);},
