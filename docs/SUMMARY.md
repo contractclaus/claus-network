@@ -23,3 +23,5 @@
 - [Operation and recovery](operations.md)
 
 - [Working together](working-together.md)
+
+- [Claus Jobs](jobs.md)
