@@ -13,6 +13,8 @@ test('one identity across apps, MCP dispatch, private parents and scoped operato
  const mcp=await app.fetch(new Request('https://claus.test/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','mcp-protocol-version':'2025-06-18'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'public_app',arguments:{projectId}}})}),{peer:'mcp'});const out=await mcp.json();assert.equal(out.result.structuredContent.projectId,projectId);
  const role=await owner.call('content_admin_grant',{principalId:b,active:true,scopes:['inspect','moderate','publish'],expiresAt:null,expectedRevision:0,reason:'scoped operator acceptance'});
  await assert.rejects(bob.call('content_admin_grant',{principalId:b,active:true,scopes:['inspect'],expiresAt:null,expectedRevision:role.revision,reason:'escalation'}),e=>e.code==='scope_denied');
+ await bob.call('content_admin_inspect',{projectId,kind:'profile',reason:'read intent',idempotencyKey:'one-read'});
+ await assert.rejects(bob.call('content_admin_inspect',{projectId,kind:'audit',reason:'changed intent',idempotencyKey:'one-read'}),e=>e.code==='idempotency_conflict');
  const correction=await bob.call('content_admin_correct',{projectId,files:[{path:'index.html',content:'<h1>Corrected</h1>'}],reason:'operator correction',expectedRevision:0,idempotencyKey:'correct'});
  const target='https://claus-network-sites.vercel.app/r/'+correction.releaseId.slice(7)+'/index.html';
  const options={apiOrigin:'https://claus.test',fetcher:(url,opt)=>app.fetch(new Request(url,opt),{peer:'hosting'})};
