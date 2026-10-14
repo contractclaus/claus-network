@@ -94,7 +94,7 @@ export async function restoreRecovery({directory,destination}={}){
    if(previous){check(previous.nextCursor!==null);const i=allowed.indexOf(previous.collection),j=allowed.indexOf(p.collection);check(j===i||j===i+1);}else check(p.collection===allowed[0]);
    check(p.nextCursor===null||typeof p.nextCursor==='string');
    if(p.nextCursor!==null){check(!cursors.has(p.nextCursor));cursors.add(p.nextCursor);}else check(p.collection===allowed.at(-1));
-   for(const r of p.items){check(typeof r.id==='string'&&r.id.length>0&&Number.isSafeInteger(r.revision)&&r.revision>0);row.run(p.collection,r.id,r.revision,JSON.stringify(r));}
+   for(const r of p.items){check(typeof r.recordKey==='string'&&r.recordKey.length>0,'app_export_key_missing_update_server');check(Number.isSafeInteger(r.revision)&&r.revision>0);row.run(p.collection,r.recordKey,r.revision,JSON.stringify(r));}
    previous=p;
   }
   check(ended,'incomplete_recovery_bundle');
