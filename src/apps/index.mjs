@@ -55,7 +55,23 @@ export function createApps({storage,identity,store,schemaDefinition,schemaValue,
     async publish(actor,projectId,{published,expectedRevision,idempotencyKey}){ready();requireThat(typeof published==='boolean','invalid_publication');return storage.transaction(projectId,async tx=>{await manager(actor,projectId,tx.network);return effect(tx,projectId,actor,published?'publish':'withdraw',idempotencyKey,{published,expectedRevision},async who=>{const a=await app(tx,projectId);const result=rowValue(await tx.write('meta','app',{...a.value,published,updatedAt:now()},expectedRevision));await event(tx,{type:'app.publication',actorId:who,published});return result;});});},
     async describe(projectId,actor=null){ready();const tx=storage.reader(projectId);const a=await app(tx,projectId,{publicOnly:!actor});if(actor)await participant(tx,projectId,actor);return {...rowValue(a),limits:APP_LIMITS,actions:['app_join','app_records','app_record_create','app_record_update',...(a.value.manifest.tasks?['app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel']:[]),'app_events'],backend:'managed-records-and-tasks-v1'};},
     async catalog({after='',limit=50}={}){ready();const ids=await storage.catalog({after,limit}),items=[];for(const projectId of ids){try{const a=await api.describe(projectId);items.push({projectId,name:a.manifest.name,description:a.manifest.description,version:a.version});}catch(e){if(!['not_found','project_unavailable'].includes(e.code))throw e;}}return {items,nextCursor:ids.length===limit?ids.at(-1):null};},
-    async join(actor,projectId,{idempotencyKey}){ready();return storage.transaction(projectId,async tx=>{const who=await visitor(actor,tx.network),a=await app(tx,projectId,{publicOnly:true});requireThat(a.value.manifest.participation==='open','scope_denied');return effect(tx,projectId,actor,'join',idempotencyKey,{},async()=>{const old=await tx.read('members',who);if(old){requireThat(old.value.active,'scope_denied');return rowValue(old);}const n=await tx.read('meta','members');requireThat((n?.value.count??0)<APP_LIMITS.members,'capacity_reached');await tx.write('meta','members',{count:(n?.value.count??0)+1},n?.revision??0);return rowValue(await tx.write('members',who,{principalId:who,active:true,joinedAt:now()},0));});});},
+    async join(actor,projectId,{idempotencyKey}) {
+      ready();
+      return storage.transaction(projectId,async tx=>{
+        const who=await visitor(actor,tx.network),a=await app(tx,projectId,{publicOnly:true});
+        requireThat(a.value.manifest.participation==='open','scope_denied');
+        const membership=await tx.read('members',who);
+        // A cached successful join must not contradict a later revocation.
+        requireThat(!membership||membership.value.active,'scope_denied');
+        return effect(tx,projectId,actor,'join',idempotencyKey,{},async()=>{
+          if(membership)return rowValue(membership);
+          const n=await tx.read('meta','members');
+          requireThat((n?.value.count??0)<APP_LIMITS.members,'capacity_reached');
+          await tx.write('meta','members',{count:(n?.value.count??0)+1},n?.revision??0);
+          return rowValue(await tx.write('members',who,{principalId:who,active:true,joinedAt:now()},0));
+        });
+      });
+    },
     async membership(actor,projectId,{principalId,active,expectedRevision,idempotencyKey}){ready();requireThat(typeof active==='boolean','invalid_membership');return storage.transaction(projectId,async tx=>{await manager(actor,projectId,tx.network);requireThat(await tx.network.read('principals',principalId),'not_found');return effect(tx,projectId,actor,active?'membership':'revoke',idempotencyKey,{principalId,active,expectedRevision},async who=>{await app(tx,projectId);const old=await tx.read('members',principalId);if(!old){const n=await tx.read('meta','members');requireThat((n?.value.count??0)<APP_LIMITS.members,'capacity_reached');await tx.write('meta','members',{count:(n?.value.count??0)+1},n?.revision??0);}const r=rowValue(await tx.write('members',principalId,{principalId,active,joinedAt:old?.value.joinedAt??now()},expectedRevision));await event(tx,{type:'member.changed',actorId:who,principalId});return r;});});},
     async records(projectId,{collection,after='',limit=50,authorId,state,parentId,assigneeId}={},actor=null){ready();integer(limit,1,100);const tx=storage.reader(projectId),a=await app(tx,projectId,{publicOnly:!actor});let who='public',own=false;if(actor)({who,own}=await participant(tx,projectId,actor));
       const spec=collection==='tasks'?a.value.manifest.tasks:a.value.manifest.collections.find(c=>c.id===collection);requireThat(spec,'not_found');
