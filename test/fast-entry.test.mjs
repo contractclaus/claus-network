@@ -45,3 +45,14 @@ test('only explicitly public GET calls accept a sandboxed browser origin',async 
   assert.equal(protectedRead.status,403);assert.equal(protectedRead.headers.get('access-control-allow-origin'),null);
   for(const url of ['http://example.com','https://127.0.0.1','https://user:pass@example.com','https://example.com/*','https://example.com; script-src *','https://localhost','https://foo.local'])assert.throws(()=>connectSources([url]));
 });
+
+test('website helper does not report an older release as the active project website',async t=>{
+  const {owner,project,advance}=await fixture(t);
+  const base={client:owner,slug:project.slug,name:project.name};
+  const old={...base,files:[{path:'index.html',content:'<!doctype html><h1>Version A</h1>'}]};
+  await publishSite(old);advance(1000);
+  const latest=await publishSite({...base,files:[{path:'index.html',content:'<!doctype html><h1>Version B</h1>'}]});
+  await assert.rejects(publishSite(old),/active project website/);
+  const actual=await owner.call('public_project',{slug:project.slug});
+  assert.equal(actual.releases.sort((a,b)=>b.createdAt-a.createdAt||b.id.localeCompare(a.id))[0].id,latest.releaseId);
+});
