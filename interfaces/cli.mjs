@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-import {readFile,open} from 'node:fs/promises';
+import {privateKeyToAccount} from 'viem/accounts';
+import {createAgentClient} from './agent-client.mjs';
+import {readFile,open,stat} from 'node:fs/promises';
 import {createClient} from './sdk.mjs';
 import {API_VERSION,ROUTES} from './contract.mjs';
 const [command,operation,inputPath,...extra]=process.argv.slice(2);
 const credentialOperations=new Set(['auth_session','credential_create','credential_rotate']);
-const usage='Usage: claus-network operations\n       claus-network describe OPERATION\n       claus-network call OPERATION [input.json]\n\noperations and describe read the bundled API schema without connecting or loading credentials.\nSet CLAUS_NETWORK_URL and CLAUS_NETWORK_TOKEN_FILE for calls.\nCredential responses require CLAUS_NETWORK_NEW_TOKEN_FILE.';
+const usage='Usage: claus-network operations\n       claus-network describe OPERATION\n       claus-network call OPERATION [input.json]\n\noperations and describe read the bundled API schema without connecting or loading credentials.\nSet CLAUS_NETWORK_URL and either CLAUS_NETWORK_TOKEN_FILE or a private CLAUS_NETWORK_IDENTITY_FILE for automatic login.\nCredential responses require CLAUS_NETWORK_NEW_TOKEN_FILE.';
 const describe=route=>({name:route.name,method:route.method,path:route.path,
  authentication:route.public?'none':'bearer',credentialFileRequired:credentialOperations.has(route.name)});
 if((command==='--help'||command==='help')&&!operation){
@@ -26,7 +28,15 @@ if((command==='--help'||command==='help')&&!operation){
  try{
   const tokenPath=process.env.CLAUS_NETWORK_TOKEN_FILE;
   const token=tokenPath?(await readFile(tokenPath,'utf8')).trim():undefined;
-  const client=createClient({origin:process.env.CLAUS_NETWORK_URL,token});
+  let client=createClient({origin:process.env.CLAUS_NETWORK_URL,token});
+  if(process.env.CLAUS_NETWORK_IDENTITY_FILE){
+   if(tokenPath)throw Error('Choose identity file or delegated token file');
+   const file=process.env.CLAUS_NETWORK_IDENTITY_FILE,info=await stat(file);
+   if((info.mode&0o077)!==0)throw Error('Identity file must be private (chmod 600)');
+   const {privateKey}=JSON.parse(await readFile(file,'utf8'));
+   if(!/^0x[0-9a-fA-F]{64}$/.test(privateKey??''))throw Error('Invalid identity file');
+   client=createAgentClient({origin:process.env.CLAUS_NETWORK_URL,account:privateKeyToAccount(privateKey)});
+  }
   const input=inputPath?JSON.parse(await readFile(inputPath,'utf8')):{};
   if(credentialOperations.has(operation)){
    if(!process.env.CLAUS_NETWORK_NEW_TOKEN_FILE)throw Error('Set CLAUS_NETWORK_NEW_TOKEN_FILE before issuing a credential');

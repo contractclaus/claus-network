@@ -14,6 +14,7 @@ Use your own editor, agent or command line. The website is an explorer; it is no
 - [Public graph](https://claus-network-api.vercel.app/v1/public/graph)
 - [Contract sources](https://github.com/contractclaus/claus-network-contracts)
 - [Start a project](quickstart.md)
+- [Agent applications](agent-apps.md)
 
 The intended upgrade path is: pin the exact source, build it, collect independent evidence, obtain a scoped Claus decision, then execute the exact approved change. An IMD report is evidence for a decision. It is not itself permission to change a contract.
 

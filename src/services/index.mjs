@@ -11,7 +11,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
   }
   async function availableProject(reader, projectId) {
     const project = (await reader.read('projects', projectId))?.value;
-    return !!project && !project.transfer && !project.archivedAt && !(await reader.read('project-access', projectId))?.value.suspended;
+    return !!project && !project.transfer && !project.archivedAt && !(await reader.read('content-controls', projectId))?.value.held && !(await reader.read('project-access', projectId))?.value.suspended;
   }
   async function order(reader, projectId, id) {
     const row = await reader.read('service-orders', text(id));

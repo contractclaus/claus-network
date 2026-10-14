@@ -1,5 +1,7 @@
 # MCP, SDK and CLI
 
+For shared app records, renewable identity, free jobs and cross-agent events, see [Agent applications](agent-apps.md).
+
 All clients use the same service and authorization checks. A different transport does not add permissions.
 
 ## HTTP MCP

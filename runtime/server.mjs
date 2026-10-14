@@ -1,3 +1,6 @@
+import {createApps} from '../src/apps/index.mjs';
+import {createContentAdmin} from '../src/content-admin/index.mjs';
+import {schemaDefinition,schemaValue} from '../src/services/schema.mjs';
 import {createServer} from 'node:http';
 import {pathToFileURL} from 'node:url';
 import {Pool,neonConfig} from '@neondatabase/serverless';
@@ -36,7 +39,7 @@ import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
 import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={}}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},appStorage=null,appWritesEnabled=true}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
@@ -53,8 +56,11 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
    state:await contractIntakeHealth(store,intakePorts,now(),chainId)}))),
   chainAdmission:reader=>deployments.admission.admitted(reader),mainnetAdmission:reader=>deployments.admission.forChain(1).admitted(reader),reviewEligibility:(reader,projectId)=>reviewSystem.flow.admission.eligible(reader,projectId)});
  let services,releases;
- const projects=createProjects({store,identity,now,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicDetails:async projectId=>({
-  services:await services.publicForProject(projectId),results:await services.publicResultsForProject(projectId),releases:await releases.publicForProject(projectId),signals:await signals.publicForProject(projectId)
+ const artifacts=createArtifactStore({store});
+ const contentAdmin=createContentAdmin({store,identity,artifacts,now,origin:operatorPorts.siteOrigin});
+ const apps=createApps({storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,writesEnabled:appWritesEnabled});
+ const projects=createProjects({store,identity,now,visible:contentAdmin.visible,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicDetails:async projectId=>({
+  application:appStorage?await apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,services:await services.publicForProject(projectId),results:await services.publicResultsForProject(projectId),releases:await releases.publicForProject(projectId),signals:await signals.publicForProject(projectId)
  })});
  let reviewSystem,deployments,approvals,wallets,vaults,inference,intake;
  const jobs=createJobs({store,identity,now,onCancel:async(tx,job)=>{
@@ -63,7 +69,6 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   await inference.onCancel(tx,job);
   await intake.onCancel(tx,job);
  }});
- const artifacts=createArtifactStore({store});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
  reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,validatePublicBuild:(artifact,profile)=>chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>deployments.reviewProfile(reader,projectId,input),...reviewPorts});
  const chain=chainPorts.chain??createReadonlyChainRouter({
@@ -83,7 +88,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  wallets=createWallets({store,identity,jobs,services,now,chain:chainPorts.wallet??createWalletRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})}),now})});
  requireThat(!operatorPorts.siteOrigin || operatorPorts.siteOrigin !== origin, 'release_origin_not_isolated');
- releases=createReleases({store,identity,projects,artifacts,limit:access.limit,admit:collaborationAdmission,now,origin:operatorPorts.siteOrigin});
+ releases=createReleases({store,identity,projects,artifacts,visible:contentAdmin.visible,limit:access.limit,admit:collaborationAdmission,now,origin:operatorPorts.siteOrigin});
  vaults=createVaults({store,identity,jobs,now,chain:chainPorts.vault??createVaultRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})})});
  const archives=operatorPorts.signingKey?createProjectArchives({store,identity,now,...operatorPorts}):null;
@@ -103,8 +108,10 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   enabled:async (reader,projectId)=>intakePorts.enabled===true&&
    (intakePorts.verifyAdmission?await intakePorts.verifyAdmission(reader,projectId)===true:
     (await reader.read('network-capabilities','contract-intake'))?.value.enabled===true)});
- const service=createService({access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
- const admit=async({route,peer})=>store.transaction(async tx=>{
+ const service=createService({apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const admit=async({route,peer})=>{
+  if(appStorage?.admit&&(route.startsWith('app_')||route.startsWith('public_app')||route==='mcp'))return appStorage.admit(digest({rateSalt,peer}),now(),(await access.policy()).config);
+  return store.transaction(async tx=>{
   const window=Math.floor(now()/300000);
   const group=route.startsWith('auth_')?'auth':'api';
   const limits=(await access.policy(tx)).config;
@@ -116,8 +123,9 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
    await tx.write('rate-limits',key,{window,count:count+1,expiresAt:(window+2)*300000},old?.revision??0);
   }
  });
+ };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

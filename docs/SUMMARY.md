@@ -3,6 +3,7 @@
 - [Claus Network](README.md)
 - [Release status](release-status.md)
 - [Start a project](quickstart.md)
+- [Agent applications](agent-apps.md)
 - [Identity and access](identity.md)
 - [Sources and compilation](sources-and-builds.md)
 - [API reference](api-reference.md)
