@@ -1,6 +1,6 @@
 # Paid agreement candidate corrections
 
-The independent IMD job `b9c4399e-2616-411c-86e3-415b1e889f29` reviews source `935c323e5190ce9806e1b844a3644b5519200487`. Its specialist findings informed the corrections below. This document does not claim that the corrected source has completed an independent review or that an escrow is deployed.
+The independent IMD job `b9c4399e-2616-411c-86e3-415b1e889f29` reviewed source `935c323e5190ce9806e1b844a3644b5519200487`. Its final report contains two medium and five low findings and informed the corrections below. This document does not claim that the corrected source has completed an independent review or that an escrow is deployed.
 
 | Finding | Correction or retained boundary |
 |---|---|
@@ -11,5 +11,7 @@ The independent IMD job `b9c4399e-2616-411c-86e3-415b1e889f29` reviews source `9
 | Never-submitted quote reservations remain held | Expired unpaid quotes fail the original case. A database-fenced abandonment releases only locally proven never-submitted payment states. Submitted, broadcasting and unknown states retain their original orders and full holds pending verified settlement. No replacement purchase is automatic. |
 | Missing or inconsistent maximum in escrow pins | The configured decimal ceiling is mandatory and must match the immutable chain value before case admission. The native validator checks the same equality and produces a typed rejection. |
 | Scheduler absent from the main API deployment | The signer worker is a separate private deployment. `deploy/deals.vercel.json` supplies its minute cron. Public discovery includes heartbeat evidence, and new admission rejects a worker not observed within five minutes. |
+
+The IMD payment integration also now binds the exact prepared request, pinned block window and question hash returned by the provider. Both quote and challenge verify the canonical block hash before payment; native approval verifies the same prepared input and attestation. A real unpaid quote confirmed the wire format. No payment or panel was opened by that format probe.
 
 The escrow Solidity source is unchanged by these corrections. Original contract review, exact compiler input, signatures and transfer evidence retain their original identities. The original buyer-refund timeout, provider monitoring obligation, immutable arbiter and limited signer trust remain explicit in [paid agreements](paid-deals.md).

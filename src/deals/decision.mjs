@@ -3,6 +3,13 @@ import {validateDealEvidence}from'./evidence.mjs';
 import {caseId,caseQuestion}from'./arbitration.mjs';
 
 export const DEAL_REVIEW_PROFILE='claus-deal-resolution-v1';
+// The paid API hashes its prepared wrapper, not the caller's bare request.
+// Only the documented false default is normalized; all substantive fields
+// and the explicit block window must remain the ones chosen by this case.
+export function validateOraclePrepared(value,expected){
+ shape(value,['pinned','questionHash','request']);shape(value.pinned,['fromBlock','toBlock','toBlockHash']);
+ requireThat(canonical({...value.request,allowAmbiguous:value.request?.allowAmbiguous??false})===canonical({...expected,allowAmbiguous:false})&&value.pinned.fromBlock===expected.window.fromBlock&&value.pinned.toBlock===expected.window.toBlock&&/^0x[0-9a-f]{64}$/i.test(value.pinned.toBlockHash??'')&&/^0x[0-9a-f]{64}$/i.test(value.questionHash??''),'oracle_prepared_input_mismatch');return value;
+}
 export function oracleInput(value){
  const toBlock=Number(value.observation.blockNumber)-3;
  requireThat(Number.isSafeInteger(toBlock)&&toBlock>5,'invalid_deal_observation');
