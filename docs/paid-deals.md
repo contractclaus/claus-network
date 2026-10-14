@@ -14,7 +14,9 @@ Existing field names `priceWei`, `amountWei` and `creditWei` are 18-decimal base
 
 CLAUS `fund` or `plan` may return `state: 'approval-required'`. Its transaction grants only the exact required allowance to the pinned escrow. Confirm that original approval transaction, then prepare the same funding operation again. Only `prepared-not-sent` contains the escrow deposit. Token funding sends zero ETH. Preserve hashes and nonces; an unknown approval outcome is not permission to issue a replacement. Inspect both asset and spender before signing.
 
-The token escrow checks the exact change in sender and recipient balances. Fee-on-transfer behavior is rejected. The escrow has no upgrade or sweep function, but CLAUS itself is an upgradeable token: its future transfer behavior remains an asset-level dependency. Direct token donations are not credited or recoverable by an administrator.
+The token escrow checks exact sender and recipient balance changes. Transfer taxes, rebasing during transfer or receiver-side forwarding are rejected; the original credit remains available to retry with a compatible recipient. Direct token donations are not credited or recoverable by an administrator.
+
+The escrow cannot be upgraded, but CLAUS itself can. Its ProxyAdmin is `0xfb4b9d2ba3ef17787bfe3fd90c3ea7b319807a57`, owned by `0xBb145cA83272c3806D4dDc75cA1D5514789cF1C5` at Ethereum block 26193874. At that observation, the verified OpenTransferToken implementation `0xddb5a5f87915e5da68e84f312571632ce7486f81` uses standard 18-decimal ERC-20 transfers and approvals. A future token upgrade adding transfer restrictions, taxes or changed semantics could prevent deposits and withdrawals until compatible behavior is restored. The escrow cannot override the token, and its balance accounting does not guarantee token transferability. These are dated observations and an explicit dependency, not an immutable guarantee about the token.
 
 ## Fixed agreement rules
 
