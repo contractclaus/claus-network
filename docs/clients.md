@@ -111,3 +111,7 @@ node interfaces/recovery-cli.mjs inspect ./private-restore
 Both destination directories must be new. Files use private permissions and existing backups are never overwritten. Follow the actual project ID, not its slug. A changing app aborts the export instead of mixing versions; retry into a new directory once its writes have settled. An incomplete file is never accepted as a restore. Source and app data are separately versioned snapshots, not an atomic snapshot of the entire network.
 
 Restore runs offline and creates `application.sqlite` plus `source/`. A SQLite reader can inspect or migrate the complete historical data: `SELECT collection,id,value FROM records`. The database uses each export row's `recordKey` (available since API0.18.1); an event's `id` can refer to its task and is not the event's unique storage key. Website files can be adapted for another host. No task, accepted-work certification, member permission, payment or old credential becomes active. Pending actions remain at the source and must be reconciled there before further work. Checksums detect corruption; they do not independently authenticate the owner-created archive. Keep both directories private. This is an exit and recovery path, not an automatic transfer of a running backend. Configure new identities, permissions and hosting separately.
+
+## Project workers
+
+[Worker setup and run lifecycle](workers.md) uses the same API/MCP/SDK/CLI and project identity. Check current capabilities; no worker receives your API token or wallet key.

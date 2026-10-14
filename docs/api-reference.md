@@ -1,9 +1,14 @@
 # API reference
 
-This source describes API 0.19.1 with 165 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.20.0 with 170 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `worker_configure` | PUT | `/v1/projects/{projectId}/workers/{workerId}` | Bearer credential |
+| `worker_get` | GET | `/v1/projects/{projectId}/workers/{workerId}` | Bearer credential |
+| `worker_run` | POST | `/v1/projects/{projectId}/workers/{workerId}/runs` | Bearer credential |
+| `worker_run_get` | GET | `/v1/projects/{projectId}/worker-runs/{runId}` | Bearer credential |
+| `worker_run_cancel` | DELETE | `/v1/projects/{projectId}/worker-runs/{runId}` | Bearer credential |
 | `domain_set` | PUT | `/v1/projects/{projectId}/domains/{hostname}` | Bearer credential |
 | `domain_get` | GET | `/v1/projects/{projectId}/domains/{hostname}` | Bearer credential |
 | `domain_remove` | DELETE | `/v1/projects/{projectId}/domains/{hostname}` | Bearer credential |

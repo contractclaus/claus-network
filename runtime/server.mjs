@@ -1,3 +1,4 @@
+import {createWorkers} from '../src/workers/index.mjs';
 import {createDomains} from '../src/domains/index.mjs';
 import {createDiscovery} from '../src/discovery/index.mjs';
 import {createWorkflows} from '../src/workflows/index.mjs';
@@ -44,7 +45,7 @@ import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
 import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},domainPorts={},domainsEnabled=false,appStorage=null,appWritesEnabled=true}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
@@ -120,8 +121,9 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  workflows=createWorkflows({store,identity,apps,now,admit:access.collaboration});
  const discovery=createDiscovery({store,projects,apps,services,now});
  const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
+ const workers=createWorkers({store,identity,projects,artifacts,now,ports:workerPorts,enabled:workersEnabled});
  const deals=createDeals({store,identity,ports:dealPorts});
- const service=createService({domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const service=createService({workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   if(appStorage?.admit&&(route.startsWith('app_')||route.startsWith('public_app')||route==='mcp'))return appStorage.admit(digest({rateSalt,peer}),now(),(await access.policy()).config);
   return store.transaction(async tx=>{
@@ -138,7 +140,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  });
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{
@@ -163,7 +165,7 @@ async function main(){
   requireThat(process.env.CLAUS_NETWORK_LOCAL==='1','database_required');
   store=openStore(process.env.CLAUS_NETWORK_LOCAL_FILE??'network-local.sqlite');
  }
- const application=createApplication({domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig(),chainPorts:readonlyPorts(),dealPorts:configuredDealPorts()});
+ const application=createApplication({workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig(),chainPorts:readonlyPorts(),dealPorts:configuredDealPorts()});
  const server=await listen(application,{port:Number(process.env.PORT??8787)});
  console.log('Claus Network listening on '+server.address().address+':'+server.address().port);
  for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(async()=>{await store.close();process.exit(0);}));

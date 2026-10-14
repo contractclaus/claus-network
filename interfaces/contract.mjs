@@ -1,4 +1,4 @@
-export const API_VERSION='0.19.1';
+export const API_VERSION='0.20.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -8,6 +8,11 @@ const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:1000000}});
 const descriptions = {
+ worker_configure: 'Pin your immutable source snapshot and entry module for an isolated JSON worker. Requires worker.manage and snapshot access. No host keys, internet, wallet access or persistent disk.',
+ worker_get: 'Read a project worker definition and current revision with worker.read.',
+ worker_run: 'Queue one bounded isolated run at expectedRevision with worker.run. Save idempotencyKey: unknown provider outcomes never trigger a replacement. Input and output are bounded JSON.',
+ worker_run_get: 'Read your run status and untrusted result with worker.read. Completed means execution, not independently verified correctness.',
+ worker_run_cancel: 'Cancel queued work or request termination of its active sandbox with worker.cancel. Existing compute use and uncertain outcomes are retained.',
  domain_set: 'Bind a published static release to your exact hostname with DNS TXT proof. Host provisioning is asynchronous; no wallet or contract rights.',
  domain_get: 'Read your hostname challenge, current provider verification and publication revision.',
  domain_remove: 'Immediately stop serving your custom host; provider cleanup follows. Existing canonical project URL stays available.',
@@ -95,6 +100,11 @@ const route=(name,method,path,properties={},required=Object.keys(properties),pub
  description:descriptions[name] ?? `${method} ${path}. ${publicRead?'Public read.':method==='GET'?'Requires current object read permission.':'Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.'}`});
 export const ROUTES=Object.freeze([
 
+ route('worker_configure','PUT','/v1/projects/{projectId}/workers/{workerId}',{projectId:string(),workerId:string(40),snapshotId:string(),entry:string(180),paths:{type:'array',items:string(180),minItems:1,maxItems:20},enabled:boolean,expectedRevision:integer},['projectId','workerId','snapshotId','entry','paths','expectedRevision']),
+ route('worker_get','GET','/v1/projects/{projectId}/workers/{workerId}',{projectId:string(),workerId:string(40)}),
+ route('worker_run','POST','/v1/projects/{projectId}/workers/{workerId}/runs',{projectId:string(),workerId:string(40),expectedRevision:integer,input:true,idempotencyKey:string()}),
+ route('worker_run_get','GET','/v1/projects/{projectId}/worker-runs/{runId}',{projectId:string(),runId:string(71)}),
+ route('worker_run_cancel','DELETE','/v1/projects/{projectId}/worker-runs/{runId}',{projectId:string(),runId:string(71)}),
  route('domain_set','PUT','/v1/projects/{projectId}/domains/{hostname}',{projectId:string(),hostname:string(253),releaseId:string(71),expectedRevision:integer}),
  route('domain_get','GET','/v1/projects/{projectId}/domains/{hostname}',{projectId:string(),hostname:string(253)}),
  route('domain_remove','DELETE','/v1/projects/{projectId}/domains/{hostname}',{projectId:string(),hostname:string(253),expectedRevision:integer}),

@@ -290,6 +290,14 @@
       "builtins": [
         "node:crypto"
       ]
+    },
+    {
+      "id": "workers",
+      "path": "src/workers/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [
