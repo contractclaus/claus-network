@@ -256,6 +256,22 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "discovery",
+      "path": "src/discovery/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "workflows",
+      "path": "src/workflows/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [

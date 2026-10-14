@@ -1,3 +1,5 @@
+import {createDiscovery} from '../src/discovery/index.mjs';
+import {createWorkflows} from '../src/workflows/index.mjs';
 import {createApps} from '../src/apps/index.mjs';
 import {createContentAdmin} from '../src/content-admin/index.mjs';
 import {schemaDefinition,schemaValue} from '../src/services/schema.mjs';
@@ -55,10 +57,10 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   intakeDiscovery:()=>Promise.all([11155111,1].map(async chainId=>({chainId,capability:'claus.proposal.create.v1',
    state:await contractIntakeHealth(store,intakePorts,now(),chainId)}))),
   chainAdmission:reader=>deployments.admission.admitted(reader),mainnetAdmission:reader=>deployments.admission.forChain(1).admitted(reader),reviewEligibility:(reader,projectId)=>reviewSystem.flow.admission.eligible(reader,projectId)});
- let services,releases;
+ let services,releases,workflows;
  const artifacts=createArtifactStore({store});
  const contentAdmin=createContentAdmin({store,identity,artifacts,now,origin:operatorPorts.siteOrigin});
- const apps=createApps({storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,writesEnabled:appWritesEnabled});
+ const apps=createApps({storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
  const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicDetails:async projectId=>{
   const [application,publicServices,results,publicReleases,publicSignals]=await Promise.all([
     appStorage?apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,
@@ -112,7 +114,9 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   enabled:async (reader,projectId)=>intakePorts.enabled===true&&
    (intakePorts.verifyAdmission?await intakePorts.verifyAdmission(reader,projectId)===true:
     (await reader.read('network-capabilities','contract-intake'))?.value.enabled===true)});
- const service=createService({apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ workflows=createWorkflows({store,identity,apps,now,admit:access.collaboration});
+ const discovery=createDiscovery({store,projects,apps,services,now});
+ const service=createService({workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   if(appStorage?.admit&&(route.startsWith('app_')||route.startsWith('public_app')||route==='mcp'))return appStorage.admit(digest({rateSalt,peer}),now(),(await access.policy()).config);
   return store.transaction(async tx=>{
@@ -129,7 +133,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  });
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

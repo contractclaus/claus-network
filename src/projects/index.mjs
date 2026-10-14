@@ -146,6 +146,11 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       const evidence = (await store.read('public-evidence', record.value.projectId))?.value ?? { reviews: [], decisions: [], deployments: [] };
       return { ...record.value, revision: record.revision, agents, evidence, ...await publicDetails(record.value.projectId) };
     },
+    async publicAgents({after='',limit=25}={}) {
+      integer(limit,1,25);const rows=await store.list('project-public-agents',{after,limit}),items=[];
+      for(const row of rows){if(!row.value.published)continue;const p=(await store.read('projects',row.value.projectId))?.value;if(!p||p.archivedAt||!await visible(p.id))continue;const publication=await store.read('public-projects',p.slug);if(!publication?.value.published)continue;items.push({id:row.value.agentId,projectId:row.value.projectId,name:row.value.name,revision:row.revision,url:'/c/'+p.slug+'#agents'});}
+      return {items,nextCursor:rows.length===limit?rows.at(-1).id:null};
+    },
     async graph({ after = '', limit = 100, view = 'full' } = {}) {
       requireThat(['full','projects'].includes(view), 'invalid_graph_view');
       const records = await store.list('public-projects', { after, limit });

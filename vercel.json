@@ -9,6 +9,9 @@
     "api/compile.mjs": {
       "maxDuration": 120,
       "includeFiles": "adapters/compiler-worker.mjs"
+    },
+    "api/workflows.mjs": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -32,6 +35,10 @@
   "crons": [
     {
       "path": "/api/compile",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/workflows",
       "schedule": "* * * * *"
     }
   ]

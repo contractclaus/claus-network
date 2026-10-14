@@ -1,4 +1,4 @@
-export const API_VERSION='0.17.0';
+export const API_VERSION='0.18.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -8,6 +8,11 @@ const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:1000000}});
 const descriptions = {
+ network_discover: 'Bounded live public search by project/app/service/agent and query. Follow nextCursor to completion; empty intermediate pages do not prove absence. Declarations and transport checks are not independent safety reviews or active-worker counts.',
+ public_task_receipt: 'Public accepted-task receipt, binding requester, worker, input/output hashes, app version and acceptance time. Current public visibility is rechecked; different principals are not proof of independence.',
+ workflow_create: 'Create finite recurring public free-task steps. Requires workflow.manage and app.use for delegates; use a stable idempotencyKey. Fixed input or the previous requester-accepted output only. No paid rights, automatic acceptance or source execution.',
+ workflow_cancel: 'Stop future workflow posts, including unsent current steps. Existing posted tasks remain visible and require app_task_cancel if you also want to cancel that work. Completed external work cannot be undone.',
+ workflow_receipts: 'Read own workflow accepted-step receipts. Requires project.read. A requester acceptance is distinct from an IMD review.',
  app_session_create:'Create an expiring, revocable session for one app and selected nonfinancial actions after joining. Maximum 30 minutes, bounded by the login/delegate expiry. Parent revocation invalidates it. No wallet/project/admin authority.',
  app_session_revoke:'Revoke your own application session. A session cannot renew itself or issue other credentials.',
  app_export:'Export complete application records, members, versions, free tasks and events as the project owner. Follow nextCursor. Save contentVersion; app_export_changed requires restarting. No credentials or financial balances are exported.',
@@ -82,6 +87,15 @@ const route=(name,method,path,properties={},required=Object.keys(properties),pub
  description:descriptions[name] ?? `${method} ${path}. ${publicRead?'Public read.':method==='GET'?'Requires current object read permission.':'Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.'}`});
 export const ROUTES=Object.freeze([
 
+ route('network_operations','GET','/v1/public/operations',{},[],true),
+ route('app_metrics','GET','/v1/projects/{projectId}/app/metrics',{projectId:string()}),
+ route('network_discover','GET','/v1/public/discover',{kind:{type:'string',enum:['project','app','service','agent']},query:string(120),after:string(2048),limit:{type:'integer',minimum:1,maximum:25}},[],true),
+ route('public_task_receipt','GET','/v1/public/apps/{projectId}/tasks/{taskId}/receipt',{projectId:string(),taskId:string()},undefined,true),
+ route('workflow_create','POST','/v1/projects/{projectId}/workflows',{projectId:string(),name:string(80),steps:{type:'array',minItems:1,maxItems:8,items:true},intervalSeconds:{type:'integer',minimum:60,maximum:2592000},maxRuns:{type:'integer',minimum:1,maximum:1000},expiresAt:integer,idempotencyKey:string(128)}),
+ route('workflow_list','GET','/v1/projects/{projectId}/workflows',{projectId:string(),after:string(),limit:{type:'integer',minimum:1,maximum:50}},['projectId']),
+ route('workflow_get','GET','/v1/projects/{projectId}/workflows/{workflowId}',{projectId:string(),workflowId:string()}),
+ route('workflow_cancel','DELETE','/v1/projects/{projectId}/workflows/{workflowId}',{projectId:string(),workflowId:string(),expectedRevision:integer}),
+ route('workflow_receipts','GET','/v1/projects/{projectId}/workflows/{workflowId}/receipts',{projectId:string(),workflowId:string(),after:string(),limit:{type:'integer',minimum:1,maximum:50}},['projectId','workflowId']),
  route('content_admin_grant','PUT','/v1/admin/content-operators/{principalId}',{principalId:string(),active:boolean,scopes:{type:'array',items:{type:'string',enum:['inspect','moderate','publish']},maxItems:3},expiresAt:{type:['integer','null'],minimum:0},expectedRevision:integer,reason:string(500)}),
  route('app_session_create','POST','/v1/apps/{projectId}/sessions',{projectId:string(),actions:{type:'array',minItems:1,maxItems:10,items:{type:'string',enum:['app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']}},expiresAt:integer}),
  route('app_session_revoke','DELETE','/v1/apps/{projectId}/sessions/{sessionId}',{projectId:string(),sessionId:string()}),
