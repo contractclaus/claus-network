@@ -8,7 +8,7 @@ export function createContentAdmin({store,identity,artifacts,now=()=>Date.now(),
     requireThat(!ownerOnly&&who.kind==='owner'&&grant?.active&&(grant.expiresAt===null||grant.expiresAt>now())&&grant.scopes.includes(action),'scope_denied');return who.principalId;
   }
   const reasonCheck=reason=>requireThat(typeof reason==='string'&&reason.trim().length>0&&reason.length<=500,'invalid_reason');
-  async function audit(tx,actorId,projectId,action,key,value){const id=digest({actorId,projectId,action,key});if(!await tx.read('content-audit',id))await tx.write('content-audit',id,{id,projectId,actorId,action,at:now(),...copy(value)},0);return id;}
+  async function audit(tx,actorId,projectId,action,key,value){const id=digest({actorId,projectId,action,key}),old=await tx.read('content-audit',id);if(old){const {id:ignored,projectId:p,actorId:a,action:t,at,...recorded}=old.value;requireThat(digest(recorded)===digest(value),'idempotency_conflict');}else await tx.write('content-audit',id,{id,projectId,actorId,action,at:now(),...copy(value)},0);return id;}
   return {
     authorize:operator,
     async grant(actor,{principalId,active,scopes,expiresAt,expectedRevision,reason}) {
