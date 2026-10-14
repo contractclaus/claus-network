@@ -24,6 +24,11 @@ export async function publishSite({client,slug,name,description,files}) {
   });
   const verified=await client.call('public_release_file',{releaseId:release.id,filePath:'index.html'});
   if(verified.projectId!==projectId||verified.file?.content!==files.find(f=>f.path==='index.html').content)throw Error('Published content differs');
+  const publicProject=await client.call('public_project',{slug});
+  const active=(publicProject.releases??[]).filter(r=>r.expiresAt===null||r.expiresAt>Date.now())
+    .sort((a,b)=>b.createdAt-a.createdAt||b.id.localeCompare(a.id))[0];
+  if(publicProject.projectId!==projectId||active?.id!==release.id)
+    throw Error('This release is not the active project website. A newer release or an operator selection may be active. Read the public project before changing its publications.');
   return {projectId,releaseId:release.id,projectUrl:'https://claus.si/c/'+slug,siteUrl:release.url,
     mapUrl:'https://claus.si/Home#project='+encodeURIComponent(slug),expiresAt:prior.publication?.published?prior.publication.expiresAt:null};
 }
