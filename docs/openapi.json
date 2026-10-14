@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.18.1"
+    "version": "0.19.0"
   },
   "servers": [
     {
@@ -10,6 +10,248 @@
     }
   ],
   "paths": {
+    "/v1/public/chains/{chainId}/deals": {
+      "get": {
+        "operationId": "deal_terms",
+        "description": "Read the exact pinned escrow contract and immutable agreement rules. enabled=false means new funding is unavailable. Publication is not a guarantee of work quality or independent arbitration.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "chainId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                11155111
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/public/chains/{chainId}/deals/{dealId}": {
+      "get": {
+        "operationId": "deal_get",
+        "description": "Read a pinned escrow agreement directly from its observed chain block. Project and result commitments do not certify ownership or quality.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "chainId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                11155111
+              ]
+            }
+          },
+          {
+            "name": "dealId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 66
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/public/chains/{chainId}/deal-plans/{planId}": {
+      "get": {
+        "operationId": "deal_plan_get",
+        "description": "Read a finite pre-funded plan, run count and remaining amount. Prior runs retain their own deadlines after cancellation.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "chainId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                11155111
+              ]
+            }
+          },
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 66
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/deals/prepare": {
+      "post": {
+        "operationId": "deal_prepare",
+        "description": "Prepare and simulate an unsigned transaction from the project owner address. Requires project.read; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, price and deadlines. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chainId": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      11155111
+                    ]
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "fund",
+                      "plan",
+                      "claim",
+                      "accept",
+                      "refund",
+                      "settle",
+                      "cancelUnclaimed",
+                      "cancelPlan",
+                      "expirePlan",
+                      "deliver",
+                      "dispute",
+                      "run",
+                      "withdraw"
+                    ]
+                  },
+                  "input": true
+                },
+                "required": [
+                  "chainId",
+                  "action",
+                  "input"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/public/operations": {
       "get": {
         "operationId": "network_operations",

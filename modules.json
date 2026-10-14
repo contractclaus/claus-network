@@ -272,6 +272,14 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "deals",
+      "path": "src/deals/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [
