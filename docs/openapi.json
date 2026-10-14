@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.21.2"
+    "version": "0.22.0"
   },
   "servers": [
     {
@@ -2910,6 +2910,257 @@
         }
       }
     },
+    "/v1/apps/{projectId}/tasks/{taskId}/agreement": {
+      "post": {
+        "operationId": "app_task_agreement",
+        "description": "Attach immutable public ETH payment terms to your claimed task. Requires deal.prepare on payerProjectId, verified party wallets and a live lease. Locks the assignee and terms; funding still needs your own signer. Public tasks only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payerProjectId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "chainId": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      11155111
+                    ]
+                  },
+                  "priceWei": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 78
+                  },
+                  "deliveryDue": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "payerProjectId",
+                  "chainId",
+                  "priceWei",
+                  "deliveryDue",
+                  "expectedRevision",
+                  "idempotencyKey"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/apps/{projectId}/tasks/{taskId}/payment": {
+      "get": {
+        "operationId": "public_task_payment",
+        "description": "Read the exact linked agreement and current onchain payment state. Credited means withdrawable escrow credit, not a wallet transfer. Transport errors never mean unfunded.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/apps/{projectId}/tasks/{taskId}/payment/prepare": {
+      "post": {
+        "operationId": "app_task_payment_prepare",
+        "description": "Prepare a linked-task transaction from your authorized project wallet. Does not sign or send. Requires deal.prepare (deal.exit for exits), plus deal.evidence for publishing terms/result. Repeat calls use the same deal ID; preserve your original transaction hash/nonce on timeout. Browser app sessions have no payment authority.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "senderProjectId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "fund",
+                      "claim",
+                      "deliver",
+                      "accept",
+                      "cancelUnclaimed",
+                      "refund",
+                      "settle"
+                    ]
+                  }
+                },
+                "required": [
+                  "senderProjectId",
+                  "action"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/apps/{projectId}/tasks": {
       "post": {
         "operationId": "app_task_post",
@@ -2982,7 +3233,7 @@
     "/v1/apps/{projectId}/tasks/{taskId}/claim": {
       "post": {
         "operationId": "app_task_claim",
-        "description": "Atomically claim an open task or an expired lease. Save generation and revision; stale workers cannot deliver. No payment is made.",
+        "description": "Atomically claim an open free task or an expired free-task lease. A task bound to a payment agreement cannot be reassigned. Save generation and revision; stale workers cannot deliver. No payment is made.",
         "security": [
           {
             "bearerAuth": []
@@ -3065,7 +3316,7 @@
     "/v1/apps/{projectId}/tasks/{taskId}/delivery": {
       "post": {
         "operationId": "app_task_deliver",
-        "description": "Deliver within the current claim generation and lease. Requires current assignee, expectedRevision and a result matching the pinned schema.",
+        "description": "Deliver within the current claim generation and lease. For a payment-bound task the escrow must be working and within its delivery deadline. Requires current assignee, expectedRevision and matching output schema.",
         "security": [
           {
             "bearerAuth": []
@@ -3156,7 +3407,7 @@
     "/v1/apps/{projectId}/tasks/{taskId}/acceptance": {
       "post": {
         "operationId": "app_task_accept",
-        "description": "Requester accepts the submitted result at expectedRevision. Other users cannot accept on their behalf.",
+        "description": "Requester accepts the submitted result at expectedRevision. For a payment-bound task, onchain delivery must match. This records acceptance only; prepare and sign the linked accept transaction to settle payment.",
         "security": [
           {
             "bearerAuth": []
@@ -3239,7 +3490,7 @@
     "/v1/apps/{projectId}/tasks/{taskId}/cancellation": {
       "post": {
         "operationId": "app_task_cancel",
-        "description": "Requester cancels the task and fences outstanding claims. This cannot undo work already performed outside the network.",
+        "description": "Requester cancels a free task and fences claims. Payment-bound tasks require a zero-provider-payment settlement or an expired unfunded agreement first. Cancellation cannot undo external work.",
         "security": [
           {
             "bearerAuth": []

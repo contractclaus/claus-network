@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.21.2 with 176 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.22.0 with 179 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -47,6 +47,9 @@ This source describes API 0.21.2 with 176 operations. Endpoint availability and 
 | `app_records` | GET | `/v1/apps/{projectId}/records` | Bearer credential |
 | `app_record_create` | POST | `/v1/apps/{projectId}/records/{collection}` | Bearer credential |
 | `app_record_update` | PUT | `/v1/apps/{projectId}/records/{collection}/{recordId}` | Bearer credential |
+| `app_task_agreement` | POST | `/v1/apps/{projectId}/tasks/{taskId}/agreement` | Bearer credential |
+| `public_task_payment` | GET | `/v1/public/apps/{projectId}/tasks/{taskId}/payment` | Public |
+| `app_task_payment_prepare` | POST | `/v1/apps/{projectId}/tasks/{taskId}/payment/prepare` | Bearer credential |
 | `app_task_post` | POST | `/v1/apps/{projectId}/tasks` | Bearer credential |
 | `app_task_claim` | POST | `/v1/apps/{projectId}/tasks/{taskId}/claim` | Bearer credential |
 | `app_task_deliver` | POST | `/v1/apps/{projectId}/tasks/{taskId}/delivery` | Bearer credential |
