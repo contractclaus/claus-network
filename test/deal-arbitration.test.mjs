@@ -20,7 +20,7 @@ test('subsidy rejects trivial value and late requests, and new projects cannot e
  const p=await f.owner.call('project_create',{slug:'another-local-fixture',name:'Local fixture',idempotencyKey:'another'});await assert.rejects(()=>f.core.request(f.actor,p.id,1,hash),/deal_arbitration_capacity/);assert.equal((await f.store.read('deal-case-capacity','global')).value.total,1);
 });
 test('missing scheduler health closes new admission without consuming the subsidy',async t=>{
- const f=await setup(t);await f.store.transaction(async tx=>{const h=await tx.read('worker-health','deals');await tx.write('worker-health','deals',{observedAt:Date.now()-600000},h.revision);});assert.equal((await f.core.discovery()).enabled,false);await assert.rejects(()=>f.core.request(f.actor,f.project.id,1,dealId),/deal_worker_unavailable/);assert.equal(await f.store.read('deal-case-capacity','global'),null);
+ const f=await setup(t);(await f.ports.context()).public.codeHash='0x'+'ab'.repeat(32);await f.store.transaction(async tx=>{const h=await tx.read('worker-health','deals');await tx.write('worker-health','deals',{observedAt:Date.now()-600000},h.revision);});assert.equal((await f.core.discovery()).enabled,false);await assert.rejects(()=>f.core.request(f.actor,f.project.id,1,dealId),/deal_worker_unavailable/);assert.equal(await f.store.read('deal-case-capacity','global'),null);
 });
 
 import{arbitrationPorts}from'../runtime/arbitration-ports.mjs';import{createBilling,reserve,balance}from'../src/billing/index.mjs';import{createSealer}from'../adapters/secrets.mjs';
@@ -44,7 +44,7 @@ test('oracle proof pins question, consumer, amount, panel, signature and the nat
  const f=await setup(t),a=await f.core.request(f.actor,f.project.id,1,dealId),v=(await f.store.read('deal-cases',a.id)).value,now=Date.now(),expected=oracleInput(v),id='11111111-1111-1111-1111-111111111111',job='22222222-2222-2222-2222-222222222222',issued=Math.floor(now/1000);
  const account=privateKeyToAccount(generatePrivateKey()),request={...expected,id,jobId:job,status:'attested',questionHash:hash,window:{...expected.window,toBlockHash:hash}},message={requestId:uuidWord(id),chainId:1,questionHash:hash,answerType:'uint256',answer:encodeAbiParameters([{type:'uint256'}],[600n]),figure:'600',fromBlock:96,toBlock:97,blockHash:hash,panelJobId:uuidWord(job),panelSize:5,quorum:4,agreed:4,issuedAt:issued,expiresAt:issued+86400},domain={name:'IdentityMD Oracle',version:'2',...expected.consumer};const attestation={requestId:id,primaryType:'OracleAttestation',types:ORACLE_TYPES,domain,message,signer:IMD_ATTESTER};attestation.signature=await account.signTypedData({domain,types:ORACLE_TYPES,primaryType:'OracleAttestation',message:{...message,answerType:3}});
  const preparedInput={request:expected,pinned:request.window,questionHash:hash};const input={request,attestation,requestId:id,expected,preparedInput,maximumWei:'100000000000000',now};const recover=async typed=>{assert.equal((await recoverTypedDataAddress(typed)).toLowerCase(),account.address.toLowerCase());return IMD_ATTESTER;};const proof=await verifyDealOracle(input,{recover});assert.equal(proof.workerAmount,'600');const metadata=structuredClone(input);metadata.request.window={...metadata.request.window,fromBlockHash:hash};assert.equal((await verifyDealOracle(metadata,{recover})).workerAmount,'600');await assert.rejects(()=>verifyDealOracle(input),/oracle_signature_invalid/);
- for(const mutation of [x=>x.request.question+=' changed',x=>x.attestation.domain.chainId=11155111,x=>x.attestation.message.agreed=3,x=>x.attestation.message.figure='601',x=>x.maximumWei='599']){const changed=structuredClone(input);mutation(changed);await assert.rejects(()=>verifyDealOracle(changed,{recover}));}
+ for(const mutation of [x=>x.request.jobId='invalid',x=>x.attestation.signature='0x1234',x=>x.request.question+=' changed',x=>x.attestation.domain.chainId=11155111,x=>x.attestation.message.agreed=3,x=>x.attestation.message.figure='601',x=>x.maximumWei='599']){const changed=structuredClone(input);mutation(changed);await assert.rejects(()=>verifyDealOracle(changed,{recover}));}
  v.observation={...v.observation,maximumDealWei:'100000000000000',codeHash:hash,arbiter:'0x3000000000000000000000000000000000000003'};const pins=[{chainId:1,contract,codeHash:hash,arbiter:v.observation.arbiter,maximumDealWei:'100000000000000',reviewed:true}],oracle={requestId:id,expected,preparedInput,request,attestation},native=decisionInput(v,oracle,proof);validateDealDecisionShape(native,pins,now);const missingPin=structuredClone(pins);delete missingPin[0].maximumDealWei;assert.throws(()=>validateDealDecisionShape(native,missingPin,now),/network_review_invalid_input/);const missingObjection=structuredClone(native);missingObjection.bundle.dispute={hash:missingObjection.deal.disputeHash,document:null,status:'unavailable'};validateDealDecisionShape(missingObjection,pins,now);assert.throws(()=>dealDecisionRequest(native,{settings:{enabled:true},policy:{capabilities:{networkReview:true}}},pins),/disabled/);const out=dealDecisionRequest(native,{settings:{enabled:true,model:'local-fixture',provider:'fixture'},policy:{capabilities:{networkDealReview:true}}},pins);assert.equal(out.max_output_tokens,16384);assert.equal(out.input.length,1);const changed=structuredClone(native);changed.proposal.workerAmount='1000';changed.proposalHash=digest(changed.proposal);assert.throws(()=>validateDealDecisionShape(changed,pins,now),/network_review_invalid_input/);
 });
 
@@ -71,4 +71,44 @@ test('an overlapping reconciliation cannot cancel a still-live unsent payment',a
 });
 test('fixed invalid oracle proof ends visibly without repeated provider calls',async t=>{
  const f=await setup(t),a=await f.core.request(f.actor,f.project.id,1,dealId);let calls=0;const core=createArbitration({store:f.store,identity:f.app.identity,dealPorts:f.ports,enabled:true,ports:{advance:async()=>{calls++;throw Object.assign(Error('invalid fixed proof'),{code:'oracle_attestation_mismatch'});}}});await core.tick();await core.tick();assert.equal(calls,1);assert.equal((await core.read(a.id)).state,'blocked');assert.equal((await core.read(a.id)).error,'oracle_attestation_mismatch');
+});
+
+import {decodeNativeReviewResponse} from '../runtime/arbitration-ports.mjs';
+test('native pauses preserve paid cases while explicit permanent inputs end visibly',async()=>{
+ const response=(status,error)=>new Response(JSON.stringify({error}),{status});
+ for(const [status,error]of [[403,'network_review_disabled'],[403,'firewall'],[400,'unknown']])await assert.rejects(()=>decodeNativeReviewResponse(response(status,error),{}),{code:'native_review_unavailable'});
+ await assert.rejects(()=>decodeNativeReviewResponse(new Response('forbidden',{status:403}),{}),{code:'native_review_unavailable'});
+ for(const error of ['network_review_invalid_input','network_review_proposal_expires','network_review_revoked'])await assert.rejects(()=>decodeNativeReviewResponse(response(400,error),{}),{code:'native_review_rejected'});
+ assert.deepEqual(await decodeNativeReviewResponse(response(404,'network_review_not_found')), {state:'missing'});
+ assert.deepEqual(await decodeNativeReviewResponse(new Response('{}',{status:429}),{}),{state:'waiting'});
+});
+
+test('shared fixed-artifact errors terminate once and mixed-case code hashes admit',async t=>{
+ for(const code of ['invalid_oracle_id','invalid_provider_id','invalid_integer','invalid_json','value_too_deep','invalid_shape','document_too_large']){
+  const f=await setup(t);(await f.ports.context()).public.codeHash='0x'+'ab'.repeat(32);await f.store.transaction(async tx=>{const h=await tx.read('worker-health','deals');await tx.write('worker-health','deals',{...h.value,targets:h.value.targets.map(x=>({...x,codeHash:'0x'+'AB'.repeat(32)}))},h.revision);});const a=await f.core.request(f.actor,f.project.id,1,dealId);let calls=0;const core=createArbitration({store:f.store,identity:f.app.identity,dealPorts:f.ports,enabled:true,ports:{advance:async()=>{calls++;throw Object.assign(Error(code),{code});}}});await core.tick();await core.tick();assert.equal(calls,1);assert.equal((await core.read(a.id)).state,'blocked');assert.equal((await core.read(a.id)).error,code);
+ }
+ assert.throws(()=>arbitrationPorts({store:{},sealer:{},paymentSigner:{address:worker},arbiterSigner:{address:contract},pins:[{arbiter:worker}],nativeOrigin:'https://claus-agent.vercel.app',nativeSecret:'fixture'}),{code:'arbitration_key_unavailable'});
+});
+
+test('original quotes survive clock lead and expired unsent challenges terminate before calls',async t=>{
+ const f=await setup(t),a=await f.core.request(f.actor,f.project.id,1,dealId),v=(await f.store.read('deal-cases',a.id)).value,input=oracleInput(v);let clock=Date.now(),issued=Math.floor(clock/1000)+6,expiry=issued+600,quoteCalls=0,challengeCalls=0,fail=false;
+ const prepared={request:input,pinned:{...input.window,toBlockHash:hash},questionHash:hash};let q;
+ const provider=createImdOracleProvider({store:f.store,sealer:createSealer('2'.repeat(64)),resolveInput:async()=>input,now:()=>clock,verifyPinned:async()=>{},fetch:async(url,options)=>{
+  if(url.endsWith('/quote')){quoteCalls++;q={v:1,id:'clock-quote-'+quoteCalls,action:'oracle.request',policyVersion:'oracle-1',issuedAt:issued,expiresAt:expiry,inputHash:digest(prepared).slice(7),quoteHash:'1'.repeat(64),payment:{scheme:'exact',network:IMD_ORACLE.network,asset:IMD_ORACLE.asset,payTo:IMD_ORACLE.payTo,decimals:18,amount:IMD_ORACLE.maximum},terms:{purchase:'action-admission',resultGuaranteed:false}};return Response.json({order:{requestKey:JSON.parse(options.body).requestKey,quote:q}},{status:201});}
+  challengeCalls++;if(fail)throw Error('temporary outage');return Response.json({quote:q,input:prepared},{status:402});
+ }});
+ const args={projectId:a.id,inputHash:digest(input),quoteId:'skew'};await assert.rejects(()=>provider.quote(args),{code:'provider_clock_ahead'});assert.equal(quoteCalls,1);assert.equal(challengeCalls,0);clock+=2000;await provider.quote(args);assert.equal(quoteCalls,1);assert.equal(challengeCalls,1);
+ issued=Math.floor(clock/1000);expiry=issued+600;fail=true;await assert.rejects(()=>provider.quote({...args,quoteId:'lost-challenge'}),{code:'provider_outcome_unknown'});clock+=700000;const before=challengeCalls;await assert.rejects(()=>provider.quote({...args,quoteId:'lost-challenge'}),{code:'oracle_quote_expired'});assert.equal(challengeCalls,before);assert.equal(quoteCalls,2);
+ issued=Math.floor(clock/1000);expiry=issued+45;await assert.rejects(()=>provider.quote({...args,quoteId:'too-short'}),{code:'oracle_quote_expired'});assert.equal(challengeCalls,before);assert.equal((await f.store.list('imd-payments')).length,0);
+});
+
+import {verifiedDealTargets} from '../api/deals.mjs';
+test('one failed chain cannot erase healthy targets and a wrong signing key reports no target',async()=>{
+ const chain={context:async chainId=>{if(chainId===11155111)throw Error('RPC unavailable');return{public:{contract,codeHash:hash,arbiter:worker}};}};
+ assert.deepEqual(await verifiedDealTargets(chain,[{chainId:11155111},{chainId:1}],worker),[{chainId:1,contract,codeHash:hash}]);assert.deepEqual(await verifiedDealTargets(chain,[{chainId:1}],contract),[]);
+});
+
+import {checkOraclePinnedBlock} from '../runtime/arbitration-ports.mjs';
+test('lagging RPC confirmations wait on the original case while a different pinned block is rejected',()=>{
+ const pinned={toBlock:100,toBlockHash:hash};assert.throws(()=>checkOraclePinnedBlock({hash},{number:104n},pinned),{code:'oracle_pinned_block_pending'});checkOraclePinnedBlock({hash},{number:105n},pinned);assert.throws(()=>checkOraclePinnedBlock({hash:dealId},{number:105n},pinned),{code:'oracle_pinned_block_mismatch'});
 });
