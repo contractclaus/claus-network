@@ -25,7 +25,7 @@ test('audit: optional malformed pins stay isolated; read caching never serves tr
  const invalid=dealPorts({CLAUS_DEAL_PINS:'{'});await assert.rejects(()=>invalid.context(1),e=>e.code==='invalid_deal_pins');
  let time=0,calls=0;const code='0x6000',arbiter='0x3000000000000000000000000000000000000003',controller='0x4000000000000000000000000000000000000004';
  const client={getChainId:async()=>{calls++;return 1;},getBlock:async()=>{calls++;return{number:1n,hash,timestamp:10n};},getBytecode:async()=>{calls++;return code;},readContract:async({functionName})=>{calls++;return{arbiter,admissionController:controller,maximumDeal:1n,maximumPrincipal:5n,fundingEnabled:true}[functionName];}};
- const ports=dealPorts({CLAUS_DEAL_PINS:JSON.stringify([{chainId:1,contract,codeHash:keccak256(code),arbiter,admissionController:controller,reviewed:true}]),CLAUS_MAINNET_RPC_URL:'https://rpc.example.com'},{clientFactory:()=>client,now:()=>time});
+ const ports=dealPorts({CLAUS_DEAL_PINS:JSON.stringify([{chainId:1,contract,codeHash:keccak256(code),arbiter,admissionController:controller,maximumDealWei:'1',reviewed:true}]),CLAUS_MAINNET_RPC_URL:'https://rpc.example.com'},{clientFactory:()=>client,now:()=>time});
  await Promise.all([ports.context(1),ports.context(1)]);assert.equal(calls,8);await ports.context(1);assert.equal(calls,8);await ports.context(1,{fresh:true});assert.equal(calls,12);time=1001;await ports.context(1);assert.equal(calls,16);
 });
 test('no deployment or browser app session can become payment authority',async t=>{
