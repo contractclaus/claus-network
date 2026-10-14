@@ -163,7 +163,7 @@ async function main(){
   requireThat(process.env.CLAUS_NETWORK_LOCAL==='1','database_required');
   store=openStore(process.env.CLAUS_NETWORK_LOCAL_FILE??'network-local.sqlite');
  }
- const application=createApplication({store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig(),chainPorts:readonlyPorts(),dealPorts:configuredDealPorts()});
+ const application=createApplication({domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig(),chainPorts:readonlyPorts(),dealPorts:configuredDealPorts()});
  const server=await listen(application,{port:Number(process.env.PORT??8787)});
  console.log('Claus Network listening on '+server.address().address+':'+server.address().port);
  for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(async()=>{await store.close();process.exit(0);}));
