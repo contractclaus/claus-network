@@ -4,7 +4,7 @@ import {API_VERSION} from './contract.mjs';
 const VERSION='2025-06-18';
 // Credential bootstrap/rotation belongs in a secure client or CLI, not a model
 // tool result. The remaining tools call the exact same authorization service.
-const SECRET_OPERATIONS=new Set(['auth_session','credential_create','credential_rotate']);
+const SECRET_OPERATIONS=new Set(['auth_session','credential_create','credential_rotate','app_session_create']);
 const result=(value,status=200)=>new Response(value===undefined?null:JSON.stringify(value),{status,headers:{'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'}});
 const failure=(id,code,message,status=200)=>result({jsonrpc:'2.0',id,error:{code,message}},status);
 export function createMcp({service,origin='https://claus.si',admit=async()=>{}}){

@@ -1,0 +1,26 @@
+{
+  "name": "Memory pairs",
+  "description": "A memory game with self-reported results",
+  "participation": "open",
+  "collections": [
+    {
+      "id": "rounds",
+      "visibility": "public",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "moves": {
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "moves"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "tasks": null
+}

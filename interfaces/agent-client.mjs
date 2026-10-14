@@ -17,6 +17,6 @@ export function createAgentClient({account,origin=DEFAULT_API_ORIGIN,fetch:reque
   if(session?.credential.expiresAt>now()+30000)return session.token;
   if(!pending)pending=login().finally(()=>{pending=null;});return pending;
  }});
- return {async call(name,input={}){try{return await client.call(name,input);}catch(e){if(e.status===401)session=null;throw e;}},
+ return {async call(name,input={},options={}){try{return await client.call(name,input,options);}catch(e){if(e.status===401)session=null;throw e;}},
   identity:()=>({address:account.address}),clearSession:()=>{session=null;}};
 }

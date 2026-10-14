@@ -12,6 +12,7 @@ export const PROJECT_SCOPES = Object.freeze([
   'contract.read', 'contract.request', 'contract.revoke',
   'signal.read', 'signal.manage', 'signal.publish', 'signal.grant.revoke'
 ]);
+export const APP_SESSION_ACTIONS=Object.freeze(['app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']);
 const FENCED_ACTIONS = new Set(['project.read', 'artifact.read', 'review.read', 'proposal.read', 'project.export',
   'budget.read', 'events.read', 'service.read', 'service.provide', 'service.settle', 'wallet.read', 'wallet.revoke',
   'resource.read', 'vault.read', 'job.cancel', 'inference.read', 'contract.read', 'contract.revoke', 'signal.read', 'signal.grant.revoke']);
@@ -23,7 +24,7 @@ const opaque = prefix => prefix + randomUUID();
 const token = () => 'cln_' + randomBytes(32).toString('base64url');
 const publicCredential = value => {
   const { id, principalId, projectId, mandateId, scopes, createdAt, expiresAt, revokedAt, kind } = value;
-  return { id, principalId, projectId, mandateId, scopes, createdAt, expiresAt, revokedAt, kind };
+  return { id, principalId, projectId, mandateId, scopes, createdAt, expiresAt, revokedAt, kind,...(kind==='app'?{appId:value.appId,actions:value.actions}:{} )};
 };
 
 export function createIdentity({ store, verifySignature = async () => false,
@@ -43,6 +44,11 @@ export function createIdentity({ store, verifySignature = async () => false,
     text(actor);
     const value = (await reader.read('credentials', actor))?.value;
     requireThat(value && !value.revokedAt && value.expiresAt > now(), 'unauthenticated');
+    if(value.kind==='app'){
+      const parent=(await reader.read('credentials',value.parentId))?.value;
+      requireThat(parent&&parent.kind!=='app'&&!parent.revokedAt&&parent.expiresAt>now()&&parent.principalId===value.principalId,'unauthenticated');
+      if(parent.kind!=='owner')requireThat(await allowed(value.parentId,'app.use',{projectId:parent.projectId},reader),'scope_denied');
+    }
     return value;
   }
   async function owner(actor, projectId, reader = store) {
@@ -55,6 +61,7 @@ export function createIdentity({ store, verifySignature = async () => false,
   async function allowed(actor, action, { projectId, withdrawal = false } = {}, reader = store) {
     try {
       const who = await credential(actor, reader);
+      if(who.kind==='app')return false;
       const project = (await reader.read('projects', text(projectId)))?.value;
       if (!project || project.archivedAt) return false;
       const suspended = (await reader.read('project-access', projectId))?.value.suspended === true || !await writesEnabled(reader);
@@ -148,6 +155,16 @@ export function createIdentity({ store, verifySignature = async () => false,
       await credential(actor);
       return actor;
     },
+    async appSession(actor,{appId,actions,expiresAt}){
+      requireThat(Array.isArray(actions)&&actions.length>0&&actions.length<=APP_SESSION_ACTIONS.length&&actions.every(a=>APP_SESSION_ACTIONS.includes(a))&&new Set(actions).size===actions.length,'invalid_scopes');
+      integer(expiresAt,now()+1000,now()+1800000);const rawToken=token(),id=digest(rawToken);
+      return store.transaction(async tx=>{const parent=await credential(actor,tx);requireThat(parent.kind!=='app'&&expiresAt<=parent.expiresAt,'scope_denied');
+        await capacity(tx,'credentials-per-day',parent.principalId+':app:'+Math.floor(now()/86400000),128);
+        const value={id,kind:'app',principalId:parent.principalId,projectId:null,mandateId:null,scopes:[],appId,parentId:actor,actions:copy(actions),createdAt:now(),expiresAt,revokedAt:null};
+        await tx.write('credentials',id,value,0);return {token:rawToken,credential:publicCredential(value)};
+      });
+    },
+    async revokeAppSession(actor,appId,sessionId){return store.transaction(async tx=>{const who=await credential(actor,tx),old=await tx.read('credentials',sessionId);requireThat(who.kind!=='app'&&old?.value.kind==='app'&&old.value.appId===appId&&old.value.principalId===who.principalId,'scope_denied');if(!old.value.revokedAt)await tx.write('credentials',sessionId,{...old.value,revokedAt:now()},old.revision);return {id:sessionId,revoked:true};});},
     async me(actor) {
       const who = await credential(actor);
       return { credential: publicCredential(who), principal: (await store.read('principals', who.principalId))?.value };

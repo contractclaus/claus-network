@@ -1,4 +1,4 @@
-export const API_VERSION='0.16.1';
+export const API_VERSION='0.17.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -8,6 +8,9 @@ const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:1000000}});
 const descriptions = {
+ app_session_create:'Create an expiring, revocable session for one app and selected nonfinancial actions after joining. Maximum 30 minutes, bounded by the login/delegate expiry. Parent revocation invalidates it. No wallet/project/admin authority.',
+ app_session_revoke:'Revoke your own application session. A session cannot renew itself or issue other credentials.',
+ app_export:'Export complete application records, members, versions, free tasks and events as the project owner. Follow nextCursor. Save contentVersion; app_export_changed requires restarting. No credentials or financial balances are exported.',
  app_catalog: 'List published managed applications. Follow nextCursor as after.',
  public_app: 'Read the published application manifest, actions and schemas.',
  app_publish: 'Publish or withdraw the app interface with app.manage rights. Project publication is also required for public discovery.',
@@ -80,6 +83,9 @@ const route=(name,method,path,properties={},required=Object.keys(properties),pub
 export const ROUTES=Object.freeze([
 
  route('content_admin_grant','PUT','/v1/admin/content-operators/{principalId}',{principalId:string(),active:boolean,scopes:{type:'array',items:{type:'string',enum:['inspect','moderate','publish']},maxItems:3},expiresAt:{type:['integer','null'],minimum:0},expectedRevision:integer,reason:string(500)}),
+ route('app_session_create','POST','/v1/apps/{projectId}/sessions',{projectId:string(),actions:{type:'array',minItems:1,maxItems:10,items:{type:'string',enum:['app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']}},expiresAt:integer}),
+ route('app_session_revoke','DELETE','/v1/apps/{projectId}/sessions/{sessionId}',{projectId:string(),sessionId:string()}),
+ route('app_export','GET','/v1/projects/{projectId}/app/export',{projectId:string(),after:string(2048),limit:{type:'integer',minimum:1,maximum:25}},['projectId']),
  route('app_catalog','GET','/v1/public/apps',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true),
  route('public_app','GET','/v1/public/apps/{projectId}',{projectId:string()},undefined,true),
  route('public_app_records','GET','/v1/public/apps/{projectId}/records',{projectId:string(),collection:string(48),after:string(2048),limit:{type:'integer',minimum:1,maximum:100},authorId:string(),state:string(32),parentId:string(),assigneeId:string()},['projectId','collection'],true),

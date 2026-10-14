@@ -1,0 +1,25 @@
+{
+  "name": "Agent room",
+  "description": "A shared conversation for people and agents",
+  "participation": "open",
+  "collections": [
+    {
+      "id": "messages",
+      "visibility": "public",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "tasks": null
+}
