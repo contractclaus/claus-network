@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.19.1"
+    "version": "0.20.0"
   },
   "servers": [
     {
@@ -10,6 +10,358 @@
     }
   ],
   "paths": {
+    "/v1/projects/{projectId}/workers/{workerId}": {
+      "put": {
+        "operationId": "worker_configure",
+        "description": "Pin your immutable source snapshot and entry module for an isolated JSON worker. Requires worker.manage and snapshot access. No host keys, internet, wallet access or persistent disk.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "workerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "snapshotId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "entry": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 180
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 180
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "snapshotId",
+                  "entry",
+                  "paths",
+                  "expectedRevision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "worker_get",
+        "description": "Read a project worker definition and current revision with worker.read.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "workerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/workers/{workerId}/runs": {
+      "post": {
+        "operationId": "worker_run",
+        "description": "Queue one bounded isolated run at expectedRevision with worker.run. Save idempotencyKey: unknown provider outcomes never trigger a replacement. Input and output are bounded JSON.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "workerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "input": true,
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "expectedRevision",
+                  "input",
+                  "idempotencyKey"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/worker-runs/{runId}": {
+      "get": {
+        "operationId": "worker_run_get",
+        "description": "Read your run status and untrusted result with worker.read. Completed means execution, not independently verified correctness.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 71
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "worker_run_cancel",
+        "description": "Cancel queued work or request termination of its active sandbox with worker.cancel. Existing compute use and uncertain outcomes are retained.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 71
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
     "/v1/projects/{projectId}/domains/{hostname}": {
       "put": {
         "operationId": "domain_set",

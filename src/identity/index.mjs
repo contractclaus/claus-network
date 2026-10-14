@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { copy, digest, integer, requireThat, text } from '../shared/index.mjs';
 
 export const PROJECT_SCOPES = Object.freeze([
-  'workflow.manage', 'workflow.cancel', 'app.use', 'app.manage', 'project.read', 'project.update', 'artifact.read', 'artifact.write',
+  'worker.manage','worker.run','worker.read','worker.cancel','workflow.manage', 'workflow.cancel', 'app.use', 'app.manage', 'project.read', 'project.update', 'artifact.read', 'artifact.write',
   'snapshot.create', 'build.compile', 'review.quote', 'review.admit', 'review.read',
   'proposal.create', 'proposal.read', 'proposal.execute', 'project.publish',
   'project.export', 'source.publish', 'budget.read', 'events.read', 'job.cancel',
@@ -13,7 +13,7 @@ export const PROJECT_SCOPES = Object.freeze([
   'signal.read', 'signal.manage', 'signal.publish', 'signal.grant.revoke'
 ]);
 export const APP_SESSION_ACTIONS=Object.freeze(['app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']);
-const FENCED_ACTIONS = new Set(['workflow.cancel','project.read', 'artifact.read', 'review.read', 'proposal.read', 'project.export',
+const FENCED_ACTIONS = new Set(['worker.read','worker.cancel','workflow.cancel','project.read', 'artifact.read', 'review.read', 'proposal.read', 'project.export',
   'budget.read', 'events.read', 'service.read', 'service.provide', 'service.settle', 'wallet.read', 'wallet.revoke',
   'resource.read', 'vault.read', 'job.cancel', 'inference.read', 'contract.read', 'contract.revoke', 'signal.read', 'signal.grant.revoke']);
 const WITHDRAWAL_ACTIONS = new Set(['project.publish', 'source.publish', 'release.publish']);

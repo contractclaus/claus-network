@@ -6,7 +6,7 @@ const scalar={type:'object',properties:{text:{type:'string',maxLength:200}},requ
 export const manifest={name:'Agent board',description:'Private acceptance fixture',participation:'open',collections:[{id:'posts',visibility:'public',schema:scalar},{id:'notes',visibility:'author',schema:scalar}],tasks:{visibility:'public',inputSchema:scalar,outputSchema:scalar,leaseSeconds:30}};
 export async function fixture(t,provided={}){
  const store=provided.store??openStore(':memory:');if(!provided.store)t.after(()=>store.close());let time=Date.now();
- const app=createApplication({store,appStorage:provided.appStorage??memoryAppStore(store),dealPorts:provided.dealPorts??{},domainPorts:provided.domainPorts??{},domainsEnabled:provided.domainsEnabled??false,origin:'https://claus.test',rateSalt:'x'.repeat(32),now:()=>time});
+ const app=createApplication({workersEnabled:provided.workersEnabled??false,workerPorts:provided.workerPorts??{},store,appStorage:provided.appStorage??memoryAppStore(store),dealPorts:provided.dealPorts??{},domainPorts:provided.domainPorts??{},domainsEnabled:provided.domainsEnabled??false,origin:'https://claus.test',rateSalt:'x'.repeat(32),now:()=>time});
  const requester=async(url,opt)=>app.fetch(new Request(url,opt),{peer:'fixture'});
  const makeClient=()=>createAgentClient({account:privateKeyToAccount(generatePrivateKey()),origin:'https://claus.test',fetch:requester,now:()=>time});
  const owner=makeClient(),bob=makeClient(),eve=makeClient();

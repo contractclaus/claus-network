@@ -1,7 +1,12 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  worker_configure:(actor,input)=>workers.configure(actor,input.projectId,input),
+  worker_get:(actor,input)=>workers.get(actor,input.projectId,input.workerId),
+  worker_run:(actor,input)=>workers.run(actor,input.projectId,input),
+  worker_run_get:(actor,input)=>workers.runGet(actor,input.projectId,input.runId),
+  worker_run_cancel:(actor,input)=>workers.cancel(actor,input.projectId,input.runId),
   domain_set:(actor,input)=>domains.set(actor,input.projectId,input),
   domain_get:(actor,input)=>domains.get(actor,input.projectId,input.hostname),
   domain_remove:(actor,input)=>domains.remove(actor,input.projectId,input),
@@ -46,7 +51,7 @@ export function createService({domains,deals,workflows,discovery,apps,contentAdm
   content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
   content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
 
-  capabilities:async()=>({...await access.discovery(),domains:await domains.discovery(),workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
+  capabilities:async()=>({...await access.discovery(),domains:await domains.discovery(),workers:await workers.discovery(),workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}}),
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),
