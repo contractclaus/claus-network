@@ -8,12 +8,12 @@ import {oracleInput,validateDealDecisionShape} from '../src/deals/decision.mjs';
 const hash=v=>'0x'+digest(v).slice(7),eth='0x'+'11'.repeat(20),escrow='0x'+'22'.repeat(20),token='0x'+'33'.repeat(20),arbiter='0x'+'44'.repeat(20),controller='0x'+'55'.repeat(20),worker='0x'+'66'.repeat(20);
 const stamp=Math.floor(Date.now()/1000),code='0x6001';
 function setupPorts(){
- const state={allowance:0n,balance:1000n,locked:0n,credits:0n,token,deal:null,calls:[]};
+ const state={enabled:true,allowance:0n,balance:1000n,locked:0n,credits:0n,token,deal:null,calls:[]};
  const pins=[{chainId:1,contract:eth,codeHash:keccak256(code),arbiter,admissionController:controller,maximumDealWei:'100',reviewed:true},{chainId:1,asset:'CLAUS',contract:escrow,token,decimals:18,minimumReviewUnits:'1',codeHash:keccak256(code),arbiter,admissionController:controller,maximumDealWei:'100',reviewed:true}];
  const client={getChainId:async()=>1,getBlock:async()=>({number:100n,hash:hash('block'),timestamp:BigInt(stamp)}),getBytecode:async()=>code,
  readContract:async({address,functionName,args})=>{
   state.calls.push({address,functionName,args});
-  const fields={arbiter,admissionController:controller,maximumDeal:100n,maximumPrincipal:500n,fundingEnabled:true,token:state.token,decimals:18,balanceOf:state.balance,allowance:state.allowance,totalLocked:state.locked,totalCredits:state.credits,credits:address===eth?7n:9n};
+  const fields={arbiter,admissionController:controller,maximumDeal:100n,maximumPrincipal:500n,fundingEnabled:state.enabled,token:state.token,decimals:18,balanceOf:state.balance,allowance:state.allowance,totalLocked:state.locked,totalCredits:state.credits,credits:address===eth?7n:9n};
   if(functionName==='dealId'||functionName==='planId')return hash({address,args});
   if(functionName==='getDeal')return state.deal??{buyer:'0x'+'00'.repeat(20)};
   return fields[functionName];
@@ -61,4 +61,20 @@ test('dispute oracle retains ETH wording for old cases and explicitly denominate
  const native=oracleInput(base),claus=oracleInput({...base,observation:{...base.observation,asset:'CLAUS',token}});
  assert.match(native.question,/native ETH wei/);assert.match(claus.question,/CLAUS base units/);assert.match(claus.definitions.amount,/10\^18/);assert(!claus.question.includes('native ETH'));
  assert.deepEqual(claus.guards,native.guards);assert.equal(claus.consumer.verifyingContract,escrow);
+});
+
+test('documented ETH default has the same agreement idempotency binding as omitted asset',async t=>{
+ const {ports}=setupPorts(),f=await fixture(t,{dealPorts:ports}),projectId=f.project.id;
+ for(const explicitFirst of [false,true]){
+  const key=String(explicitFirst);let task=await f.owner.call('app_task_post',{projectId,input:{text:'Produce 6.'},idempotencyKey:'default-task-'+key});
+  task=await f.bob.call('app_task_claim',{projectId,taskId:task.id,expectedRevision:task.revision,idempotencyKey:'default-claim-'+key});
+  const input={projectId,taskId:task.id,payerProjectId:projectId,chainId:1,priceWei:'100',deliveryDue:stamp+3600,expectedRevision:task.revision,idempotencyKey:'default-agreement-'+key};
+  const first=await f.owner.call('app_task_agreement',{...input,...(explicitFirst?{asset:'ETH'}:{})});
+  assert.deepEqual(await f.owner.call('app_task_agreement',{...input,...(explicitFirst?{}:{asset:'ETH'})}),first);
+  await assert.rejects(f.owner.call('app_task_agreement',{...input,asset:'CLAUS'}),e=>e.code==='idempotency_conflict');
+ }
+});
+test('paused CLAUS funding is a state error and the same input works after reopening',async t=>{
+ const {ports,state}=setupPorts(),f=await fixture(t,{dealPorts:ports});const input={projectId:f.project.id,chainId:1,asset:'CLAUS',action:'fund',input:{salt:hash('paused'),termsHash:hash('terms'),worker,priceWei:'100',deliveryDue:stamp+3600}};
+ state.enabled=false;await assert.rejects(f.owner.call('deal_prepare',input),e=>e.code==='deals_not_enabled');state.enabled=true;assert.equal((await f.owner.call('deal_prepare',input)).state,'approval-required');
 });
