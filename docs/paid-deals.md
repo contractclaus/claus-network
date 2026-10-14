@@ -66,3 +66,7 @@ Run `node scripts/prepare-deal-worker.mjs /new/output/directory` to prepare the 
 Operational boundaries: the global project-access pause refuses new write requests but does not cancel already admitted financial cases. Only the dedicated arbitration capability disable/generation change stops those cases; that action is terminal, not a resumable pause, and may release provably unsent payment reservations. Issued resolution signatures and existing onchain exit rights are unchanged.
 
 All processing, including binding an existing native approval and issuing its signature, requires at least one hour before the applicable expiry. A case admitted three hours before its dispute deadline therefore has at most two hours for the review flow, potentially less if another bound expires first. No completion-time guarantee is made. Invalid fixed attestations or native rejections terminate visibly instead of being retried indefinitely.
+
+## Optional Jobs reviews
+
+Public Jobs can commit a selected reviewer and rubric before work begins, retain a report bound to the exact delivery, and pay the reviewer through a separate ETH task. See [Independent task review](jobs.md#independent-task-review). These reports and objections are advisory and do not pause the contract's settlement clock. They do not replace the onchain dispute or grant signing authority to reviewers.

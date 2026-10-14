@@ -38,11 +38,12 @@ export function createTaskPayments({identity,store,ports,deals,evidence,now=()=>
   async create(actor,reader,appId,task,spec,{payerProjectId,chainId,priceWei,deliveryDue}){
    requireThat(!task.agreement&&task.state==='claimed'&&task.leaseUntil>now(),'app_task_busy');
    const who=await sender(actor,payerProjectId,'deal.prepare',reader);requireThat(who.principalId===task.authorId,'scope_denied');
+   if(task.reviewCommission)requireThat(deliveryDue*1000<=task.reviewCommission.reviewExpiresAt,'task_review_deadline');
    integer(chainId);requireThat([1,11155111].includes(chainId),'unsupported_chain');integer(deliveryDue,Math.floor(now()/1000)+1,Math.floor(now()/1000)+2592000);
    requireThat(ports.context,'deals_not_enabled');const c=await ports.context(chainId,{fresh:true});requireThat(c.public.enabled,'deals_not_enabled');
    const price=amount(priceWei);requireThat(price>0n&&price<=BigInt(c.public.maximumDealWei),'invalid_amount');
    const worker=await wallet(reader,task.assigneeId);requireThat(!same(worker,who.address)&&!same(worker,c.public.arbiter)&&!same(who.address,c.public.arbiter),'deal_party_required');
-   const terms=document('terms',{version:1,appId,taskId:task.id,appVersion:task.version,generation:task.generation,requesterId:task.authorId,workerId:task.assigneeId,buyer:who.address,worker,input:task.input,outputSchema:spec.outputSchema,chainId,contract:c.public.contract,priceWei,deliveryDue,reviewSeconds:86400,disputeSeconds:259200});
+   const terms=document('terms',{version:1,appId,taskId:task.id,appVersion:task.version,generation:task.generation,requesterId:task.authorId,workerId:task.assigneeId,buyer:who.address,worker,input:task.input,outputSchema:spec.outputSchema,chainId,contract:c.public.contract,priceWei,deliveryDue,reviewSeconds:86400,disputeSeconds:259200,...(task.reviewPolicy?{reviewPolicy:task.reviewPolicy,reviewAuthority:'advisory_only'}:{}),...(task.reviewCommission?{reviewCommission:task.reviewCommission}:{})});
    const termsHash=validateDealEvidence(terms),salt=commitment({kind:'claus-task-payment/1',appId,taskId:task.id,generation:task.generation});
    return {version:1,appId,payerProjectId,requesterId:task.authorId,workerId:task.assigneeId,buyer:who.address,worker,chainId,contract:c.public.contract,codeHash:c.public.codeHash,projectHash:commitment({projectId:payerProjectId}),priceWei,deliveryDue,salt,termsHash,terms,id:await ports.id(c,'deal',who.address,salt)};
   },

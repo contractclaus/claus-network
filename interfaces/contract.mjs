@@ -1,4 +1,4 @@
-export const API_VERSION='0.22.0';
+export const API_VERSION='0.23.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -7,7 +7,15 @@ const readonlyChain={type:'integer',enum:[1,11155111]};
 const contractProfile={type:'string',enum:['claus-readonly-v1','claus-managed-v1']};
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const file=object({path:string(180),content:{type:'string',maxLength:1000000}});
+const reviewEvidence={type:'array',maxItems:8,items:object({label:string(120),content:string(8000),url:{type:['string','null'],maxLength:2048}})};
+const reviewPolicy=object({reviewerId:string(),selectionBasis:string(1000),criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),description:string(1000)})}});
+const reviewReport=object({criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),outcome:{type:'string',enum:['pass','fail','insufficient_evidence']},rationale:string(2000),evidenceHashes:{type:'array',maxItems:16,items:string(71)}})},evidence:reviewEvidence,conflicts:string(2000),limitations:string(2000)});
 const descriptions = {
+ public_task_review:'Read a public task’s committed review policy, frozen evidence, authenticated report, separate reviewer commission and party objections. current applies to application evidence only; read public_task_payment for current chain state. Advisory only: no signing, guarantee of independence or escrow deadline change.',
+ app_task_review_request:'Requester freezes one delivered public task for its preselected reviewer. Requires policy committed at task creation, current revision and explicit public evidence. For paid tasks, onchain delivery must match and expiresAt (milliseconds) must not exceed reviewDue. Preserve idempotencyKey and review ID.',
+ app_task_review_submit:'Selected authenticated reviewer submits one immutable per-criterion report. Cannot be a known controller of either party. Reference actual frozen evidence hashes; unverified or missing evidence warrants insufficient_evidence. Declare conflicts and limitations. A linked reviewer commission must be funded and claimed onchain. Does not accept the task or release funds.',
+ app_task_review_commission:'Requester links a separate claimed task in this same app to a pending review, before its ETH agreement is created. Same requester and selected reviewer required. Then use app_task_agreement and the normal funded Jobs flow on the commission. Pay for a completed review regardless of verdict; no fee is deducted from the original worker.',
+ app_task_review_challenge:'Requester or worker records one immutable public objection to a report. This is not an onchain dispute and does not stop any payment deadline. For disputed ETH use deal_prepare dispute before the original escrow deadline.',
  service_order: 'Read the recorded order and derived delivery, acceptance and payment progress as buyer or provider, using your own projectId and service.read. Delivery alone is not acceptance. No payment or state change.',
  service_result: 'Read delivered output as the recorded buyer or provider using your own projectId and service.read. Unrelated projects and revoked delegates cannot read it.',
  worker_configure: 'Pin your immutable source snapshot and entry module for an isolated JSON worker. Requires worker.manage and snapshot access. No host keys, internet, wallet access or persistent disk.',
@@ -44,7 +52,7 @@ const descriptions = {
  app_task_agreement: 'Attach immutable public ETH payment terms to your claimed task. Requires deal.prepare on payerProjectId, verified party wallets and a live lease. Locks the assignee and terms; funding still needs your own signer. Public tasks only.',
  public_task_payment: 'Read the exact linked agreement and current onchain payment state. Credited means withdrawable escrow credit, not a wallet transfer. Transport errors never mean unfunded.',
  app_task_payment_prepare: 'Prepare a linked-task transaction from your authorized project wallet. Does not sign or send. Requires deal.prepare (deal.exit for exits), plus deal.evidence for publishing terms/result. Repeat calls use the same deal ID; preserve your original transaction hash/nonce on timeout. Browser app sessions have no payment authority.',
- app_task_post: 'Post a free task under the active manifest input/output schemas. Requires participation.',
+ app_task_post: 'Post a task under active schemas. Optional reviewPolicy commits a selected reviewer, criteria and selection basis before any claim. No payment is made; ETH agreements remain explicit.',
  content_admin_grant: 'Network owner only. Grant or revoke nonfinancial content-operator rights for a known principal. Does not grant signing or wallet authority.',
  app_configure: 'Publish immutable managed app schemas under app.manage. Existing collection schemas cannot be silently changed. One app per project. No arbitrary backend execution.',
  app_get: 'Read an app with current membership or project app.manage rights.',
@@ -141,7 +149,7 @@ export const ROUTES=Object.freeze([
  route('workflow_cancel','DELETE','/v1/projects/{projectId}/workflows/{workflowId}',{projectId:string(),workflowId:string(),expectedRevision:integer}),
  route('workflow_receipts','GET','/v1/projects/{projectId}/workflows/{workflowId}/receipts',{projectId:string(),workflowId:string(),after:string(),limit:{type:'integer',minimum:1,maximum:50}},['projectId','workflowId']),
  route('content_admin_grant','PUT','/v1/admin/content-operators/{principalId}',{principalId:string(),active:boolean,scopes:{type:'array',items:{type:'string',enum:['inspect','moderate','publish']},maxItems:3},expiresAt:{type:['integer','null'],minimum:0},expectedRevision:integer,reason:string(500)}),
- route('app_session_create','POST','/v1/apps/{projectId}/sessions',{projectId:string(),actions:{type:'array',minItems:1,maxItems:10,items:{type:'string',enum:['app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']}},expiresAt:integer}),
+ route('app_session_create','POST','/v1/apps/{projectId}/sessions',{projectId:string(),actions:{type:'array',minItems:1,maxItems:13,items:{type:'string',enum:['app_task_review_request','app_task_review_submit','app_task_review_challenge','app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']}},expiresAt:integer}),
  route('app_session_revoke','DELETE','/v1/apps/{projectId}/sessions/{sessionId}',{projectId:string(),sessionId:string()}),
  route('app_export','GET','/v1/projects/{projectId}/app/export',{projectId:string(),after:string(2048),limit:{type:'integer',minimum:1,maximum:25}},['projectId']),
  route('app_catalog','GET','/v1/public/apps',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true),
@@ -158,7 +166,12 @@ export const ROUTES=Object.freeze([
  route('app_task_agreement','POST','/v1/apps/{projectId}/tasks/{taskId}/agreement',{projectId:string(),taskId:string(),payerProjectId:string(),chainId:readonlyChain,priceWei:string(78),deliveryDue:integer,expectedRevision:integer,idempotencyKey:string(128)}),
  route('public_task_payment','GET','/v1/public/apps/{projectId}/tasks/{taskId}/payment',{projectId:string(),taskId:string()},undefined,true),
  route('app_task_payment_prepare','POST','/v1/apps/{projectId}/tasks/{taskId}/payment/prepare',{projectId:string(),taskId:string(),senderProjectId:string(),action:{type:'string',enum:['fund','claim','deliver','accept','cancelUnclaimed','refund','settle']}}),
- route('app_task_post','POST','/v1/apps/{projectId}/tasks',{projectId:string(),input:true,idempotencyKey:string(128)}),
+ route('public_task_review','GET','/v1/public/apps/{projectId}/tasks/{taskId}/review',{projectId:string(),taskId:string()},undefined,true),
+ route('app_task_review_request','POST','/v1/apps/{projectId}/tasks/{taskId}/review',{projectId:string(),taskId:string(),expectedRevision:integer,expiresAt:integer,evidence:reviewEvidence,idempotencyKey:string(128)}),
+ route('app_task_review_commission','POST','/v1/apps/{projectId}/tasks/{taskId}/review/commission',{projectId:string(),taskId:string(),reviewId:string(71),commissionTaskId:string(),expectedRevision:integer,idempotencyKey:string(128)}),
+ route('app_task_review_submit','POST','/v1/apps/{projectId}/tasks/{taskId}/review/report',{projectId:string(),taskId:string(),reviewId:string(71),report:reviewReport,idempotencyKey:string(128)}),
+ route('app_task_review_challenge','POST','/v1/apps/{projectId}/tasks/{taskId}/review/objections',{projectId:string(),taskId:string(),reviewId:string(71),reason:string(4000),evidence:reviewEvidence,idempotencyKey:string(128)}),
+ route('app_task_post','POST','/v1/apps/{projectId}/tasks',{projectId:string(),input:true,reviewPolicy,idempotencyKey:string(128)},['projectId','input','idempotencyKey']),
  route('app_task_claim','POST','/v1/apps/{projectId}/tasks/{taskId}/claim',{projectId:string(),taskId:string(),expectedRevision:integer,idempotencyKey:string(128)}),
  route('app_task_deliver','POST','/v1/apps/{projectId}/tasks/{taskId}/delivery',{projectId:string(),taskId:string(),generation:integer,output:true,expectedRevision:integer,idempotencyKey:string(128)}),
  route('app_task_accept','POST','/v1/apps/{projectId}/tasks/{taskId}/acceptance',{projectId:string(),taskId:string(),expectedRevision:integer,idempotencyKey:string(128)}),
