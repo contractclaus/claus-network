@@ -64,35 +64,38 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
     }
   }
   async function discovery() {
-    const active = await policy(), cap = async name => (await store.read('network-capabilities', name))?.value;
-    const fresh = async name => (await store.read('worker-health', name))?.value.observedAt > now() - 300000;
-    const reviews = await reviewAdmission(store);
-    const collaborationEnabled = (await cap('collaboration'))?.enabled === true;
-    const chainEnabled = (await cap('chain'))?.enabled === true;
+    const names=['collaboration','chain','chain:1','review','portability'];
+    const [active,reviews,caps,serviceHealth,managedProfiles,signalProfiles,contractIntake]=await Promise.all([
+      policy(),reviewAdmission(store),store.readMany?store.readMany('network-capabilities',names):Promise.all(names.map(async name=>[name,await store.read('network-capabilities',name)])).then(rows=>new Map(rows)),
+      store.read('worker-health','services'),managedDiscovery(),signalDiscovery(),intakeDiscovery()
+    ]);
+    const cap=name=>caps.get(name)?.value;
+    const collaborationEnabled = cap('collaboration')?.enabled === true;
+    const chainEnabled = cap('chain')?.enabled === true;
     let chainState = chainEnabled ? 'restricted_pilot' : 'not_enabled';
     if (chainEnabled && chainAdmission) {
       try { await chainAdmission(store); chainState = 'public_readonly'; }
       catch (error) { if (!['chain_public_not_enabled','chain_admission_changed','chain_scope_not_reviewed'].includes(error.code)) throw error; }
     }
     let mainnetState = 'not_enabled';
-    if ((await cap('chain:1'))?.enabled && mainnetAdmission) {
+    if (cap('chain:1')?.enabled && mainnetAdmission) {
       try { await mainnetAdmission(store); mainnetState = 'public_readonly'; }
       catch (error) { if (!['chain_public_not_enabled','chain_admission_changed','chain_scope_not_reviewed'].includes(error.code)) throw error; }
     }
-    const reviewEnabled = (await cap('review'))?.enabled === true;
+    const reviewEnabled = cap('review')?.enabled === true;
     return { schemaVersion: '1.0', observedAt: now(), policyVersion: active.version, policyGeneration: active.generation,
       authentication: { kind: 'ethereum-eoa', chainId: 1, contractWallets: false },
       projectAccess: active.config.paused ? 'paused' : 'public',
       collaboration: { admission: active.config.paused ? 'paused' : !collaborationEnabled ? 'not_enabled' :
-        active.config.publicCollaboration ? 'public' : 'restricted_pilot', worker: await fresh('services') ? 'ready' : 'unavailable' },
+        active.config.publicCollaboration ? 'public' : 'restricted_pilot', worker: serviceHealth?.value.observedAt > now()-300000 ? 'ready' : 'unavailable' },
       staticHosting: { isolated: true, backendExecution: false,limits:SITE_LIMITS,publication:{defaultExpiry:null,withdrawable:true},publicData:{manifest:'claus.json',field:'connect',maxOrigins:8,httpsOnly:true,browserCredentials:false,providerCorsRequired:true} },
       publicDataServices: { enabled: collaborationEnabled && !active.config.paused && active.config.publicDataServices === true,
         policy: 'public-data-v1', maximumLineageDepth: 3, explicitResultPublication: true },
-      transfers: { enabled: (await cap('portability'))?.enabled === true, trustedDestinationRequired: true },
+      transfers: { enabled: cap('portability')?.enabled === true, trustedDestinationRequired: true },
       reviews: { admission: !reviewEnabled ? 'not_enabled' : reviews?.config.enabled && (reviews.config.expiresAt === null || reviews.config.expiresAt > now()) ? 'public_sponsored' : 'restricted_pilot', reservationRequired: true, projectPrice: '0', asset: 'IMD', chainId: 1 },
       chainProfiles: [{ chainId: 11155111, profile: 'claus-readonly-v1', admission: chainState },
-        { chainId: 1, profile: 'claus-readonly-v1', admission: mainnetState }, ...await managedDiscovery()],
-      signalProfiles: await signalDiscovery(), contractIntake: await intakeDiscovery(),
+        { chainId: 1, profile: 'claus-readonly-v1', admission: mainnetState }, ...managedProfiles],
+      signalProfiles, contractIntake,
       mainnet: mainnetState, publicInference: 'not_enabled', limits: copy(active.config) };
   }
   return { policy, limit, collaboration, discovery,

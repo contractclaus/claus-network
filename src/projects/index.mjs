@@ -140,11 +140,15 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       requireThat(record?.value.published === true && await visible(record.value.projectId), 'not_found');
       const project = (await store.read('projects', record.value.projectId))?.value;
       requireThat(project && !project.archivedAt, 'not_found');
-      const agents = (await store.list('project-public-agents', { prefix: record.value.projectId + ':', limit: 128 }))
-        .filter(row => row.value.published).map(row => ({ id: row.value.agentId, name: row.value.name, revision: row.revision }));
+      // Independent public reads begin only after the publication/visibility gates.
+      const [agentRows,evidenceRow,details]=await Promise.all([
+        store.list('project-public-agents',{prefix:record.value.projectId+':',limit:128}),
+        store.read('public-evidence',record.value.projectId),publicDetails(record.value.projectId)
+      ]);
+      const agents=agentRows.filter(row=>row.value.published).map(row=>({id:row.value.agentId,name:row.value.name,revision:row.revision}));
       // Evidence is written only by the trusted workflow, not profile input.
-      const evidence = (await store.read('public-evidence', record.value.projectId))?.value ?? { reviews: [], decisions: [], deployments: [] };
-      return { ...record.value, revision: record.revision, agents, evidence, ...await publicDetails(record.value.projectId) };
+      const evidence=evidenceRow?.value??{reviews:[],decisions:[],deployments:[]};
+      return {...record.value,revision:record.revision,agents,evidence,...details};
     },
     async publicAgents({after='',limit=25}={}) {
       integer(limit,1,25);const rows=await store.list('project-public-agents',{after,limit}),items=[];
