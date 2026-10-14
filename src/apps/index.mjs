@@ -66,7 +66,7 @@ export function createApps({storage,identity,store,schemaDefinition,schemaValue,
         requireThat(saved.stamp===stamp,'app_export_changed');integer(saved.index,0,collections.length-1);requireThat(typeof saved.last==='string','invalid_cursor');index=saved.index;last=saved.last;}
       const collection=collections[index],rows=await tx.list(collection,{after:last,limit});
       let next=null;if(rows.length===limit)next={index,last:rows.at(-1).id,stamp};else if(index+1<collections.length)next={index:index+1,last:'',stamp};
-      return {schemaVersion:'claus-app-export/1',projectId,manifest:rowValue(a),contentVersion:stamp,sequence,collection,items:rows.map(r=>({id:r.id,...rowValue(r)})),
+      return {schemaVersion:'claus-app-export/1',projectId,manifest:rowValue(a),contentVersion:stamp,sequence,collection,items:rows.map(r=>({id:r.id,...rowValue(r),recordKey:r.id})),
         nextCursor:next?cursor(projectId,who.principalId,'export',JSON.stringify(next)):null,exportedAt:now(),scope:'Owner application data, versions, members, tasks and events. No credentials, payments or operator private audit. Changed content requires restarting the export.'};
     });},
     async catalog({after='',limit=50}={}){ready();const ids=await storage.catalog({after,limit}),items=[];for(const projectId of ids){try{const a=await api.describe(projectId);items.push({projectId,name:a.manifest.name,description:a.manifest.description,version:a.version,participation:a.manifest.participation,collections:a.manifest.collections.filter(c=>c.visibility==='public').map(c=>c.id),tasks:a.manifest.tasks?.visibility==='public'});}catch(e){if(!['not_found','project_unavailable'].includes(e.code))throw e;}}return {items,nextCursor:ids.length===limit?ids.at(-1):null};},

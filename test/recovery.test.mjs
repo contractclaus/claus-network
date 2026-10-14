@@ -3,11 +3,13 @@ async function folders(t){const root=await mkdtemp(path.join(os.tmpdir(),'claus-
 test('owner export restores source, private app records and pending tasks offline without active authority',async t=>{
  const {owner,bob,project}=await fixture(t),{backup,restored}=await folders(t),projectId=project.id;
  await bob.call('app_record_create',{projectId,collection:'notes',data:{text:'private note'},idempotencyKey:'note'});
- await owner.call('app_task_post',{projectId,input:{text:'pending work'},idempotencyKey:'work'});
+ const task=await owner.call('app_task_post',{projectId,input:{text:'pending work'},idempotencyKey:'work'});
+ await bob.call('app_task_claim',{projectId,taskId:task.id,expectedRevision:task.revision,idempotencyKey:'claim'});
  const current=await owner.call('project_get',{projectId});await owner.call('snapshot_create',{projectId,expectedProjectRevision:current.revision,files:[{path:'index.html',content:'<p>hello</p>'},{path:'nested/info.html',content:'<p>subpage</p>'}]});
  const exported=await exportRecovery(owner,{projectId,directory:backup});assert(exported.sourceSnapshot);assert(exported.hasApp);
  const result=await restoreRecovery({directory:backup,destination:restored});assert.equal(result.files,2);assert.equal(result.mode,'offline-history-only');assert.equal(await readFile(restored+'/source/nested/info.html','utf8'),'<p>subpage</p>');
- const db=new DatabaseSync(restored+'/application.sqlite',{readOnly:true});t.after(()=>db.close());assert.equal(JSON.parse(db.prepare("SELECT value FROM records WHERE collection='records:notes'").get().value).data.text,'private note');assert.equal(JSON.parse(db.prepare("SELECT value FROM records WHERE collection='tasks'").get().value).state,'open');assert.equal(JSON.parse(db.prepare("SELECT value FROM metadata WHERE id='restore'").get().value).executors,false);
+ const db=new DatabaseSync(restored+'/application.sqlite',{readOnly:true});t.after(()=>db.close());assert.equal(JSON.parse(db.prepare("SELECT value FROM records WHERE collection='records:notes'").get().value).data.text,'private note');assert.equal(JSON.parse(db.prepare("SELECT value FROM records WHERE collection='tasks'").get().value).state,'claimed');assert.equal(JSON.parse(db.prepare("SELECT value FROM metadata WHERE id='restore'").get().value).executors,false);
+ assert.equal(db.prepare("SELECT count(*) AS n FROM records WHERE collection='events' AND json_extract(value,'$.id')=?").get(task.id).n,2);
  assert.equal((await stat(restored+'/application.sqlite')).mode&0o777,0o600);assert.equal((await stat(backup)).mode&0o777,0o700);assert.equal((await inspectRecovery(restored)).projectId,projectId);
  await assert.rejects(exportRecovery(owner,{projectId,directory:backup}),e=>e.code==='EEXIST');await assert.rejects(restoreRecovery({directory:backup,destination:restored}),e=>e.code==='EEXIST');
 });
