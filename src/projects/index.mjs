@@ -1,4 +1,4 @@
-import { canonical, copy, digest, integer, requireThat, text, sourcePath, sourceText } from '../shared/index.mjs';
+import { SITE_LIMITS, canonical, copy, digest, integer, requireThat, text, sourcePath, sourceText } from '../shared/index.mjs';
 
 const projectRef = (projectId, id) => digest({ projectId, id });
 const filePath = sourcePath, prose = sourceText;
@@ -50,15 +50,15 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     },
     async createSnapshot(actor, projectId, { files, expectedProjectRevision }) {
       integer(expectedProjectRevision, 1);
-      requireThat(Array.isArray(files) && files.length > 0 && files.length <= 64, 'invalid_files');
+      requireThat(Array.isArray(files) && files.length > 0 && files.length <= SITE_LIMITS.files, 'invalid_files');
       const clean = files.map(file => {
         requireThat(file && Object.keys(file).length === 2 && typeof file.content === 'string', 'invalid_file');
-        const path = filePath(file.path), content = prose(file.content, 48000);
-        requireThat(Buffer.byteLength(content) <= 48000, 'file_too_large');
+        const path = filePath(file.path), content = prose(file.content, SITE_LIMITS.fileBytes);
+        requireThat(Buffer.byteLength(content) <= SITE_LIMITS.fileBytes, 'file_too_large');
         return { path, content, hash: digest({ path, content }) };
       }).sort((a, b) => a.path.localeCompare(b.path, 'en'));
       requireThat(new Set(clean.map(x => x.path)).size === clean.length, 'duplicate_file');
-      requireThat(Buffer.byteLength(canonical(clean)) <= 256000, 'snapshot_too_large');
+      requireThat(Buffer.byteLength(canonical(clean)) <= SITE_LIMITS.totalBytes, 'snapshot_too_large');
       const id = digest(clean.map(({ path, hash }) => ({ path, hash })));
       return store.transaction(async tx => {
         await identity.authorize(actor, 'snapshot.create', { projectId }, tx);
@@ -97,7 +97,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       await identity.authorize(actor, 'artifact.read', { projectId });
       const version = await snapshot(store, projectId, snapshotId);
       const result = [];
-      for (const entry of version.files) result.push((await store.read('artifacts', projectRef(projectId, entry.hash))).value);
+      for (let i=0;i<version.files.length;i+=8) result.push(...await Promise.all(version.files.slice(i,i+8).map(async entry=>(await store.read('artifacts',projectRef(projectId,entry.hash))).value)));
       return result;
     },
     async publishSource(actor, projectId, { snapshotId, expectedRevision, published }) {
@@ -149,10 +149,13 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     async graph({ after = '', limit = 100 } = {}) {
       const records = await store.list('public-projects', { after, limit });
       const projects = [], resources = [], relations = [];
-      for (const record of records.filter(x => x.value.published)) {
-        let project;
-        try { project = await api.publicProject(record.value.slug); }
-        catch (error) { if (error.code === 'not_found') continue; throw error; }
+      const published=records.filter(x=>x.value.published), resolved=[];
+      for(let i=0;i<published.length;i+=4) resolved.push(...await Promise.all(published.slice(i,i+4).map(async record=>{
+        try{return {record,project:await api.publicProject(record.value.slug)};}
+        catch(error){if(error.code==='not_found')return null;throw error;}
+      })));
+      for (const item of resolved) {
+        if(!item)continue;const {record,project}=item;
         const href = '/c/' + project.slug;
         projects.push({ id: project.projectId, slug: project.slug, label: project.name, kind: 'project',
           href, revision: record.revision, status: 'registered' });

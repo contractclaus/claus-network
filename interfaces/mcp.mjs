@@ -1,3 +1,4 @@
+import {SITE_LIMITS} from '../src/shared/index.mjs';
 import {body,errorBody,errorStatus} from './http.mjs';
 import {API_VERSION} from './contract.mjs';
 const VERSION='2025-06-18';
@@ -13,9 +14,10 @@ export function createMcp({service,origin='https://claus.si',admit=async()=>{}})
   if(request.method!=='POST')return new Response(null,{status:405,headers:{allow:'POST'}});
   if(!request.headers.get('accept')?.includes('application/json')||!request.headers.get('accept')?.includes('text/event-stream'))return result({error:'accept_required'},406);
   let input;
-  try{await admit({route:'mcp',peer:context.peer??'unknown'});input=await body(request);}
+  try{await admit({route:'mcp',peer:context.peer??'unknown'});input=await body(request,SITE_LIMITS.requestBytes);}
   catch(e){return failure(null,-32700,'Invalid request',errorStatus(e));}
   if(!input||Array.isArray(input)||input.jsonrpc!=='2.0'||typeof input.method!=='string'||Object.keys(input).some(k=>!['jsonrpc','id','method','params'].includes(k)))return failure(null,-32600,'Invalid Request',400);
+  if(!['snapshot_create','content_admin_correct'].includes(input.params?.name)&&Buffer.byteLength(JSON.stringify(input))>300000)return failure(input.id??null,-32600,'Request too large',413);
   const id=input.id;
   if(id!==undefined&&typeof id!=='string'&&!(typeof id==='number'&&Number.isSafeInteger(id)))return failure(null,-32600,'Invalid Request',400);
   const params=input.params??{};
@@ -32,7 +34,7 @@ export function createMcp({service,origin='https://claus.si',admit=async()=>{}})
   try{
    await admit({route:params.name,peer:context.peer??'unknown'});
    const value=await service.execute(params.name,params.arguments??{},rawToken);
-   return result({jsonrpc:'2.0',id,result:{content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value,isError:false}});
+   return result({jsonrpc:'2.0',id,result:{content:[{type:'text',text:JSON.stringify(value).length>131072?'Large result is provided in structuredContent.':JSON.stringify(value)}],structuredContent:value,isError:false}});
   }catch(error){return result({jsonrpc:'2.0',id,result:{content:[{type:'text',text:JSON.stringify(errorBody(error))}],isError:true}});}
  };
 }

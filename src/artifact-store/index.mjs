@@ -23,10 +23,12 @@ export function createArtifactStore({ store }) {
       const value = (await reader.read('artifact-manifests', digest({ projectId, hash })))?.value;
       requireThat(value?.projectId === projectId, 'not_found');
       const chunks = [];
-      for (const key of value.chunks) {
-        const chunk = (await reader.read('artifact-chunks', key))?.value;
-        requireThat(chunk && digest({ projectId, data: chunk.data }) === key, 'artifact_corrupt');
-        chunks.push(Buffer.from(chunk.data, 'base64'));
+      for(let i=0;i<value.chunks.length;i+=8){
+        chunks.push(...await Promise.all(value.chunks.slice(i,i+8).map(async key=>{
+          const chunk=(await reader.read('artifact-chunks',key))?.value;
+          requireThat(chunk&&digest({projectId,data:chunk.data})===key,'artifact_corrupt');
+          return Buffer.from(chunk.data,'base64');
+        })));
       }
       const raw = Buffer.concat(chunks); requireThat(raw.length === value.bytes, 'artifact_corrupt');
       const result = JSON.parse(raw.toString('utf8'));

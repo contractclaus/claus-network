@@ -1,3 +1,4 @@
+import {SITE_LIMITS} from '../src/shared/index.mjs';
 import {openapi} from './contract.mjs';
 const errors={app_writes_paused:409,apps_not_enabled:409,app_membership_required:403,app_schema_migration_required:409,app_task_busy:409,review_scope_conflict:409,project_suspended:409,project_profile_mismatch:409,registration_profile_mismatch:409,reserved_module_selector:400,managed_binding_missing:409,managed_registry_changed:409,managed_previous_source_missing:409,managed_previous_code_changed:409,managed_evidence_mismatch:409,managed_initial_mismatch:409,managed_consumer_unsupported:400,managed_state_invalid:409,managed_version_invalid:409,managed_initial_state_invalid:409,intake_profile_not_admitted:409,unauthenticated:401,invalid_signature:401,challenge_expired:401,scope_denied:403,access_denied:403,not_found:404,revision_conflict:409,idempotency_conflict:409,slug_taken:409,rate_limited:429,capacity_reached:429,build_in_progress:409,build_not_complete:409,entry_missing:400,effect_requires_reconciliation:409,job_terminal:409,capability_not_available:503,
  project_admission_paused:409,project_unavailable:409,sponsor_not_enabled:403,sponsor_limit:403,sponsor_exhausted:409,review_in_progress:409,source_not_published:409,unsupported_source_host:400,quote_not_ready:409,review_not_complete:409,quote_expired:409,quote_input_mismatch:409,quote_already_admitted:409,provider_offer_already_admitted:409,funding_insufficient:409,
@@ -79,7 +80,7 @@ export function createHttp({service,origin='https://claus.si',admit=async()=>{}}
      input[name]=matched.inputSchema.properties[name]?.type==='integer'?Number(value):value;
     }
    }else{
-    const parsed=await body(request);
+    const parsed=await body(request,['snapshot_create','content_admin_correct'].includes(matched.name)?SITE_LIMITS.requestBytes:300000);
     if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw Object.assign(Error('invalid_input'),{code:'invalid_input'});
     for(const [name,value] of Object.entries(parsed)){
      if(Object.hasOwn(input,name))throw Object.assign(Error('duplicate_field'),{code:'invalid_input'});

@@ -1,4 +1,4 @@
-import { copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
+import { SITE_LIMITS, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
 import { createPolicies } from '../policies/index.mjs';
 
 // Technical admission only. This module cannot create funding or chain grants.
@@ -12,8 +12,10 @@ export const ACCESS_DEFAULTS = Object.freeze({
   newSnapshotBytesPerDay: 64000000, newSnapshotBytesTotal: 512000000,
   authRequestsPerPeer: 30, authRequestsGlobal: 200, requestsPerPeer: 300, requestsGlobal: 3000
 });
-export const ACCESS_MAXIMA = Object.freeze(Object.fromEntries(Object.entries(ACCESS_DEFAULTS)
-  .filter(([, value]) => typeof value === 'number').map(([key, value]) => [key, value * 4])));
+export const ACCESS_MAXIMA = Object.freeze({...Object.fromEntries(Object.entries(ACCESS_DEFAULTS)
+  .filter(([, value]) => typeof value === 'number').map(([key, value]) => [key, value * 4])),
+  projectsPerOwner:100,snapshotsPerProject:4000,snapshotBytesPerProject:2000000000,releasesPerProject:4000,
+  newProjectsPerDay:2000,newProjectsTotal:80000,newSnapshotBytesPerDay:4000000000,newSnapshotBytesTotal:80000000000});
 
 export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, mainnetAdmission, managedDiscovery = async () => [], signalDiscovery = async () => [], intakeDiscovery = async () => [], now = () => Date.now() }) {
   async function owner(actor, reader = store) {
@@ -83,7 +85,7 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       projectAccess: active.config.paused ? 'paused' : 'public',
       collaboration: { admission: active.config.paused ? 'paused' : !collaborationEnabled ? 'not_enabled' :
         active.config.publicCollaboration ? 'public' : 'restricted_pilot', worker: await fresh('services') ? 'ready' : 'unavailable' },
-      staticHosting: { isolated: true, backendExecution: false },
+      staticHosting: { isolated: true, backendExecution: false,limits:SITE_LIMITS,publication:{defaultExpiry:null,withdrawable:true} },
       publicDataServices: { enabled: collaborationEnabled && !active.config.paused && active.config.publicDataServices === true,
         policy: 'public-data-v1', maximumLineageDepth: 3, explicitResultPublication: true },
       transfers: { enabled: (await cap('portability'))?.enabled === true, trustedDestinationRequired: true },

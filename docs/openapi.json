@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.15.0"
+    "version": "0.16.0"
   },
   "servers": [
     {
@@ -1868,7 +1868,7 @@
                         },
                         "content": {
                           "type": "string",
-                          "maxLength": 48000
+                          "maxLength": 1000000
                         }
                       },
                       "required": [
@@ -1878,7 +1878,7 @@
                       "additionalProperties": false
                     },
                     "minItems": 1,
-                    "maxItems": 32
+                    "maxItems": 256
                   },
                   "reason": {
                     "type": "string",
@@ -3110,7 +3110,7 @@
                         },
                         "content": {
                           "type": "string",
-                          "maxLength": 48000
+                          "maxLength": 1000000
                         }
                       },
                       "required": [
@@ -3120,7 +3120,7 @@
                       "additionalProperties": false
                     },
                     "minItems": 1,
-                    "maxItems": 64
+                    "maxItems": 256
                   },
                   "expectedProjectRevision": {
                     "type": "integer",
@@ -8959,7 +8959,7 @@
                       "maxLength": 180
                     },
                     "minItems": 1,
-                    "maxItems": 32
+                    "maxItems": 256
                   }
                 },
                 "required": [
@@ -9032,7 +9032,7 @@
     "/v1/projects/{projectId}/releases/{releaseId}/publication": {
       "put": {
         "operationId": "release_publish",
-        "description": "Publish, renew or withdraw isolated static UI using expectedRevision. Requires release.publish. No backend or private API access is granted.",
+        "description": "Publish or withdraw isolated static UI using expectedRevision. Omit expiresAt or use null for no automatic expiry; an explicit future deadline is also supported. Requires release.publish. No backend or private API access is granted.",
         "security": [
           {
             "bearerAuth": []
@@ -9094,9 +9094,11 @@
                     "type": "boolean"
                   },
                   "expiresAt": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
                   },
                   "expectedRevision": {
                     "type": "integer",
@@ -9106,12 +9108,63 @@
                 },
                 "required": [
                   "published",
-                  "expiresAt",
                   "expectedRevision"
                 ],
                 "additionalProperties": false
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/public/releases/{releaseId}/file": {
+      "get": {
+        "operationId": "public_release_file",
+        "description": "GET /v1/public/releases/{releaseId}/file. Public read.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "releaseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "filePath",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 180
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
           }
         }
       }

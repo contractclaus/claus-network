@@ -1,3 +1,4 @@
+import {documentByteLimit} from '../shared/index.mjs';
 import { canonical, copy, integer, requireThat, text } from '../shared/index.mjs';
 
 // The host supplies a dedicated PostgreSQL pool. Connection strings never enter
@@ -58,7 +59,7 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
             const body = canonical(value);
             // A bounded transaction stores both calldata and encrypted signed
             // bytes. Other documents retain the public 64 KiB ceiling.
-            requireThat(Buffer.byteLength(body) <= (collection === 'chain-transactions' ? 393216 : 65536), 'document_too_large');
+            requireThat(Buffer.byteLength(body) <= documentByteLimit(collection), 'document_too_large');
             const result = expectedRevision === 0
               ? await client.query(`INSERT INTO ${documents}(collection,id,revision,body) VALUES($1,$2,1,$3::jsonb)
                   ON CONFLICT DO NOTHING RETURNING revision`, [collection, id, body])

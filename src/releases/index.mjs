@@ -1,4 +1,4 @@
-import { canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
+import { SITE_LIMITS, sitePublicationActive, sourcePath, canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
 
 export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, limit = async () => undefined, now = () => Date.now(),
   visible = async () => true, origin = 'https://claus-network-sites.vercel.app' }) {
@@ -10,13 +10,13 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
   }
   return {
     async create(actor,projectId,{snapshotId,paths}){
-      requireThat(Array.isArray(paths)&&paths.length>0&&paths.length<=32&&new Set(paths).size===paths.length&&
+      requireThat(Array.isArray(paths)&&paths.length>0&&paths.length<=SITE_LIMITS.files&&new Set(paths).size===paths.length&&
         paths.includes('index.html'),'invalid_release_files');
       const source=await projects.files(actor,projectId,snapshotId);
       const files=paths.map(path=>{const file=source.find(f=>f.path===path);
         requireThat(file&&/\.(html|css|js|json|svg)$/.test(path),'invalid_release_files');
         return{path:file.path,content:file.content,hash:file.hash};}).sort((a,b)=>a.path.localeCompare(b.path,'en'));
-      requireThat(Buffer.byteLength(canonical(files))<=192000,'release_too_large');
+      requireThat(Buffer.byteLength(canonical(files))<=SITE_LIMITS.totalBytes,'release_too_large');
       const id=digest({projectId,snapshotId,paths:files.map(f=>f.path)});
       return store.transaction(async tx=>{
         await identity.authorize(actor,'release.publish',{projectId},tx);
@@ -37,10 +37,9 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
       const publication=await store.read('release-publications',releaseId);
       return{...row.value,publication:publication?{...publication.value,revision:publication.revision}:null};
     },
-    async publish(actor,projectId,{releaseId,published,expiresAt,expectedRevision}){
+    async publish(actor,projectId,{releaseId,published,expiresAt=null,expectedRevision}){
       requireThat(typeof published==='boolean','invalid_publication');integer(expectedRevision);
-      if(published)integer(expiresAt,now()+60000,now()+30*86400000);
-      else integer(expiresAt);
+      if(expiresAt!==null){if(published)integer(expiresAt,now()+60000);else integer(expiresAt);}
       return store.transaction(async tx=>{
         await identity.authorize(actor,'release.publish',{projectId,withdrawal:!published},tx);
         if(published)await admit(projectId,tx);
@@ -56,16 +55,33 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
     async publicForProject(projectId){
       if(!await visible(projectId))return [];
       const override=(await store.read('content-controls',projectId))?.value.releaseId;
-      const rows=await store.list('project-public-releases',{prefix:projectId+':',limit:100}),result=[];
-      for(const row of rows)if((!override||row.value.releaseId===override)&&row.value.published&&row.value.expiresAt>now()){
+      const rows=await store.list('project-public-releases',{prefix:projectId+':',limit:1000}),result=[];
+      for(const row of rows)if((!override||row.value.releaseId===override)&&row.value.published&&sitePublicationActive(row.value.expiresAt,now())){
         const release=(await store.read('project-releases',row.value.releaseId)).value;
         result.push({id:release.id,url:release.url,createdAt:release.createdAt,expiresAt:row.value.expiresAt,isolation:release.isolation});
       }
       return result;
     },
+    async file(releaseId,path){
+      sourcePath(path);
+      const publication=(await store.read('release-publications',text(releaseId)))?.value;
+      requireThat(publication?.published&&sitePublicationActive(publication.expiresAt,now())&&await visible(publication.projectId),'not_found');
+      const release=(await store.read('project-releases',releaseId))?.value;
+      requireThat(release?.projectId===publication.projectId&&release.paths.includes(path),'not_found');
+      let file;
+      if(release.snapshotId){
+        const snapshot=(await store.read('snapshots',digest({projectId:release.projectId,id:release.snapshotId})))?.value;
+        const entry=snapshot?.files.find(f=>f.path===path);requireThat(entry,'not_found');
+        const artifact=(await store.read('artifacts',digest({projectId:release.projectId,id:entry.hash})))?.value;
+        requireThat(artifact?.projectId===release.projectId&&artifact.path===path&&artifact.hash===entry.hash,'not_found');
+        file={path:artifact.path,content:artifact.content,hash:artifact.hash};
+      }else file=(await artifacts.get(release.projectId,release.contentHash)).find(f=>f.path===path);
+      requireThat(file,'not_found');
+      return {id:release.id,projectId:release.projectId,url:release.url,expiresAt:publication.expiresAt,paths:release.paths,file};
+    },
     async public(releaseId){
       const publication=(await store.read('release-publications',text(releaseId)))?.value;
-      requireThat(publication?.published&&publication.expiresAt>now()&&await visible(publication.projectId),'not_found');
+      requireThat(publication?.published&&sitePublicationActive(publication.expiresAt,now())&&await visible(publication.projectId),'not_found');
       const release=(await store.read('project-releases',releaseId)).value;
       const files=await artifacts.get(release.projectId,release.contentHash);
       return{...release,expiresAt:publication.expiresAt,files};

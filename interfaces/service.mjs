@@ -133,6 +133,7 @@ export function createService({apps,contentAdmin,access,identity,projects,builds
   release_get:(actor,input)=>releases.get(actor,input.projectId,input.releaseId),
   release_publish:(actor,input)=>releases.publish(actor,input.projectId,input),
   public_release:(_,input)=>releases.public(input.releaseId),
+  public_release_file:(_,input)=>releases.file(input.releaseId,input.filePath),
   source_publish:(actor,input)=>projects.publishSource(actor,input.projectId,input),
   agent_publish:(actor,input)=>projects.publishAgent(actor,input.projectId,input),
   project_publish:(actor,input)=>projects.publish(actor,input.projectId,input),
