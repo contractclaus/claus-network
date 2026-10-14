@@ -84,7 +84,7 @@ test('native pauses preserve paid cases while explicit permanent inputs end visi
 });
 
 test('shared fixed-artifact errors terminate once and mixed-case code hashes admit',async t=>{
- for(const code of ['invalid_oracle_id','invalid_provider_id','invalid_integer','invalid_json','value_too_deep','invalid_shape','document_too_large']){
+ for(const code of ['invalid_oracle_id','invalid_provider_id','invalid_integer','invalid_json','value_too_deep','value_too_large','invalid_shape','document_too_large']){
   const f=await setup(t);(await f.ports.context()).public.codeHash='0x'+'ab'.repeat(32);await f.store.transaction(async tx=>{const h=await tx.read('worker-health','deals');await tx.write('worker-health','deals',{...h.value,targets:h.value.targets.map(x=>({...x,codeHash:'0x'+'AB'.repeat(32)}))},h.revision);});const a=await f.core.request(f.actor,f.project.id,1,dealId);let calls=0;const core=createArbitration({store:f.store,identity:f.app.identity,dealPorts:f.ports,enabled:true,ports:{advance:async()=>{calls++;throw Object.assign(Error(code),{code});}}});await core.tick();await core.tick();assert.equal(calls,1);assert.equal((await core.read(a.id)).state,'blocked');assert.equal((await core.read(a.id)).error,code);
  }
  assert.throws(()=>arbitrationPorts({store:{},sealer:{},paymentSigner:{address:worker},arbiterSigner:{address:contract},pins:[{arbiter:worker}],nativeOrigin:'https://claus-agent.vercel.app',nativeSecret:'fixture'}),{code:'arbitration_key_unavailable'});
