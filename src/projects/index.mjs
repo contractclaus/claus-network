@@ -3,7 +3,7 @@ import { canonical, copy, digest, integer, requireThat, text, sourcePath, source
 const projectRef = (projectId, id) => digest({ projectId, id });
 const filePath = sourcePath, prose = sourceText;
 
-export function createProjects({ store, identity, publicDetails = async () => ({}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {} }) {
+export function createProjects({ store, identity, publicDetails = async () => ({}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true }) {
   async function snapshot(reader, projectId, id) {
     const value = (await reader.read('snapshots', projectRef(projectId, id)))?.value;
     requireThat(value && value.projectId === projectId, 'not_found');
@@ -114,7 +114,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     },
     async publicSource(id) {
       const publication = (await store.read('public-sources', text(id)))?.value;
-      requireThat(publication?.published === true, 'not_found');
+      requireThat(publication?.published === true && await visible(publication.projectId), 'not_found');
       const files = [];
       for (const entry of publication.files) {
         const artifact = (await store.read('artifacts', projectRef(publication.projectId, entry.hash))).value;
@@ -137,7 +137,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     },
     async publicProject(slug) {
       const record = await store.read('public-projects', text(slug));
-      requireThat(record?.value.published === true, 'not_found');
+      requireThat(record?.value.published === true && await visible(record.value.projectId), 'not_found');
       const project = (await store.read('projects', record.value.projectId))?.value;
       requireThat(project && !project.archivedAt, 'not_found');
       const agents = (await store.list('project-public-agents', { prefix: record.value.projectId + ':', limit: 128 }))
@@ -153,7 +153,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         let project;
         try { project = await api.publicProject(record.value.slug); }
         catch (error) { if (error.code === 'not_found') continue; throw error; }
-        const href = '/p/' + project.slug;
+        const href = '/c/' + project.slug;
         projects.push({ id: project.projectId, slug: project.slug, label: project.name, kind: 'project',
           href, revision: record.revision, status: 'registered' });
         for (const [field, kind, relation, section] of [['services', 'service', 'offers', 'services'],

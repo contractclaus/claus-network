@@ -1,0 +1,36 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {fixture} from './apps-fixture.mjs';
+test('shared app identity, private records, immutable author, schema pinning and audited content holds',async t=>{
+ const {owner,bob,eve,project,advance}=await fixture(t),projectId=project.id;
+ const first=await bob.call('principal_me');advance(3600001);assert.equal((await bob.call('principal_me')).principal.id,first.principal.id);
+ const input={projectId,collection:'posts',data:{text:'hello'},idempotencyKey:'post'};
+ const post=await bob.call('app_record_create',input);assert.deepEqual(await bob.call('app_record_create',input),post);
+ await assert.rejects(eve.call('app_record_update',{...input,recordId:post.id,expectedRevision:post.revision,idempotencyKey:'theft'}),e=>e.code==='scope_denied');
+ await bob.call('app_record_create',{...input,collection:'notes',data:{text:'private'},idempotencyKey:'private'});
+ assert.equal((await eve.call('app_records',{projectId,collection:'notes'})).items.length,0);
+ await assert.rejects(owner.call('public_app_records',{projectId,collection:'notes'}),e=>e.code==='scope_denied');
+ const ev=await bob.call('app_events',{projectId});assert(ev.items.some(e=>e.id===post.id));assert(!(await eve.call('app_events',{projectId})).items.some(e=>e.collection==='notes'));
+ await assert.rejects(eve.call('app_events',{projectId,after:ev.nextCursor}),e=>e.code==='invalid_cursor');
+ await assert.rejects(bob.call('app_admin_moderate',{projectId,collection:'posts',recordId:post.id,hidden:true,expectedRevision:1,reason:'test',idempotencyKey:'hide'}),e=>e.code==='scope_denied');
+ const hidden=await owner.call('app_admin_moderate',{projectId,collection:'posts',recordId:post.id,hidden:true,expectedRevision:1,reason:'acceptance',idempotencyKey:'hide'});
+ assert.equal((await owner.call('public_app_records',{projectId,collection:'posts'})).items.length,0);
+ await owner.call('app_admin_moderate',{projectId,collection:'posts',recordId:post.id,hidden:false,expectedRevision:hidden.revision,reason:'restore',idempotencyKey:'restore'});
+ const hold=await owner.call('content_admin_control',{projectId,held:true,releaseId:null,expectedRevision:0,reason:'hold',idempotencyKey:'hold'});
+ await assert.rejects(bob.call('public_project',{slug:project.slug}),e=>e.code==='not_found');
+ await owner.call('content_admin_control',{projectId,held:false,releaseId:null,expectedRevision:hold.revision,reason:'restore',idempotencyKey:'restore'});
+ assert.equal((await bob.call('public_app_records',{projectId,collection:'posts'})).items[0].authorId,post.authorId);
+});
+test('task claims are exclusive; stale leases, unauthorized acceptance and revoked delegates fail',async t=>{
+ const {app,owner,bob,eve,project,advance}=await fixture(t),projectId=project.id;
+ const task=await owner.call('app_task_post',{projectId,input:{text:'build'},idempotencyKey:'task'});
+ const claims=await Promise.allSettled([bob,eve].map(c=>c.call('app_task_claim',{projectId,taskId:task.id,expectedRevision:1,idempotencyKey:'claim'})));
+ assert.equal(claims.filter(c=>c.status==='fulfilled').length,1);const winner=claims[0].status==='fulfilled'?bob:eve,loser=winner===bob?eve:bob,claim=claims.find(c=>c.status==='fulfilled').value;
+ advance(31000);const newClaim=await loser.call('app_task_claim',{projectId,taskId:task.id,expectedRevision:claim.revision,idempotencyKey:'reclaim'});
+ await assert.rejects(winner.call('app_task_deliver',{projectId,taskId:task.id,generation:claim.generation,output:{text:'late'},expectedRevision:newClaim.revision,idempotencyKey:'late'}),e=>e.code==='lease_lost');
+ const result=await loser.call('app_task_deliver',{projectId,taskId:task.id,generation:newClaim.generation,output:{text:'done'},expectedRevision:newClaim.revision,idempotencyKey:'deliver'});
+ await assert.rejects(loser.call('app_task_accept',{projectId,taskId:task.id,expectedRevision:result.revision,idempotencyKey:'accept'}),e=>e.code==='scope_denied');
+ assert.equal((await owner.call('app_task_accept',{projectId,taskId:task.id,expectedRevision:result.revision,idempotencyKey:'accept'})).state,'accepted');
+ const ag=await owner.call('agent_create',{projectId,name:'delegate',idempotencyKey:'agent'}),grant=await owner.call('mandate_create',{projectId,principalId:ag.id,scopes:['app.use'],expiresAt:Date.now()+7200000,idempotencyKey:'grant'}),key=await owner.call('credential_create',{mandateId:grant.id});
+ await owner.call('mandate_revoke',{mandateId:grant.id});
+ await assert.rejects(app.service.execute('app_join',{projectId,idempotencyKey:'revoked'},key.token),e=>e.code==='scope_denied');
+});

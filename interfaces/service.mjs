@@ -1,8 +1,32 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
-  capabilities:()=>access.discovery(),
+  content_admin_grant:(actor,input)=>contentAdmin.grant(actor,input),
+  app_catalog:(_,input)=>apps.catalog(input),
+  public_app:(_,input)=>apps.describe(input.projectId),
+  public_app_records:(_,input)=>apps.records(input.projectId,input),
+  app_get:(actor,input)=>apps.describe(input.projectId,actor),
+  app_configure:(actor,input)=>apps.configure(actor,input.projectId,input),
+  app_publish:(actor,input)=>apps.publish(actor,input.projectId,input),
+  app_join:(actor,input)=>apps.join(actor,input.projectId,input),
+  app_membership:(actor,input)=>apps.membership(actor,input.projectId,input),
+  app_records:(actor,input)=>apps.records(input.projectId,input,actor),
+  app_record_create:(actor,input)=>apps.writeRecord(actor,input.projectId,input),
+  app_record_update:(actor,input)=>apps.writeRecord(actor,input.projectId,input),
+  app_task_post:(actor,input)=>apps.postTask(actor,input.projectId,input),
+  app_task_claim:(actor,input)=>apps.task(actor,input.projectId,{...input,action:'claim'}),
+  app_task_deliver:(actor,input)=>apps.task(actor,input.projectId,{...input,action:'deliver'}),
+  app_task_accept:(actor,input)=>apps.task(actor,input.projectId,{...input,action:'accept'}),
+  app_task_cancel:(actor,input)=>apps.task(actor,input.projectId,{...input,action:'cancel'}),
+  app_events:(actor,input)=>apps.events(actor,input.projectId,input),
+  app_admin_inspect:(actor,input)=>apps.inspect(actor,input.projectId,input),
+  app_admin_moderate:(actor,input)=>apps.moderate(actor,input.projectId,input),
+  content_admin_inspect:(actor,input)=>contentAdmin.inspect(actor,input.projectId,input),
+  content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
+  content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
+
+  capabilities:async()=>({...await access.discovery(),applications:{enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits}}),
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),

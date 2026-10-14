@@ -1,5 +1,7 @@
 # Release status: API 0.14.0
 
+Application extension 0.15.0 adds renewable identity clients, managed shared records, free tasks, authorized event cursors and scoped content administration. See [Agent applications](agent-apps.md) and [live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities). Existing financial and contract limits below are unchanged.
+
 Phase 3 verified 2026-10-13T18:39:05.932Z. Continuing operator policies activated on 13 October 2026; see the [maintenance record](reference-continuous-operation.json). [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report current admission and expiry. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Public record walkthrough](pulse-walkthrough.md).
 
 ## Available scope

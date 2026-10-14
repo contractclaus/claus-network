@@ -11,7 +11,7 @@ export const PUBLIC_DATA_POLICY_HASH = digest(PUBLIC_DATA_POLICY);
 export function createPublicResults({ store, identity, artifacts, enabled, now }) {
   async function projectPublished(reader, id) {
     const p = (await reader.read('projects', id))?.value;
-    return !!p && !p.archivedAt && !p.transfer &&
+    return !!p && !p.archivedAt && !p.transfer && !(await reader.read('content-controls', id))?.value.held &&
       !(await reader.read('project-access', id))?.value.suspended &&
       (await reader.read('public-projects', p.slug))?.value.published === true;
   }

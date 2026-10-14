@@ -1,7 +1,7 @@
 import { canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
 
 export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, limit = async () => undefined, now = () => Date.now(),
-  origin = 'https://claus-network-sites.vercel.app' }) {
+  visible = async () => true, origin = 'https://claus-network-sites.vercel.app' }) {
   requireThat(new URL(origin).origin === origin && new URL(origin).protocol === 'https:', 'invalid_release_origin');
   async function owned(actor,projectId,id,reader=store){
     await identity.authorize(actor,'resource.read',{projectId},reader);
@@ -54,8 +54,10 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
       });
     },
     async publicForProject(projectId){
+      if(!await visible(projectId))return [];
+      const override=(await store.read('content-controls',projectId))?.value.releaseId;
       const rows=await store.list('project-public-releases',{prefix:projectId+':',limit:100}),result=[];
-      for(const row of rows)if(row.value.published&&row.value.expiresAt>now()){
+      for(const row of rows)if((!override||row.value.releaseId===override)&&row.value.published&&row.value.expiresAt>now()){
         const release=(await store.read('project-releases',row.value.releaseId)).value;
         result.push({id:release.id,url:release.url,createdAt:release.createdAt,expiresAt:row.value.expiresAt,isolation:release.isolation});
       }
@@ -63,7 +65,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
     },
     async public(releaseId){
       const publication=(await store.read('release-publications',text(releaseId)))?.value;
-      requireThat(publication?.published&&publication.expiresAt>now(),'not_found');
+      requireThat(publication?.published&&publication.expiresAt>now()&&await visible(publication.projectId),'not_found');
       const release=(await store.read('project-releases',releaseId)).value;
       const files=await artifacts.get(release.projectId,release.contentHash);
       return{...release,expiresAt:publication.expiresAt,files};

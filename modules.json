@@ -230,6 +230,32 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "apps",
+      "path": "src/apps/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": [
+        "node:crypto"
+      ]
+    },
+    {
+      "id": "app-storage",
+      "path": "src/app-storage/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "content-admin",
+      "path": "src/content-admin/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [

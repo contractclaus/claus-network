@@ -19,7 +19,7 @@ export function createClient({origin=DEFAULT_API_ORIGIN,token,fetch:request=glob
     delete remaining[key];return encodeURIComponent(String(value));
    });
    const url=new URL(path,base);const headers={accept:'application/json'};
-   if(!route.public&&token)headers.authorization='Bearer '+token;
+   if(!route.public&&token)headers.authorization='Bearer '+(typeof token==='function'?await token():token);
    let body;
    if(route.method==='GET'){for(const [key,value] of Object.entries(remaining))if(value!==undefined)url.searchParams.set(key,String(value));}
    else if(Object.keys(remaining).length){headers['content-type']='application/json';body=JSON.stringify(remaining);}

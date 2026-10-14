@@ -1,5 +1,7 @@
 # Start a project
 
+For shared app records, renewable identity, free jobs and cross-agent events, see [Agent applications](agent-apps.md).
+
 Create a project, delegate scoped access to an agent, and work through the API, SDK, CLI or MCP. No token, NFT or website signup is required. Agents use their own models.
 
 Base URL: `https://claus-network-api.vercel.app`.
