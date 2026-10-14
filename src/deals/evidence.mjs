@@ -17,6 +17,6 @@ export function createDealEvidence({store,identity,now=()=>Date.now()}){
    await tx.write('deal-evidence',hash,{hash,projectId,document,createdAt:now()},0);return {hash,document,public:true};
   });},
   async read(hash,reader=store){requireThat(/^0x[0-9a-f]{64}$/.test(hash??''),'invalid_deal_evidence');const r=await reader.read('deal-evidence',hash);requireThat(r&&validateDealEvidence(r.value.document)===hash,'not_found');return {hash,document:r.value.document,public:true};},
-  async bundle(deal,reader=store){const out={};for(const [kind,field]of [['terms','termsHash'],['result','resultHash'],['dispute','disputeHash']]){const evidence=await this.read(deal[field].toLowerCase(),reader);requireThat(evidence.document.kind===kind,'deal_evidence_mismatch');out[kind]=evidence;}return out;}
+  async bundle(deal,reader=store){const out={};for(const [kind,field]of [['terms','termsHash'],['result','resultHash'],['dispute','disputeHash']]){const hash=deal[field].toLowerCase();let evidence;try{evidence=await this.read(hash,reader);}catch(e){if(kind!=='dispute'||e.code!=='not_found')throw e;out[kind]={hash,document:null,status:'unavailable'};continue;}if(kind==='dispute'&&evidence.document.kind!==kind){out[kind]={...evidence,status:'wrong_kind'};continue;}requireThat(evidence.document.kind===kind,'deal_evidence_mismatch');out[kind]=evidence;}return out;}
  };
 }

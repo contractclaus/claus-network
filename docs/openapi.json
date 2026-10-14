@@ -724,7 +724,7 @@
     "/v1/projects/{projectId}/deal-cases": {
       "post": {
         "operationId": "deal_review_request",
-        "description": "Request the single subsidized review case for a disputed pinned agreement. Requires deal.review and buyer/provider ownership. Exact committed public evidence, active finite review allocation and sufficient dispute time are required. No automatic approval, payout or replacement purchase.",
+        "description": "Request the single subsidized review case for a disputed pinned agreement. Requires deal.review and buyer/provider ownership. Exact committed public evidence, active finite review allocation and sufficient dispute time are required. An admitted case continues beyond requester session expiry or revocation; network operator suspension still stops it. No automatic approval, payout or replacement purchase.",
         "security": [
           {
             "bearerAuth": []

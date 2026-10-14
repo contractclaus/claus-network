@@ -1,7 +1,7 @@
 import {canonical,digest,requireThat,text} from '../shared/index.mjs';
 import {createDealEvidence} from './evidence.mjs';
 
-export const ARBITRATION_LIMITS=Object.freeze({cases:8,projectDaily:1,globalDaily:4,leaseMs:120000,minRemainingSeconds:3600,panelSize:5,quorum:4});
+export const ARBITRATION_LIMITS=Object.freeze({cases:8,projectDaily:1,principalDaily:1,principalTotal:2,globalDaily:4,minimumAmountWei:'100000000000000',leaseMs:120000,minRemainingSeconds:10800,processingRemainingSeconds:3600,panelSize:5,quorum:4});
 const seconds=now=>Math.floor(now()/1000);
 export const caseId=(chainId,contract,dealId)=>digest({chainId,contract:contract.toLowerCase(),dealId:dealId.toLowerCase()});
 export function caseQuestion(id,bundleUrl,amountWei){
@@ -13,17 +13,22 @@ export function createArbitration({store,identity,dealPorts,ports={},now=()=>Dat
  const evidence=createDealEvidence({store,identity,now});
  const publicCase=v=>({id:v.id,chainId:v.chainId,contract:v.contract,dealId:v.dealId,state:v.state,createdAt:v.createdAt,updatedAt:v.updatedAt,oracle:v.oraclePublic??null,decision:v.decisionPublic??null,resolution:v.resolution??null,error:v.error??null});
  async function admission(reader){const p=(await reader.read('network-capabilities','deal-arbitration'))?.value;requireThat(enabled&&p?.enabled===true&&p.profile==='public-deliverable-v1','deal_arbitration_disabled');return p;}
- async function observed(chainId,dealId){const c=await dealPorts.context(chainId,{fresh:true,confirmations:3}),d=await dealPorts.read(c,'deal',dealId);requireThat(d.state===4&&Number(d.resolutionDue)>seconds(now)+ARBITRATION_LIMITS.minRemainingSeconds,'deal_not_reviewable');return {c,d};}
- async function permitted(v,reader=store){try{const p=await admission(reader);return p.generation===v.admissionGeneration&&await identity.allowed(v.actor,'deal.review',{projectId:v.projectId},reader);}catch{return false;}}
+ async function workerHealth(reader){const h=(await reader.read('worker-health','deals'))?.value;return {observedAt:h?.observedAt??null,healthy:Number.isSafeInteger(h?.observedAt)&&h.observedAt<=now()+5000&&now()-h.observedAt<=300000};}
+ async function observed(chainId,dealId,minimum=ARBITRATION_LIMITS.processingRemainingSeconds){const c=await dealPorts.context(chainId,{fresh:true,confirmations:3}),d=await dealPorts.read(c,'deal',dealId);requireThat(d.state===4&&Number(d.resolutionDue)>seconds(now)+minimum,'deal_not_reviewable');return {c,d};}
+ // Admission creates one network-sponsored review obligation tied to the
+ // original onchain parties. A party's session expiry/revocation or project
+ // edits cannot veto it after seeing the oracle. Operator revocation remains.
+ async function permitted(v,reader=store){try{const p=await admission(reader);return p.generation===v.admissionGeneration;}catch{return false;}}
  async function save(id,token,changes){return store.transaction(async tx=>{const r=await tx.read('deal-cases',id);requireThat(r?.value.lease?.token===token,'case_lease_lost');return (await tx.write('deal-cases',id,{...r.value,...changes,updatedAt:now()},r.revision)).value;});}
  return {evidence,
-  async discovery(){let active=false;try{await admission(store);active=true;}catch(e){if(e.code!=='deal_arbitration_disabled')throw e;}const used=(await store.read('deal-case-capacity','global'))?.value.total??0;return{enabled:active&&used<ARBITRATION_LIMITS.cases,profile:'public-deliverable-v1',limits:ARBITRATION_LIMITS,remainingCases:Math.max(0,ARBITRATION_LIMITS.cases-used),evidence:'Explicitly public committed documents only. IMD panel and genuine Claus decision; no guaranteed answer or payout.',signature:'A resolution signature, once issued, remains usable until its stated expiry; later API revocation cannot cancel it.'};},
+  async discovery(){let active=false;try{await admission(store);active=true;}catch(e){if(e.code!=='deal_arbitration_disabled')throw e;}const used=(await store.read('deal-case-capacity','global'))?.value.total??0,worker=await workerHealth(store);return{enabled:active&&worker.healthy&&used<ARBITRATION_LIMITS.cases,profile:'public-deliverable-v1',limits:ARBITRATION_LIMITS,remainingCases:Math.max(0,ARBITRATION_LIMITS.cases-used),worker,evidence:'Explicitly public committed documents only. IMD panel and genuine Claus decision; no guaranteed answer or payout.',signature:'A resolution signature, once issued, remains usable until its stated expiry; later API revocation cannot cancel it.'};},
   async request(actor,projectId,chainId,dealId){
-   requireThat(/^0x[0-9a-fA-F]{64}$/.test(dealId??''),'invalid_deal_id');dealId=dealId.toLowerCase();await identity.authorize(actor,'deal.review',{projectId});const {c,d}=await observed(chainId,dealId),id=caseId(chainId,c.public.contract,dealId),bundle=await evidence.bundle(d);
+   requireThat(/^0x[0-9a-fA-F]{64}$/.test(dealId??''),'invalid_deal_id');dealId=dealId.toLowerCase();await identity.authorize(actor,'deal.review',{projectId});const {c,d}=await observed(chainId,dealId,ARBITRATION_LIMITS.minRemainingSeconds),id=caseId(chainId,c.public.contract,dealId),bundle=await evidence.bundle(d);
+   requireThat(/^[1-9][0-9]*$/.test(d.amount)&&BigInt(d.amount)>=BigInt(ARBITRATION_LIMITS.minimumAmountWei),'deal_subsidy_minimum');
    return store.transaction(async tx=>{
     await identity.authorize(actor,'deal.review',{projectId},tx);const project=(await tx.read('projects',projectId))?.value,owner=(await tx.read('principals',project?.ownerId))?.value;requireThat(owner?.address&&[d.buyer.toLowerCase(),d.worker.toLowerCase()].includes(owner.address.toLowerCase()),'deal_party_required');
-    const old=await tx.read('deal-cases',id);if(old)return publicCase(old.value);const p=await admission(tx),counter=await tx.read('deal-case-capacity','global'),total=counter?.value.total??0;requireThat(total<ARBITRATION_LIMITS.cases,'deal_arbitration_capacity');
-    const day=Math.floor(now()/86400000);for(const [k,limit]of [[projectId+':'+day,ARBITRATION_LIMITS.projectDaily],['global:'+day,ARBITRATION_LIMITS.globalDaily]]){const r=await tx.read('deal-case-daily',k);requireThat((r?.value.count??0)<limit,'deal_arbitration_capacity');await tx.write('deal-case-daily',k,{count:(r?.value.count??0)+1},r?.revision??0);}
+    const old=await tx.read('deal-cases',id);if(old)return publicCase(old.value);const p=await admission(tx);requireThat((await workerHealth(tx)).healthy,'deal_worker_unavailable');const counter=await tx.read('deal-case-capacity','global'),total=counter?.value.total??0;requireThat(total<ARBITRATION_LIMITS.cases,'deal_arbitration_capacity');
+    const day=Math.floor(now()/86400000);for(const [k,limit]of [[projectId+':'+day,ARBITRATION_LIMITS.projectDaily],['principal:'+project.ownerId+':'+day,ARBITRATION_LIMITS.principalDaily],['principal:'+project.ownerId+':total',ARBITRATION_LIMITS.principalTotal],['global:'+day,ARBITRATION_LIMITS.globalDaily]]){const r=await tx.read('deal-case-daily',k);requireThat((r?.value.count??0)<limit,'deal_arbitration_capacity');await tx.write('deal-case-daily',k,{count:(r?.value.count??0)+1},r?.revision??0);}
     await tx.write('deal-case-capacity','global',{total:total+1,active:[...(counter?.value.active??[]),id]},counter?.revision??0);
     const value={id,projectId,actor,chainId,contract:c.public.contract,dealId,deal:d,bundle,observation:c.public,admissionGeneration:p.generation,state:'queued',createdAt:now(),updatedAt:now()};await tx.write('deal-cases',id,value,0);return publicCase(value);
    });
@@ -38,7 +43,7 @@ export function createArbitration({store,identity,dealPorts,ports={},now=()=>Dat
      const checkpoint=changes=>save(id,token,changes),stillAllowed=()=>permitted(v);
      // Ports preserve the original order and model effect IDs; no retry buys a new result.
      const result=await ports.advance(v,{checkpoint,stillAllowed});await save(id,token,{...result,lease:null});
-    }catch(e){const permanent=['deal_not_reviewable','deal_state_changed','deal_pin_mismatch','deal_evidence_mismatch'].includes(e.code);await save(id,token,{...(permanent?{state:'blocked',error:e.code}:{}),lease:null}).catch(()=>{});}
+    }catch(e){const permanent=['deal_not_reviewable','deal_state_changed','deal_pin_mismatch','deal_evidence_mismatch','oracle_quote_expired','authority_closed'].includes(e.code);await save(id,token,{...(permanent?{state:'blocked',error:e.code}:{}),lease:null}).catch(()=>{});}
     finally{const current=(await store.read('deal-cases',id))?.value;if(['resolution-ready','blocked','failed'].includes(current?.state))await store.transaction(async tx=>{const capacity=await tx.read('deal-case-capacity','global');await tx.write('deal-case-capacity','global',{...capacity.value,active:capacity.value.active.filter(x=>x!==id)},capacity.revision);});}
    }return {processed};
   }
