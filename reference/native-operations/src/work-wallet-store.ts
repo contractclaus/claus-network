@@ -1,3 +1,4 @@
+import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {randomUUID} from 'node:crypto';
 import {sql} from './store.js';
 
@@ -5,7 +6,7 @@ import {sql} from './store.js';
 // lock or allowance with the token owner, arbitration signer or model payments.
 export function createWorkWalletStore(database:any=sql){
   let initialized:Promise<void>|undefined;
-  function initialize(){return initialized??=(async()=>{
+  function initialize(){if(managedDatabase())return managedSchemaReady();return initialized??=(async()=>{
     const db=database();
     await db`CREATE TABLE IF NOT EXISTS claus_work_wallet(address text PRIMARY KEY,active_id text,fence text,lease_until timestamptz,principal_spent numeric(78) NOT NULL DEFAULT 0,principal_reserved numeric(78) NOT NULL DEFAULT 0,gas_spent numeric(78) NOT NULL DEFAULT 0,gas_reserved numeric(78) NOT NULL DEFAULT 0)`;
     await db`ALTER TABLE claus_work_wallet ADD COLUMN IF NOT EXISTS claus_spent numeric(78) NOT NULL DEFAULT 0, ADD COLUMN IF NOT EXISTS claus_reserved numeric(78) NOT NULL DEFAULT 0`;

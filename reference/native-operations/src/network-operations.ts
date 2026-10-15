@@ -1,3 +1,4 @@
+import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {planWork} from './isolated/work.js';
 import {readOperationalCapabilities} from './operational-capabilities.js';
 import {operationSucceeded} from './operation-result.js';
@@ -88,7 +89,7 @@ export function validWorkEvidence(row:any,scope:'public'|'internal'='public'){
 }
 export function createNetworkOperations({database=sql,observe=networkOperatingContext,observeGrants=database===sql?readOperationalCapabilities:undefined,now=Date.now}:any={}){
  let initialized:Promise<void>|undefined;
- function initialize(){return initialized??=(async()=>{const db=database();
+ function initialize(){if(managedDatabase())return managedSchemaReady();return initialized??=(async()=>{const db=database();
   await db`CREATE TABLE IF NOT EXISTS claus_network_watch(id boolean PRIMARY KEY DEFAULT true CHECK(id),next_inspection timestamptz NOT NULL DEFAULT now(),next_review timestamptz NOT NULL DEFAULT now(),fingerprint text,observation jsonb,pending boolean NOT NULL DEFAULT true,failures integer NOT NULL DEFAULT 0,observed_at timestamptz,reviewed_at timestamptz)`;
   await db`ALTER TABLE claus_network_watch ADD COLUMN IF NOT EXISTS capabilities_hash text, ADD COLUMN IF NOT EXISTS capabilities_changed_at timestamptz, ADD COLUMN IF NOT EXISTS reviewed_execution jsonb`;
   await db`INSERT INTO claus_network_watch(id) VALUES(true) ON CONFLICT DO NOTHING`;

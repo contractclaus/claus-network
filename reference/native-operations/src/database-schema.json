@@ -1,0 +1,4157 @@
+{
+  "version": 1,
+  "columns": [
+    {
+      "table_name": "claus_actions",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "kind",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "result",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "requested_model",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "input",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "progress",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_actions",
+      "column_name": "visibility",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_control",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_control",
+      "column_name": "revision",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_requests",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_requests",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_requests",
+      "column_name": "input",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_requests",
+      "column_name": "accepted_revision",
+      "data_type": "bigint",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_requests",
+      "column_name": "error",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_requests",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_versions",
+      "column_name": "revision",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_versions",
+      "column_name": "kind",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_versions",
+      "column_name": "enabled",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_versions",
+      "column_name": "profile",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_versions",
+      "column_name": "hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_versions",
+      "column_name": "request_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_versions",
+      "column_name": "restored_from",
+      "data_type": "bigint",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_adaptation_versions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "kind",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "input",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "output",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "progress",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "amount",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "application_status",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "application_reason",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_effects",
+      "column_name": "application_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_requests",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_requests",
+      "column_name": "owner_scope",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_requests",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_requests",
+      "column_name": "result",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_requests",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_seats",
+      "column_name": "day",
+      "data_type": "date",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_seats",
+      "column_name": "seat",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_seats",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_versions",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_versions",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_versions",
+      "column_name": "source_effect",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_versions",
+      "column_name": "files",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_versions",
+      "column_name": "source_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_versions",
+      "column_name": "summary",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_build_versions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builder_deployment",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builder_deployment",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builder_deployment",
+      "column_name": "deployment_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builder_deployment",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "title",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "goal",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "summary",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "lease_owner",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "lease_until",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "owner_scope",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "mode",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "initial_mode",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "runtime",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_builds",
+      "column_name": "purpose",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_bridge",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_bridge",
+      "column_name": "result",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_bridge",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_private",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_private",
+      "column_name": "memory",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_private",
+      "column_name": "agenda",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_private",
+      "column_name": "checkpoint",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_private",
+      "column_name": "legacy",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_private",
+      "column_name": "isolated_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_private",
+      "column_name": "last_channel",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_wake",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_wake",
+      "column_name": "generation",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_wake",
+      "column_name": "ticket",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_club_wake",
+      "column_name": "expires_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_config",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_config",
+      "column_name": "parent_revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_config",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_config",
+      "column_name": "hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_config",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contribution_reviews",
+      "column_name": "request_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contribution_reviews",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contribution_reviews",
+      "column_name": "contribution_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contribution_reviews",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contribution_reviews",
+      "column_name": "note",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contribution_reviews",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "owner_scope",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "source_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "brief",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "review",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "attention_attempts",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_contributions",
+      "column_name": "attention_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_development_baselines",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_development_baselines",
+      "column_name": "seen",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_development_baselines",
+      "column_name": "started_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_development_updates",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_development_updates",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_development_updates",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_development_updates",
+      "column_name": "captured",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_drafts",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_drafts",
+      "column_name": "text",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_drafts",
+      "column_name": "reply_to",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_drafts",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_drafts",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_drafts",
+      "column_name": "kind",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_drafts",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_drafts",
+      "column_name": "visibility",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_clock",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_clock",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_clock",
+      "column_name": "attention_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_clock",
+      "column_name": "attention_attempts",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_recaps",
+      "column_name": "period",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_recaps",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_recaps",
+      "column_name": "draft",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_recaps",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_recaps",
+      "column_name": "receipt",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_recaps",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_ecosystem_recaps",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_gotchi_events",
+      "column_name": "post_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_gotchi_events",
+      "column_name": "owner_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_gotchi_events",
+      "column_name": "source_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_gotchi_events",
+      "column_name": "receipt",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_gotchi_events",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_gotchi_players",
+      "column_name": "owner_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_gotchi_players",
+      "column_name": "state",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_gotchi_players",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_hook_tracker",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_hook_tracker",
+      "column_name": "block_number",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_hook_tracker",
+      "column_name": "block_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_hook_tracker",
+      "column_name": "totals",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_journal",
+      "column_name": "id",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_journal",
+      "column_name": "kind",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_journal",
+      "column_name": "summary",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_journal",
+      "column_name": "data",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_journal",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_journal",
+      "column_name": "visibility",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "idea_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "kind",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "input",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "result",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "private_data",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "amount",
+      "data_type": "numeric(40,0)",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "currency",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "period",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_effects",
+      "column_name": "accounted_amount",
+      "data_type": "numeric(40,0)",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_events",
+      "column_name": "seq",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_events",
+      "column_name": "event_key",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_events",
+      "column_name": "digest",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_events",
+      "column_name": "idea_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_events",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_events",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_events",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_evidence",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_evidence",
+      "column_name": "idea_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_evidence",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_evidence",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "visibility",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "steps",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "lease_owner",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "lease_until",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_ideas",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_note_history",
+      "column_name": "id",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_note_history",
+      "column_name": "note_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_note_history",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_note_history",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_note_history",
+      "column_name": "deleted",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_note_history",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_notes",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_notes",
+      "column_name": "idea_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_notes",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_notes",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_notes",
+      "column_name": "deleted",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_notes",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_runner",
+      "column_name": "id",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_runner",
+      "column_name": "generation",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_runner",
+      "column_name": "state",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_runner",
+      "column_name": "turn_after",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_runner",
+      "column_name": "deadline",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_runtime",
+      "column_name": "id",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_runtime",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_lab_runtime",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_memories",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_memories",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_memories",
+      "column_name": "title",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_memories",
+      "column_name": "body",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_memories",
+      "column_name": "sources",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_memories",
+      "column_name": "supersedes",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_memories",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_memories",
+      "column_name": "visibility",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_metadata",
+      "column_name": "hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_metadata",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_metadata",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_metadata",
+      "column_name": "encoded",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_missions",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_missions",
+      "column_name": "body",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_missions",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_missions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_missions",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_missions",
+      "column_name": "result",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_missions",
+      "column_name": "chain_write",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_incidents",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_incidents",
+      "column_name": "source",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_incidents",
+      "column_name": "state",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_incidents",
+      "column_name": "consecutive_failures",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_incidents",
+      "column_name": "occurrences",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_incidents",
+      "column_name": "first_observed_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_incidents",
+      "column_name": "last_observed_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_incidents",
+      "column_name": "recovered_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_measurements",
+      "column_name": "id",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_measurements",
+      "column_name": "subject",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_measurements",
+      "column_name": "observed_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_measurements",
+      "column_name": "document",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_releases",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_releases",
+      "column_name": "hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_releases",
+      "column_name": "receipt",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_releases",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_releases",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_releases",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_review_revocations",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_review_revocations",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "input",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "request",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "configuration_revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "configuration_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "state",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "result",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "available_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_reviews",
+      "column_name": "started_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "next_inspection",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "next_review",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "fingerprint",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "observation",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "pending",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "failures",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "observed_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "reviewed_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "capabilities_hash",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "capabilities_changed_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_watch",
+      "column_name": "reviewed_execution",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "title",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "goal",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "next_step",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "priority",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "blocker",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "summary",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "evidence",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "capabilities_hash",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "assumption_note",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_control",
+      "column_name": "scope",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_control",
+      "column_name": "enabled",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_control",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_control",
+      "column_name": "deployment",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_control",
+      "column_name": "manifest",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_control",
+      "column_name": "crons",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_control",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "release_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "origin_deployment",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "target_deployment",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "generation",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "run_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "request_hash",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "dispatch_state",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "observed_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_handoffs",
+      "column_name": "observed_turn",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "request_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "scope",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "base_revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "base_deployment",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "manifest",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "files",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "source_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "changes",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "title",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "goal",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "build_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "review_effect",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "state",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "deploy_started",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "promote_started",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "deployment",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "proof",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_operations_releases",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_package_requests",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_package_requests",
+      "column_name": "owner_scope",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_package_requests",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_package_requests",
+      "column_name": "package_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_package_requests",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "owner_scope",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "manifest",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "manifest_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "files",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "license_documents",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "test_receipt",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "review_receipt",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "published_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_packages",
+      "column_name": "withdrawn_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "title",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "summary",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "sandbox_name",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "snapshot_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "version",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "last_exit_code",
+      "data_type": "integer",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_projects",
+      "column_name": "visibility",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "request_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "dedupe_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "proposal",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "source_author",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "visibility",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "runtime",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "project_request_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_intake",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_requests",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_requests",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_requests",
+      "column_name": "intake_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_prototype_requests",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public",
+      "column_name": "content",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public_work",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public_work",
+      "column_name": "work_revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public_work",
+      "column_name": "document",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public_work",
+      "column_name": "hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public_work",
+      "column_name": "published",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public_work",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_public_work",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_research_cache",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_research_cache",
+      "column_name": "result",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_research_cache",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_research_cache",
+      "column_name": "error",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_research_reads",
+      "column_name": "id",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_research_reads",
+      "column_name": "kind",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_research_reads",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_briefs",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_briefs",
+      "column_name": "brief",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_briefs",
+      "column_name": "brief_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_briefs",
+      "column_name": "enabled",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_briefs",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_control",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_control",
+      "column_name": "revision",
+      "data_type": "bigint",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_control",
+      "column_name": "enabled",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "request_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "dedupe_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "brief_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "source_author",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "project_request_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "wait_reason",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_intake",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "brief_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "brief_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "base_revision",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "program",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "program_hash",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "generator_effect",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "test_effect",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "reviewer_effect",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "published_revision",
+      "data_type": "bigint",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_jobs",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_requests",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_requests",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_requests",
+      "column_name": "intake_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_requests",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_versions",
+      "column_name": "revision",
+      "data_type": "bigint",
+      "required": true,
+      "identity": "a",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_versions",
+      "column_name": "request_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_versions",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_versions",
+      "column_name": "manifest",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_versions",
+      "column_name": "reason",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_versions",
+      "column_name": "actor",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_site_versions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "id",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "generation",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "memory",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "agenda",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "lease_until",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "lease_owner",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "continuation",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_state",
+      "column_name": "failure_count",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_control",
+      "column_name": "id",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_control",
+      "column_name": "enabled",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_control",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_control",
+      "column_name": "project_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_control",
+      "column_name": "active_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_control",
+      "column_name": "fallback_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_control",
+      "column_name": "last_checked",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_control",
+      "column_name": "failures",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "request_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "base_revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "build_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "files",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "source_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "title",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "goal",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "changes",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "checks",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "review_effect",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "state",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "deploy_started",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "deployment",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "proof",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_surface_releases",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "address",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "active_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "fence",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "lease_until",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "principal_spent",
+      "data_type": "numeric(78,0)",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "principal_reserved",
+      "data_type": "numeric(78,0)",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "gas_spent",
+      "data_type": "numeric(78,0)",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "gas_reserved",
+      "data_type": "numeric(78,0)",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "claus_spent",
+      "data_type": "numeric(78,0)",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet",
+      "column_name": "claus_reserved",
+      "data_type": "numeric(78,0)",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "address",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "input_hash",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "input",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "transaction",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "sealed",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "hash",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "receipt",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "error",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_work_wallet_actions",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_context",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_context",
+      "column_name": "result",
+      "data_type": "jsonb",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_context",
+      "column_name": "error",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_context",
+      "column_name": "checked_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_context",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_context",
+      "column_name": "lease_owner",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "post_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "author_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "conversation_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "post",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "seen_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "reply_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "reason",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "observed_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "deferred_until",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "operator_issue",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_inbox",
+      "column_name": "operator_reviewed_at",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_optouts",
+      "column_name": "author_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_optouts",
+      "column_name": "post_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_optouts",
+      "column_name": "enabled",
+      "data_type": "boolean",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_optouts",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "id",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "since_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "page_token",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "high_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "started_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "next_poll_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "lease_owner",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "lease_until",
+      "data_type": "timestamp with time zone",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_x_poll",
+      "column_name": "last_error",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    }
+  ]
+}

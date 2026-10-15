@@ -1,3 +1,4 @@
+import {managedDatabase,managedSchemaReady} from '../database-schema.js';
 import {validateProgram} from '../isolated/runner.mjs';
 import type {LabDatabase,LabQuery} from '../lab-db.js';
 import {BuilderStore} from '../builder-store.js';
@@ -7,7 +8,7 @@ import {OperationsHost} from './host.js';
 import {handoffColumns} from './runtime-handoff.js';
 export class OperationsStore{
  constructor(readonly db:LabDatabase,readonly host=new OperationsHost()){}
- async initialize(){await this.db.query(`CREATE TABLE IF NOT EXISTS claus_operations_control(scope text PRIMARY KEY,enabled boolean NOT NULL DEFAULT false,revision integer NOT NULL DEFAULT 1,deployment text NOT NULL,manifest jsonb NOT NULL,crons jsonb NOT NULL,updated_at timestamptz NOT NULL DEFAULT now());
+ async initialize(){if(managedDatabase())return managedSchemaReady();await this.db.query(`CREATE TABLE IF NOT EXISTS claus_operations_control(scope text PRIMARY KEY,enabled boolean NOT NULL DEFAULT false,revision integer NOT NULL DEFAULT 1,deployment text NOT NULL,manifest jsonb NOT NULL,crons jsonb NOT NULL,updated_at timestamptz NOT NULL DEFAULT now());
  CREATE TABLE IF NOT EXISTS claus_operations_releases(id text PRIMARY KEY,request_hash text NOT NULL,scope text NOT NULL REFERENCES claus_operations_control(scope),base_revision integer NOT NULL,base_deployment text NOT NULL,manifest jsonb NOT NULL,files jsonb NOT NULL,source_hash text NOT NULL,changes jsonb NOT NULL,title text NOT NULL,goal text NOT NULL,build_id text UNIQUE,review_effect text,state text NOT NULL,deploy_started timestamptz,promote_started timestamptz,deployment jsonb,proof jsonb,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
  CREATE TABLE IF NOT EXISTS claus_operations_handoffs(id text PRIMARY KEY,release_id text NOT NULL,origin_deployment text NOT NULL,target_deployment text NOT NULL,generation integer NOT NULL,run_id text,created_at timestamptz NOT NULL DEFAULT now());
  CREATE UNIQUE INDEX IF NOT EXISTS claus_operations_one_active ON claus_operations_releases(scope) WHERE state NOT IN ('active','rejected','blocked','rolled_back');

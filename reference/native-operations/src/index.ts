@@ -1,3 +1,4 @@
+import {managedSchemaReady} from './database-schema.js';
 import {isolatedHealth} from './isolated/bridge.js';
 import {publicWork,networkCare} from './network-care.js';
 import {labInference} from './lab-model.js';
@@ -69,6 +70,7 @@ app.get('/public/journal/:id',async c=>{c.header('Cache-Control','no-store');con
 app.get('/public/metadata/:hash',async c=>{const data=await publicMetadata(c.req.param('hash').replace(/\.json$/,''));if(!data)return c.json({error:'not_found'},404);c.header('Cache-Control','public,max-age=31536000,immutable');return c.body(data,200,{'Content-Type':'application/json; charset=utf-8'});});
 app.get('/public/network-surface',async c=>{c.header('Cache-Control','public,max-age=20');try{const r=await surfaceStore().publicRelease(c.req.query('id'));return r?c.json(r):c.json({enabled:false},404);}catch{return c.json({enabled:false},503);}});
 app.get('/health',async c=>{
+  await managedSchemaReady();
   const published=process.env.DATABASE_URL?await publicState():null;
   return c.json({isolatedAnalysis:await isolatedHealth(),service:'claus-agent',coin:published?.token.address?'published_deployment':'not_published',tokenAddress:published?.token.address??null,databaseConfigured:!!process.env.DATABASE_URL,inferenceConfigured:modelReady(),xConfigured:xReady(),contractLabConfigured:!!process.env.LAB_SNAPSHOT_ID,uniswapApiConfigured:!!process.env.UNISWAP_API_KEY,programmableApiConfigured:!!process.env.PROGRAMMABLE_API_KEY});
 });
@@ -197,7 +199,7 @@ app.post('/api/visuals/:tool',async c=>{
   return c.json(await executeTool(id,name,await c.req.json()));
 });
 app.get('/api/archive',async c=>c.json(await recall({query:c.req.query('query'),id:c.req.query('id'),includeSuperseded:c.req.query('includeSuperseded')==='true',offset:c.req.query('offset')===undefined?undefined:Number(c.req.query('offset')),limit:c.req.query('limit')===undefined?undefined:Number(c.req.query('limit'))})));
-app.put('/api/config',async c=>{const raw=await c.req.text();if(Buffer.byteLength(raw)>256000)return c.json({error:'request_too_large'},413);const body=JSON.parse(raw);return c.json(await store.configure(body.configuration,body.expectedRevision));});
+app.put('/api/config',async c=>c.json({error:'configuration_managed_externally'},410));
 app.get('/api/config/:revision',async c=>c.json(await store.historicalConfiguration(Number(c.req.param('revision')))));
 app.post('/api/uniswap/prepare',async c=>c.json(await uniswapRequest(await c.req.json())));
 app.get('/api/x/verify',async c=>c.json(await verifyX()));
