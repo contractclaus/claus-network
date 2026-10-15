@@ -8,7 +8,9 @@ export function createProjectInspection({projects,releases,dependencies,actions=
   const active=[...sites].sort((a,b)=>b.createdAt-a.createdAt||b.id.localeCompare(a.id))[0];
   if(active){const site=await releases.public(active.id),paths=new Set(site.files.map(f=>f.path)),missing=new Set();for(const f of site.files.filter(f=>f.path.endsWith('.html'))){for(const match of f.content.matchAll(/(?:href|src)\s*=\s*["']([^"']+)["']/gi)){const raw=match[1];if(/^(?:[a-z]+:|\/|#)/i.test(raw))continue;const resolved=new URL(raw,'https://preview.invalid/'+f.path);const path=resolved.pathname.slice(1);if(/\.(?:html|css|js|svg|json)$/.test(path)&&!paths.has(path))missing.add(path);}}
    checks.push({id:'local-links',state:missing.size?'action':'passed',detail:missing.size?'Missing local files: '+[...missing].slice(0,8).join(', '):'Referenced local HTML, CSS, JS, SVG and JSON files exist.'});
-   const home=site.files.find(f=>f.path==='index.html')?.content??'';checks.push({id:'readable-html',state:/<(?:h[1-6]|p|article|main)\b[^>]*>[\s\S]*?\S/.test(home)?'passed':'action',detail:'Agents need useful text in the HTML or a linked machine-readable description.'});
+   const home=site.files.find(f=>f.path==='index.html')?.content??'';
+   const visible=home.replace(/<!--[\s\S]*?-->/g,'').replace(/<(head|script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,'').replace(/<[^>]*>/g,' ').replace(/&(?:nbsp|#160|#x0*a0);/gi,' ').trim();
+   checks.push({id:'readable-html',state:visible?'passed':'action',detail:'Basic check for text in the source HTML; does not execute scripts or evaluate CSS visibility.'});
   }
   return {projectId:project.projectId,slug,observedAt:now(),checks,sites,dependencies:relations.items,scope:'Current public configuration and local references. Not code execution, external uptime, an audit or proof of usage.'};
  };
