@@ -154,8 +154,13 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       return {...record.value,revision:record.revision,agents,evidence,...details};
     },
     async publicAgents({after='',limit=25}={}) {
-      integer(limit,1,25);const rows=await store.list('project-public-agents',{after,limit}),items=[];
-      for(const row of rows){if(!row.value.published)continue;const p=(await store.read('projects',row.value.projectId))?.value;if(!p||p.archivedAt||!await visible(p.id))continue;const publication=await store.read('public-projects',p.slug);if(!publication?.value.published)continue;items.push({id:row.value.agentId,projectId:row.value.projectId,name:row.value.name,revision:row.revision,url:'/c/'+p.slug+'#agents'});}
+      integer(limit,1,25);const rows=await store.list('project-public-agents',{after,limit});
+      const ids=[...new Set(rows.filter(r=>r.value.published).map(r=>r.value.projectId))];
+      const many=(collection,keys)=>store.readMany?store.readMany(collection,keys):Promise.all(keys.map(async id=>[id,await store.read(collection,id)])).then(r=>new Map(r));
+      const [owned,allowed]=await Promise.all([many('projects',ids),visibleMany?visibleMany(ids):Promise.all(ids.map(async id=>[id,await visible(id)])).then(r=>new Set(r.filter(([,ok])=>ok).map(([id])=>id)))]);
+      const candidates=rows.filter(r=>r.value.published&&allowed.has(r.value.projectId)&&owned.get(r.value.projectId)?.value&&!owned.get(r.value.projectId).value.archivedAt);
+      const pages=await many('public-projects',[...new Set(candidates.map(r=>owned.get(r.value.projectId).value.slug))]);
+      const items=candidates.flatMap(row=>{const p=owned.get(row.value.projectId).value,pub=pages.get(p.slug)?.value;return pub?.published&&pub.projectId===p.id?[{id:row.value.agentId,projectId:row.value.projectId,name:row.value.name,revision:row.revision,url:'/c/'+p.slug+'#agents'}]:[];});
       return {items,nextCursor:rows.length===limit?rows.at(-1).id:null};
     },
     async graph({ after = '', limit = 100, view = 'full' } = {}) {
@@ -171,7 +176,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
           id:row.value.projectId,slug:row.value.slug,label:row.value.name,description:row.value.description,
           kind:'project',href:'/c/'+row.value.slug,revision:row.revision,status:'registered',updatedAt:row.value.updatedAt
         }));
-        return {schemaVersion:'1.0',view:'projects',observedAt:now(),nodes:[{id:'claus',label:'Claus',kind:'coordinator',href:'/Home'},...nodes],resources:[],
+        return {schemaVersion:'1.0',view:'projects',observedAt:now(),nodes:[{id:'claus',label:'Claus',kind:'coordinator',href:'/Network'},...nodes],resources:[],
           edges:nodes.map(p=>({source:p.id,target:'claus',relation:'registered_with'})),nextCursor:records.length===limit?records.at(-1).id:null};
       }
       const projects = [], resources = [], relations = [];
@@ -225,7 +230,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       }
       return {
         schemaVersion: '1.0', observedAt: now(),
-        nodes: [{ id: 'claus', label: 'Claus', kind: 'coordinator', href: '/Home' }, ...projects],
+        nodes: [{ id: 'claus', label: 'Claus', kind: 'coordinator', href: '/Network' }, ...projects],
         // Additive resources keep 1.0 project-only clients compatible.
         resources,
         edges: [...projects.map(p => ({ source: p.id, target: 'claus', relation: 'registered_with' })), ...relationMap.values()],

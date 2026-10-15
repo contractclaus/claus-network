@@ -43,6 +43,29 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
   }
   return {
     ...reader(pool),
+    // Admission counts are independent of domain/financial transitions. Atomic
+    // row updates retain existing counters and roll both reservations back on denial.
+    async consumeRateLimits({ entries, window }) {
+      integer(window); requireThat(Array.isArray(entries) && entries.length === 2 && new Set(entries.map(e=>e.id)).size === 2, 'invalid_rate_entries');
+      for (const e of entries) { text(e.id); integer(e.maximum,1); }
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query("SET LOCAL statement_timeout='5s'");
+        await client.query("SET LOCAL lock_timeout='2s'");
+        await client.query("SET LOCAL idle_in_transaction_session_timeout='8s'");
+        for (const {id,maximum} of entries) {
+          const result=await client.query(`INSERT INTO ${documents} AS d(collection,id,revision,body)
+            VALUES('rate-limits',$1,1,jsonb_build_object('window',$2::bigint,'count',1,'expiresAt',($2::bigint+2)*300000))
+            ON CONFLICT(collection,id) DO UPDATE SET revision=d.revision+1,
+              body=jsonb_build_object('window',$2::bigint,'count',CASE WHEN (d.body->>'window')::bigint=$2 THEN (d.body->>'count')::bigint+1 ELSE 1 END,'expiresAt',($2::bigint+2)*300000)
+            WHERE (d.body->>'window')::bigint<>$2 OR (d.body->>'count')::bigint<$3 RETURNING id`,[id,window,maximum]);
+          requireThat(result.rows.length===1,'rate_limited');
+        }
+        await client.query('COMMIT');
+      } catch(error) { await client.query('ROLLBACK').catch(()=>{}); throw error; }
+      finally { client.release(); }
+    },
     async dueWorkflows({at,limit=4}) {
       integer(at);integer(limit,1,4);
       const {rows}=await pool.query(`SELECT id,revision,body FROM ${documents} WHERE collection='app-workflows' AND body->>'state'='active' AND (body->>'nextAt')::bigint <= $1 ORDER BY (body->>'nextAt')::bigint,id LIMIT $2`,[at,limit]);

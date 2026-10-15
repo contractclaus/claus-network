@@ -41,6 +41,9 @@ export async function openAppPostgres({ pool, schema = 'claus_network', migrate 
     async admit(peer, now, limits) {
       const client=await pool.connect(),window=Math.floor(now/300000);
       try {await client.query('BEGIN');
+        await client.query("SET LOCAL statement_timeout='5s'");
+        await client.query("SET LOCAL lock_timeout='2s'");
+        await client.query("SET LOCAL idle_in_transaction_session_timeout='8s'");
         for(const [id,maximum] of [['global',limits.requestsGlobal],[peer,limits.requestsPerPeer]]) {
           const result=await client.query(`INSERT INTO ${docs}(app_id,collection,id,revision,body) VALUES('__rate__','rate',$1,1,jsonb_build_object('window',$2::bigint,'count',1))
             ON CONFLICT(app_id,collection,id) DO UPDATE SET revision=${docs}.revision+1,body=jsonb_build_object('window',$2::bigint,'count',CASE WHEN (${docs}.body->>'window')::bigint=$2 THEN (${docs}.body->>'count')::bigint+1 ELSE 1 END)

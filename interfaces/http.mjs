@@ -42,7 +42,7 @@ export const errorBody=error=>{
   status===400||status===413?'input':code==='funding_insufficient'?'funding':
   code==='decision_capacity_reached'?'capacity':code==='effect_requires_reconciliation'?'unknown_outcome':status>=500?'availability':'state';
  return {error:code,category,retryable:status>=500||status===429,
-  ...(status===429?{retryAfterSeconds:60}:{}),
+  ...(status===429?{retryAfterSeconds:Number.isSafeInteger(error.retryAfterSeconds)&&error.retryAfterSeconds>0?Math.min(300,error.retryAfterSeconds):60}:{}),
   ...(status===400&&typeof error.field==='string'&&error.field.length<200?{field:error.field}:{})};
 };
 const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}});
@@ -103,6 +103,6 @@ export function createHttp({service,origin='https://claus.si',admit=async()=>{}}
    const auth=request.headers.get('authorization');
    const token=auth?.match(/^Bearer (cln_[A-Za-z0-9_-]{43})$/)?.[1];
    return json(await service.execute(matched.name,input,token,{signal:request.signal}),200,cors);
-  }catch(error){const status=errorStatus(error);return json(errorBody(error),status,{...cors,...(status===401?{'www-authenticate':'Bearer realm="Claus Network"'}:status===429?{'retry-after':'60'}:{})});}
+  }catch(error){const status=errorStatus(error);return json(errorBody(error),status,{...cors,...(status===401?{'www-authenticate':'Bearer realm="Claus Network"'}:status===429?{'retry-after':String(errorBody(error).retryAfterSeconds)}:{})});}
  };
 }

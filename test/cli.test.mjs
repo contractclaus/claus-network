@@ -50,7 +50,7 @@ test('SDK reports a non-JSON gateway response without its body and never retries
   await assert.rejects(client.call('project_create', { slug: 'test', name: 'Test', idempotencyKey: 'once' }), error => {
     assert.equal(error.code, 'invalid_api_response');
     assert.equal(error.status, 502);
-    assert.deepEqual(error.details, { error: 'invalid_api_response' });
+    assert.deepEqual(error.details, { error: 'invalid_api_response', category: 'transport', outcome: 'unknown', automaticRetry: false });
     assert(!String(error).includes('upstream diagnostic'));
     return true;
   });
@@ -127,7 +127,7 @@ globalThis.fetch = async (...args) => {
 };`);
   const rotateArgs = { credentialId: rotated.credential.id };
   await assert.rejects(run('credential_rotate', rotateArgs, { token: secondToken, output: pending, preload: loseResponse }),
-    error => error.stderr.includes('response lost'));
+    error => error.stderr.trim() === 'transport_unavailable');
   assert.equal(await readFile(pending, 'utf8'), 'pending credential response\n');
   const afterLost = requests.length;
   await assert.rejects(run('credential_rotate', rotateArgs, { token: secondToken, output: pending }),
