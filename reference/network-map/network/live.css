@@ -1,0 +1,261 @@
+/* The world moves as one surface. Navigation, controls and activity stay anchored. */
+body[data-ui=network]{--ui-footer:clamp(140px,22dvh,210px);--claus-footer-height:var(--ui-footer)}
+body[data-ui=network] main#network-main{height:calc(100dvh - var(--ui-footer));max-height:calc(100dvh - var(--ui-footer));overflow:visible}
+body[data-ui=network] #scene{inset:12px max(16px,env(safe-area-inset-left)) -16px}
+.network-sr{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%);white-space:nowrap}
+.network-heading{position:absolute;left:50%;top:14px;translate:-50% 0;white-space:nowrap;font-size:clamp(36px,4.2vw,52px);font-weight:550;letter-spacing:-.055em;line-height:1.2;pointer-events:none}
+.network-viewport{position:absolute;inset:86px 0 150px;overflow:clip;touch-action:none;cursor:grab;outline-offset:-4px;border-radius:20px;user-select:none;-webkit-user-select:none}
+.network-viewport.is-dragging,.network-viewport.is-dragging *{cursor:grabbing!important}
+.network-viewport:focus-visible{outline:2px solid #211911;outline-offset:-3px}
+.network-plane{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0}
+.network-plane.is-moving{will-change:transform}
+.network-projects{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:4}
+.network-orb{position:absolute;display:flex;align-items:center;justify-content:center;width:var(--orb-size);height:var(--orb-size);translate:-50% -50%;border-radius:50%;text-decoration:none;color:#211911;pointer-events:auto;outline-offset:6px;cursor:pointer}
+.network-orb-face{display:grid;place-items:center;flex:none;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 32% 22%,#fff2d86b,#fff2d819 78%);box-shadow:inset 0 1px 1px #fff2d849,0 5px 18px #2513090b;transition:scale 180ms cubic-bezier(.2,0,0,1),background-color 150ms,box-shadow 150ms}
+.network-orb-initials{font-size:26px;font-weight:500;letter-spacing:-.06em}
+.network-orb:hover .network-orb-face,.network-orb:focus-visible .network-orb-face,.network-orb[aria-expanded=true] .network-orb-face{scale:1.045;background-color:#fff2d833;box-shadow:inset 0 1px 1px #fff2d870,0 8px 24px #25130912}
+.network-orb:active .network-orb-face{scale:.96}
+body[data-ui=network] .network-viewport .network-orb:is(:hover,:active){translate:-50% -50%;scale:1}
+.network-orb:focus-visible,.network-browse:focus-visible,.network-project-directory :is(button,input,a):focus-visible,.network-project-card a:focus-visible{outline:2px solid #211911;outline-offset:5px}
+/* Existing product artwork remains a compact, fixed navigation dock. */
+body[data-ui=network] .world:not(.core){border-radius:50%;height:280px!important;z-index:5;margin-top:16px}
+body[data-ui=network] .world:not(.core) .object{border-radius:50%;background:#fff2d819;box-shadow:inset 0 1px #fff2d824,0 2px 6px #25130908;overflow:hidden;transition:background-color 150ms,translate 180ms cubic-bezier(.2,0,0,1)}
+body[data-ui=network] .world:not(.core) .object>*{scale:.74;transform-origin:center}
+body[data-ui=network] .world:not(.core):hover .object,body[data-ui=network] .world:not(.core):focus-visible .object{background:#fff2d847;translate:0 -4px}
+body[data-ui=network] .world:not(.core) .name{top:100%!important;margin-top:calc(7px / var(--scale));font-size:12px;padding:3px 6px;scale:calc(1 / var(--scale));transform-origin:50% 0;background:transparent;box-shadow:none;opacity:1;visibility:visible}
+body[data-ui=network] .world.dim{opacity:.62;filter:none}
+body[data-ui=network] .world.core{background:transparent;border:0;padding:0;border-radius:50%}
+body[data-ui=network] .world.core .object{filter:none}
+body[data-ui=network] .world.core:active:not(:disabled){transform:translate(-50%,-50%) scale(var(--scale,1));scale:1}
+.network-map-controls{position:absolute;left:50%;bottom:96px;translate:-50% 0;display:flex;align-items:center;gap:2px;z-index:8;padding:3px;border:0;background:#fff2d81a;border-radius:26px;box-shadow:inset 0 1px #fff2d815}
+.network-map-controls button{width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:#211911;font:inherit;font-size:22px;display:grid;place-items:center;transition:background-color 150ms,scale 150ms}
+.network-map-controls button:hover{background:#fff2d83a}.network-map-controls button:active{scale:.96}
+.network-map-controls button:focus-visible{outline:2px solid #211911;outline-offset:0}
+.network-browse{position:absolute;left:24px;top:7px;display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;border:0;border-radius:24px;background:transparent;color:#211911;font:inherit;font-size:13px;z-index:6;transition:background-color 150ms,scale 150ms}
+.network-browse:hover{background:#fff2d828}.network-browse-count{font-variant-numeric:tabular-nums;opacity:.6}
+.network-browse:active,.network-directory-close:active{scale:.96}
+/* One compact card; never scale text with the map. */
+.network-project-card{position:absolute;z-index:12;box-sizing:border-box;padding:19px 20px;border-radius:20px;background:#fff2e2;color:#211911;box-shadow:0 10px 35px #52251023;animation:network-card-in 140ms ease-out;text-align:center}
+.network-project-card[hidden]{display:none}
+.network-project-card h2{font-size:18px;line-height:1.3;font-weight:550;letter-spacing:-.035em;margin:0;overflow-wrap:anywhere}
+.network-project-card p{font-size:12px;line-height:1.6;margin:8px 0 0;color:#695345}
+.network-project-card a{display:inline-flex;align-items:center;justify-content:center;min-height:40px;margin-top:12px;padding:0 16px;border-radius:22px;background:#211911;color:#fff2e2;font-size:12px;text-decoration:none;transition:scale 150ms,background-color 150ms}
+.network-project-card a:hover{background:#42291b}.network-project-card a:active{scale:.96}
+@keyframes network-card-in{from{opacity:0;translate:0 3px}to{opacity:1;translate:0 0}}
+/* Activity groups use spacing, not timeline rules or row separators. */
+.network-activity{position:absolute;right:16px;top:76px;bottom:96px;width:284px;display:flex;flex-direction:column;z-index:7;min-height:0;padding:16px 20px;border:0;border-radius:24px;background:#fff2d819;box-shadow:inset 0 1px #fff2d824,0 2px 6px #25130908}
+.network-activity header{position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:10px;min-height:40px;flex:none}
+.network-activity h2{font-size:16px;letter-spacing:-.02em;font-weight:550;margin:0;line-height:1.2;text-align:center}
+.network-activity-state{position:absolute;right:0;font-size:10px;display:inline-flex;gap:5px;align-items:center;color:#4d2c20}
+.network-activity-state:before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.network-activity.is-stale .network-activity-state:before{background:transparent;border:1px solid currentColor}
+.network-activity-list{margin:0;padding:0 4px 0 0;list-style:none;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#21191125 transparent;min-height:0;mask-image:linear-gradient(#000 calc(100% - 16px),transparent)}
+ .network-activity-list li{padding:0 0 7px;position:relative;border:0;margin:0}
+.network-activity-entry{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:64px;padding:9px 7px;border-radius:14px;color:#211911;text-decoration:none;transition:background-color 150ms,scale 150ms}
+.network-activity-entry:hover{background:#fff2d82b}.network-activity-entry:active{scale:.96}
+.network-activity-avatar{position:relative;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;overflow:hidden;background:#fff2d82b;box-shadow:inset 0 0 0 1px #0000000d;font-size:12px;font-weight:550}
+.network-activity-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.network-activity-avatar [hidden]{display:none}
+.network-activity-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.network-activity-project{font-size:13px;font-weight:550;line-height:1.4;letter-spacing:-.015em;overflow-wrap:anywhere}
+.network-activity-description{font-size:11px;line-height:1.5;color:#4f2b1d;overflow-wrap:anywhere}
+.network-activity-entry time{align-self:start;padding-top:3px;font-size:10px;white-space:nowrap;color:#643c2b;font-variant-numeric:tabular-nums}
+.network-activity-detail{display:flex;flex-wrap:wrap;gap:5px 12px;padding:0 7px 6px 51px}
+.network-activity-detail a{display:inline-flex;align-items:center;min-height:24px;font-size:11px;line-height:1.5;color:#4f2b1d;text-decoration:underline;text-underline-offset:3px}
+.network-activity-note{font-size:12px;line-height:1.5;margin:0 0 18px;color:#4f2b1d;text-align:center}
+.network-activity-toggle,.network-activity-close{display:none}
+.network-activity button:focus-visible,.network-activity a:focus-visible{outline:2px solid #211911;outline-offset:3px;border-radius:3px}
+.network-ping .object,.network-ping .network-orb-face{animation:network-ping 1s ease-out}
+.network-activity-list .is-new{animation:network-arrive 300ms ease-out}
+@keyframes network-ping{0%,100%{filter:none}35%{filter:drop-shadow(0 0 14px #fff2d8)}}
+@keyframes network-arrive{from{opacity:0;translate:0 -5px}to{opacity:1;translate:0 0}}
+/* Searchable directory for all published records. */
+.network-project-directory,.network-project-directory *{box-sizing:border-box}
+body[data-ui=network] .network-project-directory{position:fixed;inset:0;margin:auto;padding:28px;height:min(620px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);width:min(540px,calc(100vw - 32px));max-width:calc(100vw - 32px);border:0;border-radius:24px;background:#fff2d8;color:#211911;overflow:hidden;overscroll-behavior:contain;box-shadow:0 24px 100px #21191130}
+.network-project-directory[open]{display:flex;flex-direction:column}
+.network-project-directory::backdrop{background:#28100855;backdrop-filter:blur(7px)}
+.network-project-directory header{display:flex;align-items:center;justify-content:space-between;gap:24px;flex:none}
+.network-project-directory h2{font-size:32px;line-height:1.2;margin:0;letter-spacing:-.04em;font-weight:550}
+.network-directory-close{border:0;background:transparent;width:44px;height:44px;flex:none;border-radius:50%;font-size:26px;transition:scale 150ms}
+.network-directory-filters{display:flex;gap:4px;margin-top:20px}
+.network-directory-filters button{border:0;border-radius:24px;padding:10px 16px;min-height:44px;background:transparent;font:inherit;font-size:14px}
+.network-directory-filters button[aria-pressed=true]{background:#211911;color:#fff2d8}
+.network-project-directory input{flex:none;margin:18px 0 10px;width:100%;min-height:46px;padding:12px 2px;border:0;border-radius:0;box-shadow:inset 0 -1px #21191130;appearance:none;background:transparent;color:inherit;font:inherit;font-size:16px}
+.network-directory-list{flex:1;overflow:auto;min-height:0;overscroll-behavior:contain;scrollbar-width:thin;padding:5px;margin-inline:-5px}
+.network-directory-list section+section{margin-top:24px}.network-directory-list h3{font-size:12px;font-weight:500;letter-spacing:.04em;margin:16px 12px 8px;color:#685a4a}
+.network-directory-list a{display:flex;align-items:center;padding:15px 12px;text-decoration:none;color:inherit;overflow-wrap:anywhere;font-size:15px;line-height:1.4;border-radius:10px}
+.network-directory-list a:hover{background:#21191108}
+.network-directory-notice{font-size:14px;margin:16px 0;line-height:1.5}.network-directory-retry{align-self:flex-start;padding:10px 18px;min-height:44px;border:0;border-radius:24px;background:#211911;color:#fff2d8;font:inherit}
+.network-directory-open .club-footer{pointer-events:none}
+@media(max-width:1100px){
+ .network-heading{font-size:clamp(36px,6vw,44px);top:14px}
+ .network-viewport{inset:80px 0 144px}
+ .network-browse{left:50%;top:49px;translate:-50% 0;font-size:12px}
+ .network-map-controls{bottom:96px}
+ .network-activity{display:none;left:0;right:0;top:94px;bottom:108px;width:auto;padding:18px 20px 8px;border:0;border-radius:20px;background:#f5a078;box-shadow:0 14px 35px #68331920}
+ .network-activity.is-open{display:flex}
+ .network-activity-state{left:0;right:auto}
+ .network-activity-close{position:absolute;right:-4px;display:grid;place-items:center;border:0;background:transparent;width:40px;height:40px;font-size:26px}
+ .network-activity-toggle{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;bottom:96px;min-height:46px;font:inherit;font-size:12px;padding:0 14px;border:0;background:transparent;border-radius:24px;z-index:8}
+ .network-activity-toggle[aria-expanded=true]{background:#211911;color:#fff2d8}
+ .network-activity-entry{grid-template-columns:40px minmax(0,1fr) auto;min-height:72px;gap:12px}.network-activity-avatar{width:40px;height:40px}.network-activity-project{font-size:14px}.network-activity-description,.network-activity-detail a{font-size:12px}.network-activity-detail{padding-left:59px}
+ #scene:has(.network-activity.is-open) .network-map-controls,#scene:has(.network-activity.is-open) .network-activity-toggle{visibility:hidden}
+}
+@media(max-width:600px){
+ body[data-ui=network]{--ui-footer:clamp(120px,22dvh,186px);--claus-footer-height:var(--ui-footer)}
+ .network-project-directory{padding:20px}.network-project-directory h2{font-size:30px}
+ body[data-ui=network] .world:not(.core){margin-top:8px}
+ body[data-ui=network] .world:not(.core) .name{font-size:10px}
+ .network-map-controls button{width:38px;height:44px}
+}
+@media(max-height:520px) and (orientation:landscape){
+ body[data-ui=network]{--ui-footer:88px;--claus-footer-height:88px}
+ body[data-ui=network] #scene{top:0;bottom:0}
+ .network-heading{font-size:30px;top:9px}.network-viewport{top:48px;bottom:174px}
+ .network-browse{left:8px;top:0;translate:none}
+ .network-map-controls{bottom:114px}.network-activity-toggle{bottom:114px}.network-activity{top:44px;bottom:72px}
+ body[data-ui=network] .world:not(.core){margin-top:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .network-activity-entry,.network-orb-face,.network-browse,.network-directory-close,.network-map-controls button,.network-project-card a{transition:none}.network-activity-entry:active{scale:1}
+ .network-orb:hover .network-orb-face,.network-orb:active .network-orb-face{scale:1}
+ .network-project-directory::backdrop{backdrop-filter:none}
+ .network-ping .object,.network-ping .network-orb-face,.network-activity-list .is-new,.network-project-card{animation:none}
+}
+@media(forced-colors:active){.network-orb-face,.network-browse,.network-project-card,.network-map-controls{border:1px solid ButtonText;background:Canvas;color:CanvasText}.network-project-directory{background:Canvas;color:CanvasText}}
+
+@media(max-width:700px) and (max-height:700px){body[data-ui=network]{--ui-footer:clamp(120px,24dvh,160px);--claus-footer-height:var(--ui-footer)}}
+@media(orientation:landscape) and (max-height:500px){body[data-ui=network]{--ui-footer:88px;--claus-footer-height:88px}}
+
+/* Dock offsets are in the original 280px artwork coordinate system. */
+body[data-ui=network] .world .lab-art{top:27px}
+body[data-ui=network] .world .nft-stack{left:13px}
+body[data-ui=network] .world .splash-character{top:24px}
+body[data-ui=network] .world .splash-shadow{bottom:24px}
+body[data-ui=network] .network-project-directory input:focus{outline:0;box-shadow:inset 0 -2px #211911}
+body[data-ui=network] .network-project-directory input::-webkit-search-decoration{appearance:none}
+@media(forced-colors:active){body[data-ui=network] .network-project-directory input:focus{border-bottom:2px solid Highlight;box-shadow:none}}
+
+.network-arrival{animation:network-project-arrival 320ms ease-out}
+@keyframes network-project-arrival{from{opacity:0;scale:.92}to{opacity:1;scale:1}}
+@media(prefers-reduced-motion:reduce){.network-arrival{animation:none}}
+
+.network-orb-face{position:relative;overflow:hidden}
+.network-orb-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.network-orb-image[hidden],.network-orb-initials[hidden]{display:none}
+.network-project-card{overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.network-project-preview{display:block;width:100%;height:100px;object-fit:cover;border-radius:12px;margin:0 0 14px}
+.network-project-preview[hidden]{display:none}
+.network-project-card p{overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+@media(max-height:600px){.network-project-preview{height:64px;margin-bottom:8px}.network-project-card{padding:14px}}
+
+.network-cluster{border:0;background:transparent;padding:0;font:inherit;font-size:30px;font-weight:550;font-variant-numeric:tabular-nums}
+.network-cluster .network-orb-face{background:#211911;color:#fff2e2;box-shadow:0 5px 18px #25130912}
+
+.network-directory-filters{overflow-x:auto;flex-shrink:0;scrollbar-width:none}.network-directory-filters button{padding-inline:11px;white-space:nowrap;font-size:13px}.network-directory-filters::-webkit-scrollbar{display:none}
+
+@media(max-width:480px){.network-directory-filters{gap:2px}.network-directory-filters button{flex:1;padding-inline:6px;font-size:12px}}
+
+/* Network polish: shared controls, readable directory and bounded previews. */
+.network-map-controls{gap:0;padding:4px;background:#fff2d826;box-shadow:inset 0 1px #fff2d82b}
+.network-map-controls button{width:44px;height:44px}
+.network-activity{padding:18px 16px;background:#fff2d822}
+.network-activity header{margin-bottom:8px}
+.network-activity-list{padding-right:3px;scrollbar-gutter:stable;overflow-anchor:none}
+.network-activity-entry{grid-template-columns:36px minmax(0,1fr) auto;gap:12px;padding:10px 8px;min-height:70px}
+.network-activity-avatar{width:36px;height:36px}
+.network-activity-description{font-size:12px;line-height:1.45}
+.network-activity-entry time{font-size:11px}
+.network-directory-list{scrollbar-gutter:stable;overflow-anchor:none}
+.network-directory-list a{gap:14px;min-height:64px;padding:10px 12px;border-radius:14px}
+.network-directory-avatar{position:relative;display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;overflow:hidden;background:#2119110a;font-size:13px;font-weight:550}
+.network-directory-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.network-directory-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.network-directory-copy small{font-size:12px;color:#695345}
+.network-project-directory header{position:relative;justify-content:center;min-height:44px;padding-inline:44px}
+.network-project-directory .network-directory-close{position:absolute;right:0;top:0}
+.network-directory-filters{justify-content:flex-start;width:max-content;max-width:100%;margin-inline:auto}
+.network-project-card{box-shadow:0 12px 32px #52251026;scrollbar-gutter:stable}
+.network-project-preview{height:118px}
+.network-project-card a{min-height:44px;font-size:13px}
+.network-project-card p{font-size:13px;line-height:1.5}
+.network-orb-image,.network-directory-avatar img{outline:1px solid #00000014;outline-offset:-1px}
+@media(max-width:1100px){
+ .network-activity{background:#f1a078;padding:18px 16px 10px;top:86px;bottom:100px}
+ .network-activity-entry{grid-template-columns:40px minmax(0,1fr) auto;min-height:72px}
+ .network-activity-avatar{width:40px;height:40px}
+ .network-activity-toggle{background:#fff2d826;min-height:52px;bottom:96px;padding-inline:18px}
+ .network-activity-close{width:44px;height:44px}
+}
+@media(max-width:600px){
+ body[data-ui=network] #worlds{position:absolute;left:0;right:0;bottom:8px;height:76px;display:flex;gap:10px;align-items:flex-start;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;padding:0 6px;mask-image:linear-gradient(90deg,transparent,#000 6px,#000 calc(100% - 6px),transparent)}
+ body[data-ui=network] #worlds::-webkit-scrollbar{display:none}
+ body[data-ui=network] #worlds .world:not(.core){position:relative;left:auto!important;top:auto!important;flex:0 0 56px;width:56px!important;height:72px!important;margin:0;transform:none;scroll-snap-align:start;border-radius:12px}
+ body[data-ui=network] #worlds .world .object{width:280px;height:280px;transform:scale(.1571428571);transform-origin:0 0;left:6px;top:4px}
+ body[data-ui=network] #worlds .world .name{top:52px!important;left:50%;margin:0;padding:0;font-size:11px;scale:1;translate:-50% 0}
+ body[data-ui=network] #worlds .world:focus-visible{outline:2px solid #11110e;outline-offset:-2px}
+}
+@media(max-width:390px){.network-map-controls{left:0;translate:0 0}.network-activity-toggle{right:0}}
+@media(max-width:1100px) and (max-height:520px) and (orientation:landscape){.network-project-preview{height:64px}.network-project-card{padding:12px}.network-activity-toggle{bottom:114px}.network-activity{position:fixed;inset:54px 12px 64px;width:auto;padding:12px}.network-activity header{flex-shrink:0}.network-activity-list{flex:1}}
+@media(prefers-reduced-motion:reduce){.network-project-card,.network-activity-list .is-new{animation:none}.network-map-controls button,.network-activity-entry{transition:none}}
+
+/* Published projects form distinct neighborhoods around Claus. */
+.network-branches{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:1}
+.network-branches path{fill:none;stroke:#211911;stroke-opacity:.19;stroke-width:1;vector-effect:non-scaling-stroke}
+.network-branches .network-branch-trunk{stroke-opacity:.28;stroke-width:1.25}
+.network-branches .network-service-link{stroke-opacity:.42;stroke-dasharray:3 5}
+.network-categories{position:absolute;left:0;top:0;z-index:2;pointer-events:none}
+.network-category{position:absolute;translate:-50% -50%;display:flex;align-items:center;gap:8px;white-space:nowrap;padding:7px 10px;border-radius:20px;background:#db764d;color:#211911;font-size:clamp(13px,calc(12px / var(--camera-zoom,1)),25px);font-weight:550;box-shadow:0 0 0 5px #da744b44}
+.network-category small{font-size:.85em;opacity:.65}
+.network-orb .network-orb-face{opacity:0;scale:.9;transition:opacity 200ms ease-out,scale 250ms cubic-bezier(.2,0,0,1),box-shadow 160ms}
+.network-orb:not([data-ready=true]):not(.network-cluster){opacity:0!important;visibility:hidden!important;pointer-events:none}
+.network-orb[data-ready=true] .network-orb-face,.network-cluster .network-orb-face{opacity:1;scale:1}
+.network-orb[data-ready=true]:hover .network-orb-face,.network-orb[data-ready=true]:focus-visible .network-orb-face{scale:1.05;box-shadow:0 0 0 5px #fff2d82c,0 8px 24px #21191122}
+.network-orb[data-ready=true]:active .network-orb-face{scale:.96}
+.network-orb-face{background:#161611;box-shadow:0 0 0 1px #00000012,0 3px 12px #21191112;overflow:hidden}
+.network-orb-initials{color:#fff2d8;font-size:23px;letter-spacing:-.04em}
+.network-orb-image{outline:1px solid #0000001a;outline-offset:-1px}
+.network-activity{box-sizing:border-box;width:292px;right:16px;top:82px;bottom:112px;padding:14px 12px 10px;background:#fff2d822;border-radius:24px;box-shadow:inset 0 1px #fff2d82b;overflow:hidden}
+.network-activity header{margin-bottom:6px;min-height:40px}
+.network-activity-list{padding:0 2px;scrollbar-width:thin;scrollbar-gutter:stable;mask-image:linear-gradient(#000 calc(100% - 20px),transparent)}
+.network-activity-list li{padding-bottom:2px}
+.network-activity-entry{grid-template-columns:32px minmax(0,1fr);gap:10px;position:relative;padding:10px 8px;min-height:64px;align-items:center}
+.network-activity-avatar{width:32px;height:32px;align-self:center;background:transparent;box-shadow:none}
+.network-activity-avatar:not(.is-fallback):has(img[hidden]){opacity:0}
+.network-activity-avatar.is-fallback{opacity:1;background:#211911;color:#fff2d8;font-size:11px}
+.network-activity-copy{padding-right:26px;gap:2px}
+.network-activity-project{font-size:12px;line-height:1.4;font-weight:550}
+.network-activity-description{font-size:11px;line-height:1.4;color:#4d2e22}
+.network-activity-entry time{position:absolute;right:8px;top:11px;font-size:10px;padding:0;color:#694332}
+.network-activity-note{font-size:12px;margin:8px 4px 12px}
+.network-activity-detail{padding-left:50px;gap:6px}
+.network-activity-list .is-new{animation:none}
+@media(max-width:1100px){
+ .network-activity{position:absolute;inset:82px 4px auto auto;width:min(328px,calc(100% - 8px));height:min(490px,calc(100% - 194px));max-height:calc(100% - 194px);display:flex;visibility:hidden;opacity:0;translate:14px 0;pointer-events:none;background:#e99a72;box-shadow:0 16px 48px #55241026,inset 0 1px #fff2d840;z-index:30;transition:opacity 180ms ease-out,translate 220ms cubic-bezier(.2,0,0,1),visibility 220ms}
+ .network-activity.is-open{display:flex;visibility:visible;opacity:1;translate:0 0;pointer-events:auto}
+ .network-activity-toggle{right:4px;bottom:96px;min-height:48px;padding:0 16px;font-size:13px;border-radius:26px}
+ .network-activity-close{display:grid;place-items:center;width:40px;height:40px;right:0;top:0;font-size:24px}
+ .network-activity-entry{grid-template-columns:32px minmax(0,1fr);min-height:64px}
+ .network-activity-avatar{width:32px;height:32px}
+}
+@media(max-width:600px){
+ .network-heading{font-size:clamp(32px,8vw,44px)}
+ .network-activity{top:64px;right:0;width:min(312px,calc(100% - 4px));height:min(460px,calc(100% - 178px));max-height:calc(100% - 178px);border-radius:22px}
+ .network-map-controls{left:4px;translate:0 0;bottom:94px}
+ .network-map-controls button{width:40px;height:44px}
+ .network-activity-toggle{right:0;bottom:94px}
+}
+@media(max-height:520px) and (orientation:landscape){
+ .network-viewport{top:48px;bottom:120px;min-height:64px}
+ .network-map-controls{left:12px;translate:0;bottom:98px}
+ .network-activity{position:fixed;inset:58px 12px 80px auto;width:min(324px,calc(100vw - 24px));height:auto;max-height:none;padding:10px}
+ .network-activity header{min-height:32px;margin-bottom:2px}
+ .network-activity-entry{min-height:58px;padding-block:7px}
+}
+@media(max-width:600px) and (max-height:520px) and (orientation:landscape){
+ .network-map-controls{position:fixed;left:8px;top:58px;bottom:auto;flex-direction:column}
+ .network-map-controls button{width:36px;height:36px}
+}
+@media(prefers-reduced-motion:reduce){.network-orb .network-orb-face,.network-activity{transition:none}.network-orb[data-ready=true] .network-orb-face{scale:1}}
+
+.network-work-link{fill:none;stroke:var(--ink,#11120c);stroke-width:1.5;stroke-opacity:.3;stroke-dasharray:4 5;vector-effect:non-scaling-stroke;pointer-events:none}.network-work-links{display:grid;gap:8px;margin-top:12px}.network-work-links[hidden]{display:none}.network-work-links a{font-size:13px;line-height:1.4}

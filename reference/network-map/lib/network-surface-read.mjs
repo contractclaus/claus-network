@@ -1,0 +1,3 @@
+export const NATIVE='https://claus-agent.vercel.app';
+export async function readJson(url,limit=800000){const r=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error('surface_unavailable');const reader=r.body.getReader(),parts=[];let size=0;try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>limit){await reader.cancel();throw Error('surface_response_size');}parts.push(value);}}finally{reader.releaseLock();}return JSON.parse(Buffer.concat(parts).toString());}
+export const validId=id=>typeof id==='string'&&/^sr_[a-z0-9_]{1,64}$/.test(id);
