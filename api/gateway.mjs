@@ -1,4 +1,5 @@
 import {isolatedHealth} from '../src/isolated/bridge.mjs';
+import {readDatabaseBoundary} from '../runtime/database-boundary.mjs';
 import {inferencePorts} from '../runtime/inference-ports.mjs';
 import {SITE_LIMITS} from '../src/shared/index.mjs';
 import {openAppPostgres} from '../src/app-storage/index.mjs';
@@ -18,19 +19,23 @@ export function application() {
   if (!loaded) loaded = (async () => {
     if (!process.env.CLAUS_NETWORK_DATABASE_URL || !process.env.CLAUS_NETWORK_ORIGIN) throw Error('runtime_unconfigured');
     const pool = new Pool({ connectionString: process.env.CLAUS_NETWORK_DATABASE_URL, max: 3, connectionTimeoutMillis: 8000 });
+    pool.on('error', () => {});
+    try { await readDatabaseBoundary(pool); }
+    catch (error) { await pool.end().catch(() => {}); throw error; }
     const store = await openPostgresStore({ pool });
     const intakePorts = contractIntakePorts();
-    return { store, intakePorts, app: createApplication({ inferencePorts:inferencePorts(),arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',dealPorts:dealPorts(),appWritesEnabled:process.env.CLAUS_APPS_WRITES_ENABLED!=='0', appStorage:process.env.CLAUS_APPS_ENABLED==='1'?await openAppPostgres({pool}):null, store, origin: process.env.CLAUS_NETWORK_ORIGIN,
+    return { store, intakePorts, databaseBoundary: () => readDatabaseBoundary(pool), app: createApplication({ inferencePorts:inferencePorts(),arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',dealPorts:dealPorts(),appWritesEnabled:process.env.CLAUS_APPS_WRITES_ENABLED!=='0', appStorage:process.env.CLAUS_APPS_ENABLED==='1'?await openAppPostgres({pool}):null, store, origin: process.env.CLAUS_NETWORK_ORIGIN,
       rateSalt: process.env.CLAUS_NETWORK_RATE_SALT, operatorPorts: operatorConfig(), chainPorts: readonlyPorts(), intakePorts }) };
   })().catch(error => { loaded = null; throw error; });
   return loaded;
 }
 export default async function handler(req, res) {
   try {
-    const { app, store, intakePorts } = await application();
+    const { app, store, intakePorts, databaseBoundary } = await application();
     const url = requestUrl(req.url, process.env.CLAUS_NETWORK_ORIGIN);
     let response;
     if (url.pathname === '/health') {
+      const boundary = await databaseBoundary();
       const names=['review','chain','collaboration','wallets','vaults','portability'];
       const roles=['review','controller','executor','services','wallets','vaults'];
       const [,caps,health]=await Promise.all([store.read('network','authority'),store.readMany('network-capabilities',names),store.readMany('worker-health',roles)]);
@@ -41,7 +46,7 @@ export default async function handler(req, res) {
       const vaults=caps.get('vaults')?.value,vaultWorker=health.get('vaults')?.value,portability=caps.get('portability')?.value;
       const publicAccess = await app.access.discovery();
       const intakeState = await contractIntakeHealth(store, intakePorts);
-      response = Response.json({ service: 'Claus Network', status: 'ok', isolatedAnalysis:await isolatedHealth(),
+      response = Response.json({ service: 'Claus Network', status: 'ok', databaseBoundary:boundary, isolatedAnalysis:await isolatedHealth(),
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
         projectAccess: publicAccess.projectAccess,
