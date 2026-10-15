@@ -199,7 +199,7 @@ export async function publishOriginal(text:string,attributions:Attribution[],con
     const latest=await configuration();
     if(!latest.settings.enabled||!latest.policy.capabilities.xPublish||publicChannelBlocked(latest.policy,'publish_post'))throw new ConfirmedFailure('publication_disabled');
     if(decisionContext)assertFreshPublicDecision(decisionContext,latest.revision,await publicState());
-    const r=await xRequest('tweets','POST',{text,...(media?{media}:{})});
+    const r=await xRequest('tweets','POST',{text,...(media?{media}:{})},undefined,id);
     if(!/^\d{1,19}$/.test(r.data?.id??''))throw Error('x_post_response_missing');
     await actionProgress(id,{result:r});
     await journal('x_post','Published an original post',{postId:r.data.id,account:account.username});return r;
@@ -320,7 +320,7 @@ export async function publishReply(text:string,replyTo:string,attributions:Attri
     if(!latest.settings.enabled||!repliesAvailable(latest))throw new ConfirmedFailure('publication_disabled');
     if(blockedAccountReason(target,latest.settings.blockedXAccounts))throw new ConfirmedFailure(ownerAccountBlocked);
     if(decisionContext)assertFreshPublicDecision(decisionContext,latest.revision,facts!);
-    const r=await services.xRequest('tweets','POST',{text,reply:{in_reply_to_tweet_id:replyTo},...(media?{media}:{})});
+    const r=await services.xRequest('tweets','POST',{text,reply:{in_reply_to_tweet_id:replyTo},...(media?{media}:{})},undefined,id);
     if(!/^\d{1,19}$/.test(r.data?.id??''))throw Error('x_reply_response_missing');
     await services.actionProgress(id,{result:r});
     await services.journal('x_post','Published a conversation reply',{postId:r.data.id,replyTo,account:account.username});return r;

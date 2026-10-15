@@ -231,7 +231,7 @@ export async function executeTool(id:string,name:string,args:Record<string,any>,
     validatePost(args.text,args.attributions??[]);
     const account=await verifyX();
     return once(id,'x_post',args,async()=>{
-      const result=await xRequest('tweets','POST',{text:args.text});
+      const result=await xRequest('tweets','POST',{text:args.text},undefined,id);
       if(!/^\d{1,19}$/.test(result.data?.id??''))throw Error('x_post_response_missing');
       await actionProgress(id,{result});
       await journal('x_post','Published an original post',{postId:result.data?.id,account:account.username});

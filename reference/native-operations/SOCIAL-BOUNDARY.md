@@ -1,0 +1,13 @@
+# Fixed social sender boundary
+
+Native23 keeps the existing public-reading, composition, reply and image tools. It no longer receives the four X provider credentials. Its new credential only addresses the fixed social routes on Signer13. Those routes allow the existing public X reads, prepared image/GIF uploads and text/reply publication; they do not expose an arbitrary URL, account settings, deletion, direct messages or an OAuth signing endpoint.
+
+A publication must match the original Native action ID, text and reply target. The sender rereads owner policy and stores a body hash and original attempt in its own database before contacting X. Concurrent or repeated requests cannot create another send. A completed receipt is returned again; a definite rejection remains a rejection; an ambiguous provider/database response remains held for reconciliation. Native checks these receipts before using its existing bounded public-timeline reconciliation. Historical pending actions cannot be admitted as new sends through the new boundary.
+
+Media is passed by a stored asset reference. The fixed sender reads and verifies bounded image bytes itself, avoiding an extra multi-megabyte HTTP body through the gateway. Existing content review and recipient/context checks in Native remain required. This change does not claim that all social content decisions have been moved outside Native.
+
+The separate `claus_social_source` role reads only four projected views. It cannot read raw action/configuration tables, change those views, create schema objects or assume the old owner role. The sender journal is in the separate fixed service database; Native has no connection to it. The current Native project and release have no X provider key. Historical immutable deployment environments have not been rotated or erased and must not be promoted as a working replacement. This is not a claim that historical copies of credentials have been revoked.
+
+Recovery requires the original sender journal, the original Native action records, and `r32-source-views.sql` with its role grants. Preserve the admission timestamp in the private social configuration. An empty replacement journal, a changed action ID or an earlier admission timestamp is not recovery. R30 isolated restore remains historical; no production database replacement or cross-service atomic recovery is claimed.
+
+The release uses unchanged schedules and existing source scopes. It introduces no new mainnet action, review purchase, fee change, refill or operator-written social post. General server-source delegation remains incomplete because other privileged client and data boundaries still exist.

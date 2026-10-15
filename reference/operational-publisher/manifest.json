@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_Bug9NKYQ8JqByJ23eeQvhtFeTZ8a",
-  "source": "ccfa085289d5d18ca9e44b5c9a62f767c24e444ca4aee9a095d2eb1d9610cd0e",
+  "deployed": "dpl_6ifbNJwvopRSbTuJtF84JmQm48NX",
+  "source": "1157d583e4d2036cefde31e0e40ed474d41090ab1382944dbea0d1d184b6aa22",
   "files": {
-    "src/index.js": "a34fa90be2889b8f464d4399a18dd60ff3d1043ed99f1d56cb5d71eb7a28aa72",
+    "src/index.js": "90ff376f9d07b8e493a4c8917ade374a6180dddb044b1acc408d43f03508acd0",
     "src/publisher/host.js": "c59603df1592e5b418d6eb44bc4deab0d8028e6fbf9527df9c5d04fdc092197b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
     "src/publisher/policy.js": "1ea8a68136ce4615eddcf8623f4ca34d9fd8eddface64923642a12c814bbc9ce",
@@ -22,7 +22,12 @@
     "src/publisher/review-evidence.js": "f47fcbef7961850f30558dc8ec8a8089b00359d0f7dafdcc87cd1bf6ddd697b6",
     "src/publisher/review-prompts.json": "60bcd88764a331275f0e7925270c6bfa2f7dbdfec7506f76c69287fcf80150a4",
     "src/publisher/controls.js": "b899403662a96fda5b85c9376406f6a2c4c4553de4b72c6cc53eea44dff425ae",
-    "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2"
+    "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2",
+    "src/social/policy.js": "14a29a18e50609260a24908c22fa3c164252bf0004e47bf1be342d6ac904f624",
+    "src/social/provider.js": "e9d066afcf5806217a2156af1ab61e4c74261e7672ac73fa707df2101966b028",
+    "src/social/repository.js": "9dd5c1d3af5abe1b42d8a04c781c1db082d57d2074eb65d47b3b984bdef297fb",
+    "src/social/service.js": "abda81987c49b5ee2f00b7b9da98a3bf11b483939b7d23751d060671d86f6531",
+    "src/social/routes.js": "531fe2356cdd44d9c3951030555462a05aa664b56141e8a446826420e94c70e9"
   },
   "referenceSubset": true
 }
