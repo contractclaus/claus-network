@@ -44,6 +44,8 @@ import {createWalletRead} from '../adapters/wallet-read.mjs';
 import {createReleases} from '../src/releases/index.mjs';
 import {createVaults} from '../src/vaults/index.mjs';
 import {createVaultRead} from '../adapters/vault-read.mjs';
+import {createRuntimes} from '../src/runtimes/index.mjs';
+import {createComputeControl} from '../src/inference/control.mjs';
 import {createInference} from '../src/inference/index.mjs';
 import {createContractIntake} from '../src/contract-intake/index.mjs';
 import {createProjectArchives} from '../src/portability/index.mjs';
@@ -117,7 +119,8 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const portabilityAdmission=async reader=>requireThat((await reader.read('network-capabilities','portability'))?.value.enabled===true,'portability_not_enabled');
  const transfers=createProjectTransfers({store,identity,artifacts,archives,now,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,admitImport:portabilityAdmission,
   admit:async(projectId,reader)=>{await portabilityAdmission(reader);await collaborationAdmission(projectId,reader);},...operatorPorts});
- inference=createInference({store,identity,jobs,artifacts,now,provider:inferencePorts.provider,
+ const compute=createComputeControl({store,identity,now});
+ inference=createInference({store,identity,jobs,artifacts,now,profileEnabled:compute.active,provider:inferencePorts.provider,
   verifyQuote:inferencePorts.verifyQuote,verifyReceipt:inferencePorts.verifyReceipt,
   enabled:async reader=>inferencePorts.enabled===true&&(await reader.read('network-capabilities','inference'))?.value.enabled===true});
  intake=createContractIntake({store,identity,jobs,now,
@@ -140,7 +143,8 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const publicWork=async({after='',limit=20})=>{const url=new URL('https://claus-agent.vercel.app/public/network-work');url.searchParams.set('limit',String(limit));if(after)url.searchParams.set('after',after);const r=await fetch(url,{signal:AbortSignal.timeout(8000),redirect:'error'});requireThat(r.ok,'public_work_unavailable');const body=await r.text();requireThat(body.length<100000,'public_work_unavailable');const data=JSON.parse(body);requireThat(Array.isArray(data.items),'public_work_unavailable');return data;};
  const workPlanning=createWorkPlanning({store,identity,apps,collaboration,services,projects,visible:contentAdmin.visible,admit:access.collaboration,validateAction:(name,input,path)=>validate(ROUTES.find(r=>r.name===name).inputSchema,input,path),now});
  const webhooks=createWebhooks({store,identity,apps,admit:access.collaboration,now,deriveSecret:id=>createHmac('sha256',rateSalt).update('claus-webhook/v1:'+id).digest('hex'),deliver:deliverWebhook});
- const service=createService({webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const runtimes=createRuntimes({store,identity,workers,now,route:name=>ROUTES.find(r=>r.name===name),execute:(name,input,actor)=>service.executeAs(name,input,actor)});
+ const service=createService({runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   const at=now(),window=Math.floor(at/300000);
   try {
@@ -163,7 +167,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   }
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

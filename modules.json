@@ -322,6 +322,16 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "runtimes",
+      "path": "src/runtimes/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": [
+        "node:crypto"
+      ]
     }
   ],
   "planned": [

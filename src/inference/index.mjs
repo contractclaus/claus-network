@@ -1,7 +1,7 @@
-import { amount, contentHash, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
+import { amount, contentHash, copy, digest, integer, requireThat, shape, text, operatingExpiry, operatingWindowOpen } from '../shared/index.mjs';
 import { reserve, settleReservation } from '../billing/index.mjs';
 
-// Prepared domain module. Production has no enabled provider or worker.
+// Provider and funding admission are injected by the deployment, never callers.
 // Profiles and allowances are operator-owned records, not model output.
 export function validateInferenceProfile(p) {
   shape(p, ['id', 'version', 'enabled', 'providerId', 'accountId', 'model', 'providers',
@@ -10,7 +10,7 @@ export function validateInferenceProfile(p) {
   for (const key of ['id', 'version', 'providerId', 'accountId', 'model', 'asset', 'fundingAccount']) text(p[key]);
   requireThat(typeof p.enabled === 'boolean', 'invalid_inference_profile');
   contentHash(p.permissionHash); contentHash(p.dataPolicyHash);
-  integer(p.expiresAt, 1); integer(p.maxInputBytes, 1, 65536); integer(p.maxOutputTokens, 1, 16384);
+  operatingExpiry(p.expiresAt); integer(p.maxInputBytes, 1, 65536); integer(p.maxOutputTokens, 1, 16384);
   requireThat(amount(p.maximumPerRequest) > 0n, 'invalid_inference_profile');
   requireThat(Array.isArray(p.providers) && p.providers.length > 0 && p.providers.length <= 32 &&
     new Set(p.providers).size === p.providers.length, 'invalid_inference_profile');
@@ -33,7 +33,7 @@ function requestBody(body) {
 
 export function createInference({ store, identity, jobs, artifacts, provider,
   verifyQuote = async () => false, verifyReceipt = async () => false,
-  enabled = () => false, now = () => Date.now() }) {
+  enabled = () => false, profileEnabled = async () => true, now = () => Date.now() }) {
   async function owned(reader, projectId, id) {
     const row = await reader.read('inference-requests', text(id));
     requireThat(row?.value.projectId === projectId, 'not_found'); return row;
@@ -49,7 +49,7 @@ export function createInference({ store, identity, jobs, artifacts, provider,
     requireThat(await enabled(reader) === true, 'inference_disabled');
     await identity.authorize(actor, 'inference.submit', { projectId }, reader);
     const profile = validateInferenceProfile((await reader.read('inference-profiles', profileId))?.value);
-    requireThat(profile.id === profileId && profile.enabled && profile.expiresAt > now(), 'inference_profile_unavailable');
+    requireThat(profile.id === profileId && await profileEnabled(reader,profileId) && profile.enabled && operatingWindowOpen(profile.expiresAt,now()), 'inference_profile_unavailable');
     const grant = await reader.read('inference-allowances', allowanceId(projectId, profileId));
     requireThat(grant?.value.enabled === true && grant.value.expiresAt > now(), 'inference_allowance_unavailable');
     for (const key of ['limit', 'reserved', 'spent']) amount(grant.value[key]);
@@ -77,7 +77,7 @@ export function createInference({ store, identity, jobs, artifacts, provider,
     requireThat(q.providerId === profile.providerId && q.accountId === profile.accountId &&
       q.asset === profile.asset && q.requestHash === hash && q.profileHash === digest(profile) &&
       amount(q.maximum) > 0n && amount(q.maximum) <= amount(profile.maximumPerRequest) &&
-      q.expiresAt > now() && q.expiresAt <= profile.expiresAt, 'inference_quote_mismatch');
+      q.expiresAt > now() && (profile.expiresAt===null||q.expiresAt <= profile.expiresAt), 'inference_quote_mismatch');
   }
   async function networkOwner(reader, actor) {
     const credential = await identity.credential(actor, reader);
@@ -87,11 +87,24 @@ export function createInference({ store, identity, jobs, artifacts, provider,
       typeof principal?.address === 'string' && principal.address === authority?.ownerAddress, 'scope_denied');
   }
   const api = {
+    async discovery() {
+      return {enabled:await enabled(store)===true,profile:'claus-project-inference/1',authentication:'project-credential',
+        input:['text'],output:['text'],streaming:false,tools:false,images:false,structuredOutput:false,
+        accounting:'maximum-reserved-final-receipt-settled',access:'project-allowance',
+        profiles:'/v1/projects/{projectId}/inference/profiles',requests:'/v1/projects/{projectId}/inference/requests'};
+    },
+    async profiles(actor,projectId,{after='',limit=50}={}) {
+      await identity.authorize(actor,'inference.read',{projectId});integer(limit,1,100);
+      const rows=await store.list('inference-profiles',{after,limit}),items=[];
+      for(const row of rows)if(await store.read('inference-allowances',allowanceId(projectId,row.id)))items.push(await api.profile(actor,projectId,row.id));
+      return {items,nextCursor:rows.length===limit?rows.at(-1).id:null};
+    },
     async setProfile(actor, { profile, expectedRevision }) {
       const value = validateInferenceProfile(profile); integer(expectedRevision);
-      requireThat(value.expiresAt > now() && value.expiresAt <= now() + 30 * 86400000, 'invalid_profile_expiry');
+      requireThat(operatingWindowOpen(value.expiresAt,now()), 'invalid_profile_expiry');
       return store.transaction(async tx => {
         await networkOwner(tx, actor);
+        requireThat(!await tx.read('compute-controls',value.id),'compute_policy_managed');
         const old = await tx.read('inference-profiles', value.id);
         if (old) {
           const { enabled: beforeEnabled, ...before } = old.value;
@@ -109,9 +122,10 @@ export function createInference({ store, identity, jobs, artifacts, provider,
       requireThat(typeof active === 'boolean', 'invalid_inference_allowance');
       return store.transaction(async tx => {
         await networkOwner(tx, actor);
+        requireThat(!await tx.read('compute-controls',profileId),'compute_policy_managed');
         requireThat(await tx.read('projects', projectId), 'not_found');
         const profile = validateInferenceProfile((await tx.read('inference-profiles', profileId))?.value);
-        requireThat(expiresAt <= profile.expiresAt, 'invalid_profile_expiry');
+        requireThat((profile.expiresAt===null||expiresAt <= profile.expiresAt), 'invalid_profile_expiry');
         const key = allowanceId(projectId, profileId), old = await tx.read('inference-allowances', key);
         const reserved = old?.value.reserved ?? '0', spent = old?.value.spent ?? '0';
         requireThat(amount(limit) >= amount(reserved) + amount(spent), 'inference_allowance_below_exposure');
@@ -129,7 +143,7 @@ export function createInference({ store, identity, jobs, artifacts, provider,
       return { profileId, profileHash: digest(p), model: p.model, providers: p.providers,
         asset: p.asset, maximumPerRequest: p.maximumPerRequest, maxInputBytes: p.maxInputBytes,
         maxOutputTokens: p.maxOutputTokens, dataPolicyHash: p.dataPolicyHash, expiresAt: p.expiresAt,
-        enabled: await enabled(store) === true && p.enabled && p.expiresAt > now() && grant.value.enabled && grant.value.expiresAt > now(),
+        enabled: await enabled(store) === true && await profileEnabled(store,profileId) && p.enabled && operatingWindowOpen(p.expiresAt,now()) && grant.value.enabled && grant.value.expiresAt > now(),
         allowance: { ...grant.value, revision: grant.revision } };
     },
     async submit(actor, projectId, body) {
@@ -246,7 +260,7 @@ export function createInference({ store, identity, jobs, artifacts, provider,
             receipt.providerRequestId === providerId && providerId !== null &&
             receipt.asset === v.profile.asset && receipt.final === true &&
             amount(receipt.actual) <= amount(v.quote.maximum), 'inference_receipt_mismatch');
-          requireThat(await verifyReceipt(copy(receipt), copy(v)) === true, 'inference_receipt_unverified');
+          requireThat(await verifyReceipt(copy(receipt), {...copy(v),loadRequest:()=>artifacts.get(v.projectId,v.inputHash)}) === true, 'inference_receipt_unverified');
         }
         requireThat(['completed', 'failed', 'unknown', undefined].includes(result.work), 'invalid_inference_work');
         requireThat(result.work !== 'completed' || output || v.outputHash, 'inference_output_missing');

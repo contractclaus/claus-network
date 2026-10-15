@@ -1,6 +1,6 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
   workflow_revise:(a,i)=>workflows.revise(a,i.projectId,i.workflowId,i),
   webhook_create:(a,i)=>webhooks.create(a,i.projectId,i),
@@ -98,7 +98,7 @@ export function createService({webhooks,workPlanning,dependencies,projectInspect
   content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
   content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
 
-  capabilities:async()=>{const [base,domainState,workerState,arbitrationState]=await Promise.all([access.discovery(),domains.discovery(),workers.discovery(),arbitration.discovery()]);return {...base,collaboration:{jobBriefs:true,milestones:'separate-quoted-tasks',assistance:'public-opt-in',actionDescriptions:true,webhooks:'signed-public-task-events',sitePreview:'authenticated-source-bundle',siteRestore:'unchanged-app-schema',workProfiles:true,matching:'declared-skills-availability-asset-quotes',portfolio:'public-acceptance-receipts',privateTaskMessages:true,teamRoles:'revocable-existing-mandates',templates:['chat','jobs','game','service']},domains:domainState,workers:workerState,deals:{assets:['ETH','CLAUS'],defaultAsset:'ETH',assetSelection:'Use the asset parameter; read deal_terms for actual contract admission.',chains:[1,11155111].map(chainId=>({chainId,terms:'/v1/public/chains/'+chainId+'/deals',funding:'Read the pinned chain terms; route availability does not imply active deposits.'})),arbitration:arbitrationState},workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{discovery:{kinds:['project','app','service','agent','task'],taskProgress:'claus-task-progress/1',taskActivity:'public_app_activity'},taskReviews:{profile:'claus-task-review/1',criteria:'committed-before-claim',authority:'advisory_only',compensation:'separate-linked-payment-task',paymentAssets:['ETH','CLAUS']},taskPayments:{profile:'claus-task-payment/1',signing:'caller-owned',settlement:'escrow-credit'},enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}};},
+  capabilities:async()=>{const [base,domainState,workerState,arbitrationState,inferenceState,runtimeState]=await Promise.all([access.discovery(),domains.discovery(),workers.discovery(),arbitration.discovery(),inference.discovery(),runtimes.discovery()]);return {...base,runtimes:runtimeState,inference:inferenceState,collaboration:{jobBriefs:true,milestones:'separate-quoted-tasks',assistance:'public-opt-in',actionDescriptions:true,webhooks:'signed-public-task-events',sitePreview:'authenticated-source-bundle',siteRestore:'unchanged-app-schema',workProfiles:true,matching:'declared-skills-availability-asset-quotes',portfolio:'public-acceptance-receipts',privateTaskMessages:true,teamRoles:'revocable-existing-mandates',templates:['chat','jobs','game','service']},domains:domainState,workers:workerState,deals:{assets:['ETH','CLAUS'],defaultAsset:'ETH',assetSelection:'Use the asset parameter; read deal_terms for actual contract admission.',chains:[1,11155111].map(chainId=>({chainId,terms:'/v1/public/chains/'+chainId+'/deals',funding:'Read the pinned chain terms; route availability does not imply active deposits.'})),arbitration:arbitrationState},workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{discovery:{kinds:['project','app','service','agent','task'],taskProgress:'claus-task-progress/1',taskActivity:'public_app_activity'},taskReviews:{profile:'claus-task-review/1',criteria:'committed-before-claim',authority:'advisory_only',compensation:'separate-linked-payment-task',paymentAssets:['ETH','CLAUS']},taskPayments:{profile:'claus-task-payment/1',signing:'caller-owned',settlement:'escrow-credit'},enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}};},
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),
@@ -194,6 +194,16 @@ export function createService({webhooks,workPlanning,dependencies,projectInspect
   contract_binding_get:(actor,input)=>intake.binding(actor,input.projectId,input.bindingId),
   contract_binding_revoke:(actor,input)=>intake.revoke(actor,input.projectId,input.bindingId),
   contract_request_get:(actor,input)=>intake.request(actor,input.projectId,input.requestId),
+  runtime_set:(actor,{projectId,...input})=>runtimes.configure(actor,projectId,input),
+  runtime_checkpoint:(actor,input)=>runtimes.checkpoint(actor,input.projectId,input.runtimeId,input),
+  runtime_get:(actor,input)=>runtimes.get(actor,input.projectId,input.runtimeId),
+  runtime_list:(actor,input)=>runtimes.list(actor,input.projectId),
+  runtime_stop:(actor,input)=>runtimes.stop(actor,input.projectId,input.runtimeId,input),
+  compute_policy_set:(actor,input)=>compute.configure(actor,input),
+  compute_policy:(actor,input)=>compute.policy(actor,input.profileId),
+  compute_grants:(actor,input)=>compute.grants(actor,input.profileId,input),
+  compute_grant_set:(actor,{projectId,...input})=>compute.grant(actor,projectId,input),
+  inference_profiles:(actor,input)=>inference.profiles(actor,input.projectId,input),
   inference_profile_set:(actor,input)=>inference.setProfile(actor,input),
   inference_allowance_set:(actor,input)=>inference.setAllowance(actor,input.projectId,input),
   inference_profile:(actor,input)=>inference.profile(actor,input.projectId,input.profileId),
@@ -223,6 +233,13 @@ export function createService({webhooks,workPlanning,dependencies,projectInspect
  };
  return {
   routes:ROUTES,
+  // Internal runtime port. HTTP/MCP accept only bearer tokens, never actor IDs.
+  async executeAs(name,input,actor){
+   const route=ROUTES.find(r=>r.name===name);
+   if(!route||!operations[name])throw Object.assign(Error('not_found'),{code:'not_found'});
+   validate(route.inputSchema,input);if(!route.public)await identity.credential(actor);
+   return operations[name](route.public?null:actor,input,{});
+  },
   async execute(name,input,rawToken,context={}){
    const route=ROUTES.find(r=>r.name===name);
    if(!route||!operations[name])throw Object.assign(Error('not_found'),{code:'not_found'});
