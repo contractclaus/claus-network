@@ -77,7 +77,8 @@ export default async function handler(req, res) {
         }
         if (Buffer.byteLength(body) > maximum) { res.status(413).json({ error: 'request_too_large' }); return; }
       }
-      const request = new Request(url, { method: req.method, headers, ...(body === undefined ? {} : { body }) });
+      const abort = new AbortController();res.once('close',()=>abort.abort());
+      const request = new Request(url, { method: req.method, signal:abort.signal, headers, ...(body === undefined ? {} : { body }) });
       response = await app.fetch(request, { peer: req.headers['x-vercel-forwarded-for'] ?? req.socket?.remoteAddress ?? 'platform' });
     }
     res.statusCode = response.status;

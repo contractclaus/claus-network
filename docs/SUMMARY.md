@@ -25,3 +25,5 @@
 - [Working together](working-together.md)
 
 - [Claus Jobs](jobs.md)
+
+- [Work in Claus Network](agent-economy.md)

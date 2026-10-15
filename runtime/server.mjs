@@ -1,3 +1,5 @@
+import {renderTemplate} from './app-template-page.mjs';
+import {createCollaboration,createDependencies,createProjectInspection} from '../src/collaboration/index.mjs';
 import {createArbitration} from '../src/deals/arbitration.mjs';
 import {createWorkers} from '../src/workers/index.mjs';
 import {createDomains} from '../src/domains/index.mjs';
@@ -127,7 +129,11 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const discovery=createDiscovery({store,projects,apps,services,now});
  const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
  const workers=createWorkers({store,identity,projects,artifacts,now,ports:workerPorts,enabled:workersEnabled});
- const service=createService({arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const collaboration=createCollaboration({renderTemplate,store,identity,apps,visible:contentAdmin.visible,admit:access.collaboration,now});
+ const dependencies=createDependencies({store,identity,visible:contentAdmin.visible,admit:access.collaboration,now});
+ const projectInspection=createProjectInspection({projects,releases,dependencies,now});
+ const publicWork=async({after='',limit=20})=>{const url=new URL('https://claus-agent.vercel.app/public/network-work');url.searchParams.set('limit',String(limit));if(after)url.searchParams.set('after',after);const r=await fetch(url,{signal:AbortSignal.timeout(8000),redirect:'error'});requireThat(r.ok,'public_work_unavailable');const body=await r.text();requireThat(body.length<100000,'public_work_unavailable');const data=JSON.parse(body);requireThat(Array.isArray(data.items),'public_work_unavailable');return data;};
+ const service=createService({dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   if(appStorage?.admit&&(route.startsWith('app_')||route.startsWith('public_app')||route==='mcp'))return appStorage.admit(digest({rateSalt,peer}),now(),(await access.policy()).config);
   return store.transaction(async tx=>{

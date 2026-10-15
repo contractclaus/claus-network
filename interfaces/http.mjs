@@ -88,7 +88,9 @@ export function createHttp({service,origin='https://claus.si',admit=async()=>{}}
    if(request.method==='GET'){
     for(const [name,value] of url.searchParams){
      if(Object.hasOwn(input,name))throw Object.assign(Error('duplicate_field'),{code:'invalid_input'});
-     input[name]=matched.inputSchema.properties[name]?.type==='integer'?Number(value):value;
+     const type=matched.inputSchema.properties[name]?.type;
+     if(type==='array'){try{input[name]=JSON.parse(value);}catch{throw Object.assign(Error('invalid_input'),{code:'invalid_input'});}}
+     else input[name]=type==='integer'?Number(value):value;
     }
    }else{
     const parsed=await body(request,['snapshot_create','content_admin_correct'].includes(matched.name)?SITE_LIMITS.requestBytes:300000);
@@ -100,7 +102,7 @@ export function createHttp({service,origin='https://claus.si',admit=async()=>{}}
    }
    const auth=request.headers.get('authorization');
    const token=auth?.match(/^Bearer (cln_[A-Za-z0-9_-]{43})$/)?.[1];
-   return json(await service.execute(matched.name,input,token),200,cors);
+   return json(await service.execute(matched.name,input,token,{signal:request.signal}),200,cors);
   }catch(error){const status=errorStatus(error);return json(errorBody(error),status,{...cors,...(status===401?{'www-authenticate':'Bearer realm="Claus Network"'}:status===429?{'retry-after':'60'}:{})});}
  };
 }
