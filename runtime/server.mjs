@@ -62,7 +62,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
   writesEnabled:async reader=>!(await access.policy(reader)).config.paused,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
- access=createAccess({store,identity,now,reviewAdmission:reader=>reviewSystem.flow.admission.active(reader),
+ access=createAccess({store,identity,now,inferenceDiscovery:()=>inference.discovery(),reviewAdmission:reader=>reviewSystem.flow.admission.active(reader),
   managedDiscovery:()=>Promise.all([11155111,1].map(async chainId=>{
    let admission='not_enabled';
    try { await deployments.admission.forChain(chainId,'claus-managed-v1').admitted();admission='public_managed'; }

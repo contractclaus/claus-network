@@ -52,7 +52,7 @@ export default async function handler(req, res) {
         vaultExecution: vaults?.enabled === true ? vaultWorker?.observedAt > Date.now() - 300000 ? 'restricted_pilot' : 'worker_unavailable' : 'not_enabled',
         portabilityExecution: portability?.enabled === true ? publicAccess.collaboration.admission : 'not_enabled',
         applications: { enabled: app.apps.enabled, profile: 'managed-records-and-tasks-v1', limits: app.apps.limits },
-        inferenceExecution: 'not_enabled',
+        inferenceExecution: publicAccess.publicInference,
         contractIntakeExecution: intakeState,
         mainnetContractIntakeExecution: await contractIntakeHealth(store, intakePorts, Date.now(), 1),
         mainnetExecution: publicAccess.mainnet === 'public_readonly' ?
