@@ -142,19 +142,25 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const webhooks=createWebhooks({store,identity,apps,admit:access.collaboration,now,deriveSecret:id=>createHmac('sha256',rateSalt).update('claus-webhook/v1:'+id).digest('hex'),deliver:deliverWebhook});
  const service=createService({webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
-  if(appStorage?.admit&&(route.startsWith('app_')||route.startsWith('public_app')||route==='mcp'))return appStorage.admit(digest({rateSalt,peer}),now(),(await access.policy()).config);
-  return store.transaction(async tx=>{
-  const window=Math.floor(now()/300000);
-  const group=route.startsWith('auth_')?'auth':'api';
-  const limits=(await access.policy(tx)).config;
-  for(const [subject,maximum] of [[peer,group==='auth'?limits.authRequestsPerPeer:limits.requestsPerPeer],['global',group==='auth'?limits.authRequestsGlobal:limits.requestsGlobal]]){
-   const key=digest({salt:rateSalt,subject,group});
-   const old=await tx.read('rate-limits',key);
-   const count=old?.value.window===window?old.value.count:0;
-   requireThat(count<maximum,'rate_limited');
-   await tx.write('rate-limits',key,{window,count:count+1,expiresAt:(window+2)*300000},old?.revision??0);
+  const at=now(),window=Math.floor(at/300000);
+  try {
+   const limits=(await access.policy()).config;
+   if(appStorage?.admit&&(route.startsWith('app_')||route.startsWith('public_app')||route==='mcp'))return await appStorage.admit(digest({rateSalt,peer}),at,limits);
+   const group=route.startsWith('auth_')?'auth':'api';
+   const entries=[['global',group==='auth'?limits.authRequestsGlobal:limits.requestsGlobal],[peer,group==='auth'?limits.authRequestsPerPeer:limits.requestsPerPeer]]
+    .map(([subject,maximum])=>({id:digest({salt:rateSalt,subject,group}),maximum}));
+   if(store.consumeRateLimits)return await store.consumeRateLimits({entries,window});
+   return await store.transaction(async tx=>{
+    for(const {id,maximum} of entries){
+     const old=await tx.read('rate-limits',id),count=old?.value.window===window?old.value.count:0;
+     requireThat(count<maximum,'rate_limited');
+     await tx.write('rate-limits',id,{window,count:count+1,expiresAt:(window+2)*300000},old?.revision??0);
+    }
+   });
+  } catch(error) {
+   if(error.code==='rate_limited')error.retryAfterSeconds=Math.max(1,Math.ceil(((window+1)*300000-now())/1000));
+   throw error;
   }
- });
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
  return {webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};

@@ -29,21 +29,14 @@ export default async function handler(req, res) {
     const url = requestUrl(req.url, process.env.CLAUS_NETWORK_ORIGIN);
     let response;
     if (url.pathname === '/health') {
-      await store.read('network', 'authority');
-      const review = (await store.read('network-capabilities', 'review'))?.value;
-      const worker = (await store.read('worker-health', 'review'))?.value;
-      const enabled = review?.enabled === true;
-      const recent = worker?.observedAt > Date.now() - 300000;
-      const chain = (await store.read('network-capabilities', 'chain'))?.value;
-      const controller = (await store.read('worker-health', 'controller'))?.value;
-      const executor = (await store.read('worker-health', 'executor'))?.value;
-      const collaboration = (await store.read('network-capabilities', 'collaboration'))?.value;
-      const wallets = (await store.read('network-capabilities', 'wallets'))?.value;
-      const serviceWorker = (await store.read('worker-health', 'services'))?.value;
-      const walletWorker = (await store.read('worker-health', 'wallets'))?.value;
-      const vaults = (await store.read('network-capabilities', 'vaults'))?.value;
-      const vaultWorker = (await store.read('worker-health', 'vaults'))?.value;
-      const portability = (await store.read('network-capabilities', 'portability'))?.value;
+      const names=['review','chain','collaboration','wallets','vaults','portability'];
+      const roles=['review','controller','executor','services','wallets','vaults'];
+      const [,caps,health]=await Promise.all([store.read('network','authority'),store.readMany('network-capabilities',names),store.readMany('worker-health',roles)]);
+      const review=caps.get('review')?.value,worker=health.get('review')?.value;
+      const enabled=review?.enabled===true,recent=worker?.observedAt>Date.now()-300000;
+      const chain=caps.get('chain')?.value,controller=health.get('controller')?.value,executor=health.get('executor')?.value;
+      const collaboration=caps.get('collaboration')?.value,wallets=caps.get('wallets')?.value,serviceWorker=health.get('services')?.value,walletWorker=health.get('wallets')?.value;
+      const vaults=caps.get('vaults')?.value,vaultWorker=health.get('vaults')?.value,portability=caps.get('portability')?.value;
       const publicAccess = await app.access.discovery();
       const intakeState = await contractIntakeHealth(store, intakePorts);
       response = Response.json({ service: 'Claus Network', status: 'ok',
