@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_Asd5qSeVuFhb5QHFWsMUJK3kiFVg",
-  "source": "11149d396204b96493fff1620f6b8a43e92322038e591e09c9ae24a9f7c51216",
+  "deployed": "dpl_ASEQY3cxKtHXUJmbt2BLjU4GHoH2",
+  "source": "9c5dba4e572821dc23b4d71b6450925d5f710ed846bc132c442608c27b89378b",
   "files": {
     "src/operations/policy.ts": "dd8300f17f16651b2ea135f43a81056a9f12f49f59e755b1db102b25005cddcd",
     "src/operations/host.ts": "c5878d7beefa9f566cf155f376dfe48beffe3aea850a8c7126d985107a284749",
@@ -17,11 +17,11 @@
     "src/work-wallet.ts": "70923fdd77ba7579919cd26382a48327d50a4ec0589857b295ac00cdc295332e",
     "src/work-wallet-store.ts": "745fff5072863cd677c0ffbfd3a220763f076d415d3f39b4ad4db59409a24547",
     "src/custody-client.ts": "ac1c0393c440e71534d459fee53837e6191cd347cb9d9f49a08545f28e4ba8fa",
-    "src/network-access.ts": "dda6489b433acaabebcbe6d2b178c58325c55eb515265758fd6944ea94aef42c",
+    "src/network-access.ts": "832c849c93ea2c40dd736c7807e30b800afd6aba5bc30c04de593723bb81e538",
     "src/context.ts": "91d6024655167a1a08253236888c4b7ed50b112bab620d7c6068f92491699c98",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "5bf27cd9d764cd3d175dd5c8fa74afe5afdbe1cd504ad8a0d06c7a9d86eb44d7",
-    "src/network-operations.ts": "a28daa6c75681bc036df5cd467fdef33aef3c5cbea7c77cc1665fd1427c6f54d",
+    "src/network-operations.ts": "84b5ee99c4e97b9b410410a2a47741737b0e1e9582ee5a7fcf66457c6713304d",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "146cfd27faf10887b536679f1c6ec71346e4d6d4d3ac2bbfa5911ba089c0924b",
     "src/tool-visibility.ts": "5fa21e6e69223d9cb60ef6076818ad53d24fa8da86cf17642205d5d001d7e9c7",
@@ -32,6 +32,8 @@
     "src/isolated/network.json": "19f3e4caff5b0d27447b646ab762a907ed8e2d9237bef24772e5fef50e98b726",
     "src/isolated/runner.d.mts": "d56c8b05a387db7c04404a70f3b1c58775f8febff78d667edbba9f0f135f166b",
     "src/isolated/runner.mjs": "41486003ce1f37812325138e0e7633ea25cab4240e6bd4df7a13c3d5fed81b98",
-    "src/network-products.ts": "dcb85e4593f5282e36ac2f4aa2a808fc23ede38adaef9beb5deaf318ab1b96e3"
+    "src/network-products.ts": "dcb85e4593f5282e36ac2f4aa2a808fc23ede38adaef9beb5deaf318ab1b96e3",
+    "src/network-routes.ts": "3e2b6717238ffc9c3b3fcacc1a1eeef62bba3b840f1fa443dc37805e07cd76d7",
+    "src/operational-capabilities.ts": "8dafa411bb6a461c6625d783d0de2994705e2628aa6c48f395ec97b0e86ccb8a"
   }
 }

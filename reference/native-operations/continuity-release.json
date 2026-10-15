@@ -1,0 +1,24 @@
+{
+  "profile": "data-only-analysis/1",
+  "native": "dpl_ASEQY3cxKtHXUJmbt2BLjU4GHoH2",
+  "api": "dpl_7Pur8HJa6dfDsANfdABDFm3D1ykR",
+  "sourceFiles": {
+    "native": [
+      "src/network-access.ts",
+      "src/network-operations.ts",
+      "src/network-routes.ts",
+      "src/operational-capabilities.ts"
+    ],
+    "api": [
+      "interfaces/contract.mjs",
+      "package-lock.json",
+      "package.json",
+      "src/apps/index.mjs",
+      "src/apps/schema-evolution.mjs",
+      "src/runtimes/action-broker.mjs",
+      "src/runtimes/index.mjs"
+    ]
+  },
+  "editableFile": "src/isolated/network.json",
+  "arbitraryServerSource": false
+}

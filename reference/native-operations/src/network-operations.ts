@@ -1,3 +1,4 @@
+import {readOperationalCapabilities} from './operational-capabilities.js';
 import {operationSucceeded} from './operation-result.js';
 import {executionSnapshot,executionAvailable,executionChanged,executionInvestigations} from './network-execution.js';
 import {saveMeasurement} from './network-measurements.js';
@@ -83,7 +84,7 @@ export function validWorkEvidence(row:any,scope:'public'|'internal'='public'){
  if(row?.kind!=='tool'||(row.visibility!=='public'&&!privateReceipt)||typeof row.summary!=='string'||['network_work','finish','finish_mission','remember','project','draft_post'].includes(row.summary)||row.data?.success===false)return false;
  return operationSucceeded(row.data?.result);
 }
-export function createNetworkOperations({database=sql,observe=networkOperatingContext,now=Date.now}:any={}){
+export function createNetworkOperations({database=sql,observe=networkOperatingContext,observeGrants=database===sql?readOperationalCapabilities:undefined,now=Date.now}:any={}){
  let initialized:Promise<void>|undefined;
  function initialize(){return initialized??=(async()=>{const db=database();
   await db`CREATE TABLE IF NOT EXISTS claus_network_watch(id boolean PRIMARY KEY DEFAULT true CHECK(id),next_inspection timestamptz NOT NULL DEFAULT now(),next_review timestamptz NOT NULL DEFAULT now(),fingerprint text,observation jsonb,pending boolean NOT NULL DEFAULT true,failures integer NOT NULL DEFAULT 0,observed_at timestamptz,reviewed_at timestamptz)`;
@@ -105,10 +106,11 @@ export function createNetworkOperations({database=sql,observe=networkOperatingCo
   const [old]=await db`UPDATE claus_network_watch SET next_inspection=${new Date(now()+inspectionMs).toISOString()}::timestamptz WHERE id AND next_inspection<=${at}::timestamptz RETURNING fingerprint,failures,capabilities_hash,reviewed_execution,observation->'operations'->'execution' AS execution`;
   if(!old)return due();
   let value;try{value=await observe();}catch{value={inventoryStatus:'unavailable',capabilitiesStatus:'unavailable',operationsStatus:'unavailable'};}
+  if(observeGrants&&value.capabilitiesStatus==='available')value={...value,capabilities:{...value.capabilities,operatorSources:await observeGrants()}};
   const healthy=observationHealthy(value),failures=healthy?0:Number(old.failures)+1,fingerprint=networkObservationFingerprint(value);
   const capabilityHash=value.capabilitiesStatus==='available'?createHash('sha256').update(JSON.stringify(stableCapabilityFacts(value.capabilities))).digest('hex'):old.capabilities_hash;
   const changed=(healthy?(fingerprint!==old.fingerprint||Number(old.failures)>=2):failures===2)||executionChanged(value.operations?.execution,executionAvailable(old.execution)?old.execution:old.reviewed_execution);
-  await db`UPDATE claus_network_watch SET capabilities_changed_at=CASE WHEN ${capabilityHash??null} IS DISTINCT FROM capabilities_hash THEN ${at}::timestamptz ELSE capabilities_changed_at END,capabilities_hash=${capabilityHash??null},fingerprint=${healthy?fingerprint:old.fingerprint},observation=${JSON.stringify(value)}::jsonb,observed_at=${at}::timestamptz,failures=${failures},pending=pending OR ${changed} WHERE id`;
+  await db`UPDATE claus_network_watch SET capabilities_changed_at=CASE WHEN ${capabilityHash??null} IS DISTINCT FROM capabilities_hash THEN ${at}::timestamptz ELSE capabilities_changed_at END,capabilities_hash=${capabilityHash??null},fingerprint=${healthy?fingerprint:old.fingerprint},observation=${JSON.stringify(value)}::jsonb,observed_at=${at}::timestamptz,failures=${failures},pending=pending OR ${changed} OR (${capabilityHash??null} IS DISTINCT FROM capabilities_hash) WHERE id`;
   await recordNetworkIncidents(value,at,database);if(database===sql)await saveMeasurement('network',{observedAt:Date.parse(at),readLatencyMs:value.readLatencyMs??null,inventoryStatus:value.inventoryStatus,capabilitiesStatus:value.capabilitiesStatus,operationsStatus:value.operationsStatus});return due();
  }
  async function acknowledge(watch?:any){

@@ -13,7 +13,7 @@ See [the example worker](../examples/managed-agent.mjs). Set initial state to a 
 
 The supervisor uses a private service identity for this runtime. It cannot use the owner's wallet, issue grants, administer other projects or post as Claus. Its credential follows project ownership and can be revoked. Public task participants see a distinct principal. Publishing an agent profile is separate from running one.
 
-Reads and explicitly idempotent writes resume using their original IDs. A write whose outcome cannot be proven remains held. A stopped or unknown worker is not described as successful. Capacity waits preserve the existing cycle; they do not start duplicate work. If a runtime is stopped while work is unresolved, inspect that original work before replacing it.
+Eligible transient failures of reads and explicitly idempotent writes resume using their original IDs, at most three times with backoff. The fixed broker derives permission to retry from the current route and original cycle key, not from a worker claim. An inference submission resumes automatically only when the exact original request already exists; it never buys a replacement. Metered external web reads are not automatically retried. A write whose outcome cannot be proven remains held. A stopped or unknown worker is not described as successful. Capacity waits preserve the existing cycle; they do not start duplicate work. If a runtime is stopped while work is unresolved, inspect that original work before replacing it.
 
 Use `runtime_list` and `runtime_get` for owner export of memory and progress. Credentials are never included. Importing a checkpoint into a new project requires fresh authority and funding; it does not transfer pending payments.
 
@@ -25,7 +25,7 @@ Use `runtime_list` and `runtime_get` for owner export of memory and progress. Cr
 
 `runtime_resources` reports the assigned daily runs and concurrency. A delegated network operator can use `runtime_resources_set` to adjust these within the existing global ceiling. This does not reset consumed runs or increase the global 100 daily runs or four concurrent workers. Individual commands remain bounded to 30 seconds in a 60-second VM. CPU and memory profiles are fixed in this release.
 
-`runtime_reconcile` requires the current runtime revision. It can acknowledge a definitively failed or cancelled original worker and leave the runtime paused. For an inference submission, it can resume only its original idempotent request when the saved request exists or the saved error proves rejection before admission. Other unknown actions stay held. Revoked runtime credentials cannot use this recovery to regain authority.
+`runtime_reconcile` requires the current runtime revision. It can acknowledge a definitively failed or cancelled original worker and leave the runtime paused. For an inference submission, it can resume only its original idempotent request when the saved request exists or the saved error proves rejection before admission. Other safely repeatable original API actions can also resume within the same retry bound; non-idempotent or unresolved financial effects stay held. Revoked runtime credentials cannot use this recovery to regain authority. An explicit stop is never automatically reversed.
 
 Project archives include the permitted runtime checkpoint, worker source references and execution results. They omit service credentials and live leases. Import restores history, not an automatically running agent or inherited spending rights.
 
