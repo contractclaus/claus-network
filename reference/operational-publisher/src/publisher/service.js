@@ -44,6 +44,21 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
   // remains held, even after a process crash. Never repeat a lost deployment.
   const result=await action();await ledger.complete(key,result);return result;
  }
+ async function reconcileDeployment(r,required=false){
+  const key='deploy:'+r.id,entry=await ledger.get(key);
+  if(!entry){if(required)fail('publication_not_proven');return host.reconcile(r.scope,r.id,r.source_hash,r.deployment?.id);}
+  if(entry.input_hash!==hash({scope:r.scope,base:r.base_deployment,sourceHash:r.source_hash})||!['reserved','completed'].includes(entry.status))fail('release_binding');
+  const known=entry.status==='completed'?entry.result?.id:r.deployment?.id;
+  if(entry.status==='completed'&&!known)fail('publication_not_proven');
+  const actual=await host.reconcile(r.scope,r.id,r.source_hash,known);
+  if(!actual){if(required)fail('outcome_unknown');return null;}
+  if(known&&actual.id!==known)fail('release_binding');
+  if(r.deployment?.id&&r.deployment.id!==actual.id)fail('release_binding');
+  // Only resolve the original reserved provider call. This path never creates
+  // another deployment, even if the response from that call was lost.
+  if(entry.status==='reserved')await ledger.complete(key,actual);
+  return actual;
+ }
  return {async call(operation,scope,args){
   if(!Array.isArray(args))fail('input_invalid');target(scope);
   const arities={project:0,baseline:2,read:2,deployment:1,reconcile:3,verify:3,deploy:5,promote:2,restored:1,activate:1,finishRollback:1,adopt:1};
@@ -53,19 +68,29 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
   if(operation==='activate'||operation==='finishRollback'){
    const r=await release(scope,args[0]),old=await control().activated('operation',r.id,operation==='activate'?'activate':'rollback');
    if(old&&old.deployment===c.deployment&&old.revision===c.revision)return old;
-   const rollback=operation==='finishRollback',journal=await ledger.get((rollback&&r.promote_started?'promote:':'deploy:')+r.id);
-   if(!journal||journal.status!=='completed')fail('publication_not_proven');
+   const rollback=operation==='finishRollback';
    let manifest=r.manifest,id=r.deployment?.id;
    if(rollback){
     if(!['rollback_pending','rolling_back'].includes(r.state)||!r.deployment?.id)fail('rollback_changed');
+    const journal=await ledger.get((r.promote_started?'promote:':'deploy:')+r.id);
+    if(!journal||!['reserved','completed'].includes(journal.status))fail('publication_not_proven');
     if(r.promote_started&&journal.input_hash!==hash({scope,base:r.base_deployment,target:r.deployment.id}))fail('release_binding');
     if(!r.promote_started&&journal.input_hash!==hash({scope,base:r.base_deployment,sourceHash:r.source_hash}))fail('release_binding');
     id=r.base_deployment;manifest=r.manifest.map(f=>{const old=r.files.find(x=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
-   }else{await reviewed(r,c);if(r.state!=='verified'||!r.promote_started||!(await ledger.get('promote:'+r.id))?.result?.promoted)fail('publication_not_proven');}
+   }else{
+    await reviewed(r,c);if(r.state!=='verified'||!r.promote_started)fail('publication_not_proven');
+    const deployed=await reconcileDeployment(r,true);if(deployed.id!==id)fail('release_binding');
+    const key='promote:'+r.id,journal=await ledger.get(key);
+    if(!journal||journal.input_hash!==hash({scope,base:r.base_deployment,target:id})||!['reserved','completed'].includes(journal.status))fail('publication_not_proven');
+    if((await host.project(scope)).targets?.production?.id!==id)fail('production_changed');
+    if(journal.status==='completed'&&(!journal.result?.promoted||journal.result.id!==id))fail('publication_not_proven');
+    if(journal.status==='reserved')await ledger.complete(key,{promoted:true,id});
+   }
    const actual=await host.api('/v13/deployments/'+deploymentId(id),{},scope);if(actual.projectId!==target(scope).project)fail('deployment_binding');
    const proof=await host.verify(scope,{id,url:'https://'+actual.url},manifest,true);
    const schedules=p=>(p??[]).map(({path,schedule})=>({path,schedule})).sort((a,b)=>a.path.localeCompare(b.path));
-   if(!equal(schedules((await host.project(scope)).crons?.definitions),schedules(c.crons)))fail('schedule_changed');
+   const live=await host.project(scope);if(live.targets?.production?.id!==id)fail('production_changed');
+   if(!equal(schedules(live.crons?.definitions),schedules(c.crons)))fail('schedule_changed');
    return rollback?control().rollbackOperation(c,r,manifest,{passed:true,rollback:{completedAt:new Date().toISOString(),verification:proof}}):control().activateOperation(c,r,{passed:true,sourceHash:r.source_hash,reviewEffect:r.review_effect,production:proof,verifiedBy:'fixed-publisher'});
   }
   if(operation==='project')return projectView(await host.project(scope));
@@ -73,7 +98,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
   if(operation==='read'){const [id,file]=args,b=await bound(scope,id);if(!target(scope).paths.some(p=>p.test(file?.path))||!b.manifest.some(f=>equal(f,file)))fail('file_denied');return host.read(scope,id,file);}
   if(operation==='deployment'){const [id]=args;await bound(scope,id);return deploymentView(await host.api('/v13/deployments/'+id,{},scope));}
   if(operation==='restored'){await bound(scope,args[0]);return host.restored(scope,args[0]);}
-  if(operation==='reconcile'){const [id,sourceHash,known]=args,r=await release(scope,id);if(sourceHash!==r.source_hash||known&&known!==r.deployment?.id)fail('release_binding');return host.reconcile(scope,r.id,r.source_hash,known??undefined);}
+  if(operation==='reconcile'){const [id,sourceHash,known]=args,r=await release(scope,id);if(sourceHash!==r.source_hash||known&&known!==r.deployment?.id)fail('release_binding');return reconcileDeployment(r);}
   if(operation==='verify'){const [d,manifest,production]=args,b=await bound(scope,d?.id);if(typeof production!=='boolean'||!equal(manifest,b.manifest))fail('manifest_binding');const actual=await host.api('/v13/deployments/'+d.id,{},scope);if(actual.projectId!==target(scope).project||d.url!=='https://'+actual.url)fail('deployment_binding');if(production&&(await host.project(scope)).targets?.production?.id!==d.id)fail('production_changed');return host.verify(scope,{id:d.id,url:'https://'+actual.url},b.manifest,production);}
   if(operation==='deploy'){
    const [base,manifest,files,id,sourceHash]=args,r=await release(scope,id);await reviewed(r,c);
@@ -87,7 +112,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
    const rollback=base===r.deployment?.id&&d.id===r.base_deployment;
    const enabled=await repository.settings();if(!c.enabled||!enabled.enabled)fail('disabled');
    if(rollback){if(r.state!=='rolling_back'||c.deployment!==base||c.revision!==r.base_revision+1)fail('rollback_changed');}
-   else{await reviewed(r,c);if(!r.promote_started||r.deployment?.id!==d.id||!['deploying','verified'].includes(r.state))fail('promotion_unbound');}
+   else{await reviewed(r,c);if(!r.promote_started||r.deployment?.id!==d.id||!['deploying','verified'].includes(r.state))fail('promotion_unbound');const original=await reconcileDeployment(r,true);if(original.id!==d.id)fail('promotion_unbound');}
    const b=await bound(scope,d.id),actual=await host.api('/v13/deployments/'+d.id,{},scope);if(actual.projectId!==target(scope).project)fail('deployment_binding');
    await host.verify(scope,{id:d.id,url:'https://'+actual.url},b.manifest);
    const crons=p=>(p??[]).map(({path,schedule})=>({path,schedule})).sort((a,b)=>a.path.localeCompare(b.path));

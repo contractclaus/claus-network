@@ -5,3 +5,5 @@ This directory is a reference source subset, not a standalone service distributi
 The independent payer now binds review requests and complete verdicts; see [review evidence](REVIEW-EVIDENCE-BOUNDARY.md). Native-written review copies cannot grant publishing authority.
 
 [Publication authority](PUBLICATION-CONTROL-BOUNDARY.md) describes fixed activation, immutable source and protected runner pins.
+
+[Publication recovery](PUBLICATION-RECOVERY.md) documents original-receipt recovery and current production checks.

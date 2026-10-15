@@ -23,3 +23,5 @@ See [operating isolation](OPERATING-ISOLATION.md) for the work planner, atomic r
 [Operating resources](OPERATING-RESOURCES.md) distinguishes private payer cash, provider credit, unresolved cost and the finite request allowance without authorizing transfers.
 
 [Publication authority](PUBLICATION-CONTROL-BOUNDARY.md) describes fixed activation, immutable source and protected runner pins.
+
+[Publication recovery](PUBLICATION-RECOVERY.md) documents original-receipt recovery and current production checks.

@@ -206,6 +206,7 @@ export class BuilderStore {
   return (await q.query('INSERT INTO claus_build_effects(id,project_id,revision,kind,input,amount) VALUES($1,$2,$3,$4,$5::jsonb,$6) RETURNING *',[effectId,id,p.revision,kind,JSON.stringify(input),amount])).rows[0];
  });}
  async effectState(id:string,owner:string,status:string,output?:unknown,progress?:unknown){return this.db.transaction(async q=>{
+  if(status==='running')await q.query('SELECT pg_advisory_xact_lock(6041010)');
   const e=(await q.query('SELECT * FROM claus_build_effects WHERE id=$1',[id])).rows[0];if(!e)throw Error('builder_effect_missing');const p=await this.owned(q,e.project_id,owner);
   if(status==='running'&&e.status==='reserved')await this.coordination.assertCurrent(q);
   if(['completed','failed'].includes(e.status)&&status!==e.status)throw Error('builder_effect_already_final');
