@@ -10,4 +10,8 @@ Operational documentation reviews include a timestamped, allowlisted read of the
 
 Long knowledge records are retrieved by topic when needed. Current owner rules remain in every operating prompt. Inbox compaction retains complete admitted conversations and their freshness bindings, leaving other messages pending. Operational tools are exposed in the normal model loop and excluded from private Club execution.
 
-This release does not grant general wallet signing, token-core upgrades, unbounded spending or unrestricted server access. Native hook selection and the full operational handover remain separate work.
+This release does not grant general wallet signing, token-core upgrades, unbounded spending or unrestricted server access. A separate fixed-purpose trade-program lane supports exact independent review and bounded installation through the mandatory treasury adapter. Its code is published in ../trade-programs. No new program is implied by installing these tools. Full operational handover remains incomplete.
+
+Runtime knowledge now includes a dated view of the actual model schemas, local execution gates and per-scope publisher controls. Missing observations remain unknown; an exposed schema alone is not permission, remote availability or a successful action. The view contains no keys, balances or private jobs.
+
+Private operating receipts may support an internal work assessment. Publishing that assessment still requires public evidence. Nested service errors, unknown effects and incomplete transaction responses do not become successful work receipts. Existing effects and financial reservations are unchanged.

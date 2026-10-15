@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_FUV2AE3Pssujjjg9SkJnXCARRy1a",
-  "source": "eaaad0d45d4106e23b8fb413ab7dce65e37e31f1e065058e59ce82f9f38e2ae2",
+  "deployed": "dpl_6CtHf74P7fCyUDzJ9pyzApjHhX6X",
+  "source": "a180c1cd980fc3e2373d44b5c598dd64d69104e15e9006f579e47e9508ba4439",
   "files": {
     "src/operations/policy.ts": "4207f83e628ad6aed2ef2471d9acb50badf48112a648cd28edb45e4f0f1efe04",
     "src/operations/host.ts": "9c0fc69393d198596029843ed9faa3481e6bd2b868eb7b3b8e5190325274d944",
@@ -12,11 +12,20 @@
     "src/operations/review-evidence.ts": "f889924460e2be67aaaf1990eb740e7955b5cda5f4ced42bb965fda6910ff90a",
     "src/operating-context.ts": "5bc31abd4096bcf0c171d3845866bb72b4694ebb693a002496546ccd38d56b68",
     "src/knowledge-schema.ts": "fee8f8f34372234688bb3c2773b3ec3a77d1d0240c5688b6f8e80b6d9b82f46e",
-    "src/twitter-policy.ts": "6e9698e832767e906204280dac8b84d137c93ee9ebcc2fc450507c0443afdc2e",
+    "src/twitter-policy.ts": "3424caa19cbf4f9e2c6188dc756c3e35d24ca36578e8e4aa9f350729f0494d39",
     "src/work-wallet-sponsor.ts": "325134bc9146d516e2e818211b5e5e8e3ea068213726e04229fdd712779099f5",
     "src/work-wallet.ts": "70923fdd77ba7579919cd26382a48327d50a4ec0589857b295ac00cdc295332e",
     "src/work-wallet-store.ts": "745fff5072863cd677c0ffbfd3a220763f076d415d3f39b4ad4db59409a24547",
     "src/custody-client.ts": "ac1c0393c440e71534d459fee53837e6191cd347cb9d9f49a08545f28e4ba8fa",
-    "src/network-access.ts": "dda6489b433acaabebcbe6d2b178c58325c55eb515265758fd6944ea94aef42c"
+    "src/network-access.ts": "dda6489b433acaabebcbe6d2b178c58325c55eb515265758fd6944ea94aef42c",
+    "src/context.ts": "91d6024655167a1a08253236888c4b7ed50b112bab620d7c6068f92491699c98",
+    "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
+    "src/network-care.ts": "5bf27cd9d764cd3d175dd5c8fa74afe5afdbe1cd504ad8a0d06c7a9d86eb44d7",
+    "src/network-operations.ts": "a28daa6c75681bc036df5cd467fdef33aef3c5cbea7c77cc1665fd1427c6f54d",
+    "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
+    "src/runtime-access.ts": "146cfd27faf10887b536679f1c6ec71346e4d6d4d3ac2bbfa5911ba089c0924b",
+    "src/tool-visibility.ts": "5fa21e6e69223d9cb60ef6076818ad53d24fa8da86cf17642205d5d001d7e9c7",
+    "src/tools.ts": "b233ca2b279660caadf6a2ff22cdeaccba301f4b5ee603471115b055c98e3f16",
+    "src/trade-program.ts": "52c71ebd31b2eaca0b4587406b0289481585076064ec81ae3da50ff2d36b154f"
   }
 }
