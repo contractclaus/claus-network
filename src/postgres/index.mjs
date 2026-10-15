@@ -1,3 +1,4 @@
+import {publicDirectoryQuery} from './search.mjs';
 import {documentByteLimit} from '../shared/index.mjs';
 import { canonical, copy, integer, requireThat, text } from '../shared/index.mjs';
 
@@ -66,6 +67,26 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
       } catch(error) { await client.query('ROLLBACK').catch(()=>{}); throw error; }
       finally { client.release(); }
     },
+    async workerExecutionStates() {
+      // Do not transfer private source, inputs, output or provider handles just
+      // to compute health. One extra row detects coverage beyond the limit.
+      const {rows}=await pool.query(`SELECT jsonb_build_object('state',body->>'state',
+        'finishedAt',body->'finishedAt','lease',jsonb_build_object('until',body->'lease'->'until')) AS body
+        FROM ${documents} WHERE collection='worker-runs' ORDER BY id LIMIT 1001`);
+      return rows.map(row=>({value:row.body}));
+    },
+    async searchPublicDirectory(input) {
+      const {sql,params}=publicDirectoryQuery(schema,input),client=await pool.connect();
+      try {
+        await client.query('BEGIN READ ONLY');
+        await client.query("SET LOCAL statement_timeout='5s'");
+        await client.query("SET LOCAL lock_timeout='2s'");
+        const {rows}=await client.query(sql,params);
+        await client.query('COMMIT');
+        const page=rows.slice(0,input.limit);
+        return {items:page.map(row=>({id:row.id,revision:Number(row.revision),value:row.body,slug:row.slug,portfolio:row.portfolio})),nextCursor:rows.length>input.limit?page.at(-1).id:null};
+      }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}finally{client.release();}
+    },
     async dueWorkflows({at,limit=4}) {
       integer(at);integer(limit,1,4);
       const {rows}=await pool.query(`SELECT id,revision,body FROM ${documents} WHERE collection='app-workflows' AND body->>'state'='active' AND (body->>'nextAt')::bigint <= $1 ORDER BY (body->>'nextAt')::bigint,id LIMIT $2`,[at,limit]);
@@ -75,7 +96,8 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
       const { rows } = await pool.query(`SELECT "${schema}".prune_ephemeral() AS removed`);
       return { removed: Number(rows[0].removed) };
     },
-    async transaction(run) {
+    async transaction(run, {projectId} = {}) {
+      if(projectId!==undefined)text(projectId);
       const client = await pool.connect();
       let active = true;
       const assertActive = () => requireThat(active, 'transaction_closed');
@@ -83,13 +105,19 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
         await client.query('BEGIN');
         await client.query("SET LOCAL statement_timeout='10s'");
         await client.query("SET LOCAL idle_in_transaction_session_timeout='15s'");
-        // M1 serializes short state transitions, not provider calls. Lock scope
-        // is this schema; later partitioning must preserve cross-account moves.
-        await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [schema]);
+        // Global writers (including older deployments) exclude scoped writes.
+        // Different projects may publish together; revocation/policy/payment
+        // transitions still synchronize with every publication.
+        if(projectId===undefined)await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[schema]);
+        else {
+          await client.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,0))',[schema]);
+          await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,1))',[schema+':project:'+projectId]);
+        }
         const tx = {
           ...reader(client, assertActive),
           async write(collection, id, value, expectedRevision) {
             assertActive(); text(collection); text(id); integer(expectedRevision);
+            if(projectId!==undefined)requireThat(['public-projects','public-sources','project-public-agents'].includes(collection)&&value.projectId===projectId,'invalid_project_transaction_write');
             const body = canonical(value);
             // A bounded transaction stores both calldata and encrypted signed
             // bytes. Other documents retain the public 64 KiB ceiling.
@@ -104,6 +132,7 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
           },
           async event(value) {
             assertActive();
+            if(projectId!==undefined)requireThat(value.projectId===projectId,'invalid_project_transaction_event');
             await client.query(`INSERT INTO ${eventTable}(body) VALUES($1::jsonb)`, [canonical(value)]);
           }
         };

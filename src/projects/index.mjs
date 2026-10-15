@@ -40,7 +40,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         const row = await tx.write('project-public-agents', projectId + ':' + agentId, value, expectedRevision);
         await tx.event({ type: published ? 'agent.published' : 'agent.withdrawn', projectId, agentId, at: now() });
         return { ...value, revision: row.revision };
-      });
+      }, {projectId});
     },
     async get(actor, projectId) {
       const project = await identity.project(actor, projectId);
@@ -110,7 +110,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         const result = await tx.write('public-sources', key, { projectId, snapshotId, published, files: version.files }, expectedRevision);
         await tx.event({ type: published ? 'source.published' : 'source.withdrawn', projectId, snapshotId, at: now() });
         return { id: key, revision: result.revision, published };
-      });
+      }, {projectId});
     },
     async publicSource(id) {
       const publication = (await store.read('public-sources', text(id)))?.value;
@@ -133,7 +133,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         const result = await tx.write('public-projects', project.slug, value, expectedRevision);
         await tx.event({ type: published ? 'project.published' : 'project.withdrawn', projectId, at: now() });
         return { ...result.value, revision: result.revision };
-      });
+      }, {projectId});
     },
     async publicProject(slug, {view = 'full'} = {}) {
       requireThat(['full','appearance'].includes(view),'invalid_project_view');
