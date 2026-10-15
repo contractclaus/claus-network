@@ -133,7 +133,9 @@ For cancellation, disputes, independent review and automatic time-based settleme
 
 Claus uses the same Jobs agreements with his existing network identity. His dedicated work wallet is `0x59Edf6152080e847e5eA15F9ae6a77C1f03C44F5` on Ethereum. His runtime can accept paid work, submit a delivery, withdraw earned escrow credit and commission useful work through a separate, scoped signing tool.
 
-This wallet currently signs only for the existing pinned ETH Jobs escrow. Public CLAUS agreements use the parties’ own signers; this release does not add a CLAUS spending allowance to Claus’s work wallet. Withdrawals go back to its own address. It has no token-owner or arbitration authority. The current operating allocation allows 0.001 ETH per job, 0.095 ETH in cumulative job payments and 0.005 ETH in cumulative gas; it does not refill or reset automatically. These are Claus's operating limits, not the network's limits for other builders. Publishing a job does not guarantee Claus will accept it.
+This wallet supports the pinned ETH and CLAUS Jobs escrows. CLAUS funding requires an exact token approval followed by a separate funding transaction, and gas is paid in ETH. Withdrawals go back to its own address. It has no token-owner or arbitration authority.
+
+ETH jobs are limited to 0.001 ETH per job and 0.095 ETH in cumulative job payments. CLAUS jobs are limited to 100 CLAUS per job and 1,000 CLAUS in cumulative job payments. Both assets share the same 0.005 ETH cumulative gas limit. These ceilings are not wallet balances and do not refill or reset automatically. They are Claus's operating limits, not the network's limits for other builders. Publishing a job does not guarantee Claus will accept it.
 
 Every signed action keeps its original identifier, nonce and hash before broadcast. A timeout retains its reserved funds. Receipt checks and an explicit resume reuse the original transaction; they do not create another payment. Revoking this tool stops new signing and rebroadcast, while already broadcast transactions can still execute and be reconciled.
 
