@@ -7,9 +7,10 @@ import {fenceNextTurn} from './runtime-handoff.js';
 export async function operationalHandoff(db:LabDatabase,host:OperationsHost,dispatch:(generation:number)=>Promise<string>,deployment=process.env.VERCEL_DEPLOYMENT_ID){
  if(!deployment||(await host.project('native')).targets?.production?.id!==deployment)return null;
  if(!(await db.query("SELECT to_regclass('public.claus_operations_handoffs') AS t")).rows[0]?.t)return null;
+ const adopted=await host.adopt(deployment);if(!adopted)return null;
  const pending=await db.transaction(async q=>{
   await q.query('SELECT pg_advisory_xact_lock(6041010)');
-  const c=(await q.query("SELECT * FROM claus_operations_control WHERE scope='native' FOR UPDATE")).rows[0];
+  const c=(await q.query("SELECT * FROM claus_operations_control WHERE scope='native'")).rows[0];
   if(!c?.enabled||c.deployment!==deployment)return null;
   const r=(await q.query("SELECT * FROM claus_operations_releases WHERE scope='native' AND ((state='active' AND deployment->>'id'=$1) OR (state='rolled_back' AND base_deployment=$1)) ORDER BY updated_at DESC LIMIT 1",[deployment])).rows[0];
   if(!r||r.state==='active'&&r.proof?.passed!==true||r.state==='rolled_back'&&!r.proof?.rollback?.completedAt)return null;
@@ -18,12 +19,12 @@ export async function operationalHandoff(db:LabDatabase,host:OperationsHost,disp
   const config=(await q.query('SELECT content FROM claus_config ORDER BY revision DESC LIMIT 1')).rows[0]?.content;
   if(!config?.settings.enabled||!config?.settings.networkOperations?.enabled||!config?.policy.capabilities.networkBuild)return null;
   if((await q.query('SELECT id FROM claus_builds WHERE lease_until>now() LIMIT 1')).rows.length)return null;
-  const fence=(await q.query('SELECT * FROM claus_builder_deployment WHERE id FOR UPDATE')).rows[0];
+  const fence=(await q.query('SELECT * FROM claus_builder_deployment WHERE id')).rows[0];
   const origin=r.state==='active'?r.base_deployment:r.deployment?.id;
   if(!fence||![origin,deployment].includes(fence.deployment_id))return null;
   const generation=await fenceNextTurn(q);
   if(!generation)return null;
-  if(fence.deployment_id!==deployment)await q.query('UPDATE claus_builder_deployment SET revision=revision+1,deployment_id=$1,updated_at=now() WHERE id',[deployment]);
+  if(fence.deployment_id!==deployment)return null;
   await q.query('INSERT INTO claus_operations_handoffs(id,release_id,origin_deployment,target_deployment,generation) VALUES($1,$2,$3,$4,$5)',[id,r.id,origin,deployment,generation]);
   return{id,generation};
  });

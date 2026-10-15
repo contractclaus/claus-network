@@ -41,13 +41,7 @@ export class OperationsStore{
   await q.query("UPDATE claus_operations_releases SET state='rollback_pending',updated_at=now() WHERE id=$1",[r.id]);
   if(!(await q.query("UPDATE claus_builds SET status='queued',next_at=now() WHERE id=$1 AND (lease_until IS NULL OR lease_until<now()) RETURNING id",[r.build_id])).rows.length)throw Error('operations_worker_busy');return{id:r.id,buildId:r.build_id,state:'rollback_pending'};
  });}
- async finishRollback(id:string,proof:any){return this.db.transaction(async q=>{
-  await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);const r=await this.get(id,q),c=await this.current(r.scope,q);
-  if(!c?.enabled||!['rollback_pending','rolling_back'].includes(r.state)||!rollbackBaseCurrent(r,c))throw Error('operations_rollback_conflict');
-  const before=r.manifest.map((f:FileRef)=>{const old=r.files.find((x:any)=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
-  if(c.deployment!==r.base_deployment)await q.query('UPDATE claus_operations_control SET revision=revision+1,deployment=$2,manifest=$3::jsonb,updated_at=now() WHERE scope=$1',[r.scope,r.base_deployment,JSON.stringify(before)]);
-  await q.query("UPDATE claus_operations_releases SET state='rolled_back',proof=$2::jsonb,updated_at=now() WHERE id=$1",[id,JSON.stringify(proof)]);return{state:'rolled_back',deployment:r.base_deployment};
- });}
+ async finishRollback(id:string,_proof:any){const r=await this.get(id);return this.host.finishRollback(r.scope,r.id);}
  async beginRollback(id:string,previous:any){return this.db.transaction(async q=>{
   await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);
   const r=await this.get(id,q),c=await this.current(r.scope,q);
@@ -59,7 +53,7 @@ export class OperationsStore{
  async begin(id:string,kind:'deploy'|'promote'){
   const col=kind==='deploy'?'deploy_started':'promote_started';return this.db.transaction(async q=>{await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);const r=await this.get(id,q),c=await this.current(r.scope,q);if(!c?.enabled||c.revision!==r.base_revision||c.deployment!==r.base_deployment)throw Error('operations_base_changed');return(await q.query(`UPDATE claus_operations_releases SET ${col}=now() WHERE id=$1 AND ${col} IS NULL RETURNING id`,[id])).rows.length===1;});
  }
- async activate(id:string,proof:any){return this.db.transaction(async q=>{await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);const r=await this.get(id,q),c=await this.current(r.scope,q);if(c.deployment===r.deployment?.id&&r.state==='active')return c;if(!c.enabled||c.revision!==r.base_revision||!proof.passed||r.state!=='verified')throw Error('operations_activation_conflict');const result=(await q.query('UPDATE claus_operations_control SET revision=revision+1,deployment=$2,manifest=$3::jsonb,updated_at=now() WHERE scope=$1 AND revision=$4 RETURNING *',[r.scope,r.deployment.id,JSON.stringify(r.manifest),r.base_revision])).rows[0];if(!result)throw Error('operations_activation_conflict');await q.query("UPDATE claus_operations_releases SET state='active',proof=$2::jsonb,updated_at=now() WHERE id=$1",[id,JSON.stringify(proof)]);return result;});}
+ async activate(id:string,_proof:any){const r=await this.get(id);return this.host.activate(r.scope,r.id);}
 }
 function rollbackBaseCurrent(r:any,c:any){
  return c?.deployment===r.base_deployment&&c.revision===r.base_revision || c?.deployment===r.deployment?.id&&c.revision===r.base_revision+1;

@@ -18,16 +18,4 @@ export async function surfaceTool(actionId:string,name:string,args:any){
  const {startBuilder}=await import('../builder-life.js');await startBuilder(r.build_id);
  return {id:r.id,buildId:r.build_id,state:r.state,sourceHash:r.source_hash,published:r.state==='active',next:'read_network_code with this id'};
 }
-export async function monitorSurface(){
- const store=surfaceStore(),c=await store.current();if(!c?.enabled)return {state:'disabled'};
- const claimed=(await store.db.query("UPDATE claus_surface_control SET last_checked=now() WHERE id AND (last_checked IS NULL OR last_checked<now()-interval '60 seconds') RETURNING revision",[])).rows[0];
- if(!claimed)return {state:'recent'};
- const r=await store.get(c.active_id);let healthy=false;
- try{await new SurfaceHost().verify(r.deployment.url,r.id,r.source_hash,true);healthy=true;}catch{}
- const updated=(await store.db.query('UPDATE claus_surface_control SET failures=CASE WHEN $1 THEN 0 ELSE failures+1 END WHERE id AND revision=$2 AND active_id=$3 RETURNING failures',[healthy,c.revision,c.active_id])).rows[0];
- if(!healthy&&Number(updated?.failures)>=2&&c.fallback_id){
-  const previous=await store.get(c.fallback_id);const proof=await new SurfaceHost().verify(previous.deployment.url,previous.id,previous.source_hash,true);
-  return store.rollback(c.revision,c.active_id,{reason:'two_failed_public_health_checks',fallback:proof,at:new Date().toISOString()});
- }
- return {state:healthy?'healthy':'unavailable',id:r.id,failures:updated?.failures};
-}
+export async function monitorSurface(){return new SurfaceHost().monitor();}

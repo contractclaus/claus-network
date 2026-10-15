@@ -1,3 +1,4 @@
+import {SurfaceHost} from './host.js';
 import {managedDatabase,managedSchemaReady} from '../database-schema.js';
 import type {LabInference} from '../lab-model.js';
 import {completeModelOutput} from '../model-completion.js';
@@ -22,7 +23,7 @@ export class SurfaceStore{
    return (await q.query("INSERT INTO claus_surface_control(id,project_id,active_id) VALUES(true,$1,'sr_bootstrap_20261014_v2') RETURNING *",[projectId])).rows[0];
   });
  }
- async setEnabled(enabled:boolean,expectedRevision:number){const row=(await this.db.query('UPDATE claus_surface_control SET enabled=$1,revision=revision+1 WHERE id AND revision=$2 RETURNING *',[enabled,expectedRevision])).rows[0];if(!row)throw Error('surface_revision_conflict');return row;}
+ async setEnabled(_enabled:boolean,_revision:number):Promise<any>{throw Error('surface_control_operator_required');}
  async propose(requestId:string,input:any,builder:BuilderStore){
   if(!input||Object.keys(input).some(k=>!['expectedRevision','title','goal','changes'].includes(k))||!Number.isSafeInteger(input.expectedRevision))throw Error('surface_input_invalid');
   const title=text(input.title,120),goal=text(input.goal,2400),id='sr_'+hash(requestId).slice(0,24),requestHash=hash(input);
@@ -89,23 +90,7 @@ export class SurfaceStore{
   if(!c?.enabled||c.revision!==r.base_revision)throw Error('surface_disabled_or_revision_conflict');
   return (await q.query("UPDATE claus_surface_releases SET deploy_started=now(),state='deploying' WHERE id=$1 AND deploy_started IS NULL AND state='approved' RETURNING id",[id])).rows.length===1;
  });}
- async activate(id:string,proof:any){return this.db.transaction(async q=>{
-  await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);
-  await q.query('SELECT pg_advisory_xact_lock(6041414)');const c=await this.current(q),r=await this.get(id,q);
-  if(c?.active_id===id)return c;
-  if(!c?.enabled||c.revision!==r.base_revision||r.state!=='verified'||proof?.sourceHash!==r.source_hash||!proof?.passed)throw Error('surface_activation_conflict');
-  // The previous active release remains an independent immutable rollback target.
-  const next=(await q.query('UPDATE claus_surface_control SET active_id=$1,fallback_id=active_id,revision=revision+1,failures=0,last_checked=now() WHERE id AND revision=$2 RETURNING *',[id,r.base_revision])).rows[0];
-  if(!next)throw Error('surface_activation_conflict');
-  await q.query("UPDATE claus_surface_releases SET state='active',proof=$2::jsonb,updated_at=now() WHERE id=$1",[id,JSON.stringify(proof)]);return next;
- });}
- async rollback(expectedRevision:number,failedId:string,proof:any){return this.db.transaction(async q=>{
-  await q.query('SELECT pg_advisory_xact_lock(6041414)');const c=await this.current(q);
-  if(!c||c.revision!==expectedRevision||c.active_id!==failedId||!c.fallback_id)return {changed:false};
-  const previous=await this.get(c.fallback_id,q);if(!previous.proof?.passed||previous.state==='rolled_back')throw Error('surface_fallback_unverified');
-  const next=(await q.query('UPDATE claus_surface_control SET active_id=fallback_id,fallback_id=NULL,revision=revision+1,failures=0 WHERE id AND revision=$1 RETURNING *',[expectedRevision])).rows[0];
-  await q.query("UPDATE claus_surface_releases SET state='rolled_back',proof=proof||$2::jsonb,updated_at=now() WHERE id=$1",[failedId,JSON.stringify({rollback:proof})]);return {changed:true,revision:next.revision,activeId:next.active_id};
- });}
+ async activate(id:string,_proof:any){return new SurfaceHost().activate(id);}
  async read(path?:string,offset=0,id?:string){
   const control=await this.current();if(!control)return {configured:false};const release=await this.get(id??control.active_id);
   if(path){if(!Number.isSafeInteger(offset)||offset<0)throw Error('surface_offset_invalid');const file=release.files.find((f:SourceFile)=>f.path===path);if(!file)throw Error('surface_file_missing');return {id:release.id,revision:control.revision,sourceHash:release.source_hash,path,content:file.content.slice(offset,offset+18000),nextOffset:offset+18000<file.content.length?offset+18000:null};}
