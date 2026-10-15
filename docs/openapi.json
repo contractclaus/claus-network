@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.27.2"
+    "version": "0.27.3"
   },
   "servers": [
     {
@@ -3644,7 +3644,7 @@
     "/v1/public/discover": {
       "get": {
         "operationId": "network_discover",
-        "description": "Bounded live public search by project/app/service/agent/task and query; tasks support state filtering. Follow nextCursor to completion; empty intermediate pages do not prove absence. Declarations and transport checks are not independent safety reviews or active-worker counts.",
+        "description": "Public search by project/app/service/agent/task. Project and agent profiles use database-filtered substring search before pagination on PostgreSQL; other kinds scan bounded pages. Follow nextCursor. Agent results link to public acceptance receipts; publication or accepted work does not establish a live independent agent.",
         "security": [],
         "parameters": [
           {

@@ -42,6 +42,7 @@ export function createWorkers({store,identity,projects,artifacts,now=()=>Date.no
      if(!await stillAllowed()){await finish(id,token,{state:'cancelled',error:'authority_or_definition_changed'});continue;}
      const files=await artifacts.get(work.projectId,work.definition.sourceHash);
      const result=await ports.execute(work,files,progress,stillAllowed);
+     requireThat(result.exitCode===0,'worker_execution_failed');
      requireThat(typeof result.output==='string'&&Buffer.byteLength(result.output)<=WORKER_LIMITS.jsonBytes,'worker_invalid_output');JSON.parse(result.output);
      await finish(id,token,{state:await stillAllowed()?'completed':'cancelled',resultJson:result.output,provider:result.provider,exitCode:result.exitCode});
     }catch(e){await ports.stop(work).catch(()=>{});await finish(id,token,{state:e.code==='worker_cancelled'?'cancelled':e.code==='worker_execution_failed'?'failed':'unknown',error:['worker_cancelled','worker_execution_failed','worker_invalid_output'].includes(e.code)?e.code:'execution_outcome_unknown'});}

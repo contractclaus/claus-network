@@ -1,12 +1,13 @@
+import {executionEvidence} from './execution.mjs';
 import {copy,digest,integer,requireThat} from '../shared/index.mjs';
 
-// Live projections, not a second registry. Each page has a fixed scan budget;
-// callers continue until nextCursor=null before interpreting absence.
+// Live projections, not a second registry. PostgreSQL filters public profiles
+// before pagination; other kinds retain a bounded page scan.
 export function createDiscovery({store,projects,apps,services,now=()=>Date.now()}) {
   return {async operations(){
     const roles=['compile','review','controller','executor','services','wallets','vaults','workflows','domains','workers','deals'];
-    const rows=await store.readMany('worker-health',roles),at=now();
-    return {observedAt:at,workers:roles.map(role=>{const v=rows.get(role)?.value,age=Number.isFinite(v?.observedAt)?Math.max(0,at-v.observedAt):null;return {role,lastObservedAt:v?.observedAt??null,ageMs:age,status:age===null?'unknown':age<300000?'recent':'stale',release:v?.release??null,...(role==='workflows'?{lastBatch:v?{processed:v.processed??null,durationMs:v.durationMs??null,retries:v.retryCount??null}:null}:{})};}),scope:'Last host worker observations, not user-agent presence, independent uptime certification or an end-to-end SLA.'};
+    const at=now();const [rows,execution]=await Promise.all([store.readMany('worker-health',roles),executionEvidence(store,at)]);
+    return {observedAt:at,execution,workers:roles.map(role=>{const v=rows.get(role)?.value,age=Number.isFinite(v?.observedAt)?Math.max(0,at-v.observedAt):null;return {role,lastObservedAt:v?.observedAt??null,ageMs:age,status:age===null?'unknown':age<300000?'recent':'stale',release:v?.release??null,...(role==='workflows'?{lastBatch:v?{processed:v.processed??null,durationMs:v.durationMs??null,retries:v.retryCount??null}:null}:{})};}),scope:'Last host worker observations, not user-agent presence, independent uptime certification or an end-to-end SLA.'};
   },async search({kind='project',query='',after='',limit=20,state}={}) {
     requireThat(['project','app','service','agent','task'].includes(kind),'invalid_discovery_kind');
     requireThat(typeof query==='string'&&query.length<=120,'invalid_query');integer(limit,1,25);
@@ -15,8 +16,11 @@ export function createDiscovery({store,projects,apps,services,now=()=>Date.now()
     const needle=query.trim().toLocaleLowerCase('en'),binding=digest({kind,needle,...(kind==='task'?{state:taskState}:{})});let position='',resume=null;
     if(after){let c;try{c=JSON.parse(Buffer.from(after,'base64url').toString());}catch{}requireThat(c?.binding===binding&&typeof c.position==='string','invalid_cursor');position=c.position;if(c.board!==undefined){requireThat(kind==='task'&&typeof c.board==='string'&&typeof c.taskAfter==='string','invalid_cursor');resume=c;}}
     const match=value=>!needle||JSON.stringify(value).toLocaleLowerCase('en').includes(needle);
-    let candidates=[],next=null,scanned=0;
-    if(kind==='task'){
+    let candidates=[],next=null,scanned=0,indexed=false;let portfolios=new Set();
+    if(['project','agent'].includes(kind)&&store.searchPublicDirectory){
+      const page=await store.searchPublicDirectory({kind,query:needle,after:position,limit});indexed=true;next=page.nextCursor;scanned=page.items.length;portfolios=new Set(page.items.filter(r=>r.portfolio).map(r=>r.value.projectId+':'+r.value.agentId));
+      candidates=page.items.map(row=>kind==='project'?{kind,id:row.value.projectId,projectId:row.value.projectId,name:row.value.name,description:row.value.description,url:'/c/'+row.slug,version:row.revision,availability:{state:'published',scope:'project profile'},price:null,evidence:{type:'owner-published',claimOnly:true}}:{kind,id:row.value.agentId,projectId:row.value.projectId,name:row.value.name,revision:row.revision,version:row.revision,url:'/c/'+row.slug+'#agents',availability:{state:'published-profile',workerPresence:'unknown'},price:null,evidence:{type:'project-owner-published',claimOnly:true}});
+    }else if(kind==='task'){
       const page=resume?{items:[{projectId:resume.board,tasks:true}]}:await apps.catalog({after:position,limit:1});
       const board=page.items[0];
       if(!board){next=page.nextCursor??null;}
@@ -53,10 +57,12 @@ export function createDiscovery({store,projects,apps,services,now=()=>Date.now()
         evidence:{type:'transport-and-schema',compatibility:copy(s.compatibility??null),independentSecurityReview:false}}));
     } else {
       const page=await projects.publicAgents({after:position,limit});next=page.nextCursor;scanned=limit;
+      if(store.readMany){const profiles=await store.readMany('agent-work-profiles',page.items.map(a=>a.projectId+':'+a.id)),owners=await store.readMany('projects',[...new Set(page.items.map(a=>a.projectId))]);portfolios=new Set([...profiles].filter(([key,r])=>r?.value.published&&!owners.get(r.value.projectId)?.value.transfer).map(([key])=>key));}
       candidates=page.items.map(a=>({...a,kind,version:a.revision,availability:{state:'published-profile',workerPresence:'unknown'},price:null,
         evidence:{type:'project-owner-published',claimOnly:true}}));
     }
-    return {items:candidates.filter(match),nextCursor:next?Buffer.from(JSON.stringify({binding,position:next})).toString('base64url'):null,
+    if(kind==='agent')candidates=candidates.map(a=>({...a,...(portfolios.has(a.projectId+':'+a.id)?{next:{operation:'public_agent_portfolio',input:{projectId:a.projectId,agentId:a.id}}}:{}),workPortfolio:{state:portfolios.has(a.projectId+':'+a.id)?'published':'not-published'},runtime:{state:'unverified',scope:'A published profile and accepted work do not establish a currently running independent agent.'}}));
+    return {items:indexed?candidates:candidates.filter(match),search:{method:indexed?'database-filtered':'bounded-page-scan',...(indexed?{fields:['name','description','slug','projectId','agentId'],matching:'literal-case-insensitive-substring',index:'postgres-trigram; effectiveness depends on query'}:{})},nextCursor:next?Buffer.from(JSON.stringify({binding,position:next})).toString('base64url'):null,
       observedAt:now(),scanLimit:scanned,complete:next===null,scope:'Public declarations and scoped evidence. Publication does not prove an active worker, accuracy, independence or safety.'};
   }};
 }
