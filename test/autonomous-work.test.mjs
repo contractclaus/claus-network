@@ -1,4 +1,11 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {fixture} from './apps-fixture.mjs';import {createWebhooks} from '../src/webhooks/index.mjs';import {publicIPv4,webhookSignature} from '../runtime/webhook-delivery.mjs';import {previewSite} from '../interfaces/preview.mjs';
+import {createProjectInspection} from '../src/collaboration/inspection.mjs';
+test('source text check distinguishes an empty app shell from real HTML content',async()=>{
+ for(const [content,expected] of [['<main></main>','action'],['<head><title>App</title></head><main>&nbsp;<!-- loading --></main><script>render()</script>','action'],['<main><p>A useful description</p></main>','passed'],['<div>Agent service</div>','passed']]){
+  const inspect=createProjectInspection({projects:{publicProject:async()=>({projectId:'p'})},releases:{publicForProject:async()=>[{id:'r',createdAt:1}],public:async()=>({files:[{path:'index.html',content}]})},dependencies:{get:async()=>({items:[]})}});
+  assert.equal((await inspect('p')).checks.find(c=>c.id==='readable-html').state,expected);
+ }
+});
 test('structured milestones retain criteria and original tasks across retries',async t=>{
  const {owner,bob,project}=await fixture(t),projectId=project.id;
  const i={projectId,title:'Two stages',goal:'A useful product',milestones:[{title:'Spec',criteria:['Explain both states'],asset:'CLAUS',amountUnits:'100',input:{text:'Write the specification'}}],idempotencyKey:'brief'};
