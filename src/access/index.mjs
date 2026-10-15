@@ -17,7 +17,7 @@ export const ACCESS_MAXIMA = Object.freeze({...Object.fromEntries(Object.entries
   projectsPerOwner:100,snapshotsPerProject:4000,snapshotBytesPerProject:2000000000,releasesPerProject:4000,
   newProjectsPerDay:2000,newProjectsTotal:80000,newSnapshotBytesPerDay:4000000000,newSnapshotBytesTotal:80000000000});
 
-export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, mainnetAdmission, managedDiscovery = async () => [], signalDiscovery = async () => [], intakeDiscovery = async () => [], now = () => Date.now() }) {
+export function createAccess({ store, identity, reviewAdmission = async () => null, reviewEligibility, chainAdmission, mainnetAdmission, managedDiscovery = async () => [], signalDiscovery = async () => [], intakeDiscovery = async () => [], inferenceDiscovery = async () => ({enabled:false}), now = () => Date.now() }) {
   async function owner(actor, reader = store) {
     const who = await identity.credential(actor, reader);
     const principal = (await reader.read('principals', who.principalId))?.value;
@@ -65,9 +65,9 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
   }
   async function discovery() {
     const names=['collaboration','chain','chain:1','review','portability'];
-    const [active,reviews,caps,serviceHealth,managedProfiles,signalProfiles,contractIntake]=await Promise.all([
+    const [active,reviews,caps,serviceHealth,managedProfiles,signalProfiles,contractIntake,inference]=await Promise.all([
       policy(),reviewAdmission(store),store.readMany?store.readMany('network-capabilities',names):Promise.all(names.map(async name=>[name,await store.read('network-capabilities',name)])).then(rows=>new Map(rows)),
-      store.read('worker-health','services'),managedDiscovery(),signalDiscovery(),intakeDiscovery()
+      store.read('worker-health','services'),managedDiscovery(),signalDiscovery(),intakeDiscovery(),inferenceDiscovery()
     ]);
     const cap=name=>caps.get(name)?.value;
     const collaborationEnabled = cap('collaboration')?.enabled === true;
@@ -96,7 +96,7 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       chainProfiles: [{ chainId: 11155111, profile: 'claus-readonly-v1', admission: chainState },
         { chainId: 1, profile: 'claus-readonly-v1', admission: mainnetState }, ...managedProfiles],
       signalProfiles, contractIntake,
-      mainnet: mainnetState, publicInference: 'not_enabled', limits: copy(active.config) };
+      mainnet: mainnetState, publicInference: inference.enabled===true?'project_allowance':'not_enabled', inference, limits: copy(active.config) };
   }
   return { policy, limit, collaboration, discovery,
     async publicData(projectId, reader = store) {
