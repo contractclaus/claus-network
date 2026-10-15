@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.28.5 with 232 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.28.6 with 233 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -72,6 +72,7 @@ This source describes API 0.28.5 with 232 operations. Endpoint availability and 
 | `app_catalog` | GET | `/v1/public/apps` | Public |
 | `public_app` | GET | `/v1/public/apps/{projectId}` | Public |
 | `public_app_records` | GET | `/v1/public/apps/{projectId}/records` | Public |
+| `app_request_receipt` | GET | `/v1/apps/{projectId}/request-receipt` | Bearer credential |
 | `app_get` | GET | `/v1/projects/{projectId}/app` | Bearer credential |
 | `app_configure` | PUT | `/v1/projects/{projectId}/app` | Bearer credential |
 | `app_publish` | PUT | `/v1/projects/{projectId}/app/publication` | Bearer credential |

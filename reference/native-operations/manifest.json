@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_DTRLuNGYrijTYdDgeCQmE1ov918j",
-  "source": "7e81d6a23e03ef196078f6258743682d7931000dfa9bb634d402e37005002fc4",
+  "deployed": "dpl_4ty46CPytANwzwXyzKPqLTynCMqA",
+  "source": "claus-full-operation-native32-2026-10-16",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -73,9 +73,11 @@
     "src/search-client.ts": "73ca4be37e9d4f4f9aa14a5a57780861282fe2ab61bfa921cad0d7da6785ef65",
     "src/isolated/operations.d.mts": "61c7cbfb4832ade785fb27cba1f9bed74760d8970898ef015dcf1791e614f793",
     "src/isolated/operations.mjs": "345aa45fd2891e9d5b115626a0ac078376690553b2402a13e0b101aa87b105a8",
-    "src/network-program.ts": "5f26dfb5fbd2f66c057acb9f727d3c90f072845f7827f1ebfda5d565417724fd",
+    "src/network-program.ts": "bd7777c915b6dc6c03d0a5e0a3fa6cd76af0f586f5668ae7642a3f2709cab734",
     "src/isolated/program-run.d.mts": "cf7f66c384c6d0b2a606955086e4e222a42a527c7063045d7988f0f6b33e35e1",
-    "src/isolated/program-run.mjs": "69b4e838a4d862114408dfad8ae3c51dc7ee412e3a58f12e4d50f422e58fe090"
+    "src/isolated/program-run.mjs": "69b4e838a4d862114408dfad8ae3c51dc7ee412e3a58f12e4d50f422e58fe090",
+    "src/isolated/app-receipt.d.mts": "f08e190dd4f0630eee4898a4ca13c6b23076bdd3fc66d6630ae046cdfef5405a",
+    "src/isolated/app-receipt.mjs": "c22695e640e0ae1bdca222de6afe0200c7fb06b22533ef05fe6d62f4950d7dea"
   },
   "referenceSubset": true
 }

@@ -1,5 +1,5 @@
 import {workPlanningRoutes} from './work-planning-routes.mjs';
-export const API_VERSION='0.28.5';
+export const API_VERSION='0.28.6';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -200,6 +200,7 @@ export const ROUTES=Object.freeze([
  route('app_catalog','GET','/v1/public/apps',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true),
  route('public_app','GET','/v1/public/apps/{projectId}',{projectId:string()},undefined,true),
  route('public_app_records','GET','/v1/public/apps/{projectId}/records',{projectId:string(),collection:string(48),after:string(2048),limit:{type:'integer',minimum:1,maximum:100},authorId:string(),state:string(32),parentId:string(),assigneeId:string()},['projectId','collection'],true),
+ route('app_request_receipt','GET','/v1/apps/{projectId}/request-receipt',{projectId:string(),operation:string(64),idempotencyKey:string(128),requestHash:string(71)}),
  route('app_get','GET','/v1/projects/{projectId}/app',{projectId:string()}),
  route('app_configure','PUT','/v1/projects/{projectId}/app',{projectId:string(),manifest:true,expectedRevision:integer,idempotencyKey:string(128)}),
  route('app_publish','PUT','/v1/projects/{projectId}/app/publication',{projectId:string(),published:boolean,expectedRevision:integer,idempotencyKey:string(128)}),

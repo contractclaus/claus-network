@@ -1,3 +1,4 @@
+import {readAppRequestReceipt} from './request-receipt.mjs';
 import {additiveCollection} from './schema-evolution.mjs';
 import {taskProgress} from './progress.mjs';
 import { randomUUID } from 'node:crypto';
@@ -48,6 +49,7 @@ export function createApps({storage,identity,store,taskPayments,schemaDefinition
   const taskReviews=createTaskReviews({storage,app,participant,effect,event,countRecord,taskPayments,now});
   const api={
     taskReviews,
+    requestReceipt:(actor,projectId,input)=>{ready();return readAppRequestReceipt({storage,identity},actor,projectId,input);},
     enabled:!!storage,writesEnabled,limits:APP_LIMITS,
     async messages(actor,projectId,{taskId,after='',limit=30}){ready();integer(limit,1,50);const tx=storage.reader(projectId),{who}=await participant(tx,projectId,actor);await messageParty(tx,projectId,taskId,who);const rows=await tx.list('task-messages',{parentId:taskId,after:afterCursor(after,projectId,who,'messages:'+taskId),limit});return {items:rows.map(rowValue),nextCursor:rows.length===limit?cursor(projectId,who,'messages:'+taskId,rows.at(-1).id):null,visibility:'Current requester, assignee and selected reviewer only.'};},
     async message(actor,projectId,{taskId,body,idempotencyKey}){ready();bounded(body,4000);return storage.transaction(projectId,async tx=>{const {who}=await participant(tx,projectId,actor);await messageParty(tx,projectId,taskId,who);return effect(tx,projectId,actor,'task.message',idempotencyKey,{taskId,body},async()=>{await countRecord(tx);const seq=await tx.read('meta','message-sequence'),n=(seq?.value.next??0)+1;await tx.write('meta','message-sequence',{next:n},seq?.revision??0);const id=String(n).padStart(12,'0');const result=rowValue(await tx.write('task-messages',id,{id,parentId:taskId,taskId,projectId,authorId:who,body,createdAt:now()},0));await event(tx,{type:'task.message',collection:'task-messages',id,taskId,actorId:who});return result;});});},
