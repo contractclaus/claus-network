@@ -85,6 +85,7 @@ class OperationsHost {
     const actual = sourceTree(await this.api("/v6/deployments/" + deployment.id + "/files", {}, scope));
     if (Object.keys(actual).length !== manifest.length || manifest.some((f) => actual[f.path] !== f.sha)) throw Error("operations_deployed_source_mismatch");
     const p = await this.project(scope);
+    if (production && p.targets?.production?.id !== deployment.id) throw Error("operations_production_changed");
     const headers = {};
     if (!production) {
       const bypass = Object.entries(p.protectionBypass ?? {}).find(([, v]) => v.scope === "automation-bypass");

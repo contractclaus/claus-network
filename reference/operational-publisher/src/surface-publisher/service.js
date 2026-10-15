@@ -34,6 +34,18 @@ export function createSurfacePublisher({repository,ledger,host=new SurfaceHost()
   if(known!=null&&(!/^dpl_[a-zA-Z0-9]+$/.test(known)||known!==r.deployment?.id))fail('deployment_binding');
   return host.reconcile(surfaceProject,r.id,r.source_hash,known??r.deployment?.id);
  }
+ async function reconcileDeployment(r,c,required=false){
+  const key='surface:deploy:'+r.id,entry=await ledger.get(key);
+  if(!entry){if(required)fail('publication_not_proven');return deployment(r,r.deployment?.id);}
+  const binding={project:surfaceProject,id:r.id,sourceHash:r.source_hash,baseRevision:r.base_revision,baseId:c.active_id};
+  if(entry.input_hash!==requestHash(binding)||!['reserved','completed'].includes(entry.status))fail('deployment_binding');
+  const known=entry.status==='completed'?entry.result?.id:r.deployment?.id;
+  if(entry.status==='completed'&&!known)fail('publication_not_proven');
+  const actual=await host.reconcile(surfaceProject,r.id,r.source_hash,known);if(!actual){if(required)fail('outcome_unknown');return null;}
+  if(known&&actual.id!==known||r.deployment?.id&&r.deployment.id!==actual.id)fail('deployment_binding');
+  if(entry.status==='reserved')await ledger.complete(key,actual);
+  return actual;
+ }
  return {async call(operation,args){
   const arities={project:1,prepare:4,deploy:4,reconcile:4,source:4,verify:4,activate:1,monitor:0};
   if(!Object.hasOwn(arities,operation)||!Array.isArray(args)||args.length!==arities[operation])fail('operation_denied');
@@ -42,8 +54,7 @@ export function createSurfacePublisher({repository,ledger,host=new SurfaceHost()
    const r=await repository.surfaceRelease(args[0]);if(!r)fail('release_missing');
    const old=await control().activated('surface',r.id);if(old&&old.active_id===c.active_id&&old.revision===c.revision)return old;
    await reviewed(r,c);if(r.state!=='verified')fail('activation_conflict');
-   const entry=await ledger.get('surface:deploy:'+r.id);if(!entry||entry.status!=='completed')fail('publication_not_proven');
-   const actual=await deployment(r,r.deployment?.id);if(!actual||actual.state!=='READY'||entry.result?.id!==actual.id)fail('publication_not_proven');
+   const actual=await reconcileDeployment(r,c,true);if(actual.state!=='READY')fail('publication_not_proven');
    await host.verifySource(actual.id,r.files,r.id,r.source_hash);
    const proof=await host.verify(actual.url,r.id,r.source_hash,true);return control().activateSurface(c,r,{...proof,reviewEffect:r.review_effect,verifiedBy:'fixed-publisher'});
   }
@@ -57,7 +68,8 @@ export function createSurfacePublisher({repository,ledger,host=new SurfaceHost()
     if(validateSource(previous.files)!==previous.source_hash)fail('fallback_invalid');
     await host.verifySource(previous.deployment.id,previous.files,previous.id,previous.source_hash);
     const proof=await host.verify(previous.deployment.url,previous.id,previous.source_hash,true);
-    return control().rollbackSurface(updated,await repository.surfaceRelease(updated.active_id),{reason:'two_failed_public_health_checks',fallback:proof,at:new Date().toISOString()});
+    const next=await control().rollbackSurface(updated,await repository.surfaceRelease(updated.active_id),{reason:'two_failed_public_health_checks',fallback:proof,at:new Date().toISOString()});
+    return {changed:true,revision:next.revision,activeId:next.active_id};
    }
    return {state:healthy?'healthy':'unavailable',id:r.id,failures:updated.failures};
   }
@@ -93,7 +105,10 @@ export function createSurfacePublisher({repository,ledger,host=new SurfaceHost()
    const result=await host.deploy(surfaceProject,r.files,r.id,r.source_hash);await ledger.complete(key,result);return result;
   }
   if(operation==='reconcile'){
-   const [project,id,hash,known]=args;if(project!==surfaceProject)fail('scope_changed');return deployment(await release(id,hash),known);
+   const [project,id,hash,known]=args;if(project!==surfaceProject)fail('scope_changed');const r=await release(id,hash);
+   if(known!=null&&known!==r.deployment?.id)fail('deployment_binding');
+   // Once the base revision has moved, this is historical readback only.
+   return c.revision===r.base_revision?reconcileDeployment(r,c):deployment(r,known);
   }
   if(operation==='source'){
    const [known,files,id,hash]=args,r=await release(id,hash);if(!equal(files,r.files))fail('source_binding');const actual=await deployment(r,known);if(!actual)fail('outcome_unknown');return host.verifySource(actual.id,r.files,r.id,r.source_hash);

@@ -21,10 +21,9 @@ export async function operationalHandoff(db:LabDatabase,host:OperationsHost,disp
   if((await q.query('SELECT id FROM claus_builds WHERE lease_until>now() LIMIT 1')).rows.length)return null;
   const fence=(await q.query('SELECT * FROM claus_builder_deployment WHERE id')).rows[0];
   const origin=r.state==='active'?r.base_deployment:r.deployment?.id;
-  if(!fence||![origin,deployment].includes(fence.deployment_id))return null;
+  if(!fence||fence.deployment_id!==deployment)return null;
   const generation=await fenceNextTurn(q);
   if(!generation)return null;
-  if(fence.deployment_id!==deployment)return null;
   await q.query('INSERT INTO claus_operations_handoffs(id,release_id,origin_deployment,target_deployment,generation) VALUES($1,$2,$3,$4,$5)',[id,r.id,origin,deployment,generation]);
   return{id,generation};
  });

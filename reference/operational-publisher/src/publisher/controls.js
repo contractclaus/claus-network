@@ -1,6 +1,7 @@
 import {Pool,neonConfig} from '@neondatabase/serverless';
 import {hash} from './policy.js';
-const equal=(a,b)=>hash(a)===hash(b);
+const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
+const equal=(a,b)=>canonical(a)===canonical(b);
 const authority=c=>c?.scope?{scope:c.scope,enabled:c.enabled,revision:c.revision,deployment:c.deployment,manifest:c.manifest,crons:c.crons}:{id:c?.id,enabled:c?.enabled,revision:c?.revision,project_id:c?.project_id,active_id:c?.active_id,fallback_id:c?.fallback_id};
 const fail=()=>{throw Error('publisher_control_conflict');};
 let singleton;
@@ -18,7 +19,7 @@ export function publicationControls(db=publicationDatabase()){
   const signature=hash({control:authority(c),release:r});
   if(old){if(old.input_hash!==signature||!equal(authority(fresh),authority(old.after_state)))fail();return old.after_state;}
   if(!equal(authority(c),authority(fresh)))fail();
-  const rows=await q.query(kind==='surface'?'SELECT * FROM claus_surface_releases WHERE id=$1':'SELECT * FROM claus_operations_releases WHERE id=$1',[r.id]);
+  const rows=await q.query(kind==='surface'?'SELECT * FROM claus_surface_releases WHERE id=$1 FOR UPDATE':'SELECT * FROM claus_operations_releases WHERE id=$1 FOR UPDATE',[r.id]);
   if(!equal(r,rows.rows[0]))fail();
   const settings=(await q.query('SELECT content FROM claus_config ORDER BY revision DESC LIMIT 1')).rows[0]?.content;
   if(!fresh.enabled||!settings?.settings.enabled||!settings.settings.builder?.enabled||!settings.settings.networkOperations?.enabled||!settings.policy?.capabilities.networkBuild)throw Error('publisher_disabled');
@@ -43,10 +44,10 @@ export function publicationControls(db=publicationDatabase()){
    await q.query("UPDATE claus_surface_releases SET state='active',proof=$2::jsonb,updated_at=now() WHERE id=$1",[r.id,JSON.stringify(proof)]);return next;
   });},
   async monitorSurface(c,healthy){return db.transaction(async q=>{await q.query('SELECT pg_advisory_xact_lock(6041414)');return (await q.query("UPDATE claus_surface_control SET last_checked=now(),failures=CASE WHEN $1 THEN 0 ELSE failures+1 END WHERE id AND enabled AND revision=$2 AND active_id=$3 AND (last_checked IS NULL OR last_checked<now()-interval '60 seconds') RETURNING *",[healthy,c.revision,c.active_id])).rows[0]??null;});},
-  async rollbackSurface(c,r,proof){return change('surface:'+r.id+':rollback:'+c.revision,'surface',c,r,async q=>{
-   if(c.failures<2||!c.fallback_id)fail();
+  async rollbackSurface(c,r,proof){return change('surface:'+r.id+':rollback:'+c.revision,'surface',c,r,async(q,fresh)=>{
+   if(fresh.failures<2||!fresh.fallback_id||fresh.active_id!==r.id)fail();
    const next=(await q.query('UPDATE claus_surface_control SET active_id=fallback_id,fallback_id=NULL,revision=revision+1,failures=0 WHERE id AND revision=$1 RETURNING *',[c.revision])).rows[0];if(!next)fail();
-   await q.query("UPDATE claus_surface_releases SET state='rolled_back',proof=COALESCE(proof,'{}'::jsonb)||$2::jsonb,updated_at=now() WHERE id=$1",[r.id,JSON.stringify({rollback:proof})]);return {changed:true,revision:next.revision,activeId:next.active_id};
+   await q.query("UPDATE claus_surface_releases SET state='rolled_back',proof=COALESCE(proof,'{}'::jsonb)||$2::jsonb,updated_at=now() WHERE id=$1",[r.id,JSON.stringify({rollback:proof})]);return next;
   });},
   async adoptNative(deployment){return db.transaction(async q=>{
    await q.query('SELECT pg_advisory_xact_lock(6041010)');
