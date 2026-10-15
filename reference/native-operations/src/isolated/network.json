@@ -13,6 +13,10 @@
     "  }",
     " }",
     " return {notes:notes.slice(0,20)};",
+    "}",
+    "function operate(input) {",
+    " if (!input.receipts.length) return {operation:'project_get',input:{}};",
+    " return {result:{project:input.receipts[0].value,observed:true,changed:false}};",
     "}"
   ]
 }

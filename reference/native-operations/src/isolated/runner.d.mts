@@ -3,4 +3,4 @@ export function programHash(program:unknown):string;
 export function runAnalysis(program:unknown,input:{kind:string;observedAt:number;subjects:{id:string;[key:string]:unknown}[]}):Promise<{subject:string;priority:'info'|'attention';message:string}[]>;
 export function analyzeProjection(program:unknown,input:{kind:string;observedAt:number;subjects:{id:string;[key:string]:unknown}[]}):Promise<any>;
 
-export function evaluateProgram(program:unknown,input:unknown,entry:'analyze'|'plan'):Promise<any>;
+export function evaluateProgram(program:unknown,input:unknown,entry:'analyze'|'plan'|'operate'):Promise<any>;

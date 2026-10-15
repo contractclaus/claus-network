@@ -1,6 +1,6 @@
 import type {Configuration} from './config.js';
 const groups:Record<string,string[]>={
- network:['read_network','build_network','network_work','network_care'],
+ network:['read_network','build_network','network_work','network_care','run_network_program','resume_network_operation'],
  publishing:['read_network_code','change_network_code','read_operational_code','change_operational_code','rollback_operational_code'],
  funds:['work_wallet','trade_program','wallet_execute','wallet_sign','wallet_replace'],
  research:['read_url','search_web','read_developments','read_reference','read_chain','read_contract_source','read_market'],

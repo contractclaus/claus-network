@@ -12,7 +12,7 @@ export const programHash=program=>createHash('sha256').update(validateProgram(pr
 // The candidate is JSON data during the Node build. Only this credential-free
 // QuickJS heap evaluates it. No host function, module loader, SQL or I/O is bound.
 export async function evaluateProgram(program,input,entry) {
- if(!["analyze","plan"].includes(entry))throw Error("isolated_entry_invalid");
+ if(!["analyze","plan","operate"].includes(entry))throw Error("isolated_entry_invalid");
  const source=validateProgram(program),json=JSON.stringify(input);
  if(Buffer.byteLength(json)>64000)throw Error('isolated_input_size');
 
