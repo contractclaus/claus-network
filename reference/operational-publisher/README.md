@@ -13,3 +13,5 @@ The independent payer now binds review requests and complete verdicts; see [revi
 [Fixed social sender](SOCIAL-BOUNDARY.md) describes separated X credentials and original publication receipts.
 
 [Recovery and operating capacity](RELIABLE-RECOVERY.md) describes original receipt reconciliation, bounded buyback recovery and separate resource accounting.
+
+[Network session recovery](NETWORK-SESSION-RECOVERY.md) describes targeted session renewal without replaying actions.

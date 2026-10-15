@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_u8aBg1LaL5mtrpszR2WmtJxc3xVH",
-  "source": "00f1e0ac5f757ed4a3e38eaa3fe4b0828cbc7367d03cfcd3bb9ed1500a1bf3a6",
+  "deployed": "dpl_7H8K5LCKayTpEhNGAkgk5KT8MSYC",
+  "source": "43a77b34e8bbda0f8ab0a41df7428a4ff17c3453a451aa055bbfa29ab7aee0ad",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -16,8 +16,8 @@
     "src/work-wallet-sponsor.ts": "325134bc9146d516e2e818211b5e5e8e3ea068213726e04229fdd712779099f5",
     "src/work-wallet.ts": "70923fdd77ba7579919cd26382a48327d50a4ec0589857b295ac00cdc295332e",
     "src/work-wallet-store.ts": "020a10ee51c807d04745b82436d069a12433ad51ea7c65f1bc420da5a45f38a0",
-    "src/custody-client.ts": "ac1c0393c440e71534d459fee53837e6191cd347cb9d9f49a08545f28e4ba8fa",
-    "src/network-access.ts": "832c849c93ea2c40dd736c7807e30b800afd6aba5bc30c04de593723bb81e538",
+    "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
+    "src/network-access.ts": "93e7722c9e663219007b8fefba780a12a8c9ac12c9cff2022c49ae055f62a4cb",
     "src/context.ts": "91d6024655167a1a08253236888c4b7ed50b112bab620d7c6068f92491699c98",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "ad1cbe6293d542846582d26c72ade0005c9bbd617a8ac00fdce14e9d9825018b",
