@@ -1,4 +1,5 @@
 import {installPublisherRoutes} from './publisher/routes.js';
+import {installSurfacePublisherRoutes} from './surface-publisher/routes.js';
 import {installProgramRoutes} from './programs/routes.js';
 import {installJobsRoutes} from './jobs-wallet/routes.js';
 import {researchPayments,setupResearchPayments} from './lab-routes.js';
@@ -42,7 +43,7 @@ app.get('/health',c=>c.json(process.env.SERVICE_ROLE==='operator'
   ? {ready:!!process.env.DATABASE_URL&&!!process.env.SIGNER_PRIVATE_KEY,payer:address,scope:'fixed_operator_with_legacy_observer',inferencePayments:false,labResearch:process.env.OPERATOR_LAB_ENABLED==='true',configPresence:{database:!!process.env.DATABASE_URL,signing:!!process.env.SIGNER_PRIVATE_KEY,legacyStatus:!!process.env.LEGACY_STATUS_SECRET}}
   : {service:'claus-inference',databaseConfigured:!!process.env.DATABASE_URL,signingConfigured:!!process.env.SIGNER_PRIVATE_KEY,scope:'inference_and_policy_gated_wallet',transactionSigning:!!process.env.WALLET_SECRET&&!!process.env.WALLET_POLICY_SECRET,inferencePaymentScheme:inferencePaymentSchemes()[0],maximumInferenceQuoteMicroUsdc:process.env.MAX_INFERENCE_QUOTE_MICRO_USDC??'1000000'}));
 app.use('/api/*',async(c,next)=>{
-  if(c.req.path.startsWith('/api/jobs/')||c.req.path==='/api/programs'||c.req.path==='/api/publisher')return next();
+  if(c.req.path.startsWith('/api/jobs/')||c.req.path==='/api/programs'||c.req.path==='/api/publisher'||c.req.path==='/api/surface-publisher')return next();
   // Explicit opt-in only: retain the historical default until manual migration.
   // This gate precedes authentication selection, body parsing and all handlers.
   if(process.env.SERVICE_ROLE==='operator') {
@@ -88,6 +89,7 @@ app.use('/api/*',async(c,next)=>{
 installJobsRoutes(app);
 installProgramRoutes(app);
 installPublisherRoutes(app);
+installSurfacePublisherRoutes(app);
 app.post('/api/lab/setup',async c=>c.json(await setupResearchPayments()));
 app.post('/api/lab/payments',async c=>{
   try{const raw=await c.req.text();if(raw.length>64000)return c.json({error:'request_too_large'},413);return c.json(await researchPayments().prepare(JSON.parse(raw)));}

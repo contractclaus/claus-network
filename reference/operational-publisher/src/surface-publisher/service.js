@@ -1,0 +1,84 @@
+import {SurfaceHost} from './host.js';
+import {surfaceProject,validateSource,sourceHash,applyChanges} from './source.js';
+import {completeModelOutput} from '../publisher/model-completion.js';
+import {hash as requestHash} from '../publisher/policy.js';
+const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
+const equal=(a,b)=>canonical(a)===canonical(b);
+const fail=code=>{throw Error('surface_'+code);};
+const validId=id=>/^sr_[a-zA-Z0-9_]{1,100}$/.test(id??'');
+
+// This service is fixed operator code. No raw provider path, URL, environment,
+// project selection or deployment command crosses the agent-facing boundary.
+export function createSurfacePublisher({repository,ledger,host=new SurfaceHost()}){
+ async function current(){const c=await repository.surfaceCurrent();if(!c||c.project_id!==surfaceProject)fail('scope_changed');return c;}
+ async function release(id,hash){
+  if(!validId(id)||!/^[a-f0-9]{64}$/.test(hash??''))fail('release_invalid');
+  const r=await repository.surfaceRelease(id);if(!r||r.source_hash!==hash||validateSource(r.files)!==hash)fail('release_binding');return r;
+ }
+ async function reviewed(r,c){
+  if(!c.enabled||c.revision!==r.base_revision||!(await repository.settings()).enabled)fail('disabled_or_revision_conflict');
+  if(!/^sr_[a-f0-9]{24}$/.test(r.id)||!r.build_id||!r.review_effect)fail('review_missing');
+  const base=await repository.surfaceRelease(c.active_id);if(!base||sourceHash(base.files)!==base.source_hash||!equal(applyChanges(base.files,r.changes),r.files))fail('base_binding');
+  const e=await repository.review(r.review_effect);if(!e||e.project_id!==r.build_id||e.kind!=='model'||e.status!=='completed')fail('review_incomplete');
+  let output=e.output;const recovery=r.proof?.reviewRecovery;
+  if(recovery){
+   const proof=recovery.output?.recovery;
+   if(recovery.effectId!==e.id||recovery.sourceHash!==r.source_hash||proof?.version!==1||proof.requestId!==e.id||proof.providerRequestId!==e.output?.receipt?.providerRequestId||!/^[a-f0-9]{64}$/.test(proof.evidenceHash??'')||!/^[a-f0-9]{64}$/.test(proof.originalResponseHash??'')||!equal(recovery.output?.receipt,e.output?.receipt)||recovery.output.model!==e.input?.model)fail('review_recovery_binding');
+   output=recovery.output;
+  }
+  if(!completeModelOutput(output))fail('review_incomplete');
+  let input,result;
+  try{input=JSON.parse(e.input.input[0].content);const content=output.message.content;result=JSON.parse((Array.isArray(content)?content.map(x=>x.text??'').join(''):String(content)).replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,''));}catch{fail('review_invalid');}
+  if(input.sourceHash!==r.source_hash||!equal(input.changes,r.changes)||!equal(input.files,r.files.filter(f=>r.changes.some(c=>c.path===f.path))))fail('review_binding');
+  if(result.approved!==true||result.withinScope!==true||result.preservesBehaviour!==true||typeof result.summary!=='string')fail('review_rejected');
+ }
+ async function deployment(r,known){
+  if(known!=null&&(!/^dpl_[a-zA-Z0-9]+$/.test(known)||known!==r.deployment?.id))fail('deployment_binding');
+  return host.reconcile(surfaceProject,r.id,r.source_hash,known??r.deployment?.id);
+ }
+ return {async call(operation,args){
+  const arities={project:1,prepare:4,deploy:4,reconcile:4,source:4,verify:4};
+  if(!Object.hasOwn(arities,operation)||!Array.isArray(args)||args.length!==arities[operation])fail('operation_denied');
+  const c=await current();
+  if(operation==='project'){if(args[0]!==surfaceProject)fail('scope_changed');await host.assertProject(surfaceProject);return {projectId:surfaceProject};}
+  if(operation==='prepare'||operation==='deploy'){
+   const [project,files,id,sourceDigest]=args;if(project!==surfaceProject)fail('scope_changed');const r=await release(id,sourceDigest);await reviewed(r,c);
+   if(!equal(files,r.files))fail('source_binding');
+   const binding={project:surfaceProject,id,sourceHash:sourceDigest,baseRevision:c.revision,baseId:c.active_id},preparedKey='surface:prepare:'+id;
+   if(operation==='prepare'){
+    if(r.deploy_started||r.state!=='approved')fail('preparation_too_late');
+    const state=await ledger.reserve(preparedKey,binding);
+    if(state.row.status==='completed')return state.row.result;
+    // This reservation makes no provider call. Resuming an interrupted prepare
+    // completes only its durable authorization, never an external side effect.
+    const result={prepared:true,id,sourceHash:sourceDigest};await ledger.complete(preparedKey,result);return result;
+   }
+   if(!r.deploy_started||r.state!=='deploying'||!equal(files,r.files))fail('deployment_binding');
+   const prepared=await ledger.get(preparedKey);
+   if(!prepared||prepared.status!=='completed'){
+    // Old deployments can predate this journal. Never treat a missing new
+    // journal row as permission to repeat their existing provider attempt.
+    const existing=await deployment(r,r.deployment?.id);if(!existing)fail('outcome_unknown');return existing;
+   }
+   if(prepared.input_hash!==requestHash(binding)||prepared.result?.prepared!==true)fail('preparation_binding');
+   const key='surface:deploy:'+id,state=await ledger.reserve(key,binding);
+   if(!state.created){
+    if(state.row.status==='completed')return state.row.result;
+    const existing=await deployment(r,r.deployment?.id);if(!existing)fail('outcome_unknown');await ledger.complete(key,existing);return existing;
+   }
+   await host.assertProject(surfaceProject);
+   const fresh=await release(id,sourceDigest),control=await current();await reviewed(fresh,control);
+   if(control.active_id!==c.active_id||control.revision!==c.revision||fresh.state!=='deploying'||!fresh.deploy_started)fail('deployment_binding');
+   const result=await host.deploy(surfaceProject,r.files,r.id,r.source_hash);await ledger.complete(key,result);return result;
+  }
+  if(operation==='reconcile'){
+   const [project,id,hash,known]=args;if(project!==surfaceProject)fail('scope_changed');return deployment(await release(id,hash),known);
+  }
+  if(operation==='source'){
+   const [known,files,id,hash]=args,r=await release(id,hash);if(!equal(files,r.files))fail('source_binding');const actual=await deployment(r,known);if(!actual)fail('outcome_unknown');return host.verifySource(actual.id,r.files,r.id,r.source_hash);
+  }
+  const [url,id,hash,data]=args,r=await release(id,hash);if(typeof data!=='boolean')fail('input_invalid');
+  const actual=await deployment(r,r.deployment?.id);if(!actual||url!==actual.url||actual.state!=='READY')fail('deployment_binding');
+  return host.verify(actual.url,r.id,r.source_hash,data);
+ }};
+}
