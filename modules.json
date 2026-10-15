@@ -298,6 +298,14 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "collaboration",
+      "path": "src/collaboration/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [
