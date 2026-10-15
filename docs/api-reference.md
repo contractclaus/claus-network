@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.28.0 with 227 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.28.1 with 232 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -195,6 +195,11 @@ This source describes API 0.28.0 with 227 operations. Endpoint availability and 
 | `contract_binding_get` | GET | `/v1/projects/{projectId}/contract-bindings/{bindingId}` | Bearer credential |
 | `contract_binding_revoke` | DELETE | `/v1/projects/{projectId}/contract-bindings/{bindingId}` | Bearer credential |
 | `contract_request_get` | GET | `/v1/projects/{projectId}/contract-requests/{requestId}` | Bearer credential |
+| `runtime_resource_policy_set` | PUT | `/v1/admin/runtime/operators` | Bearer credential |
+| `runtime_resources` | GET | `/v1/projects/{projectId}/runtime-resources` | Bearer credential |
+| `runtime_resources_set` | PUT | `/v1/projects/{projectId}/runtime-resources` | Bearer credential |
+| `project_web_read` | POST | `/v1/projects/{projectId}/web/read` | Bearer credential |
+| `runtime_reconcile` | POST | `/v1/projects/{projectId}/runtimes/{runtimeId}/reconcile` | Bearer credential |
 | `runtime_set` | PUT | `/v1/projects/{projectId}/runtimes/{runtimeId}` | Bearer credential |
 | `runtime_checkpoint` | PATCH | `/v1/projects/{projectId}/runtimes/{runtimeId}/memory` | Bearer credential |
 | `runtime_get` | GET | `/v1/projects/{projectId}/runtimes/{runtimeId}` | Bearer credential |

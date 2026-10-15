@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { copy, digest, integer, requireThat, text } from '../shared/index.mjs';
 
 export const PROJECT_SCOPES = Object.freeze([
-  'deal.evidence','deal.review','deal.prepare','deal.exit','worker.manage','worker.run','worker.read','worker.cancel','workflow.manage', 'workflow.cancel', 'app.use', 'app.manage', 'project.read', 'project.update', 'artifact.read', 'artifact.write',
+  'web.read','deal.evidence','deal.review','deal.prepare','deal.exit','worker.manage','worker.run','worker.read','worker.cancel','workflow.manage', 'workflow.cancel', 'app.use', 'app.manage', 'project.read', 'project.update', 'artifact.read', 'artifact.write',
   'snapshot.create', 'build.compile', 'review.quote', 'review.admit', 'review.read',
   'proposal.create', 'proposal.read', 'proposal.execute', 'project.publish',
   'project.export', 'source.publish', 'budget.read', 'events.read', 'job.cancel',

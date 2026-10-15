@@ -25,3 +25,8 @@ test('worker output cannot grant money or access admin operations',async t=>{
  const f=await fixture(t);f.setOutput({state:{},action:{operation:'compute_grant_set',input:{}}});await f.api.tick();f.advance();await f.api.tick();
  const result=await f.api.get('owner-credential','p','research');assert.equal(result.state,'blocked');assert.equal(result.observation.error,'runtime_action_denied');assert.equal(f.executions.length,0);
 });
+test('a stop concurrent with a worker result never re-enables the runtime',async t=>{
+ const f=await fixture(t);let release;const gate=new Promise(r=>release=r);const definition=await f.store.read('project-runtimes','p:research');
+ const api=createRuntimes({store:f.store,identity:f.identity,now:()=>1800000000000,workers:{run:async()=>{await gate;return{id:'original-worker'};}}});
+ const running=api.tick();await new Promise(r=>setImmediate(r));const leased=await f.api.get('owner-credential','p','research');await f.api.stop('owner-credential','p','research',{expectedRevision:leased.revision});release();await running;const after=await f.api.get('owner-credential','p','research');assert.equal(after.enabled,false);assert.equal(after.state,'paused');assert.equal(after.pending.id,'original-worker');
+});
