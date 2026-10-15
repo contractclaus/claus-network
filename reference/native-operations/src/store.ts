@@ -1,3 +1,4 @@
+import {recoverOverdueGeneration} from './recovery.js';
 import {initializeClubPrivacy} from './club-privacy.js';
 import {textPrefix} from './text.ts';
 import { neon } from '@neondatabase/serverless';
@@ -84,13 +85,9 @@ export async function beginGeneration(expected:number) {
   return rows[0]?.generation as number|undefined;
 }
 export async function recoverGeneration(expected:number,mentions=false) {
-  const rows=await sql()`UPDATE claus_state SET generation=generation+1,updated_at=now()
-    WHERE id=1 AND generation=${expected} AND status<>'blocked' AND (lease_until IS NULL OR lease_until<now())
-    AND (next_at<now()-interval '5 minutes' OR (${mentions} AND status='waiting' AND updated_at<now()-interval '5 minutes'
-      AND EXISTS(SELECT 1 FROM claus_x_poll WHERE id=1 AND next_poll_at<now()-interval '5 minutes' AND (lease_until IS NULL OR lease_until<now()))))
-    RETURNING generation`;
-  return rows[0]?.generation as number|undefined;
+ return recoverOverdueGeneration({query:async<T=any>(statement:string,params?:any[])=>({rows:await sql().query(statement,params) as T[]})},expected,mentions);
 }
+
 export async function acquire(id: string, generation:number,waitingOnly=false) {
   const rows=await sql()`UPDATE claus_state SET lease_until=now()+interval '15 minutes',lease_owner=${id},status='working',updated_at=now() WHERE id=1 AND generation=${generation} AND status NOT IN ('paused','blocked') AND (lease_until IS NULL OR lease_until<now()) AND (NOT ${waitingOnly} OR status='waiting') RETURNING *`;
   return rows[0] ?? null;

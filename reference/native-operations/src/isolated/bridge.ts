@@ -1,5 +1,6 @@
 import program from './network.json' with {type:'json'};
 import {analyzeProjection,programHash} from './runner.mjs';
+import {workPlannerHealth} from './work.js';
 
 const readState=(read:any)=>read?.available===true?'available':read?.available===false?'unavailable':'unknown';
 // Pass availability only, never private projects, runtime inputs, jobs, keys or balances.
@@ -9,6 +10,6 @@ export function analyzeProducts(snapshot:any){
 }
 export async function isolatedHealth(){
  const result=await analyzeProjection(program,{kind:'probe',observedAt:Date.now(),subjects:[]});
- return {state:result.state,sourceHash:result.sourceHash,profile:'data-only-analysis/1',...(result.error?{error:result.error}:{})};
+ return {state:result.state,sourceHash:result.sourceHash,profile:'data-only-analysis/1',workPlanner:await workPlannerHealth(),...(result.error?{error:result.error}:{})};
 }
 export const isolatedSourceHash=()=>programHash(program);

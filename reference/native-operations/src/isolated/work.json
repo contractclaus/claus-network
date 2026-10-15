@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "lines": [
+    "function plan(input) {",
+    " return {order:input.items.slice().sort((a,b) => a.createdAt-b.createdAt || a.id.localeCompare(b.id)).map(item => item.id)};",
+    "}"
+  ]
+}

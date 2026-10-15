@@ -1,3 +1,4 @@
+import {planWork} from './isolated/work.js';
 import {readOperationalCapabilities} from './operational-capabilities.js';
 import {operationSucceeded} from './operation-result.js';
 import {executionSnapshot,executionAvailable,executionChanged,executionInvestigations} from './network-execution.js';
@@ -17,10 +18,11 @@ export const networkWorkDefinitions=[{type:'function',function:{name:'network_wo
 export function networkOperationsEnabled(config:Configuration){return config.settings.enabled&&config.settings.networkOperations?.enabled===true&&config.policy.capabilities.networkBuild===true;}
 // A due receipt check is a short interruption, not a new project. Otherwise
 // retain an in-progress goal before starting another item of the same priority.
-export function networkWorkQueue(items:any[],now=Date.now()){
+export function networkWorkQueue(items:any[],now=Date.now(),order:string[]=[]){
+ const ordering=new Map(order.map((id,index)=>[id,index]));
  const active=items.filter(r=>!finalStates.has(r.status));
  const rank=(r:any)=>r.status==='waiting'?0:r.status==='working'?1:2;
- const runnable=active.filter(r=>Date.parse(r.next_at)<=now).sort((a,b)=>a.priority-b.priority||rank(a)-rank(b)||Date.parse(a.created_at)-Date.parse(b.created_at)||a.id.localeCompare(b.id));
+ const runnable=active.filter(r=>Date.parse(r.next_at)<=now).sort((a,b)=>a.priority-b.priority||rank(a)-rank(b)||(ordering.get(a.id)??Number.MAX_SAFE_INTEGER)-(ordering.get(b.id)??Number.MAX_SAFE_INTEGER)||Date.parse(a.created_at)-Date.parse(b.created_at)||a.id.localeCompare(b.id));
  const first=runnable[0];
  return {nextDependencyCheck:active.filter(r=>r.status==='waiting').map(r=>r.next_at).sort((a,b)=>Date.parse(a)-Date.parse(b))[0]??null,counts:{runnable:runnable.length,waiting:active.filter(r=>r.status==='waiting').length,active:active.length},focus:first?{id:first.id,revision:first.revision,status:first.status,title:first.title,nextStep:first.next_step}:null,
   queue:{runnable:runnable.map(r=>r.id),waiting:active.filter(r=>r.status==='waiting'&&Date.parse(r.next_at)>now).map(r=>r.id),scheduled:active.filter(r=>r.status!=='waiting'&&Date.parse(r.next_at)>now).map(r=>r.id)}};
@@ -97,8 +99,9 @@ export function createNetworkOperations({database=sql,observe=networkOperatingCo
   const items=id?await db`SELECT * FROM claus_network_work WHERE id=${id}`:await db`SELECT * FROM claus_network_work WHERE status NOT IN ('completed','cancelled') ORDER BY priority,next_at,created_at LIMIT 24`;
   const recent=id?[]:await db`SELECT id,title,status,summary,evidence,updated_at FROM claus_network_work WHERE status IN ('completed','cancelled') ORDER BY updated_at DESC LIMIT 4`;
   const annotated=items.map((r:any)=>({...r,checkpointAgeMs:Math.max(0,now()-Date.parse(r.updated_at)),assumptionsNeedRefresh:!!watch?.capabilities_hash&&r.capabilities_hash!==watch.capabilities_hash}));
+  const workPlanner=id?null:await planWork(items,now());
   const visible=id?annotated:annotated.map((r:any)=>({...r,goal:r.goal.slice(0,360),next_step:r.next_step.slice(0,500),summary:r.summary.slice(0,360),truncated:r.goal.length>360||r.next_step.length>500||r.summary.length>360}));
-  return {watch,items:visible,recent,capabilityReminder:'Use watch.capabilities only when capabilities_status is available. Reconcile older work summaries against these facts before acting; a capability change never grants spending or owner permissions.',investigations:networkInvestigations(watch,annotated),...networkWorkQueue(items,now()),readMore:'Read an exact id for full work details.',receiptMeaning:'Successful public or private operating receipts; private receipts stay internal. Public work publication requires separately public evidence. Completion is Claus’s recorded assessment, not independent validation.',nextInspectionIntervalMinutes:inspectionMs/60_000};
+  return {watch,items:visible,recent,capabilityReminder:'Use watch.capabilities only when capabilities_status is available. Reconcile older work summaries against these facts before acting; a capability change never grants spending or owner permissions.',investigations:networkInvestigations(watch,annotated),...networkWorkQueue(items,now(),workPlanner?.order),workPlanner,readMore:'Read an exact id for full work details.',receiptMeaning:'Successful public or private operating receipts; private receipts stay internal. Public work publication requires separately public evidence. Completion is Claus’s recorded assessment, not independent validation.',nextInspectionIntervalMinutes:inspectionMs/60_000};
  }
  async function due(){await initialize();const db=database(),at=new Date(now()).toISOString();const [r]=await db`SELECT pending OR next_review<=${at}::timestamptz OR EXISTS(SELECT 1 FROM claus_network_work WHERE status NOT IN ('completed','cancelled') AND next_at<=${at}::timestamptz) AS due FROM claus_network_watch WHERE id`;return r?.due===true;}
  async function inspect(){await initialize();await import('./surface/service.js').then(m=>m.monitorSurface()).catch(()=>null);const db=database(),at=new Date(now()).toISOString();
@@ -111,7 +114,7 @@ export function createNetworkOperations({database=sql,observe=networkOperatingCo
   const capabilityHash=value.capabilitiesStatus==='available'?createHash('sha256').update(JSON.stringify(stableCapabilityFacts(value.capabilities))).digest('hex'):old.capabilities_hash;
   const changed=(healthy?(fingerprint!==old.fingerprint||Number(old.failures)>=2):failures===2)||executionChanged(value.operations?.execution,executionAvailable(old.execution)?old.execution:old.reviewed_execution);
   await db`UPDATE claus_network_watch SET capabilities_changed_at=CASE WHEN ${capabilityHash??null} IS DISTINCT FROM capabilities_hash THEN ${at}::timestamptz ELSE capabilities_changed_at END,capabilities_hash=${capabilityHash??null},fingerprint=${healthy?fingerprint:old.fingerprint},observation=${JSON.stringify(value)}::jsonb,observed_at=${at}::timestamptz,failures=${failures},pending=pending OR ${changed} OR (${capabilityHash??null} IS DISTINCT FROM capabilities_hash) WHERE id`;
-  await recordNetworkIncidents(value,at,database);if(database===sql)await saveMeasurement('network',{observedAt:Date.parse(at),readLatencyMs:value.readLatencyMs??null,inventoryStatus:value.inventoryStatus,capabilitiesStatus:value.capabilitiesStatus,operationsStatus:value.operationsStatus});return due();
+  await recordNetworkIncidents(value,at,database);if(database===sql)await saveMeasurement('network',{coverageVersion:1,observedAt:Date.parse(at),readLatencyMs:value.readLatencyMs??null,inventoryStatus:value.inventoryStatus,capabilitiesStatus:value.capabilitiesStatus,operationsStatus:value.operationsStatus,execution:executionSnapshot(value.operations?.execution),workers:(value.operations?.workers??[]).map((worker:any)=>({role:worker.role,status:worker.status}))});return due();
  }
  async function acknowledge(watch?:any){
   await initialize();const db=database(),at=new Date(now()).toISOString();
