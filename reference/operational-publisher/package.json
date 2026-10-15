@@ -1,0 +1,19 @@
+{
+  "name": "claus-inference-relay",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "check": "node --check src/index.js && node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "1.2.0",
+    "@x402/evm": "2.28.0",
+    "hono": "4.13.12",
+    "undici": "8.11.2",
+    "viem": "2.57.1",
+    "acorn": "8.15.0"
+  }
+}

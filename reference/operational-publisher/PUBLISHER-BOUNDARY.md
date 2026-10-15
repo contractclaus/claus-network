@@ -1,0 +1,11 @@
+# Fixed operational publisher
+
+Native16 delegates the three existing operational project release lanes to a fixed service in Signer5. The service is not native-editable. Native receives only a purpose-bound broker credential. Provider tokens and preview bypass credentials remain inside the fixed service. The surface and project-site lanes are separate existing capabilities; this change does not claim all native credentials have been removed.
+
+The broker reads existing control, release, review and configuration records through a separate read-only database principal. It accepts a closed operation set and fixed project mapping. It never accepts a raw provider API path, arbitrary URL, environment, build command, SQL or signing request. Publication binds exact permitted file replacements, manifest, original build/review IDs, complete approved review, current revision and current enabled state. Native/API editable files remain the two native analysis/planning JSON programs and the single API analysis JSON program. No generic Node editing is granted.
+
+A separate signer-side deployment journal commits the original intent before a host call. An interrupted/unknown call can only be reconciled; it cannot be sent a second time. Native cannot write this journal. Promotion verifies actual hosted source and health, original before/after deployment and unchanged schedules. Rollback is likewise tied to the original release and current revision.
+
+The installation rotates the three existing operational project tokens, stores the replacements only in the fixed publisher, removes those token settings from native, then revokes old tokens after the new native execution is observed. Old source deployments stay recoverable, but their revoked token values cannot publish. Surface/domain credentials and unrelated integrations are not rotated by this delivery.
+
+This completes a concrete credential separation, not the full server/DB handover. The remaining native host still has database and other fixed-service client authority. General server editing and production DB cutover remain unavailable pending their own isolation and original-effect reconciliation. No original job/review/payment is replaced, no new review is purchased, no financial limit or contract changes, and no cron or X post is created.

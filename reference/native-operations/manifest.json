@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_8ymM7v62EgrM5Gj2odpNggrHJsER",
-  "source": "cfee35497ab06abc0d47720a233959ba62e5420bc44d748f15a956b574cb0785",
+  "deployed": "dpl_D1XdogA71yXWjiae5pQoKanALMkB",
+  "source": "7a3db7ee0d0b88764a9a5b471127def01d28d869c6ccbffc02e18e3cc302b839",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "8f8ae7955693bc9544d839379830ff603d5eb173fb27c92afcc585db01b8c25c",
@@ -43,6 +43,9 @@
     "src/isolated/work.ts": "64f6c8087bd8a367012a4b38c1b488496bbc065b5c7c2f64724530cfe5d76b21",
     "src/network-measurements.ts": "23681901c6f6c4416e8e6c58fff91a96f7f2271ed0fd89e1b3747b7e5cbd4948",
     "src/recovery.ts": "967acdbfbecd5bd6b27e46e92fdc27bdb01e9b5d7aba8b8386598932751dca7c",
-    "src/builder-store.ts": "051b4993ea5648176c24e657d486a00d5596c060f303bdbee203b9907c81a461"
+    "src/builder-store.ts": "051b4993ea5648176c24e657d486a00d5596c060f303bdbee203b9907c81a461",
+    "src/surface/host.ts": "4440f8f5094671112fbb8d47471f104b8e0ab34fe78c0f869a3757cd23108713",
+    "src/surface/service.ts": "2be6300de6af2c2e61ff8d2f0cff9d721b45446ddb63b2c0969412e81859ef29",
+    "src/surface/worker.ts": "9a3a377b23a6300af7b947aafb1c28cc692937251e781bf9355b91b3804c868b"
   }
 }
