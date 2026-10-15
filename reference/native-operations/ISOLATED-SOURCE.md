@@ -1,3 +1,5 @@
+Current scope: Native14 additionally delegates the work-ordering program described in [operating isolation](OPERATING-ISOLATION.md). The analysis boundary below remains unchanged.
+
 # Credential-free network analysis
 
 This release narrows the delegated native/API source scopes to `src/isolated/network.json`. Website scope is unchanged. The JSON document contains version 1 and an array of source lines defining `analyze(input)`. It is data during the Node build, not an imported executable module. The trusted bridge evaluates those lines only in QuickJS, with no installed host handles, module loader, fetch, database or environment access.

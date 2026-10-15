@@ -243,6 +243,7 @@ app.get('/api/recover',async c=>{
    try{const {operationalHandoff}=await import('./operations/handoff.js');const {OperationsHost}=await import('./operations/host.js');const handoff=await operationalHandoff(productionLabDatabase(),new OperationsHost(),async generation=>(await start(life,[generation])).runId);if(handoff)return c.json({status:'operational_handoff',...handoff});}catch{/* Existing recovery still handles overdue work. */}
   }
   const state=await store.state();
+  if(state.status==='paused') return c.json({status:'paused'});
   if(state.status==='blocked') return c.json({status:'requires_reconciliation'});
   const mentions=config.policy.capabilities.xRead&&config.policy.capabilities.xReply;
   const poll=mentions?(await store.sql()`SELECT next_poll_at,lease_until FROM claus_x_poll WHERE id=1`)[0]??null:null;

@@ -1,0 +1,25 @@
+{
+  "native": "dpl_6XmiaD1N5WCZgBHdKWAbzivfkJ5n",
+  "source": "4d309ee39cc186223eb42280429c88a6031eef7519b0b5629b2d9d3d8174221a",
+  "changed": [
+    "src/index.ts",
+    "src/isolated/bridge.ts",
+    "src/isolated/runner.d.mts",
+    "src/isolated/runner.mjs",
+    "src/isolated/work.json",
+    "src/isolated/work.ts",
+    "src/network-care.ts",
+    "src/network-measurements.ts",
+    "src/network-operations.ts",
+    "src/operational-capabilities.ts",
+    "src/operations/host.ts",
+    "src/operations/policy.ts",
+    "src/operations/service.ts",
+    "src/operations/worker.ts",
+    "src/recovery.ts",
+    "src/store.ts"
+  ],
+  "profile": "isolated-owned-work/1",
+  "arbitraryServerSource": false,
+  "apiVersionUnchanged": "0.28.4"
+}
