@@ -306,6 +306,22 @@
         "shared"
       ],
       "builtins": []
+    },
+    {
+      "id": "work-planning",
+      "path": "src/work-planning/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
+    },
+    {
+      "id": "webhooks",
+      "path": "src/webhooks/",
+      "imports": [
+        "shared"
+      ],
+      "builtins": []
     }
   ],
   "planned": [

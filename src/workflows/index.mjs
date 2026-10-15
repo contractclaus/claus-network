@@ -48,6 +48,10 @@ export function createWorkflows({store,identity,apps,now=()=>Date.now(),admit=as
         return value(await tx.write('app-workflows',id,row,0));
       });
     },
+    async revise(actor,projectId,id,{expectedRevision,name,intervalSeconds,maxRuns}){
+      text(name);requireThat(name.length<=80,'invalid_workflow_name');integer(intervalSeconds,60,30*86400);integer(maxRuns,1,1000);
+      return store.transaction(async tx=>{await authorize(actor,projectId,tx);const r=await tx.read('app-workflows',id);requireThat(r?.value.projectId===projectId,'not_found');await active(r.value,tx);requireThat(r.revision===expectedRevision,'revision_conflict');requireThat(!r.value.pending&&!r.value.leaseUntil&&r.value.step===0,'workflow_in_flight');requireThat(maxRuns>r.value.completedRuns,'workflow_runs_already_completed');return value(await tx.write('app-workflows',id,{...r.value,name,intervalSeconds,maxRuns,updatedAt:now()},r.revision));});
+    },
     async get(actor,projectId,id){await identity.authorize(actor,'project.read',{projectId});const row=await store.read('app-workflows',text(id));requireThat(row?.value.projectId===projectId,'not_found');return value(row);},
     async list(actor,projectId,{after='',limit=25}={}){await identity.authorize(actor,'project.read',{projectId});integer(limit,1,50);const rows=await store.list('app-workflows',{projectId,after,limit});return {items:rows.map(value),nextCursor:rows.length===limit?rows.at(-1).id:null};},
     async cancel(actor,projectId,id,{expectedRevision}){return store.transaction(async tx=>{

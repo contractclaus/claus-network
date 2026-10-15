@@ -2,14 +2,14 @@ import { manifestConnections, SITE_LIMITS, sitePublicationActive, sourcePath, ca
 
 
 export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, limit = async () => undefined, now = () => Date.now(),
-  visible = async () => true, origin = 'https://claus-network-sites.vercel.app' }) {
+  visible = async () => true, appSchema = async () => null, origin = 'https://claus-network-sites.vercel.app' }) {
   requireThat(new URL(origin).origin === origin && new URL(origin).protocol === 'https:', 'invalid_release_origin');
   async function owned(actor,projectId,id,reader=store){
     await identity.authorize(actor,'resource.read',{projectId},reader);
     const row=await reader.read('project-releases',text(id));
     requireThat(row?.value.projectId===projectId,'not_found');return row;
   }
-  return {
+  const api={
     async create(actor,projectId,{snapshotId,paths}){
       requireThat(Array.isArray(paths)&&paths.length>0&&paths.length<=SITE_LIMITS.files&&new Set(paths).size===paths.length&&
         paths.includes('index.html'),'invalid_release_files');
@@ -19,6 +19,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
         return{path:file.path,content:file.content,hash:file.hash};}).sort((a,b)=>a.path.localeCompare(b.path,'en'));
       requireThat(Buffer.byteLength(canonical(files))<=SITE_LIMITS.totalBytes,'release_too_large');
       let connect;try{connect=manifestConnections(files);}catch{requireThat(false,'invalid_site_connect');}
+      const appSchemaHash=await appSchema(projectId);
       const id=digest({projectId,snapshotId,paths:files.map(f=>f.path)});
       return store.transaction(async tx=>{
         await identity.authorize(actor,'release.publish',{projectId},tx);
@@ -28,7 +29,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
         requireThat((capacity?.value.count??0)<(await limit('releasesPerProject',tx)??32),'capacity_reached');
         const contentHash=await artifacts.put(tx,projectId,files);
         const value={id,projectId,snapshotId,contentHash,paths:files.map(f=>f.path),createdAt:now(),
-          isolation:'opaque-origin-static-v1',connect,url:origin+'/r/'+id.slice(7)+'/index.html'};
+          isolation:'opaque-origin-static-v1',appSchemaHash,connect,url:origin+'/r/'+id.slice(7)+'/index.html'};
         await tx.write('project-releases',id,value,0);
         await tx.write('release-capacity',projectId,{count:(capacity?.value.count??0)+1},capacity?.revision??0);
         return value;
@@ -37,7 +38,13 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
     async get(actor,projectId,releaseId){
       const row=await owned(actor,projectId,releaseId);
       const publication=await store.read('release-publications',releaseId);
-      return{...row.value,publication:publication?{...publication.value,revision:publication.revision}:null};
+      return{...row.value,selection:(await store.read('project-site-selection',projectId))??null,publication:publication?{...publication.value,revision:publication.revision}:null};
+    },
+    async preview(actor,projectId,releaseId){const row=await owned(actor,projectId,releaseId);return {...row.value,files:await artifacts.get(projectId,row.value.contentHash),preview:true,published:false,instructions:'Private source bundle. Use the local isolated preview helper; publication is a separate explicit operation.'};},
+    async restore(actor,projectId,{releaseId,expectedRevision,idempotencyKey}){
+      const release=await owned(actor,projectId,releaseId),schema=await appSchema(projectId);
+      requireThat(release.value.appSchemaHash!==undefined&&release.value.appSchemaHash===schema,'release_app_schema_changed');
+      return store.transaction(async tx=>{await identity.authorize(actor,'release.publish',{projectId},tx);await admit(projectId,tx);const who=await identity.credential(actor,tx),key=digest({projectId,actor:who.principalId,key:idempotencyKey}),prior=await tx.read('release-restores',key),requestHash=digest({releaseId,expectedRevision});if(prior){requireThat(prior.value.requestHash===requestHash,'idempotency_conflict');return prior.value.result;}const publication=await tx.read('release-publications',releaseId);requireThat(publication?.value.published&&sitePublicationActive(publication.value.expiresAt,now()),'release_not_published');const selection=await tx.write('project-site-selection',projectId,{projectId,releaseId,updatedAt:now()},expectedRevision);const result={projectId,releaseId,revision:selection.revision,appDataChanged:false};await tx.write('release-restores',key,{projectId,requestHash,result},0);await tx.event({type:'release.restored',projectId,releaseId,at:now()});return result;});
     },
     async publish(actor,projectId,{releaseId,published,expiresAt=null,expectedRevision}){
       requireThat(typeof published==='boolean','invalid_publication');integer(expectedRevision);
@@ -50,13 +57,14 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
         const row=await tx.write('release-publications',releaseId,{projectId,published,expiresAt,updatedAt:now()},expectedRevision);
         const key=projectId+':'+releaseId,index=await tx.read('project-public-releases',key);
         await tx.write('project-public-releases',key,{releaseId,published,expiresAt},index?.revision??0);
+        const selected=await tx.read('project-site-selection',projectId);if(published||selected?.value.releaseId===releaseId)await tx.write('project-site-selection',projectId,{projectId,releaseId:published?releaseId:null,updatedAt:now()},selected?.revision??0);
         await tx.event({type:published?'release.published':'release.withdrawn',projectId,releaseId,at:now()});
         return{releaseId,...row.value,revision:row.revision};
       });
     },
     async publicForProject(projectId){
       if(!await visible(projectId))return [];
-      const override=(await store.read('content-controls',projectId))?.value.releaseId;
+      const override=(await store.read('content-controls',projectId))?.value.releaseId??(await store.read('project-site-selection',projectId))?.value.releaseId;
       const rows=(await store.list('project-public-releases',{prefix:projectId+':',limit:1000}))
         .filter(row=>(!override||row.value.releaseId===override)&&row.value.published&&sitePublicationActive(row.value.expiresAt,now()));
       const ids=rows.map(row=>row.value.releaseId),result=[];
@@ -94,5 +102,5 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
       const files=await artifacts.get(release.projectId,release.contentHash);
       return{...release,expiresAt:publication.expiresAt,files};
     }
-  };
+  };return api;
 }
