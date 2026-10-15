@@ -1,3 +1,4 @@
+import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {recoverOverdueGeneration} from './recovery.js';
 import {initializeClubPrivacy} from './club-privacy.js';
 import {textPrefix} from './text.ts';
@@ -9,7 +10,7 @@ export function sql() {
   return neon(process.env.DATABASE_URL);
 }
 
-export async function initialize() {
+export async function initialize() {if(managedDatabase())return managedSchemaReady();
   const db=sql();
   await db`CREATE TABLE IF NOT EXISTS claus_config (revision serial PRIMARY KEY, parent_revision integer UNIQUE NOT NULL, content jsonb NOT NULL, hash text NOT NULL, created_at timestamptz NOT NULL DEFAULT now())`;
   await db`CREATE TABLE IF NOT EXISTS claus_state (id integer PRIMARY KEY CHECK(id=1), generation integer NOT NULL DEFAULT 0, memory text NOT NULL DEFAULT '', agenda text NOT NULL DEFAULT '', next_at timestamptz NOT NULL DEFAULT now(), lease_until timestamptz, lease_owner text, status text NOT NULL DEFAULT 'paused', updated_at timestamptz NOT NULL DEFAULT now())`;
@@ -51,16 +52,8 @@ export async function initialize() {
   await db`CREATE TABLE IF NOT EXISTS claus_projects (id text PRIMARY KEY, title text NOT NULL, summary text NOT NULL, sandbox_name text UNIQUE NOT NULL, snapshot_id text, version integer NOT NULL DEFAULT 1, last_exit_code integer, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`;
   await initializeClubPrivacy();
 }
-export async function configure(content: Configuration, expectedRevision=0) {
-  validateConfiguration(content);
-  if(!Number.isInteger(expectedRevision)||expectedRevision<0)throw new Error('invalid_revision');
-  const unchanged=await sql()`SELECT revision,hash FROM claus_config WHERE revision=${expectedRevision} AND revision=(SELECT MAX(revision) FROM claus_config) AND hash=${digest(content)}`;
-  if(unchanged.length)return {...unchanged[0],unchanged:true};
-  const rows=await sql()`INSERT INTO claus_config(parent_revision,content,hash) SELECT ${expectedRevision},${JSON.stringify(content)}::jsonb,${digest(content)} WHERE (SELECT COALESCE(MAX(revision),0) FROM claus_config)=${expectedRevision} ON CONFLICT(parent_revision) DO NOTHING RETURNING revision, hash`;
-  if(!rows.length)throw new Error('configuration_conflict');
-  await journal('configuration','Owner configuration updated',{revision:rows[0].revision});
-  return rows[0];
-}
+// Configuration writes belong to the separately authenticated fixed custodian.
+export async function configure(_content: Configuration, _expectedRevision=0):Promise<never> {throw Error('configuration_managed_externally');}
 export async function historicalConfiguration(revision:number) {return (await sql()`SELECT revision,content,hash FROM claus_config WHERE revision=${revision}`)[0]??null;}
 export async function configuration() {
   const rows=await sql()`SELECT revision,content,hash FROM claus_config ORDER BY revision DESC LIMIT 1`;

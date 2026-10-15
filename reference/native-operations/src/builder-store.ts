@@ -1,3 +1,4 @@
+import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import type {LabDatabase,LabQuery} from './lab-db.js';
 import {modelCapacity} from './builder-wait.js';
 import {hash,text} from './lab-schema.js';
@@ -53,7 +54,7 @@ const claimable=`b.status IN ${runnable} AND b.next_at<=now() AND b.id=ANY($2::t
 const priority=`CASE WHEN ${initialAttempt('b')} THEN 0 ELSE 1 END,b.next_at,b.created_at,b.id`;
 export class BuilderStore {
  constructor(readonly db:LabDatabase,readonly coordination=new BuilderCoordination(db)){}
- async initialize(){await this.db.query(`
+ async initialize(){if(managedDatabase())return managedSchemaReady();await this.db.query(`
  CREATE TABLE IF NOT EXISTS claus_builds(id text PRIMARY KEY,title text NOT NULL,goal text NOT NULL,status text NOT NULL DEFAULT 'queued',revision integer NOT NULL DEFAULT 0,summary text NOT NULL DEFAULT '',lease_owner text,lease_until timestamptz,next_at timestamptz NOT NULL DEFAULT now(),created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
  CREATE TABLE IF NOT EXISTS claus_build_effects(id text PRIMARY KEY,project_id text NOT NULL REFERENCES claus_builds(id),revision integer NOT NULL,kind text NOT NULL,status text NOT NULL DEFAULT 'reserved',input jsonb NOT NULL,output jsonb,progress jsonb,amount bigint NOT NULL DEFAULT 0,created_at timestamptz NOT NULL DEFAULT now());
  CREATE TABLE IF NOT EXISTS claus_build_versions(project_id text NOT NULL REFERENCES claus_builds(id),revision integer NOT NULL,source_effect text UNIQUE NOT NULL REFERENCES claus_build_effects(id),files jsonb NOT NULL,source_hash text NOT NULL,summary text NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(project_id,revision));

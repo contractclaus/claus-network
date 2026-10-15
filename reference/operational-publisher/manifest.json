@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_A6oJ8pZKx6rcZLi48tmKndThT3Nn",
-  "source": "3e32ab63f60ad10405d80d8fb5cca6a25455e6a8e097da9519026bc37ca4abd1",
+  "deployed": "dpl_d4aWGNcXVv4mUjAxoCzMe2fPCZnY",
+  "source": "1219aee124d98ffd8a616ea9242118d0379760d597dfdff4e590ab2208071ba5",
   "files": {
-    "src/index.js": "17484ab86142ab12905d3c9ad81ef2edbb6dc111bdee6eb3f58c6fde5c9d4eb2",
+    "src/index.js": "33f9a0b7778c2dc48f620f5704d5e058e9875f35eccfef1160bbd4bc31f1b03a",
     "src/publisher/host.js": "6af5a35358719a00c3f70f7c697d070f7911e9480da7e689befa45755700f6f4",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
     "src/publisher/policy.js": "1ea8a68136ce4615eddcf8623f4ca34d9fd8eddface64923642a12c814bbc9ce",
@@ -15,6 +15,9 @@
     "src/surface-publisher/host.js": "ab1ee1877a0977a7ef6be49ed11dfed5193c75336bd9e07af9516968fff121c8",
     "src/surface-publisher/routes.js": "15fc3c2f73837886b57e56ce5acca41cb11a9a0610aff9c43d5da6bb6b3e95ab",
     "src/surface-publisher/service.js": "219a70aab74ae97a40b5b4ec719c405b437c081f9cb053389dc260840e8a264b",
-    "src/surface-publisher/source.js": "5870c1dc4f8dfe4f49c42532e1a5046a607aed88a4bf2a0dd7eee31cc9c2357d"
+    "src/surface-publisher/source.js": "5870c1dc4f8dfe4f49c42532e1a5046a607aed88a4bf2a0dd7eee31cc9c2357d",
+    "src/configuration/routes.js": "b8d6a30ec2cfbacd4f1eba4f3969a26ece086d27fabd667280d078a743b554aa",
+    "src/configuration/service.js": "ab9e223e7235e927bd15911b4b6732dda80c4b606d3a25abe592b45568ace5af",
+    "src/configuration/validation.js": "2fce7cb19f899a2681458f3671cd45db71ab2ceccb2c1bf676c30884e8119a63"
   }
 }

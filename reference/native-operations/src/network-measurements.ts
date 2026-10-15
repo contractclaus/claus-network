@@ -1,7 +1,8 @@
+import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {sql} from './store.js';
 
 let initialized:Promise<unknown>|undefined;
-export function initializeMeasurements(){return initialized??=sql()`CREATE TABLE IF NOT EXISTS claus_network_measurements(id bigserial PRIMARY KEY,subject text NOT NULL,observed_at timestamptz NOT NULL DEFAULT now(),document jsonb NOT NULL)`.catch(e=>{initialized=undefined;throw e;});}
+export function initializeMeasurements(){if(managedDatabase())return managedSchemaReady();return initialized??=sql()`CREATE TABLE IF NOT EXISTS claus_network_measurements(id bigserial PRIMARY KEY,subject text NOT NULL,observed_at timestamptz NOT NULL DEFAULT now(),document jsonb NOT NULL)`.catch(e=>{initialized=undefined;throw e;});}
 export function compareMeasurements(previous:any,current:any){
  const fields=['readLatencyMs','successfulMutationsToday','storedRecordsAndTasks','membershipRecords','retainedEvents'];
  const sameDay=previous&&Math.floor(previous.observedAt/86400000)===Math.floor(current.observedAt/86400000),deltas:any={};
