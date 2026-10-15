@@ -1,0 +1,32 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "src/ClausComputeFeeProgram.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.26;\n\nimport {IProgram, ProgramTypes} from \"./IClausTradeProgram.sol\";\n\ninterface IComputeClaims {\n    function balanceOf(address owner, uint256 id) external view returns (uint256);\n    function unlock(bytes calldata data) external returns (bytes memory);\n    function burn(address from, uint256 id, uint256 amount) external;\n    function take(address currency, address to, uint256 amount) external;\n}\n\n/// @notice Allocates 0.1 percentage point FROM the existing 1.3% owner share.\n/// @dev Installed as a fixed module, the sealed hook mints the module's claims\n/// directly here. The fixed 2.3% aggregate rate and other allocations do not rise.\n/// The public claim interface matches the prepared funding runner. Every claim\n/// goes to the existing fixed operator wallet; there is no caller-set recipient.\ncontract ClausComputeFeeProgram is IProgram {\n    address public constant MANAGER = 0x000000000004444c5dc75cB358380D2e3dE08A90;\n    address public constant active = 0xBb145cA83272c3806D4dDc75cA1D5514789cF1C5;\n    uint256 public constant COMPUTE_PIPS = 1_000;\n    uint256 public constant DIRECT_OWNER_PIPS = 12_000;\n    uint256 public constant TOTAL_OWNER_PIPS = DIRECT_OWNER_PIPS + COMPUTE_PIPS;\n    uint256 public constant TOTAL_PIPS = 23_000;\n\n    uint256 public totalClaimed;\n    uint256 private claiming;\n    uint256 private constant CALLBACK_CONSUMED = type(uint256).max;\n\n    error InvalidClaim();\n    error InvalidCallback();\n    event ComputeFundingClaimed(address indexed recipient, uint256 amount);\n\n    function quote(address, bool, int256, uint160, uint128, bytes calldata)\n        external pure returns (uint256[6] memory)\n    {\n        // Treasury, platform, buyback, staked LP, staked NFT, compute.\n        return [DIRECT_OWNER_PIPS, 3_000, 1_500, 2_000, 3_500, COMPUTE_PIPS];\n    }\n\n    /// @dev The fixed host authenticates and consumes its receipts. This\n    /// callback is deliberately side-effect-free: receipt delivery cannot depend\n    /// on a provider, bridge, oracle, ETH recipient or funding worker being up.\n    function onTrade(ProgramTypes.Trade calldata, bytes calldata)\n        external pure returns (bytes4)\n    {\n        return IProgram.onTrade.selector;\n    }\n\n    function balances() external view returns (uint256 activeAmount, uint256 treasuryAmount) {\n        return (IComputeClaims(MANAGER).balanceOf(address(this), 0), 0);\n    }\n\n    /// @notice Redeem only this program's already received ETH claims.\n    /// Anyone may trigger a batch, always to the same fixed operator account.\n    function claimActive(uint256 amount) external {\n        if (claiming != 0 || amount == 0 || amount == CALLBACK_CONSUMED\n            || amount > IComputeClaims(MANAGER).balanceOf(address(this), 0)) revert InvalidClaim();\n        claiming = amount;\n        IComputeClaims(MANAGER).unlock(abi.encode(amount));\n        claiming = 0;\n        totalClaimed += amount;\n        emit ComputeFundingClaimed(active, amount);\n    }\n\n    function unlockCallback(bytes calldata data) external returns (bytes memory) {\n        if (msg.sender != MANAGER || claiming == 0 || claiming == CALLBACK_CONSUMED || data.length != 32) revert InvalidCallback();\n        uint256 amount = abi.decode(data, (uint256));\n        if (amount != claiming) revert InvalidCallback();\n        // Retain the outer lock while preventing a second callback.\n        claiming = CALLBACK_CONSUMED;\n        IComputeClaims(MANAGER).burn(address(this), 0, amount);\n        IComputeClaims(MANAGER).take(address(0), active, amount);\n        return \"\";\n    }\n}\n\n"
+    },
+    "src/IClausTradeProgram.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.26;\n\nlibrary ProgramTypes {\n    struct Trade {\n        uint256 id; address module; address sender; bool buy;\n        int128 amount0; int128 amount1; uint256 feeEth;\n        uint256 moduleFeeEth; uint256 blockNumber; uint256 timestamp; bytes32 dataHash;\n    }\n}\ninterface IProgram {\n    function quote(address, bool, int256, uint160, uint128, bytes calldata)\n        external view returns (uint256[6] memory);\n    function onTrade(ProgramTypes.Trade calldata, bytes calldata) external returns (bytes4);\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "viaIR": true,
+    "evmVersion": "cancun",
+    "metadata": {
+      "bytecodeHash": "ipfs"
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "metadata",
+          "evm.bytecode.object",
+          "evm.deployedBytecode.object"
+        ]
+      }
+    }
+  }
+}

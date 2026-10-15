@@ -1,0 +1,25 @@
+{
+  "chainId": 1,
+  "address": "0x3dc1183ff95889359e00987b55d9164aad306762",
+  "deploymentTransaction": "0x259dbfeeddf99c2c0d1eb3e8004c33902d3f8bdead812c804a662a4d31bc78cf",
+  "deploymentBlock": 26201225,
+  "runtimeHash": "0x83f8ca2cbf02bc945fc38f749c18bbd9cf53f4bfe6ba1d868dd3c5a61ff7bb69",
+  "compiler": "0.8.26+commit.8a97fa7a",
+  "optimizerRuns": 200,
+  "viaIR": true,
+  "evmVersion": "cancun",
+  "allocation": {
+    "owner": 12000,
+    "compute": 1000,
+    "platform": 3000,
+    "buyback": 1500,
+    "stakedLp": 2000,
+    "stakedNft": 3500,
+    "total": 23000
+  },
+  "unit": "parts_per_million",
+  "automaticProviderPayments": false,
+  "activationTransaction": "0x142580c758a4a0b4175bca23eaca429f0a3939116696e3eb550fbf3349e77d3b",
+  "activationBlock": 26201253,
+  "sourceVerified": true
+}
