@@ -1,7 +1,22 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  workflow_revise:(a,i)=>workflows.revise(a,i.projectId,i.workflowId,i),
+  webhook_create:(a,i)=>webhooks.create(a,i.projectId,i),
+  webhook_list:(a,i)=>webhooks.list(a,i.projectId),
+  webhook_revoke:(a,i)=>webhooks.revoke(a,i.projectId,i.webhookId),
+  project_assistance_set:(a,i)=>workPlanning.assistanceSet(a,i.projectId,i),
+  public_project_assistance:(_,i)=>workPlanning.assistance(i),
+  project_actions_set:(a,i)=>workPlanning.actionsSet(a,i.projectId,i),
+  public_project_actions:(_,i)=>workPlanning.actions(i.projectId),
+  job_brief_create:(a,i)=>workPlanning.plan(a,i.projectId,i),
+  job_brief_get:(a,i)=>workPlanning.brief(a,i.projectId,i.briefId),
+  job_milestone_post:(a,i)=>workPlanning.post(a,i.projectId,i),
+  reviewer_candidates:(a,{projectId,...i})=>workPlanning.reviewers(a,projectId,i),
+  public_service_compare:(_,i)=>workPlanning.compare(i),
+  release_preview:(a,i)=>releases.preview(a,i.projectId,i.releaseId),
+  release_restore:(a,i)=>releases.restore(a,i.projectId,i),
   project_dependencies_set:(a,i)=>dependencies.set(a,i.projectId,i),
   public_project_dependencies:(_,i)=>dependencies.get(i.projectId),
   public_project_dependants:(_,i)=>dependencies.impact(i.projectId,i),
@@ -83,7 +98,7 @@ export function createService({dependencies,projectInspection,publicWork,collabo
   content_admin_control:(actor,input)=>contentAdmin.control(actor,input.projectId,input),
   content_admin_correct:(actor,input)=>contentAdmin.correct(actor,input.projectId,input),
 
-  capabilities:async()=>{const [base,domainState,workerState,arbitrationState]=await Promise.all([access.discovery(),domains.discovery(),workers.discovery(),arbitration.discovery()]);return {...base,collaboration:{workProfiles:true,matching:'declared-skills-availability-asset-quotes',portfolio:'public-acceptance-receipts',privateTaskMessages:true,teamRoles:'revocable-existing-mandates',templates:['chat','jobs','game','service']},domains:domainState,workers:workerState,deals:{assets:['ETH','CLAUS'],defaultAsset:'ETH',assetSelection:'Use the asset parameter; read deal_terms for actual contract admission.',chains:[1,11155111].map(chainId=>({chainId,terms:'/v1/public/chains/'+chainId+'/deals',funding:'Read the pinned chain terms; route availability does not imply active deposits.'})),arbitration:arbitrationState},workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{discovery:{kinds:['project','app','service','agent','task'],taskProgress:'claus-task-progress/1',taskActivity:'public_app_activity'},taskReviews:{profile:'claus-task-review/1',criteria:'committed-before-claim',authority:'advisory_only',compensation:'separate-linked-payment-task',paymentAssets:['ETH','CLAUS']},taskPayments:{profile:'claus-task-payment/1',signing:'caller-owned',settlement:'escrow-credit'},enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}};},
+  capabilities:async()=>{const [base,domainState,workerState,arbitrationState]=await Promise.all([access.discovery(),domains.discovery(),workers.discovery(),arbitration.discovery()]);return {...base,collaboration:{jobBriefs:true,milestones:'separate-quoted-tasks',assistance:'public-opt-in',actionDescriptions:true,webhooks:'signed-public-task-events',sitePreview:'authenticated-source-bundle',siteRestore:'unchanged-app-schema',workProfiles:true,matching:'declared-skills-availability-asset-quotes',portfolio:'public-acceptance-receipts',privateTaskMessages:true,teamRoles:'revocable-existing-mandates',templates:['chat','jobs','game','service']},domains:domainState,workers:workerState,deals:{assets:['ETH','CLAUS'],defaultAsset:'ETH',assetSelection:'Use the asset parameter; read deal_terms for actual contract admission.',chains:[1,11155111].map(chainId=>({chainId,terms:'/v1/public/chains/'+chainId+'/deals',funding:'Read the pinned chain terms; route availability does not imply active deposits.'})),arbitration:arbitrationState},workflows:{enabled:apps?.enabled===true,limits:workflows?.limits,profile:"recurring-public-free-tasks-v1",acceptance:"requester"},applications:{discovery:{kinds:['project','app','service','agent','task'],taskProgress:'claus-task-progress/1',taskActivity:'public_app_activity'},taskReviews:{profile:'claus-task-review/1',criteria:'committed-before-claim',authority:'advisory_only',compensation:'separate-linked-payment-task',paymentAssets:['ETH','CLAUS']},taskPayments:{profile:'claus-task-payment/1',signing:'caller-owned',settlement:'escrow-credit'},enabled:apps?.enabled===true,writesEnabled:apps?.writesEnabled===true,profile:'managed-records-and-tasks-v1',limits:apps?.limits,browserSessions:{enabled:apps?.enabled===true,maxSeconds:1800,scope:'one app and explicit record/task/event actions'},eventDelivery:'cursor-polling-at-least-once',ownerExport:'claus-app-export/1'}};},
   project_capabilities:(actor,{projectId})=>access.project(actor,projectId),
   identity_list:(actor,input)=>identity.listAccess(actor,input.projectId,input),
   resource_list:(actor,input)=>projects.resources(actor,input.projectId,input),

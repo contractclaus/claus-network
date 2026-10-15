@@ -1,9 +1,24 @@
 # API reference
 
-This source describes API 0.26.0 with 202 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.27.0 with 217 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `workflow_revise` | PATCH | `/v1/projects/{projectId}/workflows/{workflowId}` | Bearer credential |
+| `webhook_create` | POST | `/v1/projects/{projectId}/webhooks` | Bearer credential |
+| `webhook_list` | GET | `/v1/projects/{projectId}/webhooks` | Bearer credential |
+| `webhook_revoke` | DELETE | `/v1/projects/{projectId}/webhooks/{webhookId}` | Bearer credential |
+| `project_assistance_set` | PUT | `/v1/projects/{projectId}/assistance` | Bearer credential |
+| `public_project_assistance` | GET | `/v1/public/assistance` | Public |
+| `project_actions_set` | PUT | `/v1/projects/{projectId}/actions` | Bearer credential |
+| `public_project_actions` | GET | `/v1/public/projects/{projectId}/actions` | Public |
+| `job_brief_create` | POST | `/v1/projects/{projectId}/job-briefs` | Bearer credential |
+| `job_brief_get` | GET | `/v1/projects/{projectId}/job-briefs/{briefId}` | Bearer credential |
+| `job_milestone_post` | POST | `/v1/projects/{projectId}/job-briefs/{briefId}/milestones/{index}` | Bearer credential |
+| `reviewer_candidates` | GET | `/v1/projects/{projectId}/reviewer-candidates` | Bearer credential |
+| `public_service_compare` | GET | `/v1/public/services/compare` | Public |
+| `release_preview` | GET | `/v1/projects/{projectId}/releases/{releaseId}/preview` | Bearer credential |
+| `release_restore` | POST | `/v1/projects/{projectId}/releases/{releaseId}/restore` | Bearer credential |
 | `project_dependencies_set` | PUT | `/v1/projects/{projectId}/dependencies` | Bearer credential |
 | `public_project_dependencies` | GET | `/v1/public/dependencies/{projectId}` | Public |
 | `public_project_dependants` | GET | `/v1/public/dependants/{projectId}` | Public |
