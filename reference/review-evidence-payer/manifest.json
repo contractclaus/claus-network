@@ -1,11 +1,12 @@
 {
-  "deployed": "dpl_H9W9rJgFRH6fBjamS8gMYQgJFdeJ",
-  "source": "6a28d482ad9edafb5f0b7bf651dc71ae662314071b18b99d07ed70466c92b896",
+  "deployed": "dpl_7f6HZmLb1YCDB8WeeMqMGFduWbx2",
+  "source": "86e81a1b2fb03b627ee272e5a32215ab0ee703a12fd86a69d9d1ebe47a7b423a",
   "files": {
-    "src/index.js": "831cb77700710dabe20d5270156f926077d23470041ab6a6ccbba27a5e014c0b",
+    "src/index.js": "255ad0b7d4a3a1a02504599559a6a4d2a902835a60f18fa4fb0a3a402f8d40b1",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
     "src/credit-work-store.js": "c3414e25988f4ce8cc2aaab584abb79e00f9a2ba4a0819d3069e3315c0f83260",
-    "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d"
+    "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
+    "src/operating-resources.js": "40cfb028b907ed00d9098f055e23c71b54f7ca2f30fe7572301432643d52db2d"
   },
   "referenceSubset": true
 }

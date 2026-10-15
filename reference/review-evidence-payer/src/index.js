@@ -26,6 +26,7 @@ import * as creditWork from './credit-work-store.js';
 import {workCandidate,workAdmission} from './credit-work-admission.js';
 import {hasNonpaymentProof,reconcileCreditWork} from './credit-reconciliation.js';
 import {reviewEvidence,recoverReviewBinding} from './review-evidence.js';
+import {createOperatingResources} from './operating-resources.js';
 
 export const payer='0xA46A89b5b3504C1c999696de8173ec9b2eB0a01a';
 const forbidden=['DATABASE_URL','WALLET_SECRET','RELEASE_SECRET','WALLET_POLICY_SECRET','AGENT_POLICY_URL','CRON_SECRET','PRIVACY_SECRET','WEATHER_SCHEDULE_ID','LAB_RESEARCH_SECRET'];
@@ -62,6 +63,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   const app=new Hono();
   const sql=database??(()=>neon(env.PAYMENT_DATABASE_URL));
   const enabled=()=>env.PAYMENT_RELAY_ENABLED==='true';
+  const resources=createOperatingResources({env,db:(strings,...values)=>sql()(strings,...values),request:fetcher});
   const creditLedgerEnabled=()=>!!env.SURPLUS_CREDIT_KEY_ID;
   const credit=createCreditCompletion({env,sql,fetcher,paidFetch});
   const independentCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:true,transportProfile:env.BUILDER_CREDIT_PROFILE});
@@ -94,11 +96,12 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     const status=c.req.method==='GET'&&decodedPath.startsWith('/api/requests/')&&validRequestId(decodedPath.slice('/api/requests/'.length));
     const admission=c.req.method==='GET'&&decodedPath.startsWith('/api/admission/')&&validRequestId(decodedPath.slice('/api/admission/'.length));
     const budget=c.req.method==='GET'&&path==='/api/budget';
+    const resource=c.req.method==='GET'&&path==='/api/resources';
     const computeReceipt=c.req.method==='GET'&&/^\/api\/compute\/network-compute:[a-f0-9]{64}$/.test(decodedPath);
     const reviewReceipt=['GET','POST'].includes(c.req.method)&&/^\/api\/review-evidence\/[a-zA-Z0-9:_-]{1,160}$/.test(decodedPath);
     const computeId=payment?c.req.header('idempotency-key'):(status?decodedPath.slice('/api/requests/'.length):(admission?decodedPath.slice('/api/admission/'.length):computeReceipt?decodedPath.slice('/api/compute/'.length):''));
     const compute=/^network-compute:[a-f0-9]{64}$/.test(computeId??'');
-    if(!payment&&!setup&&!recovery&&!status&&!budget&&!admission&&!computeReceipt&&!reviewReceipt)return c.json({error:'payment_route_disabled'},403);
+    if(!payment&&!setup&&!recovery&&!status&&!budget&&!admission&&!computeReceipt&&!reviewReceipt&&!resource)return c.json({error:'payment_route_disabled'},403);
     if(!authorized(c.req.header('authorization'),reviewReceipt?env.PUBLISHER_REVIEW_SECRET:compute?env.NETWORK_COMPUTE_SECRET:setup||recovery||budget?env.OPERATOR_SECRET:env.INFERENCE_SECRET))return c.json({error:'unauthorized'},401);
     if(compute&&payment){
       if(path!=='/api/completion'||env.NETWORK_COMPUTE_ENABLED!=='true')return c.json({error:'compute_disabled',payment:'not_signed'},403);
@@ -114,6 +117,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     return await next();
   });
   app.post('/api/setup',async c=>{await setupBudget(sql());return c.json({ready:true,payer,budget:await budgetSnapshot(sql())});});
+  app.get('/api/resources',async c=>{c.header('Cache-Control','no-store');return c.json(await resources());});
   app.get('/api/budget',async c=>c.json({...await budgetSnapshot(sql()),...(creditLedgerEnabled()?{prepaid:await creditSnapshot(sql())}:{})}));
   app.get('/api/review-evidence/:id',async c=>{
     c.header('Cache-Control','no-store');
