@@ -1,3 +1,4 @@
+import {readAppReceiptBoundary} from './app-receipt-boundary.mjs';
 // The API can read global controls, but only the separate operator can update
 // existing capability records. No database credentials leave this host check.
 const runtimeRole = 'claus_network_runtime_v1';
@@ -42,5 +43,6 @@ export async function readDatabaseBoundary(pool) {
       FROM pg_policies p WHERE p.schemaname='claus_network' AND p.tablename='documents') AS policies
     FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE r.rolname=current_user AND n.nspname='claus_network' AND c.relname='documents'`);
-  return validateDatabaseBoundary(rows[0], rows[0]?.policies);
+  const boundary=validateDatabaseBoundary(rows[0], rows[0]?.policies);
+  return {...boundary,receipts:await readAppReceiptBoundary(pool)};
 }

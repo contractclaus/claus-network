@@ -1,3 +1,4 @@
+import {receiptRoute,readOriginalAppResult} from './isolated/app-receipt.mjs';
 import program from './isolated/network.json' with {type:'json'};
 import {runNetworkProgram,PROGRAM_READS,PROGRAM_WRITES} from './isolated/operations.mjs';
 import {networkRoutes,validate} from './network-routes.js';
@@ -11,7 +12,7 @@ import {programHash} from './isolated/runner.mjs';
 import {admitProgramRun,withProgramRun,programRunId,isProgramRun,canonicalProgramValue,programDigest,validRecordedStep,reserveProgramStep,completeProgramRun} from './isolated/program-run.mjs';
 import {productionLabDatabase} from './lab-db.js';
 
-const access=createNetworkAccess();
+const access=createNetworkAccess({extraRoutes:{app_request_receipt:receiptRoute}});
 export const networkProgramDefinitions=[{type:'function',function:{name:'run_network_program',description:'Run operate(input) from your reviewed editable src/isolated/network.json in the credential-free engine. Supply an existing network_work id/revision and a project you can access. input contains projectId, your JSON request, and original receipts from up to four sealed API operations. Return {operation,input} or {result}. Allowed reads: '+PROGRAM_READS.join(', ')+'. With allowWrites=true, allowed writes: '+PROGRAM_WRITES.join(', ')+'. Project identity and original idempotency keys are fixed by the host. This cannot grant permissions, sign, spend, post on X, modify database records directly or change its operation allowlist. Missing operate leaves existing analysis unchanged. Review current receipts before another run; never replace an uncertain run.',parameters:{type:'object',properties:{workId:{type:'string'},expectedRevision:{type:'integer',minimum:1},projectId:{type:'string'},request:{type:'string',description:'JSON object for your program, at most 8000 bytes.'},allowWrites:{type:'boolean'}},required:['workId','expectedRevision','projectId','request','allowWrites'],additionalProperties:false}}}];
 
 export async function networkProgram(actionId:string,args:any){
@@ -67,7 +68,7 @@ async function currentAuthority(workId:string,revision:number){
  if(control?.enabled!==true)throw Error('network_program_disabled');
 }
 
-export const resumeNetworkProgramDefinition={type:'function',function:{name:'resume_network_operation',description:'Resume an original network-program-run id, or reconcile one original network-program step using its original API key. A run retains its exact request, source hash and recorded steps; completed steps are read, not repeated. A changed program source or inactive/revised work blocks continuation. Read the original receipt first. This cannot repeat wallet, review, social or hook actions. Never create a replacement to bypass an unresolved run.',parameters:{type:'object',properties:{id:{type:'string'}},required:['id'],additionalProperties:false}}};
+export const resumeNetworkProgramDefinition={type:'function',function:{name:'resume_network_operation',description:'Resume an original network-program-run id, or read the immutable receipt of one original write without sending it again. A missing receipt stays held. A run retains its exact request, source hash and recorded steps; completed steps are read, not repeated. A changed program source or inactive/revised work blocks continuation. Read the original receipt first. This cannot repeat wallet, review, social or hook actions. Never create a replacement to bypass an unresolved run.',parameters:{type:'object',properties:{id:{type:'string'}},required:['id'],additionalProperties:false}}};
 export async function resumeNetworkOperation(args:any){
  if(!args||Object.keys(args).join(',')!=='id'||!isProgramRun(args.id)&&!/^network-program:[a-f0-9]{64}$/.test(args.id))throw Error('network_program_identity_denied');
  if(isProgramRun(args.id))return executeOriginalRun(args.id);
@@ -76,12 +77,11 @@ export async function resumeNetworkOperation(args:any){
  if(row.status==='completed')return {id:row.id,...row.result};
  if(!['pending','uncertain'].includes(row.status))throw Error('network_program_terminal');
  const saved=row.input;
- await currentAuthority(saved.workId,saved.workRevision);
  const input={...saved.input};delete input.idempotencyKey;
  const bound=bindProgramOperation({operation:saved.operation,input},{projectId:saved.projectId,runId:saved.runId,index:saved.index,route:(name:string)=>networkRoutes[name],allowWrites:true});
  if(bound.id!==row.id||programDigest(bound.input)!==programDigest(saved.input))throw Error('network_program_identity_denied');
  validate(networkRoutes[bound.operation].inputSchema,bound.input);
- const value=await access.call(bound.operation,bound.input);
+ const value=bound.write?await readOriginalAppResult(access.call,bound.operation,bound.input):await (async()=>{await currentAuthority(saved.workId,saved.workRevision);return access.call(bound.operation,bound.input);})();
  const text=JSON.stringify(value),result={state:'completed',operation:bound.operation,value:Buffer.byteLength(text)<=10000?value:null,...(Buffer.byteLength(text)>10000?{resultOmitted:true,resultHash:digest(value)}:{})};
  await settleAction(row.id,result);
  const [confirmed]=await sql()`SELECT status,result FROM claus_actions WHERE id=${row.id}`;
