@@ -1,3 +1,13 @@
+# Original program runs (Native31)
+
+Each new program is recorded as a private parent action before its first API step. Project and work admission are serialized; the durable parent blocks another program for either resource between steps and after a crash. An execution lock coalesces concurrent attempts to continue the same run. Child reservation and parent completion also lock the parent row, so a delayed process cannot append a step after termination.
+
+`resume_network_operation` accepts the original run ID as well as an original step ID. A parent retains the exact request, permission mode and source hash. Completed steps are read from their original journal; pending steps retain the original API idempotency key. The existing cycle still reconciles at most two original API steps and does not automatically invent a replacement run. Failed observations are rotated fairly so one held operation does not indefinitely hide the others.
+
+New action hashes use canonical JSON. Legacy step hashes are not rewritten: their immutable database input, fixed operation schema and original derived key remain authoritative. Changed code or withdrawn work authority stops a parent only when all original child effects are settled; unresolved children keep it held. A stopped parent does not reverse earlier successful writes.
+
+No new table, source path, financial authority, scheduler or public API was added. Native30 was briefly promoted but was never pinned or handed to a new runner; Native31 adds the parent-row reservation fence before runtime adoption. Previous handoffs and original actions are retained.
+
 # Isolated operating code
 
 Native29 extends the existing editable `src/isolated/network.json`. In addition

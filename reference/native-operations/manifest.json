@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_GgLLxYYBJ2HprrC6YbTTmJajGMiy",
+  "deployed": "dpl_DTRLuNGYrijTYdDgeCQmE1ov918j",
   "source": "7e81d6a23e03ef196078f6258743682d7931000dfa9bb634d402e37005002fc4",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
@@ -36,7 +36,7 @@
     "src/cycle.ts": "535bbd5eaa72d0ac663d34202a6bb3b4a3b5c218b9ffda109ba00c3eab2be071",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
     "src/social.ts": "14f1cbfc2a91b13b5ed862f1402d0767d1c547c6195c0c0c8310fc5969575f9d",
-    "src/store.ts": "042fb2d642c3de93708bf8bc6ab81d608766e0aa6617ac8d0304e86a6381eed4",
+    "src/store.ts": "82ef73828569b4ebe51145ae40eafad13a5dc3fed7811170b2107b608d387cf3",
     "src/isolated/work.json": "2cd86bd1fe86823e8578e466b4750df1979aa9a2741ac62782034f5f14546b32",
     "src/isolated/work.ts": "64f6c8087bd8a367012a4b38c1b488496bbc065b5c7c2f64724530cfe5d76b21",
     "src/network-measurements.ts": "528442b47850c9ede35ca17e1ac516c014523855a0ec67fb73bda1952a183089",
@@ -72,8 +72,10 @@
     "src/research-cache.ts": "d0ab9f0c9dfef6cb5359a1fe06f4e2b4bc4a7ac1f0a03415de88fd8c1d87af38",
     "src/search-client.ts": "73ca4be37e9d4f4f9aa14a5a57780861282fe2ab61bfa921cad0d7da6785ef65",
     "src/isolated/operations.d.mts": "61c7cbfb4832ade785fb27cba1f9bed74760d8970898ef015dcf1791e614f793",
-    "src/isolated/operations.mjs": "53755a03ffe4a186d80a5bae593402d9dd27b30e56b9cd5d91d3b04ca8519dd3",
-    "src/network-program.ts": "aebada700e17b0f89b1a514f61723b92e0a2f530c284b4bbeaf52833c3bd855b"
+    "src/isolated/operations.mjs": "345aa45fd2891e9d5b115626a0ac078376690553b2402a13e0b101aa87b105a8",
+    "src/network-program.ts": "5f26dfb5fbd2f66c057acb9f727d3c90f072845f7827f1ebfda5d565417724fd",
+    "src/isolated/program-run.d.mts": "cf7f66c384c6d0b2a606955086e4e222a42a527c7063045d7988f0f6b33e35e1",
+    "src/isolated/program-run.mjs": "69b4e838a4d862114408dfad8ae3c51dc7ee412e3a58f12e4d50f422e58fe090"
   },
   "referenceSubset": true
 }

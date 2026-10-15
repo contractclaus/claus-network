@@ -1,0 +1,10 @@
+export function programRunId(actionId:string):string;
+export function isProgramRun(id:unknown):boolean;
+export function admitProgramRun(db:any,id:string,input:any):Promise<any>;
+export function withProgramRun(db:any,id:string,execute:(alive:()=>Promise<void>)=>Promise<any>):Promise<any>;
+export function runIsHeld(result:any,unresolvedSteps:any[]):boolean;
+export function canonicalProgramValue(value:any):any;
+export function programDigest(value:any):string;
+export function validRecordedStep(row:any):boolean;
+export function reserveProgramStep(db:any,parentId:string,id:string,input:any):Promise<any[]>;
+export function completeProgramRun(db:any,id:string,result:any):Promise<any>;

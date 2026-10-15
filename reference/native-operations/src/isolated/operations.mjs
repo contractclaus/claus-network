@@ -66,7 +66,8 @@ export async function runNetworkProgram({program,projectId,runId,context,allowWr
 export function isolateProgramActions(actions){
  const held=[],blocking=[];
  for(const action of actions){
-  if(action.kind==='network_program'&&/^network-program:[a-f0-9]{64}$/.test(action.id??''))held.push(action);
+  if(action.kind==='network_program'&&/^network-program:[a-f0-9]{64}$/.test(action.id??'')||
+     action.kind==='network_program_run'&&/^network-program-run:[a-f0-9]{64}$/.test(action.id??''))held.push(action);
   else blocking.push(action);
  }
  return {held,blocking};
@@ -74,7 +75,7 @@ export function isolateProgramActions(actions){
 
 export async function reconcileProgramActions(actions,resume){
  const results=[];
- for(const action of isolateProgramActions(actions).held.slice(0,2)){
+ for(const action of isolateProgramActions(actions).held.filter(action=>action.kind==='network_program').slice(0,2)){
   try{await resume({id:action.id});results.push({id:action.id,state:'reconciled'});}
   catch{results.push({id:action.id,state:'original_outcome_held'});}
  }
