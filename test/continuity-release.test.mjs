@@ -39,7 +39,7 @@ test('a lost acknowledgment resumes exactly one original effect after host resta
 test('an explicit stop remains revoked while an original retry is pending',async t=>{
  const f=await runtimeFixture(t);await f.api.tick();f.advance(61000);await f.api.tick();await f.api.tick();const before=await f.api.get('owner','p','work');
  await f.api.stop('owner','p','work',{expectedRevision:before.revision});f.advance(60000);f.restart();await f.api.tick();assert.deepEqual(f.counts(),{calls:1,effects:1});
- const after=await f.api.get('owner','p','work');assert.equal(after.enabled,false);assert.deepEqual(after.pending,before.pending);await assert.rejects(f.api.reconcile('owner','p','work',{expectedRevision:after.revision}),{code:'scope_denied'});
+ const after=await f.api.get('owner','p','work');assert.equal(after.enabled,false);assert.deepEqual(after.pending,before.pending);await f.store.transaction(async tx=>{const p=await tx.read('projects','p');await tx.write('projects','p',{...p.value,archivedAt:1},p.revision);});await assert.rejects(f.api.reconcile('owner','p','work',{expectedRevision:after.revision}));assert.deepEqual(f.counts(),{calls:1,effects:1});
 });
 test('broker rejects invented authority and refuses unknown financial effects and changed keys',async()=>{
  const route=name=>ROUTES.find(r=>r.name===name),id='p:work',cycleKey='runtime:'+digest({id,cycle:0}).slice(7);

@@ -45,6 +45,19 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
   }
   return {
     ...reader(pool),
+    // Multi-record observations share a database snapshot without acquiring the
+    // global writer lock. No write/event handle is passed to the callback.
+    async snapshot(run){
+      const client=await pool.connect();let active=true;
+      try{
+        await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+        await client.query("SET LOCAL statement_timeout='5s'");
+        await client.query("SET LOCAL idle_in_transaction_session_timeout='8s'");
+        const result=await run(reader(client,()=>requireThat(active,'transaction_closed')));
+        await client.query('COMMIT');return result;
+      }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
+      finally{active=false;client.release();}
+    },
     // Admission counts are independent of domain/financial transitions. Atomic
     // row updates retain existing counters and roll both reservations back on denial.
     async consumeRateLimits({ entries, window }) {

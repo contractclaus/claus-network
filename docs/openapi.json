@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.28.4"
+    "version": "0.28.5"
   },
   "servers": [
     {
@@ -13876,7 +13876,7 @@
     "/v1/projects/{projectId}/runtimes/{runtimeId}/reconcile": {
       "post": {
         "operationId": "runtime_reconcile",
-        "description": "POST /v1/projects/{projectId}/runtimes/{runtimeId}/reconcile. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
+        "description": "Explicit owner recovery of the original runtime cycle. Rechecks current ownership, worker revision and limits. A stopped runtime can receive a fresh fixed-scope credential; revoked keys stay revoked. Completed workers are read, never rerun. Unknown worker, metered-read or financial effects stay held. Requires expectedRevision.",
         "security": [
           {
             "bearerAuth": []

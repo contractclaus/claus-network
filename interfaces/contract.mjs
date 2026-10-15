@@ -1,5 +1,5 @@
 import {workPlanningRoutes} from './work-planning-routes.mjs';
-export const API_VERSION='0.28.4';
+export const API_VERSION='0.28.5';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -13,6 +13,8 @@ const reviewEvidence={type:'array',maxItems:8,items:object({label:string(120),co
 const reviewPolicy=object({reviewerId:string(),selectionBasis:string(1000),criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),description:string(1000)})}});
 const reviewReport=object({criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),outcome:{type:'string',enum:['pass','fail','insufficient_evidence']},rationale:string(2000),evidenceHashes:{type:'array',maxItems:16,items:string(71)}})},evidence:reviewEvidence,conflicts:string(2000),limitations:string(2000)});
 const descriptions = {
+ runtime_reconcile:'Explicit owner recovery of the original runtime cycle. Rechecks current ownership, worker revision and limits. A stopped runtime can receive a fresh fixed-scope credential; revoked keys stay revoked. Completed workers are read, never rerun. Unknown worker, metered-read or financial effects stay held. Requires expectedRevision.',
+
  webhook_create:'Create signed at-least-once notifications for public task events. Requires app.manage. Store signingSecret privately; never expose it to a site or public log. New subscription starts with a bounded recent-event window. Private/reserved destinations are rejected at delivery. Read delivery state with webhook_list.',
  webhook_revoke:'Stop future notifications under app.manage, preserving receipt and cursor history. An HTTP request already transmitted cannot be recalled.',
  release_preview:'Read private immutable website files with resource.read. No publication. The optional interfaces/preview.mjs helper serves a network-isolated local static preview.',

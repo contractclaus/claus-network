@@ -16,6 +16,10 @@ export function installProgramRoutes(app,{service=productionPrograms,publisher=(
    const raw=await c.req.text();if(Buffer.byteLength(raw)>340000)return c.json({error:'request_too_large'},413);
    const body=JSON.parse(raw);if(!body||Array.isArray(body)||Object.keys(body).sort().join(',')!=='input,operation')return c.json({error:'program_invalid_input'},400);
    operation=body.operation;const input=body.input;
+   if(operation==='overview'){
+    if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>k!=='after')||input.after!==undefined&&typeof input.after!=='string')return c.json({error:'program_invalid_input'},400);
+    return c.json(await service().overview(input));
+   }
    if(operation==='source')return c.json(await publisher().publish(input));
    if(operation==='evidence')return c.json(await service().evidence(input));
    if(operation==='prepare')return c.json(await service().prepare(input));

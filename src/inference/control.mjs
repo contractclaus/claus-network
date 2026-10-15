@@ -1,6 +1,7 @@
 import {amount,copy,digest,integer,requireThat,shape,text,sourceText,operatingWindowOpen} from '../shared/index.mjs';
 import {balance} from '../billing/index.mjs';
 import {validateInferenceProfile} from './index.mjs';
+import {computeUsage} from './usage.mjs';
 
 // A policy allocates existing compute funding. It never creates money or gives
 // its issuer the ability to change the enclosing policy or payment account.
@@ -69,8 +70,8 @@ export function createComputeControl({store,identity,now=()=>Date.now()}) {
       });
     },
     async policy(actor,profileId) {
-      const {row}=await issuer(actor,profileId);
-      return publicPolicy(row);
+      const read=async reader=>{const {row}=await issuer(actor,profileId,reader);return {...publicPolicy(row),usage:await computeUsage(reader,row.value,now())};};
+      return store.snapshot?store.snapshot(read):store.transaction(read);
     },
     async grant(actor,projectId,input) {
       shape(input,['profileId','enabled','expiresAt','limit','expectedRevision','idempotencyKey','reason']);
