@@ -1,4 +1,5 @@
 import {runtimeAccess} from './runtime-access.js';
+import {networkProgramDefinitions,networkProgram,resumeNetworkProgramDefinition,resumeNetworkOperation} from './network-program.js';
 import {programDefinitions,programEnabled,programTool} from './trade-program.js';
 import {custodyConfigured} from './custody-client.js';
 import {operationsDefinitions,operationsEnabled,operationsTool,operationsStore} from './operations/service.js';
@@ -51,6 +52,8 @@ function tool(name:string,description:string,properties:Record<string,unknown>,r
 const text={type:'string'};
 const attributions={type:'array',maxItems:3,items:{type:'object',properties:{username:text,sourceUrl:text},required:['username','sourceUrl'],additionalProperties:false}};
 export const definitions:ReturnType<typeof tool>[]=[
+  ...networkProgramDefinitions,
+  resumeNetworkProgramDefinition,
   ...gotchiDefinitions,
   ...feedbackBuildDefinitions,
   ...adaptationDefinitions,
@@ -122,6 +125,7 @@ for(const name of ['read_chain','read_contract_source','read_market','read_knowl
 permission.read_image='research';permission.generate_image='images';permission.review_image='images';permission.prepare_gif='images';
 for(const name of researchTools)permission[name]='research';
 export function toolEnabled(config:Configuration,name:string) {
+  if(name==='run_network_program'||name==='resume_network_operation')return operationsEnabled(config)&&config.policy.capabilities.networkBuild===true&&custodyConfigured();
   if(name==='trade_program')return programEnabled(config);
   if(name==='work_wallet')return workWalletEnabled(config);
   if(name==='read_operational_code'||name==='change_operational_code'||name==='rollback_operational_code')return operationsEnabled(config);
@@ -146,6 +150,8 @@ export async function executeTool(id:string,name:string,args:Record<string,any>,
   const config=await configuration();
   if(!channelAllows(name,decisionContext?.channel??'public'))return {error:'tool_unavailable_in_this_channel',name};
   if (!toolEnabled(config,name)) return {error:'capability_not_enabled',name};
+  if(name==='run_network_program')return networkProgram(id,args);
+  if(name==='resume_network_operation')return resumeNetworkOperation(args);
   if(name==='trade_program')return programTool(args);
   if(name==='work_wallet')return workWallet.tool(args);
   if(name==='read_operational_code'||name==='change_operational_code'||name==='rollback_operational_code')return operationsTool(id,name,args);
