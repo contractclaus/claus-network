@@ -1,6 +1,6 @@
 import {canonical,digest,integer,requireThat,sourcePath,text} from '../shared/index.mjs';
 
-export const WORKER_LIMITS=Object.freeze({files:20,sourceBytes:256000,jsonBytes:16000,commandSeconds:30,vmSeconds:60,activePerProject:1,activeGlobal:4,projectDaily:20,globalDaily:100,lifetime:1000,definitionsPerProject:5,leaseMs:120000});
+export const WORKER_LIMITS=Object.freeze({files:20,sourceBytes:256000,jsonBytes:16000,commandSeconds:30,vmSeconds:60,activePerProject:1,activeGlobal:4,projectDaily:20,globalDaily:100,lifetime:null,definitionsPerProject:5,leaseMs:120000});
 const terminal=new Set(['completed','failed','cancelled','unknown']);
 const name=value=>{requireThat(typeof value==='string'&&/^[a-z][a-z0-9-]{0,39}$/.test(value),'invalid_worker_name');return value;};
 const json=value=>{const encoded=JSON.stringify(value);requireThat(typeof encoded==='string'&&Buffer.byteLength(encoded)<=WORKER_LIMITS.jsonBytes,'worker_json_too_large');JSON.parse(encoded);return encoded;};
@@ -24,7 +24,7 @@ export function createWorkers({store,identity,projects,artifacts,now=()=>Date.no
   async run(actor,projectId,{workerId,expectedRevision,input,idempotencyKey}){
    name(workerId);integer(expectedRevision,1);text(idempotencyKey);const inputJson=json(input),id=digest({projectId,idempotencyKey}),binding=digest({projectId,workerId,expectedRevision,inputJson});
    return store.transaction(async tx=>{await authorized(actor,'worker.run',projectId,tx);const old=await tx.read('worker-runs',id);if(old){requireThat(old.value.binding===binding,'idempotency_conflict');return output(old);}await admission(tx);const definition=await tx.read('project-workers',key(projectId,workerId));requireThat(definition?.revision===expectedRevision&&definition.value.enabled,'worker_unavailable');
-    const c=await tx.read('worker-capacity','global'),capacity=c?.value??{total:0,active:[]};requireThat(capacity.total<WORKER_LIMITS.lifetime&&capacity.active.length<WORKER_LIMITS.activeGlobal,'worker_capacity_reached');
+    const c=await tx.read('worker-capacity','global'),capacity=c?.value??{total:0,active:[]};requireThat(Number.isSafeInteger(capacity.total)&&capacity.total>=0&&capacity.total<Number.MAX_SAFE_INTEGER,'worker_counter_invalid');requireThat(capacity.active.length<WORKER_LIMITS.activeGlobal,'worker_capacity_reached');
     const resource=(await tx.read('project-worker-resources',projectId))?.value;const dailyLimit=resource?.projectDaily??WORKER_LIMITS.projectDaily,activeLimit=resource?.active??WORKER_LIMITS.activePerProject;requireThat(Number.isSafeInteger(dailyLimit)&&dailyLimit>=0&&dailyLimit<=WORKER_LIMITS.globalDaily&&Number.isSafeInteger(activeLimit)&&activeLimit>=1&&activeLimit<=WORKER_LIMITS.activeGlobal,'invalid_worker_resources');let active=0;
     for(const previous of capacity.active){const r=await tx.read('worker-runs',previous);if(r?.value.projectId===projectId)active++;requireThat(active<activeLimit,'worker_project_busy');}
     const day=Math.floor(now()/86400000);for(const [scope,limit]of [['global',WORKER_LIMITS.globalDaily],[projectId,dailyLimit]]){const k=scope+':'+day,r=await tx.read('worker-daily',k);requireThat((r?.value.count??0)<limit,'worker_daily_limit');await tx.write('worker-daily',k,{count:(r?.value.count??0)+1},r?.revision??0);}
