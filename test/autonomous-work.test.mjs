@@ -42,3 +42,13 @@ test('webhook retries preserve delivery id; revocation prevents next send',async
 });
 test('webhook network destination rejects private and reserved IPv4 ranges',()=>{for(const ip of ['127.0.0.1','10.0.0.1','169.254.169.254','100.64.0.1','192.168.1.1','198.18.0.1','203.0.113.1','224.0.0.1'])assert.equal(publicIPv4(ip),false,ip);assert(publicIPv4('1.1.1.1'));assert.notEqual(webhookSignature('key',1,'id','body'),webhookSignature('key',2,'id','body'));});
 test('project check finds missing local assets without executing source',async t=>{const {owner,project}=await fixture(t),projectId=project.id;const s=await owner.call('snapshot_create',{projectId,files:[{path:'index.html',content:'<h1>App</h1><script src="missing.js"></script>'}],expectedProjectRevision:(await owner.call('project_get',{projectId})).revision});const r=await owner.call('release_create',{projectId,snapshotId:s.id,paths:['index.html']});await owner.call('release_publish',{projectId,releaseId:r.id,published:true,expectedRevision:0});const checks=await owner.call('public_project_check',{slug:project.slug});assert.equal(checks.checks.find(c=>c.id==='local-links').state,'action');});
+test('project actions publish valid checker inputs and reject schema errors before writing',async t=>{
+ const {owner,project}=await fixture(t),projectId=project.id;
+ const base={projectId,expectedRevision:0,idempotencyKey:'checker',actions:[{id:'check',title:'Check project',description:'Inspect this project',operation:'public_project_check',input:{slug:project.slug}}]};
+ for(const [label,operation,input] of [['missing','public_task',{projectId}],['foreign','public_project_check',{slug:'another-project'}],['wrong','public_app',{projectId,unexpected:true}],['secret','app_task_post',{projectId,input:{nested:{apiKey:'private'}},idempotencyKey:'task'}]]){
+  await assert.rejects(owner.call('project_actions_set',{...base,idempotencyKey:label,actions:[{...base.actions[0],operation,input}]}));
+  assert.equal((await owner.call('public_project_actions',{projectId})).revision,0);
+ }
+ const saved=await owner.call('project_actions_set',base);assert.equal(saved.revision,1);assert.deepEqual(await owner.call('project_actions_set',base),saved);
+ assert.equal((await owner.call('public_project_actions',{projectId})).actions[0].authentication,'none');
+});

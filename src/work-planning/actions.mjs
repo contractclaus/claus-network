@@ -1,0 +1,1 @@
+export const PROJECT_ACTION_OPERATIONS=Object.freeze(['public_app','public_app_records','public_task','public_task_progress','app_join','app_record_create','app_task_post','service_quote','public_project_check']);
