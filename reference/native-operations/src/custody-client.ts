@@ -9,7 +9,10 @@ export function createCustodyClient({request=fetch,secret=()=>process.env.CLAUS_
   try{for(;;){const p=await reader.read();if(p.done)break;size+=p.value.byteLength;if(size>400000){await reader.cancel();throw Error('work_wallet_custody_response_too_large');}chunks.push(p.value);}}finally{reader.releaseLock();}
   const result=JSON.parse(Buffer.concat(chunks).toString());if(!r.ok)throw Error('work_wallet_custody_unavailable');return result;
  }
- async function session(){const r=await invoke('session',{});if(!/^cln_[A-Za-z0-9_-]{43}$/.test(r.token??'')||!Number.isSafeInteger(r.expiresAt)||r.expiresAt<=Date.now())throw Error('network_session_invalid');return r;}
+ async function session(input:{rejectedSession?:string}={}){
+  if(Object.keys(input).some(k=>k!=='rejectedSession')||(input.rejectedSession!==undefined&&!/^[a-f0-9]{64}$/.test(input.rejectedSession)))throw Error('invalid_session_recovery');
+  const r=await invoke('session',input);if(!/^cln_[A-Za-z0-9_-]{43}$/.test(r.token??'')||!Number.isSafeInteger(r.expiresAt)||r.expiresAt<=Date.now()+30000)throw Error('network_session_invalid');return r;
+ }
  async function tool(args:any){try{return await invoke('wallet',args);}catch{return {error:'work_wallet_custody_unavailable',outcome:'unknown',next:'Read status for the original action. A transport failure does not prove that no transaction was sent.'};}}
  return {session,tool};
 }

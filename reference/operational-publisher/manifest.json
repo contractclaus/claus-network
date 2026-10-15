@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_ArCj4YWFp2m33q6bWt7iGJ57GVHR",
-  "source": "7c2e3dd244bb40b7c9edcd081668b367e7f30c361e7345edba0a5b08c0a080ce",
+  "deployed": "dpl_DhDXu8JaGzqHperGKuKi62x4HTrA",
+  "source": "bd94a72e6c3e35f64901888f49f3616874aa5c67f0c7b22db282a64cf80d6e38",
   "files": {
     "src/index.js": "90ff376f9d07b8e493a4c8917ade374a6180dddb044b1acc408d43f03508acd0",
     "src/publisher/host.js": "c59603df1592e5b418d6eb44bc4deab0d8028e6fbf9527df9c5d04fdc092197b",
@@ -29,7 +29,10 @@
     "src/social/service.js": "abda81987c49b5ee2f00b7b9da98a3bf11b483939b7d23751d060671d86f6531",
     "src/social/routes.js": "531fe2356cdd44d9c3951030555462a05aa664b56141e8a446826420e94c70e9",
     "src/ordinary-buybacks.js": "03dabd04737a981cd7f513e611706171f653b70406fced0d397927ab6d97b445",
-    "src/ordinary-buyback-recovery.js": "d852c518fd6807ab3ac675d0d4d9ec6313cd6a05e15cb4b94e8ee036366ad230"
+    "src/ordinary-buyback-recovery.js": "d852c518fd6807ab3ac675d0d4d9ec6313cd6a05e15cb4b94e8ee036366ad230",
+    "src/jobs-wallet/routes.js": "f61884c6444227a370e5ffea79010d934588493a9b24db9a1b028be2c443664d",
+    "src/jobs-wallet/network.js": "3f2f96d7e37226694942a80a2f1918ae7690582fab8195b9b11ac7c3223671e3",
+    "src/jobs-wallet/session-cache.js": "2c43c77bca2ae99703be39333da25eb26073ad2ba23cb44bd32614244c63a76c"
   },
   "referenceSubset": true
 }

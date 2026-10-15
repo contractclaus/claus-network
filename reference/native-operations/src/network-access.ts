@@ -1,6 +1,7 @@
 import {custodyClient} from './custody-client.js';
 import {networkFailure} from './network-failure.js';
 import {privateKeyToAccount} from 'viem/accounts';
+import {createHash} from 'node:crypto';
 import {networkRoutes,validate} from './network-routes.js';
 import {observationRoutes,resolveNetworkLink,selectObservation,liveNetworkContext} from './network-observation.js';
 
@@ -19,9 +20,10 @@ export function validateLogin(challenge:any,address:string,now=Date.now()){
  const match=/^([a-f0-9]{32})\nIssued At: ([^\n]+)\nExpiration Time: ([^\n]+)\nRequest ID: ([A-Za-z0-9_-]+)$/.exec(rest);
  if(!challenge.message.startsWith(prefix)||!match||match[4]!==challenge.id||Date.parse(match[3])!==challenge.expiresAt||!Number.isFinite(Date.parse(match[2]))||Math.abs(now-Date.parse(match[2]))>301000)throw Error('invalid_network_login');
 }
-export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Date.now(),extraRoutes={}}:{request?:typeof fetch;key?:()=>string|undefined;now?:()=>number;extraRoutes?:Record<string,any>}={}){
+export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Date.now(),extraRoutes={},issueSession=(input:any)=>custodyClient.session(input)}:{request?:typeof fetch;key?:()=>string|undefined;now?:()=>number;extraRoutes?:Record<string,any>;issueSession?:(input:any)=>Promise<{token:string;expiresAt:number}>}={}){
  let session:{token:string;expiresAt:number}|null=null;
  let login:Promise<string>|null=null;
+ let rejectedSession:string|undefined;
  const publicReads=new Map<string,Promise<any>>();
  async function json(path:string,method='GET',body?:any,token?:string,base=origin){
   const response=await request(base+path,{method,redirect:'error',signal:AbortSignal.timeout(base===origin?30000:15000),headers:{accept:'application/json',...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
@@ -39,7 +41,12 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
   try{return await login;}finally{login=null;}
  }
  async function createSession(){
-  const secret=key();if(!secret){const issued=await custodyClient.session();session=issued;return issued.token;}if(!/^0x[0-9a-f]{64}$/i.test(secret))throw Error('network_identity_unavailable');
+  const secret=key();if(!secret){
+   const rejected=rejectedSession,issued=await issueSession(rejected?{rejectedSession:rejected}:{});
+   if(!/^cln_[A-Za-z0-9_-]{43}$/.test(issued.token??'')||!Number.isSafeInteger(issued.expiresAt)||issued.expiresAt<=now()+30000)throw Error('network_session_invalid');
+   if(rejected&&createHash('sha256').update(issued.token).digest('hex')===rejected)throw Error('network_session_rejected');
+   session=issued;if(rejectedSession===rejected)rejectedSession=undefined;return issued.token;
+  }if(!/^0x[0-9a-f]{64}$/i.test(secret))throw Error('network_identity_unavailable');
   const account=privateKeyToAccount(secret as `0x${string}`),challenge=await json('/v1/auth/challenge','POST',{address:account.address});
   validateLogin(challenge,account.address,now());
   const signed=await account.signMessage({message:challenge.message});
@@ -77,8 +84,16 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
   const input={...args};
   const path=route.path.replace(/\{(\w+)\}/g,(_:string,k:string)=>{const value=input[k];delete input[k];return encodeURIComponent(String(value));});
   const query=route.method==='GET'?new URLSearchParams(Object.entries(input).map(([k,v])=>[k,Array.isArray(v)?JSON.stringify(v):String(v)])).toString():'';
-  try{return await json(path+(query?'?'+query:''),route.method,route.method==='GET'?undefined:input,route.public?undefined:await token());}
-  catch(e:any){if(e.status===401)session=null;throw e;}
+  const bearer=route.public?undefined:await token();
+  try{return await json(path+(query?'?'+query:''),route.method,route.method==='GET'?undefined:input,bearer);}
+  catch(e:any){
+   // Invalidate only the session used by this request. A late response must
+   // not discard a newer login, and writes are never automatically replayed.
+   if(e.status===401&&bearer&&session?.token===bearer){
+    session=null;rejectedSession=createHash('sha256').update(bearer).digest('hex');
+   }
+   throw e;
+  }
  }
  async function tool(name:string,args:any){
   if(!args||Object.keys(args).some(k=>!['operation','input','describe'].includes(k))||typeof args.operation!=='string')return {error:'invalid_network_tool_input'};
