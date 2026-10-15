@@ -6,6 +6,9 @@ const MAX_BYTES = 64000000, MAX_RECORDS = 40000, PAGE_SIZE = 100, PAGE_BYTES = 2
 // An explicit inventory prevents new runtime tables, credentials or signed
 // transaction material from silently becoming part of an export.
 const FIELDS = Object.freeze({
+  'project-runtimes': 'projectId runtimeId workerId workerRevision intervalSeconds maxCycles memory observation cycle state updatedAt',
+  'project-workers': 'projectId workerId snapshotId entry paths sourceHash enabled updatedAt',
+  'worker-runs': 'id projectId workerId definitionRevision state createdAt startedAt finishedAt resultJson error provider exitCode',
   snapshots: 'id projectId files createdAt',
   artifacts: 'projectId path content hash',
   builds: 'id projectId jobId snapshotId entry contract compilerProfile sourceRoot requestHash state artifactHash admissionVersion createdAt completedAt evidenceLevel error',

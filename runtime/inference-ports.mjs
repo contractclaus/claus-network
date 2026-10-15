@@ -1,5 +1,5 @@
 import {createHmac,createHash,timingSafeEqual} from 'node:crypto';
-import {amount,digest,requireThat} from '../src/shared/index.mjs';
+import {amount,canonical,digest,requireThat} from '../src/shared/index.mjs';
 
 const ORIGIN='https://claus-ecosystem-payments.vercel.app';
 const wire=(profile,request)=>({model:profile.model,provider:'openai',stream:false,store:false,
@@ -15,7 +15,7 @@ export function inferencePorts({env=process.env,fetcher=fetch,now=()=>Date.now()
       p.providers.length===1&&p.providers[0]==='openai'&&p.asset==='base-usdc-micro'&&
       p.maxOutputTokens<=4096&&amount(p.maximumPerRequest)<=2000000n,'inference_profile_not_supported');
   }
-  const mac=value=>'sha256:'+createHmac('sha256',secret).update(JSON.stringify(value)).digest('hex');
+  const mac=value=>'sha256:'+createHmac('sha256',secret).update(canonical(value)).digest('hex');
   const unsigned=q=>{const {proofHash,...v}=q;return v;};
   const id=p=>'network-compute:'+p.requestId.replace(/^sha256:/,'');
   async function json(path,options={}) {
