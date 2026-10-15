@@ -36,14 +36,14 @@ export function createProgramService({network,repo,client,account,guard,limits,e
   const code=await client.getCode({address:program});
   const original=await repo.get(b.id+':deploy');
   if(!code||!same(code,original.signed.expectedRuntime))throw Error('program_runtime_changed');
-  if(step==='adapter')return {chainId:1,value:'0',releaseId:b.id,artifact:'out/TreasuryProtectedProgram.json',constructorArgs:[program,keccak256(code)]};
+  if(step==='adapter')return {chainId:1,value:'0',releaseId:b.id,artifact:'out/ComputeProtectedProgram.json',constructorArgs:[program,keccak256(code)]};
   const wrapped=await included(b.id+':adapter');if(!wrapped?.result?.receipt?.contractAddress)throw Error('program_adapter_not_verified');
   const adapter=wrapped.result.receipt.contractAddress,adapterRow=await repo.get(b.id+':adapter');
-  const [adapterCode,target,targetHash,treasuryPips]=await Promise.all([
+  const [adapterCode,target,targetHash,treasuryPips,computePips,compute,computeCode]=await Promise.all([
    client.getCode({address:adapter}),client.readContract({address:adapter,abi:PROGRAM_ABI,functionName:'program'}),
-   client.readContract({address:adapter,abi:PROGRAM_ABI,functionName:'programCodeHash'}),client.readContract({address:adapter,abi:PROGRAM_ABI,functionName:'TREASURY_PIPS'})
+   client.readContract({address:adapter,abi:PROGRAM_ABI,functionName:'programCodeHash'}),client.readContract({address:adapter,abi:PROGRAM_ABI,functionName:'TREASURY_PIPS'}),client.readContract({address:adapter,abi:PROGRAM_ABI,functionName:'COMPUTE_PIPS'}),client.readContract({address:adapter,abi:PROGRAM_ABI,functionName:'COMPUTE'}),client.getCode({address:CORE.compute})
   ]);
-  if(!same(adapterCode,adapterRow.signed.expectedRuntime)||!same(target,program)||targetHash!==keccak256(code)||treasuryPips!==13000n)throw Error('program_adapter_changed');
+  if(!same(adapterCode,adapterRow.signed.expectedRuntime)||!same(target,program)||targetHash!==keccak256(code)||treasuryPips!==12000n||computePips!==1000n||!same(compute,CORE.compute)||!computeCode||keccak256(computeCode)!==CORE.computeHash)throw Error('program_adapter_changed');
   if(step==='select')return selectTransaction(adapter);
   throw Error('program_invalid_stage');
  }
@@ -70,7 +70,7 @@ export function createProgramService({network,repo,client,account,guard,limits,e
    if(!receiptRequest&&!same(live.activeModule,expectedModule))throw Error('program_selection_changed');
    let exact;
    if(receiptRequest){const r=await delivery(client,receiptRequest.adapter,receiptRequest.input);if(r.consumed)throw Error('program_receipt_already_consumed');exact=r.transaction;}
-   else exact=step==='disable'?selectTransaction(zeroAddress):await stage(b,step);
+   else exact=step==='disable'?selectTransaction(CORE.compute):await stage(b,step);
    const data=exact.to?exact.data:encodeDeployData({abi:b.artifacts.find(a=>a.path===exact.artifact).abi,bytecode:b.artifacts.find(a=>a.path===exact.artifact).bytecode,args:exact.constructorArgs});
    if(expected.data!==undefined&&!same(data,expected.data))throw Error('program_preparation_changed');
    assertProgramSignature(tx,{...exact,data},limits,await ledger.spent(),await client.getBalance({address:CORE.owner}));
@@ -102,7 +102,7 @@ export function createProgramService({network,repo,client,account,guard,limits,e
    const value={kind:'native-program',id,reference,proof:{...proof,artifact:undefined},reason:input.reason,acknowledgedFindings:input.acknowledgedFindings,
     compiled:{program:proof.artifact,guard},guardHash:digest(guard),previousModule:core.activeModule,observedCore:core,createdAt:now(),passed:true,
     artifacts:[{path:'out/Program.json',abi:proof.artifact.abi,bytecode:proof.artifact.creationBytecode},
-     {path:'out/TreasuryProtectedProgram.json',abi:guard.abi,bytecode:guard.creationBytecode}]};
+     {path:'out/ComputeProtectedProgram.json',abi:guard.abi,bytecode:guard.creationBytecode}]};
    delete value.proof.artifact;
    await repo.attest(id,value);return this.status(id);
   },
@@ -145,7 +145,7 @@ export function createProgramService({network,repo,client,account,guard,limits,e
    const selected=await included(id+':select');if(!selected)throw Error('program_not_selected');
    const wrapped=await included(id+':adapter');if(!wrapped?.result?.receipt?.contractAddress)throw Error('program_adapter_not_verified');
    const decodedModule=wrapped.result.receipt.contractAddress;
-   return {id,step:'disable',result:await executeStep({...b,selectedModule:decodedModule},'disable',selectTransaction(zeroAddress))};
+   return {id,step:'disable',result:await executeStep({...b,selectedModule:decodedModule},'disable',selectTransaction(CORE.compute))};
   }
  };
 }
