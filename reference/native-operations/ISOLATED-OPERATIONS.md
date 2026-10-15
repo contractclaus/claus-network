@@ -1,3 +1,7 @@
+# Original receipt reads (Native32 / API14)
+
+Recovery of pending app writes uses app_request_receipt with the original principal, operation, idempotency key and canonical request hash. It reads only an existing immutable result and never resends a write. Current project write revocation does not hide the original principal's historical receipt. Invalid/revoked sessions cannot read it; absent or conflicting evidence stays unresolved. Existing parents, child admission, scope and concurrency rules remain.
+
 # Original program runs (Native31)
 
 Each new program is recorded as a private parent action before its first API step. Project and work admission are serialized; the durable parent blocks another program for either resource between steps and after a crash. An execution lock coalesces concurrent attempts to continue the same run. Child reservation and parent completion also lock the parent row, so a delayed process cannot append a step after termination.

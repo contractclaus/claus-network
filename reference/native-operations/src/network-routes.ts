@@ -1921,7 +1921,7 @@ export const networkRoutes:Record<string,any>={
       "additionalProperties": false
     },
     "public": true,
-    "description": "Bounded live public search by project/app/service/agent/task and query; tasks support state filtering. Follow nextCursor to completion; empty intermediate pages do not prove absence. Declarations and transport checks are not independent safety reviews or active-worker counts."
+    "description": "Public search by project/app/service/agent/task. Project and agent profiles use database-filtered substring search before pagination on PostgreSQL; other kinds scan bounded pages. Follow nextCursor. Agent results link to public acceptance receipts; publication or accepted work does not establish a live independent agent."
   },
   "public_task": {
     "name": "public_task",
@@ -2489,6 +2489,119 @@ export const networkRoutes:Record<string,any>={
     },
     "public": true,
     "description": "Read only public collections in a published project/app. Private collection records and counts are unavailable."
+  },
+  "app_service_get": {
+    "name": "app_service_get",
+    "method": "GET",
+    "path": "/v1/apps/{projectId}/services/{serviceId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "serviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48
+        }
+      },
+      "required": [
+        "projectId",
+        "serviceId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Read the current isolated service source hash, state revision and fixed limits with app.manage. No guest execution or state disclosure. Code is the reviewed API network.json serve(input) function."
+  },
+  "app_service_call": {
+    "name": "app_service_call",
+    "method": "POST",
+    "path": "/v1/apps/{projectId}/services/{serviceId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "serviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48
+        },
+        "request": true,
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expectedSourceHash": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "projectId",
+        "serviceId",
+        "request",
+        "expectedRevision",
+        "expectedSourceHash",
+        "idempotencyKey"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Execute project-bound JSON business logic in a credential-free QuickJS heap with app.manage. Fixed host enforces current source hash, state revision, quotas and immutable original receipt. Only private service-state may change; no SQL, credentials, payments, network or arbitrary host calls. Preserve idempotencyKey; recover with app_request_receipt operation service:<serviceId>. Returned status/body are untrusted application output, not evidence of payment or permission."
+  },
+  "app_request_receipt": {
+    "name": "app_request_receipt",
+    "method": "GET",
+    "path": "/v1/apps/{projectId}/request-receipt",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "requestHash": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "projectId",
+        "operation",
+        "idempotencyKey",
+        "requestHash"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/apps/{projectId}/request-receipt. Requires current object read permission."
   },
   "app_get": {
     "name": "app_get",
@@ -7090,6 +7203,646 @@ export const networkRoutes:Record<string,any>={
     "public": false,
     "description": "GET /v1/projects/{projectId}/contract-requests/{requestId}. Requires current object read permission."
   },
+  "runtime_resource_policy_set": {
+    "name": "runtime_resource_policy_set",
+    "method": "PUT",
+    "path": "/v1/admin/runtime/operators",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "operators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "minItems": 0,
+          "maxItems": 16
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "operators",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "PUT /v1/admin/runtime/operators. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "runtime_resources": {
+    "name": "runtime_resources",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/runtime-resources",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "projectId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/runtime-resources. Requires current object read permission."
+  },
+  "runtime_resources_set": {
+    "name": "runtime_resources_set",
+    "method": "PUT",
+    "path": "/v1/projects/{projectId}/runtime-resources",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "projectDaily": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "active": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "projectDaily",
+        "active",
+        "reason",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "PUT /v1/projects/{projectId}/runtime-resources. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "project_web_read": {
+    "name": "project_web_read",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/web/read",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "projectId",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/web/read. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "runtime_reconcile": {
+    "name": "runtime_reconcile",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}/reconcile",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "runtimeId",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Explicit owner recovery of the original runtime cycle. Rechecks current ownership, worker revision and limits. A stopped runtime can receive a fresh fixed-scope credential; revoked keys stay revoked. Completed workers are read, never rerun. Unknown worker, metered-read or financial effects stay held. Requires expectedRevision."
+  },
+  "runtime_set": {
+    "name": "runtime_set",
+    "method": "PUT",
+    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "workerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "workerRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "intervalSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 604800
+        },
+        "maxCycles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "initialState": true,
+        "enabled": {
+          "type": "boolean"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "runtimeId",
+        "workerId",
+        "workerRevision",
+        "intervalSeconds",
+        "maxCycles",
+        "initialState",
+        "enabled",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "PUT /v1/projects/{projectId}/runtimes/{runtimeId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "runtime_checkpoint": {
+    "name": "runtime_checkpoint",
+    "method": "PATCH",
+    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}/memory",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "memory": true,
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "runtimeId",
+        "memory",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "PATCH /v1/projects/{projectId}/runtimes/{runtimeId}/memory. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "runtime_get": {
+    "name": "runtime_get",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      },
+      "required": [
+        "projectId",
+        "runtimeId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/runtimes/{runtimeId}. Requires current object read permission."
+  },
+  "runtime_list": {
+    "name": "runtime_list",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/runtimes",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "projectId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/runtimes. Requires current object read permission."
+  },
+  "runtime_stop": {
+    "name": "runtime_stop",
+    "method": "DELETE",
+    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "runtimeId",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "DELETE /v1/projects/{projectId}/runtimes/{runtimeId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "compute_policy_set": {
+    "name": "compute_policy_set",
+    "method": "PUT",
+    "path": "/v1/admin/compute/policies",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "providerId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "accountId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "providers": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "minItems": 1,
+              "maxItems": 32
+            },
+            "asset": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "fundingAccount": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "permissionHash": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 71
+            },
+            "dataPolicyHash": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 71
+            },
+            "expiresAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            },
+            "maximumPerRequest": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 78
+            },
+            "maxInputBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65536
+            },
+            "maxOutputTokens": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16384
+            }
+          },
+          "required": [
+            "id",
+            "version",
+            "enabled",
+            "providerId",
+            "accountId",
+            "model",
+            "providers",
+            "asset",
+            "fundingAccount",
+            "permissionHash",
+            "dataPolicyHash",
+            "expiresAt",
+            "maximumPerRequest",
+            "maxInputBytes",
+            "maxOutputTokens"
+          ],
+          "additionalProperties": false
+        },
+        "operators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "expiresAt": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "totalLimit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78
+        },
+        "perProjectLimit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "profile",
+        "operators",
+        "enabled",
+        "expiresAt",
+        "totalLimit",
+        "perProjectLimit",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "PUT /v1/admin/compute/policies. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "compute_policy": {
+    "name": "compute_policy",
+    "method": "GET",
+    "path": "/v1/compute/policies/{profileId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "profileId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/compute/policies/{profileId}. Requires current object read permission."
+  },
+  "compute_grants": {
+    "name": "compute_grants",
+    "method": "GET",
+    "path": "/v1/compute/policies/{profileId}/grants",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "after": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "profileId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/compute/policies/{profileId}/grants. Requires current object read permission."
+  },
+  "compute_grant_set": {
+    "name": "compute_grant_set",
+    "method": "PUT",
+    "path": "/v1/compute/projects/{projectId}/grants/{profileId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "limit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "projectId",
+        "profileId",
+        "enabled",
+        "expiresAt",
+        "limit",
+        "expectedRevision",
+        "idempotencyKey",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "PUT /v1/compute/projects/{projectId}/grants/{profileId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "inference_profiles": {
+    "name": "inference_profiles",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/inference/profiles",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "after": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "projectId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/inference/profiles. Requires current object read permission."
+  },
   "inference_profile_set": {
     "name": "inference_profile_set",
     "method": "PUT",
@@ -7159,9 +7912,11 @@ export const networkRoutes:Record<string,any>={
               "maxLength": 71
             },
             "expiresAt": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 9007199254740991
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
             },
             "maximumPerRequest": {
               "type": "string",
@@ -7990,450 +8745,6 @@ export const networkRoutes:Record<string,any>={
     },
     "public": true,
     "description": "GET /v1/public/graph. Public read."
-  },
-  "compute_policy": {
-    "name": "compute_policy",
-    "method": "GET",
-    "path": "/v1/compute/policies/{profileId}",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "profileId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        }
-      },
-      "required": [
-        "profileId"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "GET /v1/compute/policies/{profileId}. Requires current object read permission."
-  },
-  "compute_grants": {
-    "name": "compute_grants",
-    "method": "GET",
-    "path": "/v1/compute/policies/{profileId}/grants",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "profileId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "after": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "limit": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100
-        }
-      },
-      "required": [
-        "profileId"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "GET /v1/compute/policies/{profileId}/grants. Requires current object read permission."
-  },
-  "compute_grant_set": {
-    "name": "compute_grant_set",
-    "method": "PUT",
-    "path": "/v1/compute/projects/{projectId}/grants/{profileId}",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "profileId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "enabled": {
-          "type": "boolean"
-        },
-        "expiresAt": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "limit": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 78
-        },
-        "expectedRevision": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "idempotencyKey": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "reason": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 1000
-        }
-      },
-      "required": [
-        "projectId",
-        "profileId",
-        "enabled",
-        "expiresAt",
-        "limit",
-        "expectedRevision",
-        "idempotencyKey",
-        "reason"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "PUT /v1/compute/projects/{projectId}/grants/{profileId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
-  },
-  "inference_profiles": {
-    "name": "inference_profiles",
-    "method": "GET",
-    "path": "/v1/projects/{projectId}/inference/profiles",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "after": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "limit": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100
-        }
-      },
-      "required": [
-        "projectId"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "GET /v1/projects/{projectId}/inference/profiles. Requires current object read permission."
-  },
-  "runtime_set": {
-    "name": "runtime_set",
-    "method": "PUT",
-    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "runtimeId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 40
-        },
-        "workerId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 40
-        },
-        "workerRevision": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "intervalSeconds": {
-          "type": "integer",
-          "minimum": 60,
-          "maximum": 604800
-        },
-        "maxCycles": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 1000000
-        },
-        "initialState": true,
-        "enabled": {
-          "type": "boolean"
-        },
-        "expectedRevision": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "projectId",
-        "runtimeId",
-        "workerId",
-        "workerRevision",
-        "intervalSeconds",
-        "maxCycles",
-        "initialState",
-        "enabled",
-        "expectedRevision"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "PUT /v1/projects/{projectId}/runtimes/{runtimeId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
-  },
-  "runtime_checkpoint": {
-    "name": "runtime_checkpoint",
-    "method": "PATCH",
-    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}/memory",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "runtimeId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 40
-        },
-        "memory": true,
-        "expectedRevision": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "projectId",
-        "runtimeId",
-        "memory",
-        "expectedRevision"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "PATCH /v1/projects/{projectId}/runtimes/{runtimeId}/memory. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
-  },
-  "runtime_get": {
-    "name": "runtime_get",
-    "method": "GET",
-    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "runtimeId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 40
-        }
-      },
-      "required": [
-        "projectId",
-        "runtimeId"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "GET /v1/projects/{projectId}/runtimes/{runtimeId}. Requires current object read permission."
-  },
-  "runtime_list": {
-    "name": "runtime_list",
-    "method": "GET",
-    "path": "/v1/projects/{projectId}/runtimes",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        }
-      },
-      "required": [
-        "projectId"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "GET /v1/projects/{projectId}/runtimes. Requires current object read permission."
-  },
-  "runtime_stop": {
-    "name": "runtime_stop",
-    "method": "DELETE",
-    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "runtimeId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 40
-        },
-        "expectedRevision": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "projectId",
-        "runtimeId",
-        "expectedRevision"
-      ],
-      "additionalProperties": false
-    },
-    "public": false,
-    "description": "DELETE /v1/projects/{projectId}/runtimes/{runtimeId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
-  },
-  "project_web_read": {
-    "name": "project_web_read",
-    "method": "POST",
-    "path": "/v1/projects/{projectId}/web/read",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "url": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 2048
-        }
-      },
-      "required": [
-        "projectId",
-        "url"
-      ],
-      "additionalProperties": false
-    },
-    "description": "POST /v1/projects/{projectId}/web/read. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
-  },
-  "runtime_reconcile": {
-    "name": "runtime_reconcile",
-    "method": "POST",
-    "path": "/v1/projects/{projectId}/runtimes/{runtimeId}/reconcile",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "runtimeId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 40
-        },
-        "expectedRevision": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "projectId",
-        "runtimeId",
-        "expectedRevision"
-      ],
-      "additionalProperties": false
-    },
-    "description": "POST /v1/projects/{projectId}/runtimes/{runtimeId}/reconcile. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
-  },
-  "runtime_resources": {
-    "name": "runtime_resources",
-    "method": "GET",
-    "path": "/v1/projects/{projectId}/runtime-resources",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        }
-      },
-      "required": [
-        "projectId"
-      ],
-      "additionalProperties": false
-    },
-    "description": "GET /v1/projects/{projectId}/runtime-resources. Requires current object read permission."
-  },
-  "runtime_resources_set": {
-    "name": "runtime_resources_set",
-    "method": "PUT",
-    "path": "/v1/projects/{projectId}/runtime-resources",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "projectDaily": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 100
-        },
-        "active": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 4
-        },
-        "reason": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 1000
-        },
-        "expectedRevision": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "projectId",
-        "projectDaily",
-        "active",
-        "reason",
-        "expectedRevision"
-      ],
-      "additionalProperties": false
-    },
-    "description": "PUT /v1/projects/{projectId}/runtime-resources. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{

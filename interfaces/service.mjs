@@ -2,6 +2,8 @@ import {ROUTES,validate} from './contract.mjs';
 
 export function createService({runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  app_service_get:(a,i)=>apps.services.get(a,i.projectId,i),
+  app_service_call:(a,i)=>apps.services.call(a,i.projectId,i),
   app_request_receipt:(a,i)=>apps.requestReceipt(a,i.projectId,i),
   workflow_revise:(a,i)=>workflows.revise(a,i.projectId,i.workflowId,i),
   webhook_create:(a,i)=>webhooks.create(a,i.projectId,i),

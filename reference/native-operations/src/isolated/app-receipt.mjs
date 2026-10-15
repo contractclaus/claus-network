@@ -5,6 +5,7 @@ export function appReceiptInput(operation,input){
  if(operation==='app_configure'){op='configure';body={manifest:input.manifest,expectedRevision:input.expectedRevision};}
  else if(operation==='app_publish'){op=input.published?'publish':'withdraw';body={published:input.published,expectedRevision:input.expectedRevision};}
  else if(['app_record_create','app_record_update'].includes(operation)){op='record:'+input.collection;body={recordId:input.recordId??null,data:input.data,parentId:input.parentId??null,expectedRevision:input.expectedRevision??0};}
+ else if(operation==='app_service_call'){op='service:'+input.serviceId;body={request:input.request,expectedRevision:input.expectedRevision,expectedSourceHash:input.expectedSourceHash};}
  else throw Error('network_program_receipt_operation_denied');
  return {projectId:input.projectId,operation:op,idempotencyKey:input.idempotencyKey,requestHash:'sha256:'+programDigest(body)};
 }

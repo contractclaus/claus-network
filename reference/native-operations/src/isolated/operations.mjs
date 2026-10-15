@@ -3,8 +3,8 @@ import {evaluateProgram,programHash} from './runner.mjs';
 
 // This is part of the fixed host, outside the editable source scope. Never
 // derive the operation set, identity, project or receipt IDs from guest code.
-export const PROGRAM_READS=Object.freeze(['project_get','app_get','app_records','app_metrics','runtime_list','public_project','public_task','public_task_progress','public_task_payment','public_task_review','network_discover','capabilities']);
-export const PROGRAM_WRITES=Object.freeze(['app_record_create','app_record_update','app_configure','app_publish']);
+export const PROGRAM_READS=Object.freeze(['project_get','app_get','app_records','app_metrics','runtime_list','public_project','public_task','public_task_progress','public_task_payment','public_task_review','network_discover','capabilities','app_service_get']);
+export const PROGRAM_WRITES=Object.freeze(['app_record_create','app_record_update','app_configure','app_publish','app_service_call']);
 const object=value=>value&&typeof value==='object'&&!Array.isArray(value);
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const bounded=(value,size)=>{const text=JSON.stringify(value);if(typeof text!=='string'||Buffer.byteLength(text)>size)throw Error('network_program_size');return JSON.parse(text);};

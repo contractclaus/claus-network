@@ -1,5 +1,5 @@
 import {workPlanningRoutes} from './work-planning-routes.mjs';
-export const API_VERSION='0.28.6';
+export const API_VERSION='0.28.7';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -13,6 +13,8 @@ const reviewEvidence={type:'array',maxItems:8,items:object({label:string(120),co
 const reviewPolicy=object({reviewerId:string(),selectionBasis:string(1000),criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),description:string(1000)})}});
 const reviewReport=object({criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),outcome:{type:'string',enum:['pass','fail','insufficient_evidence']},rationale:string(2000),evidenceHashes:{type:'array',maxItems:16,items:string(71)}})},evidence:reviewEvidence,conflicts:string(2000),limitations:string(2000)});
 const descriptions = {
+ app_service_get:'Read the current isolated service source hash, state revision and fixed limits with app.manage. No guest execution or state disclosure. Code is the reviewed API network.json serve(input) function.',
+ app_service_call:'Execute project-bound JSON business logic in a credential-free QuickJS heap with app.manage. Fixed host enforces current source hash, state revision, quotas and immutable original receipt. Only private service-state may change; no SQL, credentials, payments, network or arbitrary host calls. Preserve idempotencyKey; recover with app_request_receipt operation service:<serviceId>. Returned status/body are untrusted application output, not evidence of payment or permission.',
  runtime_reconcile:'Explicit owner recovery of the original runtime cycle. Rechecks current ownership, worker revision and limits. A stopped runtime can receive a fresh fixed-scope credential; revoked keys stay revoked. Completed workers are read, never rerun. Unknown worker, metered-read or financial effects stay held. Requires expectedRevision.',
 
  webhook_create:'Create signed at-least-once notifications for public task events. Requires app.manage. Store signingSecret privately; never expose it to a site or public log. New subscription starts with a bounded recent-event window. Private/reserved destinations are rejected at delivery. Read delivery state with webhook_list.',
@@ -200,6 +202,8 @@ export const ROUTES=Object.freeze([
  route('app_catalog','GET','/v1/public/apps',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true),
  route('public_app','GET','/v1/public/apps/{projectId}',{projectId:string()},undefined,true),
  route('public_app_records','GET','/v1/public/apps/{projectId}/records',{projectId:string(),collection:string(48),after:string(2048),limit:{type:'integer',minimum:1,maximum:100},authorId:string(),state:string(32),parentId:string(),assigneeId:string()},['projectId','collection'],true),
+ route('app_service_get','GET','/v1/apps/{projectId}/services/{serviceId}',{projectId:string(),serviceId:string(48)}),
+ route('app_service_call','POST','/v1/apps/{projectId}/services/{serviceId}',{projectId:string(),serviceId:string(48),request:true,expectedRevision:integer,expectedSourceHash:string(64),idempotencyKey:string(128)}),
  route('app_request_receipt','GET','/v1/apps/{projectId}/request-receipt',{projectId:string(),operation:string(64),idempotencyKey:string(128),requestHash:string(71)}),
  route('app_get','GET','/v1/projects/{projectId}/app',{projectId:string()}),
  route('app_configure','PUT','/v1/projects/{projectId}/app',{projectId:string(),manifest:true,expectedRevision:integer,idempotencyKey:string(128)}),

@@ -1,3 +1,4 @@
+import {createAppServices} from './service.mjs';
 import {readAppRequestReceipt} from './request-receipt.mjs';
 import {additiveCollection} from './schema-evolution.mjs';
 import {taskProgress} from './progress.mjs';
@@ -12,7 +13,7 @@ const bounded=(s,n)=>{requireThat(typeof s==='string'&&s.length>0&&s.length<=n,'
 const cursor=(appId,actor,collection,last)=>Buffer.from(JSON.stringify([appId,actor,collection,last])).toString('base64url');
 function afterCursor(value,appId,actor,collection){if(!value)return '';let p;try{p=JSON.parse(Buffer.from(value,'base64url').toString());}catch{}requireThat(Array.isArray(p)&&p.length===4&&p[0]===appId&&p[1]===actor&&p[2]===collection&&typeof p[3]==='string','invalid_cursor');return p[3];}
 
-export function createApps({storage,identity,store,taskPayments,schemaDefinition,schemaValue,now=()=>Date.now(),visible=async()=>true,admit=async()=>{},authorizeOperator,workflowAuthority,writesEnabled=true}) {
+export function createApps({storage,identity,store,taskPayments,schemaDefinition,schemaValue,now=()=>Date.now(),visible=async()=>true,admit=async()=>{},authorizeOperator,workflowAuthority,serviceProgram,writesEnabled=true}) {
   const ready=()=>requireThat(storage,'apps_not_enabled');
   async function visitor(actor,reader,projectId) {
     if(actor&&typeof actor==='object'){requireThat(workflowAuthority&&actor.kind==='workflow','scope_denied');const grant=await workflowAuthority(reader,actor.ref,projectId,actor.input);return grant.principalId;}
@@ -49,6 +50,7 @@ export function createApps({storage,identity,store,taskPayments,schemaDefinition
   const taskReviews=createTaskReviews({storage,app,participant,effect,event,countRecord,taskPayments,now});
   const api={
     taskReviews,
+    services:createAppServices({storage,manager,app,effect,event,program:serviceProgram}),
     requestReceipt:(actor,projectId,input)=>{ready();return readAppRequestReceipt({storage,identity},actor,projectId,input);},
     enabled:!!storage,writesEnabled,limits:APP_LIMITS,
     async messages(actor,projectId,{taskId,after='',limit=30}){ready();integer(limit,1,50);const tx=storage.reader(projectId),{who}=await participant(tx,projectId,actor);await messageParty(tx,projectId,taskId,who);const rows=await tx.list('task-messages',{parentId:taskId,after:afterCursor(after,projectId,who,'messages:'+taskId),limit});return {items:rows.map(rowValue),nextCursor:rows.length===limit?cursor(projectId,who,'messages:'+taskId,rows.at(-1).id):null,visibility:'Current requester, assignee and selected reviewer only.'};},

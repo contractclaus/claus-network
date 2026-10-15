@@ -13,6 +13,10 @@
     "  }",
     " }",
     " return {notes:notes.slice(0,20)};",
+    "}",
+    "",
+    "function serve(input) {",
+    " return {status:404,body:{error:'service_not_configured',serviceId:input.serviceId}};",
     "}"
   ]
 }
