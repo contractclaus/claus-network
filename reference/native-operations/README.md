@@ -33,3 +33,5 @@ See [operating isolation](OPERATING-ISOLATION.md) for the work planner, atomic r
 [Recovery and operating capacity](RELIABLE-RECOVERY.md) describes original receipt reconciliation, bounded buyback recovery and separate resource accounting.
 
 [Network session recovery](NETWORK-SESSION-RECOVERY.md) describes targeted session renewal without replaying actions.
+
+[Search credential boundary](SEARCH-BOUNDARY.md) describes fixed provider search with independent request accounting.
