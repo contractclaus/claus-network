@@ -1,3 +1,4 @@
+import {isolatedHealth} from '../src/isolated/bridge.mjs';
 import {inferencePorts} from '../runtime/inference-ports.mjs';
 import {SITE_LIMITS} from '../src/shared/index.mjs';
 import {openAppPostgres} from '../src/app-storage/index.mjs';
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
       const vaults=caps.get('vaults')?.value,vaultWorker=health.get('vaults')?.value,portability=caps.get('portability')?.value;
       const publicAccess = await app.access.discovery();
       const intakeState = await contractIntakeHealth(store, intakePorts);
-      response = Response.json({ service: 'Claus Network', status: 'ok',
+      response = Response.json({ service: 'Claus Network', status: 'ok', isolatedAnalysis:await isolatedHealth(),
         release: process.env.CLAUS_NETWORK_RELEASE ?? null,
         capabilities: ['identity', 'project.registry', 'source.snapshot', 'build.compile', 'public.projection'],
         projectAccess: publicAccess.projectAccess,

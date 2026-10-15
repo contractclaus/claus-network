@@ -1,13 +1,13 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_6CtHf74P7fCyUDzJ9pyzApjHhX6X",
-  "source": "a180c1cd980fc3e2373d44b5c598dd64d69104e15e9006f579e47e9508ba4439",
+  "deployed": "dpl_Asd5qSeVuFhb5QHFWsMUJK3kiFVg",
+  "source": "11149d396204b96493fff1620f6b8a43e92322038e591e09c9ae24a9f7c51216",
   "files": {
-    "src/operations/policy.ts": "4207f83e628ad6aed2ef2471d9acb50badf48112a648cd28edb45e4f0f1efe04",
-    "src/operations/host.ts": "9c0fc69393d198596029843ed9faa3481e6bd2b868eb7b3b8e5190325274d944",
-    "src/operations/store.ts": "02772530ea63b64a5910a57e2985273ce198b8d54d6e6819086415deea99e677",
-    "src/operations/service.ts": "bbc0fab7168ae64e98130d7e7ad2e1cf6139a72d9e18a72adb24bca96f6669e3",
-    "src/operations/worker.ts": "4b9b6e01c2c9c4245d1fcbd99a88acf5a81406e73939bdef15926ec1e3e60e59",
+    "src/operations/policy.ts": "dd8300f17f16651b2ea135f43a81056a9f12f49f59e755b1db102b25005cddcd",
+    "src/operations/host.ts": "c5878d7beefa9f566cf155f376dfe48beffe3aea850a8c7126d985107a284749",
+    "src/operations/store.ts": "f9b5d04cef00e8e4159dd22cb603d5aa224c7d7775cfe182d96ae4e51862bd6f",
+    "src/operations/service.ts": "37d126adf4db010cbe830d35f3b30836d28d545a7b504457b783d612d236e7dd",
+    "src/operations/worker.ts": "491f6ccde2515cdf1222a128644ce49e348449d1985e3f2e289a4c5a31b876a3",
     "src/operations/handoff.ts": "9bd8338930e0689fe41f9d20a76931f7d12f4c14508ffd9a817ff0a7dfd1496a",
     "src/operations/review-evidence.ts": "f889924460e2be67aaaf1990eb740e7955b5cda5f4ced42bb965fda6910ff90a",
     "src/operating-context.ts": "5bc31abd4096bcf0c171d3845866bb72b4694ebb693a002496546ccd38d56b68",
@@ -26,6 +26,12 @@
     "src/runtime-access.ts": "146cfd27faf10887b536679f1c6ec71346e4d6d4d3ac2bbfa5911ba089c0924b",
     "src/tool-visibility.ts": "5fa21e6e69223d9cb60ef6076818ad53d24fa8da86cf17642205d5d001d7e9c7",
     "src/tools.ts": "b233ca2b279660caadf6a2ff22cdeaccba301f4b5ee603471115b055c98e3f16",
-    "src/trade-program.ts": "52c71ebd31b2eaca0b4587406b0289481585076064ec81ae3da50ff2d36b154f"
+    "src/trade-program.ts": "52c71ebd31b2eaca0b4587406b0289481585076064ec81ae3da50ff2d36b154f",
+    "src/index.ts": "a8c4e852265395a224581ceeea3d45c732a6a12f89dd2de84f5bd32201d2452a",
+    "src/isolated/bridge.ts": "8f1eb7b30f42b69df0d4db6ec7b6ed126dc7b3e34ad5dd008ba2cd43356a767f",
+    "src/isolated/network.json": "19f3e4caff5b0d27447b646ab762a907ed8e2d9237bef24772e5fef50e98b726",
+    "src/isolated/runner.d.mts": "d56c8b05a387db7c04404a70f3b1c58775f8febff78d667edbba9f0f135f166b",
+    "src/isolated/runner.mjs": "41486003ce1f37812325138e0e7633ea25cab4240e6bd4df7a13c3d5fed81b98",
+    "src/network-products.ts": "dcb85e4593f5282e36ac2f4aa2a808fc23ede38adaef9beb5deaf318ab1b96e3"
   }
 }

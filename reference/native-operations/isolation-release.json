@@ -1,0 +1,32 @@
+{
+  "profile": "data-only-analysis/1",
+  "native": "dpl_Asd5qSeVuFhb5QHFWsMUJK3kiFVg",
+  "api": "dpl_74pf2Y2CAN2usCqGiAbmzwaAtNmJ",
+  "sourceFiles": {
+    "native": [
+      "src/index.ts",
+      "src/isolated/bridge.ts",
+      "src/isolated/network.json",
+      "src/isolated/runner.d.mts",
+      "src/isolated/runner.mjs",
+      "src/network-products.ts",
+      "src/operations/host.ts",
+      "src/operations/policy.ts",
+      "src/operations/service.ts",
+      "src/operations/store.ts",
+      "src/operations/worker.ts"
+    ],
+    "api": [
+      "api/gateway.mjs",
+      "package-lock.json",
+      "package.json",
+      "src/discovery/index.mjs",
+      "src/isolated/bridge.mjs",
+      "src/isolated/network.json",
+      "src/isolated/runner.mjs",
+      "vercel.json"
+    ]
+  },
+  "editableFile": "src/isolated/network.json",
+  "arbitraryServerSource": false
+}

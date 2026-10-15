@@ -1,3 +1,4 @@
+import {validateProgram} from '../isolated/runner.mjs';
 import type {LabDatabase,LabQuery} from '../lab-db.js';
 import {BuilderStore} from '../builder-store.js';
 import {assertBuilderDeployment} from '../builder-coordination.js';
@@ -22,7 +23,7 @@ export class OperationsStore{
   validateChanges(input.scope,input.changes);const id='op_'+hash(requestId).slice(0,24),requestHash=hash(input),old=(await this.db.query('SELECT * FROM claus_operations_releases WHERE id=$1',[id])).rows[0];if(old){if(old.request_hash!==requestHash)throw Error('operations_request_conflict');return old;}
   const c=await this.current(input.scope);if(!c?.enabled||c.revision!==input.expectedRevision)throw Error('operations_disabled_or_revision_conflict');validateManifest(c.manifest);await this.host.baseline(input.scope,c.deployment,c.manifest);
   const files:{path:string;before:string;content:string}[]=[],manifest:FileRef[]=structuredClone(c.manifest);
-  for(const change of input.changes){const ref=manifest.find(f=>f.path===change.path);if(!ref)throw Error('operations_existing_file_required');const before=await this.host.read(input.scope,c.deployment,ref),content=patch(before,change);denyNewAuthority(before,content);files.push({path:change.path,before,content});ref.sha=sha(content);ref.size=Buffer.byteLength(content);}
+  for(const change of input.changes){const ref=manifest.find(f=>f.path===change.path);if(!ref)throw Error('operations_existing_file_required');const before=await this.host.read(input.scope,c.deployment,ref),content=patch(before,change);denyNewAuthority(before,content);if(input.scope!=='web')validateProgram(JSON.parse(content));files.push({path:change.path,before,content});ref.sha=sha(content);ref.size=Buffer.byteLength(content);}
   if(Buffer.byteLength(JSON.stringify(files))>250000)throw Error('operations_review_source_too_large');
   const sourceHash=hash(manifest);
   const build=await builder.create('operations:'+id,input.title,input.goal,'claus','source',undefined,'javascript','operations',{

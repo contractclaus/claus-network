@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "lines": [
+    "function analyze(input) {",
+    " const notes = [];",
+    " for (const subject of input.subjects) {",
+    "  if (input.kind === 'projects') {",
+    "   const missing = Object.keys(subject.reads).filter(key => subject.reads[key] !== 'available');",
+    "   if (missing.length) notes.push({subject:subject.id, priority:'attention', message:'Observation incomplete: '+missing.join(', ')+'. Read the original result before choosing a repair; missing data does not prove a broken service.'});",
+    "  } else if (input.kind === 'operations') {",
+    "   if (subject.status === 'stale' || subject.status === 'unknown') notes.push({subject:subject.id, priority:'attention', message:'Worker observation is '+subject.status+'. Inspect the original heartbeat and execution evidence before treating this as an outage.'});",
+    "   if (subject.failedWorkers > 0) notes.push({subject:subject.id, priority:'attention', message:'The last batch contains failed workers. Inspect original runs and retain their IDs; do not repeat uncertain paid actions.'});",
+    "  }",
+    " }",
+    " return {notes:notes.slice(0,20)};",
+    "}"
+  ]
+}
