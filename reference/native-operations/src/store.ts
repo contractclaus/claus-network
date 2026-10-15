@@ -142,14 +142,22 @@ export async function once<T>(id:string,kind:string,input:unknown,fn:()=>Promise
   }
   try {
     const result=await fn();
-    await db`UPDATE claus_actions SET status='completed',result=${JSON.stringify(result)}::jsonb,completed_at=now() WHERE id=${id}`;
-    return result;
+    const saved=await db`UPDATE claus_actions SET status='completed',result=${JSON.stringify(result)}::jsonb,completed_at=now() WHERE id=${id} AND status NOT IN ('completed','failed') RETURNING result`;
+    if(saved.length)return saved[0].result as T;
+    const original=(await db`SELECT status,result FROM claus_actions WHERE id=${id}`)[0];
+    if(original?.status==='completed')return original.result as T;
+    throw new Error(`action_confirmed_failed:${id}`);
   } catch(error) {
     if(error instanceof ConfirmedFailure) {
       await settleAction(id,failureReceipt(error),'failed',db);
+      const original=(await db`SELECT status,result FROM claus_actions WHERE id=${id}`)[0];
+      if(original?.status==='completed')return original.result as T;
       throw error;
     }
-    await db`UPDATE claus_actions SET status='uncertain' WHERE id=${id}`;
+    await db`UPDATE claus_actions SET status='uncertain' WHERE id=${id} AND status NOT IN ('completed','failed')`;
+    const original=(await db`SELECT status,result FROM claus_actions WHERE id=${id}`)[0];
+    if(original?.status==='completed')return original.result as T;
+    if(original?.status==='failed')throw new Error(`action_confirmed_failed:${id}`);
     throw new Error(`action_requires_reconciliation:${id}`);
   }
 }

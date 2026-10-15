@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_GRHhrRPMwvwvFpJbPcpvbXUbTqZz",
-  "source": "82352a61a5d9359bcbe8181b4e9015324a026887871d8036a2c315ed66aba8ec",
+  "deployed": "dpl_Bug9NKYQ8JqByJ23eeQvhtFeTZ8a",
+  "source": "ccfa085289d5d18ca9e44b5c9a62f767c24e444ca4aee9a095d2eb1d9610cd0e",
   "files": {
-    "src/index.js": "33f9a0b7778c2dc48f620f5704d5e058e9875f35eccfef1160bbd4bc31f1b03a",
+    "src/index.js": "a34fa90be2889b8f464d4399a18dd60ff3d1043ed99f1d56cb5d71eb7a28aa72",
     "src/publisher/host.js": "c59603df1592e5b418d6eb44bc4deab0d8028e6fbf9527df9c5d04fdc092197b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
     "src/publisher/policy.js": "1ea8a68136ce4615eddcf8623f4ca34d9fd8eddface64923642a12c814bbc9ce",
@@ -16,12 +16,13 @@
     "src/surface-publisher/routes.js": "15fc3c2f73837886b57e56ce5acca41cb11a9a0610aff9c43d5da6bb6b3e95ab",
     "src/surface-publisher/service.js": "362de09ecda7d6861b1813f32db9e7b7870fab4d070cb36ebbf139ddb685dcb8",
     "src/surface-publisher/source.js": "5870c1dc4f8dfe4f49c42532e1a5046a607aed88a4bf2a0dd7eee31cc9c2357d",
-    "src/configuration/routes.js": "b8d6a30ec2cfbacd4f1eba4f3969a26ece086d27fabd667280d078a743b554aa",
+    "src/configuration/routes.js": "98c6a0cab5adba1c7a33af3f9a8d837a5bb61ed8f7d1b0ff3cb91452b793b9db",
     "src/configuration/service.js": "ab9e223e7235e927bd15911b4b6732dda80c4b606d3a25abe592b45568ace5af",
     "src/configuration/validation.js": "2fce7cb19f899a2681458f3671cd45db71ab2ceccb2c1bf676c30884e8119a63",
     "src/publisher/review-evidence.js": "f47fcbef7961850f30558dc8ec8a8089b00359d0f7dafdcc87cd1bf6ddd697b6",
     "src/publisher/review-prompts.json": "60bcd88764a331275f0e7925270c6bfa2f7dbdfec7506f76c69287fcf80150a4",
-    "src/publisher/controls.js": "b899403662a96fda5b85c9376406f6a2c4c4553de4b72c6cc53eea44dff425ae"
+    "src/publisher/controls.js": "b899403662a96fda5b85c9376406f6a2c4c4553de4b72c6cc53eea44dff425ae",
+    "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2"
   },
   "referenceSubset": true
 }

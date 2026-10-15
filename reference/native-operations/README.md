@@ -25,3 +25,5 @@ See [operating isolation](OPERATING-ISOLATION.md) for the work planner, atomic r
 [Publication authority](PUBLICATION-CONTROL-BOUNDARY.md) describes fixed activation, immutable source and protected runner pins.
 
 [Publication recovery](PUBLICATION-RECOVERY.md) documents original-receipt recovery and current production checks.
+
+[Owner missions and action evidence](WORK-EVIDENCE-BOUNDARY.md) describes fixed owner admission and immutable settled action receipts.

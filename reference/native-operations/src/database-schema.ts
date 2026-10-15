@@ -13,6 +13,13 @@ export function managedSchemaReady():Promise<void>{
   const db=neon(process.env.DATABASE_URL!);
   const [identity]=await db`SELECT current_user AS role,has_schema_privilege(current_user,'public','CREATE') AS schema_create,has_table_privilege(current_user,'claus_config','INSERT,UPDATE,DELETE,TRUNCATE') AS configuration_write,pg_has_role(current_user,'claus_agent','MEMBER') AS owner_member`;
   if(identity?.role!=='claus_native_runtime'||identity.schema_create||identity.configuration_write||identity.owner_member)throw Error('native_database_role_mismatch');
+  const [boundary]=await db`SELECT has_table_privilege(current_user,'claus_missions','INSERT,DELETE,TRUNCATE') AS mission_write,
+   has_column_privilege(current_user,'claus_missions','chain_write','UPDATE') AS mission_grant,
+   has_column_privilege(current_user,'claus_missions','body','UPDATE') AS mission_body,
+   has_table_privilege(current_user,'claus_actions','DELETE,TRUNCATE') AS action_delete,
+   (SELECT count(*)::int FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND
+    (tgrelid='claus_missions'::regclass AND tgname='owner_mission_immutable' OR tgrelid='claus_actions'::regclass AND tgname='action_evidence_immutable')) AS guards`;
+  if(!boundary||boundary.mission_write||boundary.mission_grant||boundary.mission_body||boundary.action_delete||boundary.guards!==2)throw Error('native_evidence_boundary_mismatch');
   verifyNativeSchema(schema.columns,await db.query(schemaQuery));
  })().catch(error=>{pending=undefined;throw error;});
 }

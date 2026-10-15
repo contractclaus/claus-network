@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_ADLfSn5uAQxWzTzTvCwZQWs9DjBJ",
-  "source": "4caaab9d0b0e4666fb6a7118d35ccd40876912f0f051803a83a871011ba6022a",
+  "deployed": "dpl_icb9zczsNBnxtFitGTjh68rRUn45",
+  "source": "52d4eabec7a936556b259b7362db5d9a07faaad7c88f1bc0208c0fdc8fb51001",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -37,7 +37,7 @@
     "src/cycle.ts": "37ff8cb424f6131c782fdd5324e9a6385272907ebbb1f5d487534f51d567fa83",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
     "src/social.ts": "35ba3e536ad0c8154787036625db84373daba75e93fcaed06ccc54ba7f9cb3dd",
-    "src/store.ts": "ad1b21188741588f9739a8d439b91c3fd44db68723699ddfb2f9181ef3c40d4c",
+    "src/store.ts": "229337465609cfe5a7c11da400703511e22c2ded6add88e69d0604debe13480d",
     "src/isolated/work.json": "2cd86bd1fe86823e8578e466b4750df1979aa9a2741ac62782034f5f14546b32",
     "src/isolated/work.ts": "64f6c8087bd8a367012a4b38c1b488496bbc065b5c7c2f64724530cfe5d76b21",
     "src/network-measurements.ts": "528442b47850c9ede35ca17e1ac516c014523855a0ec67fb73bda1952a183089",
@@ -50,7 +50,7 @@
     "src/builder-coordination.ts": "7af97d91a6070cc0bb41af1e54ba5af44f50df4940782c3a20e3216a73c60fb4",
     "src/club-privacy.ts": "38e028bb37b701404d58b1de27b2590150e595658e08adb20af017c114245fae",
     "src/database-schema.json": "855575b7044dff971a053e505059c3ca0865702b83b619c7bc83731f542d39c9",
-    "src/database-schema.ts": "a09cb726631af2631ed3d8534e0b56aec1c761ca9fc1bcd4833d40e49b785324",
+    "src/database-schema.ts": "5e23809a035e425f83313960d339e8c7ac491d4b34f2fa6e435e42e6187f2dac",
     "src/feedback-builds.ts": "91c3184ce8697bf44efaa93c7f055e78b77b4a3a99545411e4ba783370a11039",
     "src/gotchi/store.ts": "8f454cf1bf9b4648a7a7b75396a5a5e71f11b5488b2a680a682bcc33c659c82e",
     "src/lab-store.ts": "9301f6a24a7d3d04824bc4d3a0a70742cd02048ae6978562750b90f5423e8085",
@@ -63,7 +63,8 @@
     "src/workspaces/continuity.ts": "f38b72950a98ff4eecaf684619880d4ca18f02f038cd7b774c8c354bba78651a",
     "src/workspaces/contributions.ts": "58e30e278efd14ac06e37596673a50661bdd72d24c5e8b9d70856850940e2dd5",
     "src/workspaces/packages.ts": "1cff67a7a7231139bd09ff8cce80575bb6388810d203d4dbcc0afbe22065623f",
-    "src/operating-resources.ts": "38f988d387d3056ec175ae3f16abf3ee3fce33cd78cc2e6fc8075d7b93409bf4"
+    "src/operating-resources.ts": "38f988d387d3056ec175ae3f16abf3ee3fce33cd78cc2e6fc8075d7b93409bf4",
+    "src/missions.ts": "2953ba58944c45fc2b3fba4895578f5279ddfad47f56310da546f3e80e53a829"
   },
   "referenceSubset": true
 }
