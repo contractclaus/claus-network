@@ -58,7 +58,7 @@ export async function reserveCredit(db,{id,hash,maximum,activeMs,binding}={}){
  // admission snapshots roll back the entire lifetime-budget increment.
  return db`WITH admitted AS(
   UPDATE claus_payment_budget SET committed=committed+${String(value)}::bigint
-  WHERE id=true AND ceiling IN (100000000,500000000) AND committed BETWEEN 0 AND ceiling-${String(value)}::bigint
+  WHERE id=true AND ceiling IN (100000000,500000000,600000000) AND committed BETWEEN 0 AND ceiling-${String(value)}::bigint
    AND EXISTS(SELECT 1 FROM claus_credit_work_control WHERE id=true AND NOT frozen)
    AND EXISTS(SELECT 1 FROM claus_credit_pool WHERE id=true AND state='funded' AND allocated=2000000
     AND deposit_address=${binding.address} AND key_id=${binding.keyId} AND deposit_tx=${binding.transaction})
@@ -94,7 +94,7 @@ export async function finishCredit(db,id,{status,response=null,outcome=null,amou
  const n=cost===null?null:amount(cost);
  if(!validId(id)||!['completed','failed','uncertain'].includes(status)||(cost!==null&&n===null))throw Error('invalid_credit_work_finish');
  const encoded=JSON.stringify(response),o=JSON.stringify(outcome);if(encoded===undefined||o===undefined)throw Error('invalid_credit_work_finish');
- const rows=await db`WITH locked AS MATERIALIZED(SELECT id FROM claus_payment_budget WHERE id=true AND ceiling IN (100000000,500000000) FOR UPDATE),finished AS(
+ const rows=await db`WITH locked AS MATERIALIZED(SELECT id FROM claus_payment_budget WHERE id=true AND ceiling IN (100000000,500000000,600000000) FOR UPDATE),finished AS(
   UPDATE claus_credit_work SET status=CASE WHEN ${cost}::bigint>reserved_max THEN 'uncertain' ELSE ${status} END,
    response=CASE WHEN ${cost}::bigint>reserved_max THEN NULL ELSE ${encoded}::jsonb END,outcome=${o}::jsonb,
    accounted_cost=CASE WHEN ${cost}::bigint<=reserved_max THEN ${cost}::bigint END,
