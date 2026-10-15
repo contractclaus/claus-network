@@ -17,7 +17,11 @@ export async function openAppPostgres({ pool, schema = 'claus_network', migrate 
   function reader(client, appId, locked = false) {
     return {
       network: { async read(collection, id) {
-        const { rows } = await client.query(`SELECT revision,body FROM ${network} WHERE collection=$1 AND id=$2${locked ? ' FOR SHARE' : ''}`, [collection,id]);
+        // FOR SHARE also applies UPDATE row policies. Global controls are
+        // intentionally read-only to this role and are fenced by the shared
+        // network advisory lock held for every application transaction.
+        const lockRow = locked && !['network','network-capabilities'].includes(collection);
+        const { rows } = await client.query(`SELECT revision,body FROM ${network} WHERE collection=$1 AND id=$2${lockRow ? ' FOR SHARE' : ''}`, [collection,id]);
         return rows[0] ? { revision:Number(rows[0].revision),value:rows[0].body } : null;
       } },
       async read(collection,id) {
@@ -63,6 +67,7 @@ export async function openAppPostgres({ pool, schema = 'claus_network', migrate 
       try {
         await client.query('BEGIN');
         await client.query("SET LOCAL statement_timeout='10s'");
+        await client.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,0))',[schema]);
         await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,1))',[schema+':app:'+appId]);
         const tx={...reader(client,appId,true),async write(collection,id,value,expectedRevision) {
           requireThat(active,'transaction_closed');integer(expectedRevision);text(collection);text(id);
