@@ -12,6 +12,7 @@ import {createWorkers} from '../src/workers/index.mjs';
 import {createDomains} from '../src/domains/index.mjs';
 import {createDiscovery} from '../src/discovery/index.mjs';
 import {createWorkflows} from '../src/workflows/index.mjs';
+import serviceProgram from '../src/isolated/network.json' with {type:'json'};
 import {createApps} from '../src/apps/index.mjs';
 import {createDeals} from '../src/deals/index.mjs';
 import {createTaskPayments} from '../src/deals/task-payments.mjs';
@@ -81,7 +82,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const arbitration=createArbitration({store,identity,dealPorts,now,enabled:arbitrationEnabled});
  const deals=createDeals({store,identity,ports:dealPorts});
  const taskPayments=createTaskPayments({identity,store,ports:dealPorts,deals,evidence:arbitration.evidence,now});
- const apps=createApps({taskPayments,storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
+ const apps=createApps({serviceProgram:()=>serviceProgram,taskPayments,storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
  const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,publicConnections:createWorkConnections({store,apps,visible:contentAdmin.visible}),limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicDetails:async projectId=>{
   const [application,publicServices,results,publicReleases,publicSignals]=await Promise.all([
     appStorage?apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,

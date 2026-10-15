@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_4ty46CPytANwzwXyzKPqLTynCMqA",
-  "source": "claus-full-operation-native32-2026-10-16",
+  "deployed": "dpl_Hd9DsW4RkBx5z2zzBzzbdsiWM5zw",
+  "source": "claus-full-operation-native33-2026-10-16",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -31,7 +31,7 @@
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
     "src/isolated/runner.mjs": "28b3392b74bf64070d379b3815dca7b9e73c22140f9deee191eef8898702c048",
     "src/network-products.ts": "dcb85e4593f5282e36ac2f4aa2a808fc23ede38adaef9beb5deaf318ab1b96e3",
-    "src/network-routes.ts": "3e2b6717238ffc9c3b3fcacc1a1eeef62bba3b840f1fa443dc37805e07cd76d7",
+    "src/network-routes.ts": "ec387b73a6c245021404ee762450135738269c1129045cd3b1f1627e7c87189b",
     "src/operational-capabilities.ts": "8665b376d7febc83f5050b4e20d7aab3b223131917b3a84980edd9a88a856220",
     "src/cycle.ts": "535bbd5eaa72d0ac663d34202a6bb3b4a3b5c218b9ffda109ba00c3eab2be071",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
@@ -72,12 +72,12 @@
     "src/research-cache.ts": "d0ab9f0c9dfef6cb5359a1fe06f4e2b4bc4a7ac1f0a03415de88fd8c1d87af38",
     "src/search-client.ts": "73ca4be37e9d4f4f9aa14a5a57780861282fe2ab61bfa921cad0d7da6785ef65",
     "src/isolated/operations.d.mts": "61c7cbfb4832ade785fb27cba1f9bed74760d8970898ef015dcf1791e614f793",
-    "src/isolated/operations.mjs": "345aa45fd2891e9d5b115626a0ac078376690553b2402a13e0b101aa87b105a8",
+    "src/isolated/operations.mjs": "151764ae66fd536606a65be49a755ccecc23de854908d9f68bd35988850f0cc3",
     "src/network-program.ts": "bd7777c915b6dc6c03d0a5e0a3fa6cd76af0f586f5668ae7642a3f2709cab734",
     "src/isolated/program-run.d.mts": "cf7f66c384c6d0b2a606955086e4e222a42a527c7063045d7988f0f6b33e35e1",
     "src/isolated/program-run.mjs": "69b4e838a4d862114408dfad8ae3c51dc7ee412e3a58f12e4d50f422e58fe090",
     "src/isolated/app-receipt.d.mts": "f08e190dd4f0630eee4898a4ca13c6b23076bdd3fc66d6630ae046cdfef5405a",
-    "src/isolated/app-receipt.mjs": "c22695e640e0ae1bdca222de6afe0200c7fb06b22533ef05fe6d62f4950d7dea"
+    "src/isolated/app-receipt.mjs": "1d610f7cce21edd2b27e669f6b00b4d3148baa5ab5625103d5ed36c779ff5318"
   },
   "referenceSubset": true
 }
