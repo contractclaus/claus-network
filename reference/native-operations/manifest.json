@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_Ga1XuTeprgws2gpJSVhs6sBetaiy",
-  "source": "57b6a25809c39bfcc94a3ea7fe301b1fda113a3dc85d8e4fc3ea1d2703cd7dfb",
+  "deployed": "dpl_3iyKYdH4bsWbTFcNwSX8BFBPsNfJ",
+  "source": "201ab9ee970889d86990de1a161480b702428577890c77d6447a509bfacaf63b",
   "files": {
     "src/operations/policy.ts": "4207f83e628ad6aed2ef2471d9acb50badf48112a648cd28edb45e4f0f1efe04",
     "src/operations/host.ts": "9c0fc69393d198596029843ed9faa3481e6bd2b868eb7b3b8e5190325274d944",
@@ -13,7 +13,9 @@
     "src/knowledge-schema.ts": "fee8f8f34372234688bb3c2773b3ec3a77d1d0240c5688b6f8e80b6d9b82f46e",
     "src/twitter-policy.ts": "6e9698e832767e906204280dac8b84d137c93ee9ebcc2fc450507c0443afdc2e",
     "src/work-wallet-sponsor.ts": "325134bc9146d516e2e818211b5e5e8e3ea068213726e04229fdd712779099f5",
-    "src/work-wallet.ts": "43875bd0271873ee5935852560101f57d509c31590f99492a0efa3c1bc80664c",
-    "src/work-wallet-store.ts": "745fff5072863cd677c0ffbfd3a220763f076d415d3f39b4ad4db59409a24547"
+    "src/work-wallet.ts": "70923fdd77ba7579919cd26382a48327d50a4ec0589857b295ac00cdc295332e",
+    "src/work-wallet-store.ts": "745fff5072863cd677c0ffbfd3a220763f076d415d3f39b4ad4db59409a24547",
+    "src/custody-client.ts": "ac1c0393c440e71534d459fee53837e6191cd347cb9d9f49a08545f28e4ba8fa",
+    "src/network-access.ts": "dda6489b433acaabebcbe6d2b178c58325c55eb515265758fd6944ea94aef42c"
   }
 }
