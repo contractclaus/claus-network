@@ -14,6 +14,8 @@ export class SurfaceHost {
   if(!response.ok)throw Error(/^surface_[a-z_0-9]+$/.test(body.error??'')?body.error:'surface_host_unavailable');
   return body.result;
  }
+ async activate(id:string){return this.call('activate',[id]);}
+ async monitor(){return this.call('monitor',[]);}
  async assertProject(projectId:string){return this.call('project',[projectId]);}
  async prepare(projectId:string,files:SourceFile[],id:string,hash:string){return this.call('prepare',[projectId,files,id,hash]);}
  async deploy(projectId:string,files:SourceFile[],id:string,hash:string){return this.call('deploy',[projectId,files,id,hash]);}

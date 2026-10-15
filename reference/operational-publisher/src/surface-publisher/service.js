@@ -1,3 +1,4 @@
+import {publicationControls} from '../publisher/controls.js';
 import {SurfaceHost} from './host.js';
 import {surfaceProject,validateSource,sourceHash,applyChanges} from './source.js';
 import {trustedReview} from '../publisher/review-evidence.js';
@@ -9,7 +10,8 @@ const validId=id=>/^sr_[a-zA-Z0-9_]{1,100}$/.test(id??'');
 
 // This service is fixed operator code. No raw provider path, URL, environment,
 // project selection or deployment command crosses the agent-facing boundary.
-export function createSurfacePublisher({repository,ledger,host=new SurfaceHost(),reviewEvidence=trustedReview}){
+export function createSurfacePublisher({repository,ledger,host=new SurfaceHost(),reviewEvidence=trustedReview,controls}){
+ const control=()=>controls??=publicationControls();
  async function current(){const c=await repository.surfaceCurrent();if(!c||c.project_id!==surfaceProject)fail('scope_changed');return c;}
  async function release(id,hash){
   if(!validId(id)||!/^[a-f0-9]{64}$/.test(hash??''))fail('release_invalid');
@@ -33,9 +35,32 @@ export function createSurfacePublisher({repository,ledger,host=new SurfaceHost()
   return host.reconcile(surfaceProject,r.id,r.source_hash,known??r.deployment?.id);
  }
  return {async call(operation,args){
-  const arities={project:1,prepare:4,deploy:4,reconcile:4,source:4,verify:4};
+  const arities={project:1,prepare:4,deploy:4,reconcile:4,source:4,verify:4,activate:1,monitor:0};
   if(!Object.hasOwn(arities,operation)||!Array.isArray(args)||args.length!==arities[operation])fail('operation_denied');
   const c=await current();
+  if(operation==='activate'){
+   const r=await repository.surfaceRelease(args[0]);if(!r)fail('release_missing');
+   const old=await control().activated('surface',r.id);if(old&&old.active_id===c.active_id&&old.revision===c.revision)return old;
+   await reviewed(r,c);if(r.state!=='verified')fail('activation_conflict');
+   const entry=await ledger.get('surface:deploy:'+r.id);if(!entry||entry.status!=='completed')fail('publication_not_proven');
+   const actual=await deployment(r,r.deployment?.id);if(!actual||actual.state!=='READY'||entry.result?.id!==actual.id)fail('publication_not_proven');
+   await host.verifySource(actual.id,r.files,r.id,r.source_hash);
+   const proof=await host.verify(actual.url,r.id,r.source_hash,true);return control().activateSurface(c,r,{...proof,reviewEffect:r.review_effect,verifiedBy:'fixed-publisher'});
+  }
+  if(operation==='monitor'){
+   if(!c.enabled)return {state:'disabled'};if(c.last_checked&&Date.now()-Date.parse(c.last_checked)<60000)return {state:'recent'};
+   const r=await repository.surfaceRelease(c.active_id);if(!r)fail('release_missing');let healthy=false;
+   try{await host.verify(r.deployment.url,r.id,r.source_hash,true);healthy=true;}catch{}
+   const updated=await control().monitorSurface(c,healthy);if(!updated)return {state:'recent'};
+   if(!healthy&&updated.failures>=2&&updated.fallback_id){
+    const previous=await repository.surfaceRelease(updated.fallback_id);if(!previous)fail('fallback_missing');
+    if(validateSource(previous.files)!==previous.source_hash)fail('fallback_invalid');
+    await host.verifySource(previous.deployment.id,previous.files,previous.id,previous.source_hash);
+    const proof=await host.verify(previous.deployment.url,previous.id,previous.source_hash,true);
+    return control().rollbackSurface(updated,await repository.surfaceRelease(updated.active_id),{reason:'two_failed_public_health_checks',fallback:proof,at:new Date().toISOString()});
+   }
+   return {state:healthy?'healthy':'unavailable',id:r.id,failures:updated.failures};
+  }
   if(operation==='project'){if(args[0]!==surfaceProject)fail('scope_changed');await host.assertProject(surfaceProject);return {projectId:surfaceProject};}
   if(operation==='prepare'||operation==='deploy'){
    const [project,files,id,sourceDigest]=args;if(project!==surfaceProject)fail('scope_changed');const r=await release(id,sourceDigest);await reviewed(r,c);

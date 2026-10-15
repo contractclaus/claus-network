@@ -1,6 +1,7 @@
 import {OperationsHost} from './host.js';
 import {target,hash,sha,validateManifest,validateChanges,patch,denyNewAuthority} from './policy.js';
 import {validateProgram} from './program.js';
+import {publicationControls} from './controls.js';
 import {trustedReview} from './review-evidence.js';
 
 const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
@@ -12,7 +13,8 @@ const deploymentView=d=>({id:d.id,url:d.url,projectId:d.projectId,readyState:d.r
 
 // No caller-selected provider path, URL, environment, build command or SQL.
 // The original release and its completed review come from a read-only DB role.
-export function createPublisher({repository,ledger,host=new OperationsHost(),reviewEvidence=trustedReview}){
+export function createPublisher({repository,ledger,host=new OperationsHost(),reviewEvidence=trustedReview,controls}){
+ const control=()=>controls??=publicationControls();
  async function context(scope){target(scope);const c=await repository.current(scope);if(!c)fail('scope_missing');validateManifest(c.manifest);return c;}
  async function release(scope,id){if(!/^op_[a-f0-9]{24}$/.test(id??''))fail('release_invalid');const r=await repository.release(id);if(!r||r.scope!==scope)fail('release_missing');return r;}
  async function bound(scope,id){
@@ -44,9 +46,28 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
  }
  return {async call(operation,scope,args){
   if(!Array.isArray(args))fail('input_invalid');target(scope);
-  const arities={project:0,baseline:2,read:2,deployment:1,reconcile:3,verify:3,deploy:5,promote:2,restored:1};
+  const arities={project:0,baseline:2,read:2,deployment:1,reconcile:3,verify:3,deploy:5,promote:2,restored:1,activate:1,finishRollback:1,adopt:1};
   if(!Object.hasOwn(arities,operation)||args.length!==arities[operation])fail('operation_denied');
   const c=await context(scope);
+  if(operation==='adopt'){if(scope!=='native'||args[0]!==c.deployment||(await host.project(scope)).targets?.production?.id!==args[0])fail('base_changed');return control().adoptNative(args[0]);}
+  if(operation==='activate'||operation==='finishRollback'){
+   const r=await release(scope,args[0]),old=await control().activated('operation',r.id,operation==='activate'?'activate':'rollback');
+   if(old&&old.deployment===c.deployment&&old.revision===c.revision)return old;
+   const rollback=operation==='finishRollback',journal=await ledger.get((rollback&&r.promote_started?'promote:':'deploy:')+r.id);
+   if(!journal||journal.status!=='completed')fail('publication_not_proven');
+   let manifest=r.manifest,id=r.deployment?.id;
+   if(rollback){
+    if(!['rollback_pending','rolling_back'].includes(r.state)||!r.deployment?.id)fail('rollback_changed');
+    if(r.promote_started&&journal.input_hash!==hash({scope,base:r.base_deployment,target:r.deployment.id}))fail('release_binding');
+    if(!r.promote_started&&journal.input_hash!==hash({scope,base:r.base_deployment,sourceHash:r.source_hash}))fail('release_binding');
+    id=r.base_deployment;manifest=r.manifest.map(f=>{const old=r.files.find(x=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
+   }else{await reviewed(r,c);if(r.state!=='verified'||!r.promote_started||!(await ledger.get('promote:'+r.id))?.result?.promoted)fail('publication_not_proven');}
+   const actual=await host.api('/v13/deployments/'+deploymentId(id),{},scope);if(actual.projectId!==target(scope).project)fail('deployment_binding');
+   const proof=await host.verify(scope,{id,url:'https://'+actual.url},manifest,true);
+   const schedules=p=>(p??[]).map(({path,schedule})=>({path,schedule})).sort((a,b)=>a.path.localeCompare(b.path));
+   if(!equal(schedules((await host.project(scope)).crons?.definitions),schedules(c.crons)))fail('schedule_changed');
+   return rollback?control().rollbackOperation(c,r,manifest,{passed:true,rollback:{completedAt:new Date().toISOString(),verification:proof}}):control().activateOperation(c,r,{passed:true,sourceHash:r.source_hash,reviewEffect:r.review_effect,production:proof,verifiedBy:'fixed-publisher'});
+  }
   if(operation==='project')return projectView(await host.project(scope));
   if(operation==='baseline'){const [id,manifest]=args;if(id!==c.deployment||!equal(manifest,c.manifest))fail('base_changed');return projectView(await host.baseline(scope,id,c.manifest));}
   if(operation==='read'){const [id,file]=args,b=await bound(scope,id);if(!target(scope).paths.some(p=>p.test(file?.path))||!b.manifest.some(f=>equal(f,file)))fail('file_denied');return host.read(scope,id,file);}

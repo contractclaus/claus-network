@@ -16,7 +16,7 @@ export class BuilderCoordination {
   deployment_id text NOT NULL,updated_at timestamptz NOT NULL DEFAULT now())`);}
  async active(q:LabQuery=this.db,lock=false):Promise<BuilderDeployment|null>{
   if(!(await q.query("SELECT to_regclass('public.claus_builder_deployment') AS table_name")).rows[0]?.table_name)return null;
-  const row=(await q.query(`SELECT revision,deployment_id FROM claus_builder_deployment WHERE id${lock?' FOR SHARE':''}`)).rows[0];
+  const row=(await q.query('SELECT revision,deployment_id FROM claus_builder_deployment WHERE id')).rows[0];
   return row?{revision:Number(row.revision),deploymentId:row.deployment_id}:null;
  }
  async assertCurrent(q:LabQuery=this.db):Promise<void>{
@@ -29,28 +29,11 @@ export class BuilderCoordination {
   }
   if(!deployment||active.deploymentId!==deployment)throw new BuilderDeploymentFence('stale');
  }
- async pin(expectedRevision:number,deploymentId:string):Promise<BuilderDeployment>{
-  if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0||!/^dpl_[A-Za-z0-9]+$/.test(deploymentId))throw Error('builder_deployment_invalid');
-  return this.db.transaction(async q=>{
-   // Same order as claims/reservations. Publication must take this lock before
-   // assertCurrent(q), so pinning cannot cross its commit boundary.
-   await q.query('SELECT pg_advisory_xact_lock(6041010)');
-   const current=await this.active(q,true);
-   if((current?.revision??0)!==expectedRevision)throw Error('builder_deployment_conflict');
-   // A sleeping/quota-wait workflow has released its lease. An active worker
-   // must finish its dispatch/receipt boundary before the operator cuts over.
-   if((await q.query("SELECT to_regclass('public.claus_builds') AS table_name")).rows[0]?.table_name&&
-      (await q.query('SELECT id FROM claus_builds WHERE lease_until>now() LIMIT 1')).rows.length)throw Error('builder_deployment_busy');
-   const revision=expectedRevision+1;
-   await q.query(`INSERT INTO claus_builder_deployment(id,revision,deployment_id) VALUES(true,$1,$2)
-    ON CONFLICT(id) DO UPDATE SET revision=EXCLUDED.revision,deployment_id=EXCLUDED.deployment_id,updated_at=now()`,[revision,deploymentId]);
-   return {revision,deploymentId};
-  });
- }
+ async pin(_revision:number,_deploymentId:string):Promise<BuilderDeployment>{throw Error('builder_pin_operator_required');}
 }
 
 // Parent-owned publication code calls this INSIDE its transaction, before any
-// write. Holding the shared row lock makes the publication/pin order explicit.
+// write. The enclosing transaction holds the shared 6041010 advisory lock ordering.
 export async function assertBuilderDeployment(q:LabQuery,deploymentId:()=>string|undefined=()=>process.env.VERCEL_DEPLOYMENT_ID){
  const db:LabDatabase={query:q.query.bind(q),transaction:fn=>fn(q)};
  await new BuilderCoordination(db,deploymentId).assertCurrent(q);

@@ -21,3 +21,5 @@ Preserved-turn handoff fences the next generation while the current lease finish
 See [operating isolation](OPERATING-ISOLATION.md) for the work planner, atomic recovery policy checks and eight-day evidence retention. Observed sampling is not a full-autonomy or continuous-uptime guarantee.
 
 [Operating resources](OPERATING-RESOURCES.md) distinguishes private payer cash, provider credit, unresolved cost and the finite request allowance without authorizing transfers.
+
+[Publication authority](PUBLICATION-CONTROL-BOUNDARY.md) describes fixed activation, immutable source and protected runner pins.

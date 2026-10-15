@@ -36,7 +36,7 @@ export async function ownerRuntimeHandoff(db:LabDatabase,host:OperationsHost,dis
   if(existing){if(existing.request_hash!==requestHash)throw Error('runtime_handoff_id_conflict');return null;}
   const config=(await q.query('SELECT content FROM claus_config ORDER BY revision DESC LIMIT 1')).rows[0]?.content;
   if(!config?.settings.enabled)throw Error('runtime_handoff_disabled');
-  const pin=(await q.query("SELECT * FROM claus_operations_control WHERE scope='native' FOR UPDATE")).rows[0];
+  const pin=(await q.query("SELECT * FROM claus_operations_control WHERE scope='native'")).rows[0];
   if(!pin?.enabled||pin.deployment!==deployment)throw Error('runtime_handoff_pin_changed');
   const generation=await fenceNextTurn(q,input.expectedGeneration);
   if(!generation)throw Error('runtime_handoff_busy_disabled_or_superseded');

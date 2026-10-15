@@ -14,6 +14,9 @@ export class OperationsHost{
   const r=await this.fetcher('https://claus-inference.vercel.app/api/publisher',{method:'POST',headers:{authorization:'Bearer '+secret,'content-type':'application/json'},body:JSON.stringify({operation,scope,args}),redirect:'error',signal:AbortSignal.timeout(90000)});
   const body=await r.json();if(!r.ok){if(body.error==='publisher_provider_error')throw new OperationsHostError(body.providerStatus,body.providerCode??null);throw Error(/^(publisher|operations|isolated)_[a-z_]+$/.test(body.error)?body.error:'operations_host_unavailable');}return body.result;
  }
+ async activate(scope:string,id:string){return this.call('activate',scope,[id]);}
+ async finishRollback(scope:string,id:string){return this.call('finishRollback',scope,[id]);}
+ async adopt(deployment:string){return this.call('adopt','native',[deployment]);}
  async project(scope:string){return this.call('project',scope,[]);}
  async baseline(scope:string,deployment:string,manifest:FileRef[]){return this.call('baseline',scope,[deployment,manifest]);}
  async read(scope:string,deployment:string,file:FileRef){return this.call('read',scope,[deployment,file]);}
