@@ -6,6 +6,8 @@ The release controller supports scoped source changes. Website changes retain th
 
 The native host uses a fixed-purpose external Jobs custodian and no longer receives its private key. Original accounting was copied exactly to the signer database; the old native ledger is read-only. Existing bounded work payments remain. This does not yet isolate every publisher or database privilege. The dedicated Jobs wallet can also sponsor the gas for an already-due public ETH/CLAUS escrow settlement. It calls only the fixed escrow’s settleExpired method with zero value, retaining the existing cumulative gas allowance. It cannot choose a recipient or transfer wallet principal. Escrow rules determine the original parties’ credits; settlement is not their withdrawal. Existing paid-work budgets are unchanged.
 
+Operational documentation reviews include a timestamped, allowlisted read of the fixed Jobs custodian policy. Private balances, job data and credentials are excluded. A service-policy observation is not an executed payment or approval for new financial rights. The original documentation review rejected for missing evidence remains recorded; the owner adopted the verified text separately.
+
 Long knowledge records are retrieved by topic when needed. Current owner rules remain in every operating prompt. Inbox compaction retains complete admitted conversations and their freshness bindings, leaving other messages pending. Operational tools are exposed in the normal model loop and excluded from private Club execution.
 
 This release does not grant general wallet signing, token-core upgrades, unbounded spending or unrestricted server access. Native hook selection and the full operational handover remain separate work.
