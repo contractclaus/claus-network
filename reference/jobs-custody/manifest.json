@@ -1,0 +1,18 @@
+{
+  "kind": "fixed-jobs-custody-source-reference",
+  "deployed": "dpl_8zrN2BgPJD5qBFqLvedQnmTjX3MC",
+  "source": "5eb2be70a77ebe7d15a30995dbeffb4fa483509c14ef8f90f7c0a23c48b3262a",
+  "files": {
+    "src/index.js": "24d58c78bb6d23f569de84df63b3facb68a4cde59b93bb004aaaf310db84a83a",
+    "src/jobs-wallet/login.js": "6ae5a178d47e5d656179beed9b3a86c3dd1a78cd73e7735e5783f50a05b12f1f",
+    "src/jobs-wallet/network.js": "c877cdac1a0ccbfb746b889837b2d038127f2a6da3b620f4ed8d531ad8ab79ee",
+    "src/jobs-wallet/read-routes.js": "ac57980525c10a2eb5237092042baf1b38e4f87fda794b4aea5f429c04329952",
+    "src/jobs-wallet/routes.js": "25f3aeda475d7b0c5d3da60384befc1479cd3554ce55e7232af4148ad0bfcc1d",
+    "src/jobs-wallet/validation.js": "04beea30a5a24c51395d1e4d801e3bea2d5f2cdce0857a11f78eeac2af83586c",
+    "src/jobs-wallet/work-wallet-contract.js": "b86a8f11aba65d407bfb0c214d619b1c28beeda19c3f0190ec66a024176efb1b",
+    "src/jobs-wallet/work-wallet-sponsor.js": "fe6d4f0769275b3e8cb83d05d6c266149d36e3e1c28c5bdcf3666c6f5e25e355",
+    "src/jobs-wallet/work-wallet-store.js": "be2b346b6dc21531f304f69601f50a98eb7f78a1beffbb7515fbf77ef1991108",
+    "src/jobs-wallet/work-wallet-token.js": "5608f86087c55825c0309fadf5217a13af9bdfe454b903024ffbef03f3823050",
+    "src/jobs-wallet/work-wallet.js": "aeeeb4eb83589a73b988ecae658e4655da8705230c899586c809295b644b8434"
+  }
+}
