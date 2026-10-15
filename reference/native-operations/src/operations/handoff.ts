@@ -1,8 +1,9 @@
 import type {LabDatabase} from '../lab-db.js';
 import {OperationsHost} from './host.js';
+import {fenceNextTurn} from './runtime-handoff.js';
 // Only the current production deployment may adopt an exact, completed native
-// release. It advances the execution fence between turns and retains every
-// continuation, action ID, balance and schedule. No model-accessible pin tool.
+// release. The next-turn fence advances while the current lease may drain;
+// execution changes only after that lease releases. No model-accessible pin tool.
 export async function operationalHandoff(db:LabDatabase,host:OperationsHost,dispatch:(generation:number)=>Promise<string>,deployment=process.env.VERCEL_DEPLOYMENT_ID){
  if(!deployment||(await host.project('native')).targets?.production?.id!==deployment)return null;
  if(!(await db.query("SELECT to_regclass('public.claus_operations_handoffs') AS t")).rows[0]?.t)return null;
@@ -20,11 +21,11 @@ export async function operationalHandoff(db:LabDatabase,host:OperationsHost,disp
   const fence=(await q.query('SELECT * FROM claus_builder_deployment WHERE id FOR UPDATE')).rows[0];
   const origin=r.state==='active'?r.base_deployment:r.deployment?.id;
   if(!fence||![origin,deployment].includes(fence.deployment_id))return null;
-  const state=(await q.query("UPDATE claus_state SET generation=generation+1,updated_at=now() WHERE id=1 AND ((status='waiting' AND (lease_until IS NULL OR lease_until<now())) OR (status='waiting_for_effect' AND lease_until IS NULL AND lease_owner IS NULL)) AND NOT EXISTS(SELECT 1 FROM claus_x_poll WHERE lease_until>now()) RETURNING generation")).rows[0];
-  if(!state)return null;
+  const generation=await fenceNextTurn(q);
+  if(!generation)return null;
   if(fence.deployment_id!==deployment)await q.query('UPDATE claus_builder_deployment SET revision=revision+1,deployment_id=$1,updated_at=now() WHERE id',[deployment]);
-  await q.query('INSERT INTO claus_operations_handoffs(id,release_id,origin_deployment,target_deployment,generation) VALUES($1,$2,$3,$4,$5)',[id,r.id,origin,deployment,state.generation]);
-  return{id,generation:state.generation};
+  await q.query('INSERT INTO claus_operations_handoffs(id,release_id,origin_deployment,target_deployment,generation) VALUES($1,$2,$3,$4,$5)',[id,r.id,origin,deployment,generation]);
+  return{id,generation};
  });
  if(!pending)return null;
  // Dispatch outcome remains unknown if interrupted. The existing overdue-run

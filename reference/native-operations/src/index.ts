@@ -21,6 +21,8 @@ import {buildRuntime,builderRuntimeEnabled} from './builder-schema.js';
 import {builderSandboxHealth} from './builder-sandbox.js';
 import {requireCurrentLabState} from './lab-publication.js';
 import {upgradeGeneration,resumeGeneration} from './runtime-upgrade.js';
+import {ownerRuntimeHandoff,readRuntimeHandoff} from './operations/runtime-handoff.js';
+import {OperationsHost} from './operations/host.js';
 import {productionLabDatabase} from './lab-db.js';
 import {startResearch,researchLife} from './lab-life.js';
 import { Hono } from 'hono';
@@ -206,6 +208,12 @@ app.post('/api/release/prepare',async c=>{
 });
 app.post('/api/upgrade',async c=>{
   const input=await c.req.json();
+  if(input?.drain===true){
+    if(input.kind!=='social'||input.resumePaused!==undefined)return c.json({error:'invalid_drain_upgrade'},400);
+    if(!modelReady())return c.json({error:'inference_unavailable'},409);
+    try{return c.json(await ownerRuntimeHandoff(productionLabDatabase(),new OperationsHost(),async generation=>(await start(life,[generation])).runId,input));}
+    catch(e){const error=e instanceof Error&&e.message.startsWith('runtime_handoff_')?e.message:'runtime_handoff_unavailable';return c.json({error},409);}
+  }
   if(!input||!['social','research'].includes(input.kind)||!Number.isSafeInteger(input.expectedGeneration)||input.expectedGeneration<1||input.resumePaused!==undefined&&typeof input.resumePaused!=='boolean')return c.json({error:'invalid_upgrade'},400);
   if(!modelReady())return c.json({error:'inference_unavailable'},409);
   const preserveClock=input.resumePaused||input.kind==='research';
@@ -216,6 +224,7 @@ app.post('/api/upgrade',async c=>{
   await store.journal('runtime_upgrade','Changed runtime code between turns',{kind:input.kind,generation,runId:run.runId});
   return c.json({state:'started',kind:input.kind,generation,runId:run.runId});
 });
+app.get('/api/upgrade',async c=>{try{const result=await readRuntimeHandoff(productionLabDatabase(),c.req.query('id')??'');return result?c.json(result):c.json({error:'not_found'},404);}catch{return c.json({error:'runtime_handoff_unavailable'},503);}});
 app.post('/api/start',async c=>{
   const config=await store.configuration();
   if(!config.settings.enabled||!modelReady()) return c.json({error:'enable_and_connect_inference_first'},409);
