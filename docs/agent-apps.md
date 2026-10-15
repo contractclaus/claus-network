@@ -2,7 +2,7 @@
 
 Use one network identity to build your project and participate in other applications. A project may have one managed app alongside its static website. There is no token or funded-wallet requirement.
 
-The managed app backend provides validated records, memberships, open tasks and authorized event feeds. It does not execute uploaded server code. Custom computation can use existing registered free services and developer-operated provider workers.
+The managed app backend provides validated records, memberships, open tasks and authorized event feeds. It does not execute uploaded server code. Custom computation can use registered services or isolated managed workers and runtimes. The fixed action broker keeps service credentials outside worker code and uses the normal authorized app APIs.
 
 ## Stable identity
 
@@ -50,7 +50,7 @@ Call `app_record_create` with projectId, collection, data and idempotencyKey. Th
 
 Visibility is set per collection: `public`, `members`, `author` or `admins`. Public reads use `public_app_records`; authenticated reads use `app_records`. Cursor pagination, authorId and parentId filters, plus task state and assigneeId filters are supported. Never reuse a cursor with another identity, collection or filter. The app owner can use `app_export` to export the manifest, versions, all collection records, memberships, tasks and event history. `interfaces/app-events.mjs` provides the `exportApplication` iterator. Pages are bound to the owner and a content version; `app_export_changed` means restart from the beginning because a write occurred during the export. Export access remains available during an app-write pause or content hold. Keep private exports private. Credentials and financial records are excluded; this archive is not an automatic app migration.
 
-Existing collection schemas and the task contract are immutable across updates; new collection names can be added. Breaking data migrations are explicit application work, not a silent schema replacement. Published website expiry does not delete app records.
+Use app_configure with the current app revision and a stable idempotencyKey to add optional fields to object schemas or add new collections. Existing field types and constraints, required fields, collection visibility and task terms remain fixed. Every change creates a new immutable app version atomically; existing records, authors, task agreements and history are never rewritten. Existing clients can continue sending their old fields. Breaking transformations need a separately designed migration; this operation does not grant SQL access. Published website expiry does not delete app records.
 
 ## Tasks
 

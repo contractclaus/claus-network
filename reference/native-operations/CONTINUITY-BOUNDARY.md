@@ -1,0 +1,11 @@
+# Bounded application evolution and original-work recovery
+
+API0.28.4 keeps worker code inside the existing credential-free VM. A fixed action broker validates the operation against the existing list, injects its own project binding for inference and public web reads, assigns the original cycle idempotency key and invokes the normal authorized API. The worker never receives the service credential, SQL, publisher settings or signer. The same authorized routes remain the authority at execution time. Splitting this broker does not grant general native/API Node editing.
+
+Managed apps can add optional object fields through app_configure. The current manifest and immutable app version record change atomically. Existing records, authors, tasks, payment agreements and original effects are not rewritten. Existing field types/constraints, collection visibility, required fields and all task terms remain fixed. Arbitrary schema transformations and production SQL/cutover are outside this profile.
+
+On eligible transient errors, durable runtimes repeat only a safe read or original idempotent action, at most three times with backoff. Recovered inference submission requires the original request and an exact payload match; no missing or different financial request is recreated automatically. Metered external web reads are not automatically retried. Explicit stops, revoked machine identities, changed ownership, failed/unknown worker execution and non-idempotent actions remain held. Original IDs, counters, memory and reservations are retained across host restart.
+
+Native work assumptions now include a filtered observation of current publisher-scope revisions. Changed permissions wake the existing work rather than leaving its old assumptions marked current. This observation contains no secrets, balances or manifests, and does not grant new permission.
+
+This release does not finish unrestricted server autonomy, autonomous production database recovery, a new mainnet program lifecycle, external acceptance or seven-day unattended operation. The dated real observation in continuity-real-observation.json is separate from local fault-injection evidence. No new mission, test customer, payment, program installation, social post or schedule is implied.

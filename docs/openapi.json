@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.28.3"
+    "version": "0.28.4"
   },
   "servers": [
     {
@@ -4753,7 +4753,7 @@
       },
       "put": {
         "operationId": "app_configure",
-        "description": "Publish immutable managed app schemas under app.manage. Existing collection schemas cannot be silently changed. One app per project. No arbitrary backend execution.",
+        "description": "Version managed app schemas under app.manage. Existing collections may add optional object fields; existing field types, constraints, visibility and task terms remain fixed. Records and original versions are retained. One app per project. No arbitrary host execution.",
         "security": [
           {
             "bearerAuth": []

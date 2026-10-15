@@ -1,6 +1,7 @@
 import {randomBytes} from 'node:crypto';
 import {copy,digest,integer,requireThat,sourceText,text} from '../shared/index.mjs';
-export const RUNTIME_ACTIONS=Object.freeze(['project_web_read','network_discover','public_project','public_app','public_task','public_task_progress','public_task_payment','app_join','app_get','app_records','app_task_messages','app_task_message','app_task_review_request','app_task_review_submit','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_record_create','app_record_update','inference_profiles','inference_profile','inference_submit','inference_get','inference_output']);
+import {RUNTIME_ACTIONS,bindAction,recoveryFor} from './action-broker.mjs';
+export {RUNTIME_ACTIONS} from './action-broker.mjs';
 const farFuture=253402300799000;
 const bounded=value=>{const raw=JSON.stringify(value);requireThat(raw!==undefined&&Buffer.byteLength(raw)<=12000,'runtime_state_too_large');return copy(value);};
 const key=(projectId,runtimeId)=>{text(projectId);requireThat(/^[a-z][a-z0-9-]{0,39}$/.test(runtimeId),'invalid_runtime_id');return projectId+':'+runtimeId;};
@@ -21,7 +22,7 @@ export function createRuntimes({store,identity,workers,execute,route,readWeb,now
    integer(projectDaily,0,100);integer(active,1,4);sourceText(reason,1000);integer(expectedRevision);
    return store.transaction(async tx=>{const who=await identity.credential(actor,tx),operators=(await tx.read('runtime-control','resource-policy'))?.value.operators??[];requireThat(who.kind==='owner'&&operators.includes(who.principalId),'scope_denied');const p=(await tx.read('projects',projectId))?.value;requireThat(p&&!p.archivedAt&&!p.transfer,'project_unavailable');const saved=await tx.write('project-worker-resources',projectId,{projectId,projectDaily,active,reason,issuer:who.principalId,updatedAt:now()},expectedRevision);await tx.event({type:'runtime.resources_changed',projectId,projectDaily,active,at:now()});return{...saved.value,revision:saved.revision};});
   },
-  async discovery(){const w=await workers.discovery();return {enabled:w.enabled,profile:'durable-project-worker/1',memory:'private-checkpoint',network:'listed-network-actions',actions:RUNTIME_ACTIONS,workerLimits:w.limits,maxPerProject:5,minimumIntervalSeconds:60,unknownActions:'hold-original-operation',resourceAssignment:true,web:{scope:'web.read',method:'GET',protocol:'HTTPS',maximumCharacters:4000,perProjectDaily:100,privateDestinations:false}};},
+  async discovery(){const w=await workers.discovery();return {enabled:w.enabled,profile:'durable-project-worker/1',memory:'private-checkpoint',network:'listed-network-actions',broker:{profile:'fixed-authorized-actions/1',workerCredentials:false,arbitrarySql:false,arbitrarySignatures:false,recovery:'same-original-request',maximumAutomaticRetries:3},actions:RUNTIME_ACTIONS,workerLimits:w.limits,maxPerProject:5,minimumIntervalSeconds:60,unknownActions:'hold-original-operation',resourceAssignment:true,web:{scope:'web.read',method:'GET',protocol:'HTTPS',maximumCharacters:4000,perProjectDaily:100,privateDestinations:false}};},
   async configure(actor,projectId,input){
    const {runtimeId,workerId,workerRevision,intervalSeconds,maxCycles,initialState,enabled,expectedRevision}=input;
    key(projectId,runtimeId);integer(workerRevision,1);integer(intervalSeconds,60,604800);integer(maxCycles,1,1000000);integer(expectedRevision);requireThat(typeof enabled==='boolean','invalid_runtime');bounded(initialState);
@@ -67,6 +68,12 @@ export function createRuntimes({store,identity,workers,execute,route,readWeb,now
      const saved=await tx.write('project-runtimes',id,{...r.value,enabled:true,lease:null,state:'ready',nextAt:now(),updatedAt:now()},r.revision);
      await tx.event({type:'runtime.reconciled',projectId,runtimeId,requestId,at:now()});return view(saved);
     }
+    if(pending?.kind==='action'){
+     await identity.authorize(r.value.actor,'worker.run',{projectId},tx);
+     const recovery=await recoveryFor(r.value,{id,route,reader:tx,now:now()});requireThat(recovery.allowed,'runtime_original_not_resolved');
+     const saved=await tx.write('project-runtimes',id,{...r.value,enabled:true,lease:null,state:'ready',nextAt:now(),pending:recovery.pending,updatedAt:now()},r.revision);
+     await tx.event({type:'runtime.reconciled',projectId,runtimeId,operation:pending.operation,originalKey:pending.input.idempotencyKey??null,at:now()});return view(saved);
+    }
     requireThat(pending?.kind==='worker','runtime_original_action_required');const run=await tx.read('worker-runs',pending.id);requireThat(run?.value.projectId===projectId&&['failed','cancelled'].includes(run.value.state),'runtime_original_not_resolved');
     // Advance the unsuccessful cycle only after a definite no-result outcome.
     const saved=await tx.write('project-runtimes',id,{...r.value,enabled:false,pending:null,lease:null,cycle:r.value.cycle+1,state:'paused',observation:{workerRunId:pending.id,state:run.value.state,error:run.value.error??null},updatedAt:now()},r.revision);await tx.event({type:'runtime.reconciled',projectId,runtimeId,workerRunId:pending.id,at:now()});return view(saved);});
@@ -103,10 +110,8 @@ export function createRuntimes({store,identity,workers,execute,route,readWeb,now
       const output=run.result;requireThat(output&&Object.hasOwn(output,'state'),'runtime_output_requires_state');bounded(output.state);
       const action=output.action??null;
       if(action){
-       requireThat(RUNTIME_ACTIONS.includes(action.operation),'runtime_action_denied');const r=route(action.operation);requireThat(r,'runtime_action_denied');
-       const input={...(action.input??{})};if(action.operation.startsWith('inference_')||action.operation==='project_web_read')input.projectId=work.projectId;
-       if(r.inputSchema.properties.idempotencyKey)input.idempotencyKey=cycleKey;
-       await update(row.id,token,{memory:output.state,pending:{kind:'action',operation:action.operation,input,idempotent:r.method==='GET'||!!r.inputSchema.properties.idempotencyKey,sending:false},state:'working',nextAt:now()});
+       const pending=bindAction(action,{route,projectId:work.projectId,cycleKey});
+       await update(row.id,token,{memory:output.state,pending,state:'working',nextAt:now()});
       }else await update(row.id,token,{memory:output.state,observation:null,pending:null,cycle:work.cycle+1,enabled:output.done===true?false:work.enabled,state:output.done===true?'completed':'ready',nextAt:now()+work.intervalSeconds*1000});
       continue;
      }
@@ -122,6 +127,13 @@ export function createRuntimes({store,identity,workers,execute,route,readWeb,now
      const boundedError=/^[a-z_]{1,80}$/.test(e.code??'')?e.code:'runtime_outcome_unknown';
      if(!sent&&['worker_project_busy','worker_capacity_reached','worker_daily_limit','rate_limited'].includes(e.code)){
       await update(row.id,token,{state:'waiting',nextAt:e.code==='worker_daily_limit'?(Math.floor(now()/86400000)+1)*86400000:now()+60000});continue;
+     }
+     // Recover only the original safely repeatable API operation. Explicit stop,
+     // revocation, ownership change and every unknown financial result remain held.
+     const retryable=['runtime_outcome_unknown','network_failure','fetch_failed','request_timeout','storage_unavailable','temporarily_unavailable','rate_limited'];
+     if(sent&&r?.value.enabled&&retryable.includes(boundedError)){
+      const recovery=await recoveryFor(r.value,{id:row.id,route,reader:store,now:now()}).catch(()=>({allowed:false}));
+      if(recovery.allowed){await update(row.id,token,{pending:recovery.pending,state:'waiting',nextAt:recovery.nextAt,observation:{error:boundedError,recovery:recovery.reason}}).catch(()=>{});continue;}
      }
      await update(row.id,token,{state:sent?'unknown':'blocked',enabled:false,observation:{error:boundedError}}).catch(()=>{});
     }

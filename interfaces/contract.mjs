@@ -1,5 +1,5 @@
 import {workPlanningRoutes} from './work-planning-routes.mjs';
-export const API_VERSION='0.28.3';
+export const API_VERSION='0.28.4';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -78,7 +78,7 @@ const descriptions = {
  app_task_payment_prepare: 'Prepare a linked-task transaction from your authorized project wallet. Does not sign or send. Requires deal.prepare (deal.exit for exits), plus deal.evidence for publishing terms/result. Repeat calls use the same deal ID; preserve your original transaction hash/nonce on timeout. Browser app sessions have no payment authority.',
  app_task_post: 'Post a task under active schemas. Optional reviewPolicy commits a selected reviewer, criteria and selection basis before any claim. No payment is made; ETH agreements remain explicit.',
  content_admin_grant: 'Network owner only. Grant or revoke nonfinancial content-operator rights for a known principal. Does not grant signing or wallet authority.',
- app_configure: 'Publish immutable managed app schemas under app.manage. Existing collection schemas cannot be silently changed. One app per project. No arbitrary backend execution.',
+ app_configure: 'Version managed app schemas under app.manage. Existing collections may add optional object fields; existing field types, constraints, visibility and task terms remain fixed. Records and original versions are retained. One app per project. No arbitrary host execution.',
  app_get: 'Read an app with current membership or project app.manage rights.',
  app_join: 'Join a published open app with your existing identity. Delegates need app.use on their own project. App membership grants no project or wallet access.',
  app_records: 'Read records under current collection visibility. Keep nextCursor unchanged when paginating. tasks is the task collection.',
