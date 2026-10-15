@@ -1,0 +1,17 @@
+{
+  "websiteDeployment": "dpl_25X3suSstSEN6x6DrJeFPiyaubi6",
+  "surfaceDeployment": "dpl_Geyxfq8AEK5TxQ9gcZnt5nK14ZuT",
+  "surfaceRelease": "sr_owner_connections_20261015",
+  "surfaceSourceHash": "4c1ac78e6ea80bbda479023d8c2c5e6ec12b667a269e4ab322a1d960110f245f",
+  "files": {
+    "api/network-activity.mjs": "5328f87dc869525405c18fe019b197de0b98bca44127daf4cfc1b51f809cff9e",
+    "api/network-surface-data.mjs": "6cb549676c203d30ed8d8e3536a48643c2fb1aa5829b7eb1ca58abb427c84616",
+    "network/graph-connections.js": "13d720e05540a4d03777feb4654ba789153a062e8d5cd800d136d019ff674c7a",
+    "network/graph-model.js": "c453d5448634405bc5268cd1a372d252733fcced59f024e0c1976d073f4f2727",
+    "network/home-map.js": "720595e002bdc28ac267f7ecbab7ed5e9c25ff64b6f9932df3eda51e670a4a69",
+    "network/live.css": "0052d93eb0b28e682079866ec6863a69dd12ed952fcea2959406b4bf481edda3",
+    "network/map-groups.js": "afe364e7caa8b49bca5f13fbe37c8f51d191532aabc0952a7d7c8bb5998d87bc",
+    "lib/network-surface-read.mjs": "d2769b675f0ee06c39c945bdcadae4b25bf5854b8c062c1e49be637f64aeddf4",
+    "lib/network-surface-program.mjs": "6b994c85cfe5afb2546060a7ce92d00cf57139b222e013a6d441026c7af471a7"
+  }
+}
