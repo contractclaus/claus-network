@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.28.2"
+    "version": "0.28.3"
   },
   "servers": [
     {
@@ -9089,7 +9089,8 @@
                     "type": "string",
                     "enum": [
                       "claus-readonly-v1",
-                      "claus-managed-v1"
+                      "claus-managed-v1",
+                      "claus-native-program-v1"
                     ]
                   }
                 },

@@ -1,0 +1,16 @@
+{
+  "kind": "bounded-native-program-source",
+  "installationProof": false,
+  "files": {
+    "src/programs/evidence.js": "b57fc246cce1630f7c95dc258e07486cd3477418d1657e505d92433e37bf0a97",
+    "src/programs/policy.js": "620457fe5e026fdb651fbb5684feaeacf22a5e083314edef7c458c60ff579bec",
+    "src/programs/read-routes.js": "c8166c273b253ea8f1dd5e9fd2423eb19bd636ffe39aa32914961a9bad5c8f47",
+    "src/programs/receipts.js": "5b430e0de54984625f24640bc7765f32649237997acbf7ab8eccd9bf3e3a4ab0",
+    "src/programs/routes.js": "995606c5592b3f324bf7751244ed8f09cbdbaa7fadca70a43b6ba9fb599fea23",
+    "src/programs/service.js": "0943e86c73e6914301f9dccb70c17015d64ec4ccd1c4d023e4d14fa53cd8ec5e",
+    "src/programs/source.js": "c7653b256c000a86492e4b7808614079a972bd06a2f241e7045ec0806757baf8",
+    "src/programs/verification.js": "3a771739e1d56efe7987e8843fc97e72eea209d907f9ff932a4608cae72eaa24",
+    "config/native-program-guard.json": "e039048ef70d10ff1b9fd03663d57304c70d4553b1e413857629b03917dbb013",
+    "config/native-program-limits.json": "5b70fe47fdb4bba6ef607ead6ce4f480cfc4e6056e43a696688a51c9509b58f9"
+  }
+}

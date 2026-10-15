@@ -1,0 +1,326 @@
+{
+  "status": "compiled",
+  "profile": {
+    "compiler": "0.8.26+commit.8a97fa7a.Emscripten.clang",
+    "evmVersion": "cancun",
+    "optimizerRuns": 200,
+    "viaIR": true,
+    "profile": "solidity-0.8.26-static-v1"
+  },
+  "inputHash": "sha256:d1631ff2fabf8972516c9826da25e73715dbeade8352e3c71da0b8b71162fc0b",
+  "entry": "TreasuryProtectedProgram.sol",
+  "contract": "TreasuryProtectedProgram",
+  "creationBytecode": "0x60c03461013557601f61095c38819003918201601f19168301916001600160401b038311848410176101395780849260409485528339810103126101355780516001600160a01b038116918282036101355760200151918015908115610117575b81156100fe575b81156100f4575b5080156100eb575b80156100e0575b6100d15760805260a05260405161080e908161014e8239608051818181610179015281816102f1015281816103c701528181610464015261061d015260a051818181608b0152818161048601526106410152f35b6322d55eab60e01b5f5260045ffd5b5081813f141561007d565b50803b15610076565b905030145f61006e565b6e04444c5dc75cb358380d2e3de08a9081149150610067565b73ea0436465676ea7001535bfe2e5cbd4b137b7f9181149150610060565b5f80fd5b634e487b7160e01b5f52604160045260245ffdfe6080806040526004361015610012575f80fd5b5f3560e01c9081631b2df850146105315750806334aafef61461051557806349f289dc146104e757806363984dcf146104ca578063676bab01146101a8578063c860ebc614610164578063dc88d0cf146100b25763ff99395b14610074575f80fd5b346100ae575f3660031901126100ae5760206040517f00000000000000000000000000000000000000000000000000000000000000008152f35b5f80fd5b346100ae5760c03660031901126100ae576004356001600160a01b03811681036100ae576024359081151582036100ae57606435916001600160a01b03831683036100ae576084356001600160801b03811681036100ae5760a4359367ffffffffffffffff85116100ae5761012e61013a953690600401610558565b94909360443591610601565b604051905f825b6006821061014e5760c084f35b6020806001928551815201930191019091610141565b346100ae575f3660031901126100ae576040517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b346100ae57366003190161018081126100ae57610160136100ae576101643567ffffffffffffffff81116100ae576101e4903690600401610558565b9073ea0436465676ea7001535bfe2e5cbd4b137b7f9133148015906104ac575b8015610461575b6103535760e43591821515806103b0575b6103535760405163676bab0160e01b81526004803590820152926024356001600160a01b038116908190036100ae5760248501526044356001600160a01b038116908190036100ae5760448501526064358015158091036100ae57606485015260843580600f0b8091036100ae57608485015260a43580600f0b8091036100ae57602093859384936102ec9360a486015260c43560c486015260e48501526101043561010485015261012435610124850152610144356101448501526101806101648501526101848401916105bc565b03815f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03165af19081156103a5575f91610362575b506001600160e01b03191663989454ff60e01b016103535760405163676bab0160e01b8152602090f35b63300262ab60e21b5f5260045ffd5b90506020813d60201161039d575b8161037d60209383610586565b810103126100ae57516001600160e01b0319811681036100ae5781610329565b3d9150610370565b6040513d5f823e3d90fd5b506040516304ade6db60e11b815260018060a01b037f00000000000000000000000000000000000000000000000000000000000000001660048201525f60248201528360448201526020816064815f6e04444c5dc75cb358380d2e3de08a905af19081156103a5575f91610426575b501561021c565b90506020813d602011610459575b8161044160209383610586565b810103126100ae575180151581036100ae578461041f565b3d9150610434565b507f00000000000000000000000000000000000000000000000000000000000000003f7f0000000000000000000000000000000000000000000000000000000000000000141561020b565b506024356001600160a01b038116908190036100ae57301415610204565b346100ae575f3660031901126100ae576020604051620246088152f35b346100ae575f3660031901126100ae57602060405173ea0436465676ea7001535bfe2e5cbd4b137b7f918152f35b346100ae575f3660031901126100ae5760206040516132c88152f35b346100ae575f3660031901126100ae57806e04444c5dc75cb358380d2e3de08a9060209252f35b9181601f840112156100ae5782359167ffffffffffffffff83116100ae57602083818601950101116100ae57565b90601f8019910116810190811067ffffffffffffffff8211176105a857604052565b634e487b7160e01b5f52604160045260245ffd5b908060209392818452848401375f828201840152601f01601f1916010190565b9060068110156105ed5760051b0190565b634e487b7160e01b5f52603260045260245ffd5b929396959460c0956040516106168882610586565b87368237987f000000000000000000000000000000000000000000000000000000000000000096873f7f00000000000000000000000000000000000000000000000000000000000000000361076c57889795936106dc936001600160801b038d9997946106ce94604051988997602089019b63dc88d0cf60e01b8d5260018060a01b031660248a015215156044890152606488015260018060a01b031660848701521660a48501528960c485015260e48401916105bc565b03601f198101835282610586565b519161c350fa903d14161561070c576132c882526132c86001905b60068210610719576202460891501161070c57565b905061071661077b565b90565b6202460861072783866105dc565b51116107605761073782856105dc565b51810180911161074c576001909101906106f7565b634e487b7160e01b5f52601160045260245ffd5b5050905061071661077b565b50505050505050505090506107165b60c060405161078a8282610586565b36903760405160c0810181811067ffffffffffffffff8211176105a8576040526132c88152610bb860208201526105dc60408201526107d06060820152610dac60808201525f60a08201529056fea2646970667358221220645d8c4df2833587d9943bf01111121c6d8ed2628a3fae553ffb560a670e73c164736f6c634300081a0033",
+  "runtimeTemplate": "0x6080806040526004361015610012575f80fd5b5f3560e01c9081631b2df850146105315750806334aafef61461051557806349f289dc146104e757806363984dcf146104ca578063676bab01146101a8578063c860ebc614610164578063dc88d0cf146100b25763ff99395b14610074575f80fd5b346100ae575f3660031901126100ae5760206040517f00000000000000000000000000000000000000000000000000000000000000008152f35b5f80fd5b346100ae5760c03660031901126100ae576004356001600160a01b03811681036100ae576024359081151582036100ae57606435916001600160a01b03831683036100ae576084356001600160801b03811681036100ae5760a4359367ffffffffffffffff85116100ae5761012e61013a953690600401610558565b94909360443591610601565b604051905f825b6006821061014e5760c084f35b6020806001928551815201930191019091610141565b346100ae575f3660031901126100ae576040517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b346100ae57366003190161018081126100ae57610160136100ae576101643567ffffffffffffffff81116100ae576101e4903690600401610558565b9073ea0436465676ea7001535bfe2e5cbd4b137b7f9133148015906104ac575b8015610461575b6103535760e43591821515806103b0575b6103535760405163676bab0160e01b81526004803590820152926024356001600160a01b038116908190036100ae5760248501526044356001600160a01b038116908190036100ae5760448501526064358015158091036100ae57606485015260843580600f0b8091036100ae57608485015260a43580600f0b8091036100ae57602093859384936102ec9360a486015260c43560c486015260e48501526101043561010485015261012435610124850152610144356101448501526101806101648501526101848401916105bc565b03815f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03165af19081156103a5575f91610362575b506001600160e01b03191663989454ff60e01b016103535760405163676bab0160e01b8152602090f35b63300262ab60e21b5f5260045ffd5b90506020813d60201161039d575b8161037d60209383610586565b810103126100ae57516001600160e01b0319811681036100ae5781610329565b3d9150610370565b6040513d5f823e3d90fd5b506040516304ade6db60e11b815260018060a01b037f00000000000000000000000000000000000000000000000000000000000000001660048201525f60248201528360448201526020816064815f6e04444c5dc75cb358380d2e3de08a905af19081156103a5575f91610426575b501561021c565b90506020813d602011610459575b8161044160209383610586565b810103126100ae575180151581036100ae578461041f565b3d9150610434565b507f00000000000000000000000000000000000000000000000000000000000000003f7f0000000000000000000000000000000000000000000000000000000000000000141561020b565b506024356001600160a01b038116908190036100ae57301415610204565b346100ae575f3660031901126100ae576020604051620246088152f35b346100ae575f3660031901126100ae57602060405173ea0436465676ea7001535bfe2e5cbd4b137b7f918152f35b346100ae575f3660031901126100ae5760206040516132c88152f35b346100ae575f3660031901126100ae57806e04444c5dc75cb358380d2e3de08a9060209252f35b9181601f840112156100ae5782359167ffffffffffffffff83116100ae57602083818601950101116100ae57565b90601f8019910116810190811067ffffffffffffffff8211176105a857604052565b634e487b7160e01b5f52604160045260245ffd5b908060209392818452848401375f828201840152601f01601f1916010190565b9060068110156105ed5760051b0190565b634e487b7160e01b5f52603260045260245ffd5b929396959460c0956040516106168882610586565b87368237987f000000000000000000000000000000000000000000000000000000000000000096873f7f00000000000000000000000000000000000000000000000000000000000000000361076c57889795936106dc936001600160801b038d9997946106ce94604051988997602089019b63dc88d0cf60e01b8d5260018060a01b031660248a015215156044890152606488015260018060a01b031660848701521660a48501528960c485015260e48401916105bc565b03601f198101835282610586565b519161c350fa903d14161561070c576132c882526132c86001905b60068210610719576202460891501161070c57565b905061071661077b565b90565b6202460861072783866105dc565b51116107605761073782856105dc565b51810180911161074c576001909101906106f7565b634e487b7160e01b5f52601160045260245ffd5b5050905061071661077b565b50505050505050505090506107165b60c060405161078a8282610586565b36903760405160c0810181811067ffffffffffffffff8211176105a8576040526132c88152610bb860208201526105dc60408201526107d06060820152610dac60808201525f60a08201529056fea2646970667358221220645d8c4df2833587d9943bf01111121c6d8ed2628a3fae553ffb560a670e73c164736f6c634300081a0033",
+  "runtimeTemplateHash": "0xbc5c825737aaae72f6d18c134bb1ba791c175679d4962b3271e5f74277006c4f",
+  "immutableReferences": {
+    "84": [
+      {
+        "length": 32,
+        "start": 377
+      },
+      {
+        "length": 32,
+        "start": 753
+      },
+      {
+        "length": 32,
+        "start": 967
+      },
+      {
+        "length": 32,
+        "start": 1124
+      },
+      {
+        "length": 32,
+        "start": 1565
+      }
+    ],
+    "86": [
+      {
+        "length": 32,
+        "start": 139
+      },
+      {
+        "length": 32,
+        "start": 1158
+      },
+      {
+        "length": 32,
+        "start": 1601
+      }
+    ]
+  },
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "codeHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidProgram",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidReceipt",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "HOST",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MANAGER",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MAX_PLAN_PIPS",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "TREASURY_PIPS",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "module",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "buy",
+              "type": "bool"
+            },
+            {
+              "internalType": "int128",
+              "name": "amount0",
+              "type": "int128"
+            },
+            {
+              "internalType": "int128",
+              "name": "amount1",
+              "type": "int128"
+            },
+            {
+              "internalType": "uint256",
+              "name": "feeEth",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "moduleFeeEth",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "blockNumber",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "dataHash",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct ProgramTypes.Trade",
+          "name": "trade",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "onTrade",
+      "outputs": [
+        {
+          "internalType": "bytes4",
+          "name": "",
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "program",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "programCodeHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "buy",
+          "type": "bool"
+        },
+        {
+          "internalType": "int256",
+          "name": "amountSpecified",
+          "type": "int256"
+        },
+        {
+          "internalType": "uint160",
+          "name": "price",
+          "type": "uint160"
+        },
+        {
+          "internalType": "uint128",
+          "name": "liquidity",
+          "type": "uint128"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "quote",
+      "outputs": [
+        {
+          "internalType": "uint256[6]",
+          "name": "a",
+          "type": "uint256[6]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  },
+  "metadata": "{\"compiler\":{\"version\":\"0.8.26+commit.8a97fa7a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"codeHash\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"InvalidProgram\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidReceipt\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"HOST\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MANAGER\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MAX_PLAN_PIPS\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"TREASURY_PIPS\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"module\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"buy\",\"type\":\"bool\"},{\"internalType\":\"int128\",\"name\":\"amount0\",\"type\":\"int128\"},{\"internalType\":\"int128\",\"name\":\"amount1\",\"type\":\"int128\"},{\"internalType\":\"uint256\",\"name\":\"feeEth\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"moduleFeeEth\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"dataHash\",\"type\":\"bytes32\"}],\"internalType\":\"struct ProgramTypes.Trade\",\"name\":\"trade\",\"type\":\"tuple\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"onTrade\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"program\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"programCodeHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"buy\",\"type\":\"bool\"},{\"internalType\":\"int256\",\"name\":\"amountSpecified\",\"type\":\"int256\"},{\"internalType\":\"uint160\",\"name\":\"price\",\"type\":\"uint160\"},{\"internalType\":\"uint128\",\"name\":\"liquidity\",\"type\":\"uint128\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"quote\",\"outputs\":[{\"internalType\":\"uint256[6]\",\"name\":\"a\",\"type\":\"uint256[6]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"Adapter for native-approved trade programs. The r3 core, recipient contracts and owner rights are unchanged. This protects the native lane; it does not claim to revoke the existing human owner's setModule authority.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"TreasuryProtectedProgram.sol\":\"TreasuryProtectedProgram\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/\",\":@uniswap/v4-core/=lib/v4-core/\",\":solmate/=lib/v4-core/lib/solmate/\"],\"viaIR\":true},\"sources\":{\"TreasuryProtectedProgram.sol\":{\"keccak256\":\"0x84886cf6a669e98ed945a4cad535c66e93149b75b411030d0972e3d585afde96\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://ab6a858e525c97dd4b8c7cf6847447a3295b3083a2f7a627ac2a0742214b0231\",\"dweb:/ipfs/QmakxrkYC2c4jbvP1kxnxRv7yH3xR4kLepZc54CxjshHbY\"]}},\"version\":1}",
+  "evidenceLevel": "compiled_only",
+  "standardInput": {
+    "language": "Solidity",
+    "sources": {
+      "TreasuryProtectedProgram.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.26;\n\ninterface IProgramManager { function transfer(address to,uint256 id,uint256 amount) external returns(bool); }\nlibrary ProgramTypes {\n struct Trade {uint256 id;address module;address sender;bool buy;int128 amount0;int128 amount1;uint256 feeEth;uint256 moduleFeeEth;uint256 blockNumber;uint256 timestamp;bytes32 dataHash;}\n}\ninterface IProgram {\n function quote(address sender,bool buy,int256 amountSpecified,uint160 price,uint128 liquidity,bytes calldata data) external view returns(uint256[6] memory);\n function onTrade(ProgramTypes.Trade calldata trade,bytes calldata data) external returns(bytes4);\n}\n/// @notice Adapter for native-approved trade programs. The r3 core, recipient\n/// contracts and owner rights are unchanged. This protects the native lane;\n/// it does not claim to revoke the existing human owner's setModule authority.\ncontract TreasuryProtectedProgram is IProgram {\n address public constant HOST=0xea0436465676eA7001535Bfe2E5cbd4b137b7f91;\n address public constant MANAGER=0x000000000004444c5dc75cB358380D2e3dE08A90;\n uint256 public constant TREASURY_PIPS=13_000;\n uint256 public constant MAX_PLAN_PIPS=149_000;\n address public immutable program;\n bytes32 public immutable programCodeHash;\n error InvalidProgram();error InvalidReceipt();\n constructor(address target,bytes32 codeHash){\n  if(target==address(0)||target==HOST||target==MANAGER||target==address(this)||target.code.length==0||target.codehash!=codeHash)revert InvalidProgram();\n  program=target;programCodeHash=codeHash;\n }\n function defaults() private pure returns(uint256[6] memory a){return [uint256(13000),3000,1500,2000,3500,0];}\n function quote(address sender,bool buy,int256 amountSpecified,uint160 price,uint128 liquidity,bytes calldata data) external view returns(uint256[6] memory a){\n  if(program.codehash!=programCodeHash)return defaults();\n  bytes memory input=abi.encodeCall(IProgram.quote,(sender,buy,amountSpecified,price,liquidity,data));address target=program;bool ok;\n  assembly(\"memory-safe\"){ok:=staticcall(50000,target,add(input,32),mload(input),a,192) ok:=and(ok,eq(returndatasize(),192))}\n  if(!ok)return defaults();\n  a[0]=TREASURY_PIPS;uint256 sum=TREASURY_PIPS;\n  for(uint256 i=1;i<6;i++){if(a[i]>MAX_PLAN_PIPS)return defaults();sum+=a[i];}\n  if(sum>MAX_PLAN_PIPS)return defaults();\n }\n function onTrade(ProgramTypes.Trade calldata trade,bytes calldata data) external returns(bytes4){\n  if(msg.sender!=HOST||trade.module!=address(this)||program.codehash!=programCodeHash)revert InvalidReceipt();\n  // Only the exact program-fee claim attested by the fixed host moves. There\n  // is no ETH sender, allowance, arbitrary recipient or treasury withdrawal.\n  if(trade.moduleFeeEth!=0&&!IProgramManager(MANAGER).transfer(program,0,trade.moduleFeeEth))revert InvalidReceipt();\n  if(IProgram(program).onTrade(trade,data)!=IProgram.onTrade.selector)revert InvalidReceipt();\n  return IProgram.onTrade.selector;\n }\n}\n"
+      }
+    },
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "viaIR": true,
+      "evmVersion": "cancun",
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "remappings": [
+        "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+        "@uniswap/v4-core/=lib/v4-core/",
+        "solmate/=lib/v4-core/lib/solmate/"
+      ],
+      "outputSelection": {
+        "*": {
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "metadata",
+            "storageLayout"
+          ]
+        }
+      }
+    }
+  }
+}

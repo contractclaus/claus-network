@@ -1,3 +1,4 @@
+import { NATIVE_PROGRAM_PROFILE, selectNativeProgramReview, validateNativeProgramBuild } from '../src/review-flow/native-program.mjs';
 import {publicWebRead} from './public-web-read.mjs';
 import {ROUTES,validate} from '../interfaces/contract.mjs';
 import {createWebhooks} from '../src/webhooks/index.mjs';
@@ -95,7 +96,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   await intake.onCancel(tx,job);
  }});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
- reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,validatePublicBuild:(artifact,profile)=>chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>deployments.reviewProfile(reader,projectId,input),...reviewPorts});
+ reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,validatePublicBuild:(artifact,profile)=>profile===NATIVE_PROGRAM_PROFILE?validateNativeProgramBuild(artifact):chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>input.profile===NATIVE_PROGRAM_PROFILE?selectNativeProgramReview({reader,identity,projectId,...input}):deployments.reviewProfile(reader,projectId,input),...reviewPorts});
  const chain=chainPorts.chain??createReadonlyChainRouter({
   sepolia:createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})}),
   mainnet:chainPorts.mainnetClient?createChainRead({client:chainPorts.mainnetClient,chainId:1}):null,
