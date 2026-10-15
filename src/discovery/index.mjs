@@ -1,3 +1,4 @@
+import {analyzeOperations} from '../isolated/bridge.mjs';
 import {executionEvidence} from './execution.mjs';
 import {copy,digest,integer,requireThat} from '../shared/index.mjs';
 
@@ -7,7 +8,8 @@ export function createDiscovery({store,projects,apps,services,now=()=>Date.now()
   return {async operations(){
     const roles=['compile','review','controller','executor','services','wallets','vaults','workflows','domains','workers','deals','inference','runtimes'];
     const at=now();const [rows,execution]=await Promise.all([store.readMany('worker-health',roles),executionEvidence(store,at)]);
-    return {observedAt:at,execution,workers:roles.map(role=>{const v=rows.get(role)?.value,age=Number.isFinite(v?.observedAt)?Math.max(0,at-v.observedAt):null;return {role,lastObservedAt:v?.observedAt??null,ageMs:age,status:age===null?'unknown':age<300000?'recent':'stale',release:v?.release??null,...(role==='workflows'?{lastBatch:v?{processed:v.processed??null,durationMs:v.durationMs??null,retries:v.retryCount??null}:null}:{}),...(['inference','runtimes'].includes(role)?{lastBatch:v?{state:v.state??'unknown',enabled:v.enabled??null,processed:v.processed??null,completedWorkers:v.completedWorkers??null,failedWorkers:v.failedWorkers??null}:null}:{})};}),scope:'Last host worker observations, not user-agent presence, independent uptime certification or an end-to-end SLA.'};
+    const snapshot={observedAt:at,execution,workers:roles.map(role=>{const v=rows.get(role)?.value,age=Number.isFinite(v?.observedAt)?Math.max(0,at-v.observedAt):null;return {role,lastObservedAt:v?.observedAt??null,ageMs:age,status:age===null?'unknown':age<300000?'recent':'stale',release:v?.release??null,...(role==='workflows'?{lastBatch:v?{processed:v.processed??null,durationMs:v.durationMs??null,retries:v.retryCount??null}:null}:{}),...(['inference','runtimes'].includes(role)?{lastBatch:v?{state:v.state??'unknown',enabled:v.enabled??null,processed:v.processed??null,completedWorkers:v.completedWorkers??null,failedWorkers:v.failedWorkers??null}:null}:{})};}),scope:'Last host worker observations, not user-agent presence, independent uptime certification or an end-to-end SLA.'};
+    return {...snapshot,analysis:await analyzeOperations(snapshot)};
   },async search({kind='project',query='',after='',limit=20,state}={}) {
     requireThat(['project','app','service','agent','task'].includes(kind),'invalid_discovery_kind');
     requireThat(typeof query==='string'&&query.length<=120,'invalid_query');integer(limit,1,25);

@@ -4,7 +4,8 @@
   "outputDirectory": "public",
   "functions": {
     "api/gateway.mjs": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "node_modules/@jitl/**"
     },
     "api/compile.mjs": {
       "maxDuration": 120,

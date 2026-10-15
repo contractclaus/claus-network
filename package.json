@@ -14,8 +14,10 @@
     "test:contracts": "cd contracts && forge test"
   },
   "dependencies": {
+    "@jitl/quickjs-singlefile-cjs-release-sync": "0.31.0",
     "@neondatabase/serverless": "1.2.0",
     "@x402/evm": "2.28.0",
+    "quickjs-emscripten": "0.31.0",
     "solc": "0.8.27",
     "solc-0.8.26": "npm:solc@0.8.26",
     "viem": "2.57.1",
