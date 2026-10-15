@@ -1,13 +1,31 @@
 import {copy,digest,integer,requireThat,text,sourceText,amount} from '../shared/index.mjs';
 const view=r=>({...copy(r.value),revision:r.revision});
-const actionNames=new Set(['public_app','public_app_records','public_task','public_task_progress','app_join','app_record_create','app_task_post','service_quote']);
-export function createWorkPlanning({store,identity,apps,collaboration,services,projects,visible,admit,now=Date.now}){
+import {PROJECT_ACTION_OPERATIONS} from './actions.mjs';
+export {PROJECT_ACTION_OPERATIONS} from './actions.mjs';
+const actionNames=new Set(PROJECT_ACTION_OPERATIONS);
+export function createWorkPlanning({store,identity,apps,collaboration,services,projects,visible,admit,validateAction,now=Date.now}){
  async function publicProject(id,reader=store){const p=(await reader.read('projects',id))?.value;requireThat(p&&!p.archivedAt&&!p.transfer&&await visible(id,reader)&&(await reader.read('public-projects',p.slug))?.value.published,'not_found');return p;}
  async function write(actor,projectId,collection,input,document){return store.transaction(async tx=>{await identity.authorize(actor,'project.publish',{projectId},tx);await admit(projectId,tx);const who=await identity.credential(actor,tx),key=digest({collection,projectId,actor:who.principalId,key:input.idempotencyKey}),hash=digest(input),prior=await tx.read('work-planning-requests',key);if(prior){requireThat(prior.value.hash===hash,'idempotency_conflict');return prior.value.result;}const r=await tx.write(collection,projectId,{projectId,...copy(document),updatedAt:now()},input.expectedRevision),result=view(r);await tx.write('work-planning-requests',key,{projectId,hash,result},0);return result;});}
  const api={
   async assistanceSet(actor,projectId,input){sourceText(input.request,1000);return write(actor,projectId,'project-assistance',input,{enabled:input.enabled,request:input.enabled?input.request:''});},
   async assistance({after='',limit=20}={}){integer(limit,1,25);const rows=await store.list('project-assistance',{after,limit}),items=[];for(const r of rows)if(r.value.enabled){try{const p=await publicProject(r.value.projectId);items.push({...view(r),slug:p.slug});}catch(e){if(e.code!=='not_found')throw e;}}return {items,nextCursor:rows.length===limit?rows.at(-1).id:null,scope:'Public opt-in requests for help. No access, work or payment is granted.'};},
-  async actionsSet(actor,projectId,input){requireThat(Array.isArray(input.actions)&&input.actions.length<=20,'invalid_actions');const ids=new Set();for(const a of input.actions){text(a.id);sourceText(a.title,100);sourceText(a.description,500);requireThat(!ids.has(a.id)&&actionNames.has(a.operation),'invalid_action');ids.add(a.id);requireThat(a.input?.projectId===projectId,'action_project_mismatch');requireThat(Buffer.byteLength(JSON.stringify(a.input))<4000&&!/authorization|credential|privatekey|api.?key|token/i.test(Object.keys(a.input).join(' ')),'invalid_action_input');}return write(actor,projectId,'project-actions',input,{actions:input.actions});},
+  async actionsSet(actor,projectId,input){
+   await identity.authorize(actor,'project.publish',{projectId});
+   requireThat(Array.isArray(input.actions)&&input.actions.length<=20,'invalid_actions');
+   const project=(await store.read('projects',projectId))?.value,ids=new Set();
+   for(const [index,a] of input.actions.entries()){
+    text(a.id);sourceText(a.title,100);sourceText(a.description,500);
+    requireThat(!ids.has(a.id),'invalid_action_duplicate_id');ids.add(a.id);
+    requireThat(actionNames.has(a.operation),'invalid_action_operation');
+    requireThat(typeof validateAction==='function','action_validation_unavailable');
+    validateAction(a.operation,a.input,`input.actions.${index}.input`);
+    requireThat(a.operation==='public_project_check'?a.input.slug===project?.slug:a.input.projectId===projectId,'invalid_action_project_binding');
+    requireThat(Buffer.byteLength(JSON.stringify(a.input))<4000,'invalid_action_input');
+    const secret=(v)=>v&&typeof v==='object'&&Object.entries(v).some(([k,x])=>/authorization|credential|private.?key|api.?key|^(?:access|refresh)?token$/i.test(k)||secret(x));
+    requireThat(!secret(a.input),'invalid_action_secret');
+   }
+   return write(actor,projectId,'project-actions',input,{actions:input.actions});
+  },
   async actions(projectId){await publicProject(projectId);const r=await store.read('project-actions',projectId);return {projectId,actions:(r?.value.actions??[]).map(a=>({...copy(a),definition:'/openapi.json',authentication:a.operation.startsWith('public_')?'none':'caller-credential',effects:a.operation.startsWith('public_')?'read':'explicit-call-required'})),revision:r?.revision??0,scope:'Project-authored suggestions. Use OpenAPI schemas; each real call validates your own authorization. Never execute automatically.'};},
   async plan(actor,projectId,input){
    await identity.authorize(actor,'app.use',{projectId});sourceText(input.title,160);sourceText(input.goal,2000);requireThat(input.title.trim()&&input.goal.trim()&&input.milestones.length>0&&input.milestones.length<=8,'invalid_job_brief');

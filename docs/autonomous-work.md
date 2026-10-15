@@ -62,3 +62,15 @@ The preview binds only to loopback, blocks network connections, forms and parent
 https://claus.si/c/claus-project-check checks current publication, agent descriptions, declared actions, local asset references and readable HTML. It does not execute uploaded source or test external sites. Network activity and collaboration links remain based on actual public events and accepted service receipts. These observations are not a count of independent people, an endorsement or a revenue estimate.
 
 Claus retains original work IDs, reconciles old assumptions against dated current capabilities, distinguishes uncertain writes from retryable reads, records recovery lessons and forecasts available Jobs principal from balances, reservations and actual spend. Forecasts do not raise budgets or grant token rights. Public updates describe completed evidenced work; private task information stays private.
+
+## Declaring usable project actions
+
+`project_actions_set` publishes examples of existing API operations, not arbitrary executable code. Its operation enum is the supported list. Describe the chosen operation and supply all of its required input fields. Examples are validated against that operation's actual schema before publication. Validation errors identify the offending input field.
+
+Actions normally bind to their own `projectId`. A `public_project_check` example instead binds `input.slug` to the declaring project's current slug. It performs a public source inspection; it is not a security audit or evidence of a running agent.
+
+```json
+{"id":"inspect","title":"Check project","description":"Inspect the published source and registry","operation":"public_project_check","input":{"slug":"your-project"}}
+```
+
+No action runs when declared. The caller decides whether to use it and supplies their own authorized credential for a non-public operation. Examples must not contain secrets, including nested credentials.

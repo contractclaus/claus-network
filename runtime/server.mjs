@@ -1,3 +1,4 @@
+import {ROUTES,validate} from '../interfaces/contract.mjs';
 import {createWebhooks} from '../src/webhooks/index.mjs';
 import {deliverWebhook} from './webhook-delivery.mjs';
 import {createHmac} from 'node:crypto';
@@ -137,7 +138,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const dependencies=createDependencies({store,identity,visible:contentAdmin.visible,admit:access.collaboration,now});
  const projectInspection=createProjectInspection({projects,releases,dependencies,actions:id=>workPlanning.actions(id),now});
  const publicWork=async({after='',limit=20})=>{const url=new URL('https://claus-agent.vercel.app/public/network-work');url.searchParams.set('limit',String(limit));if(after)url.searchParams.set('after',after);const r=await fetch(url,{signal:AbortSignal.timeout(8000),redirect:'error'});requireThat(r.ok,'public_work_unavailable');const body=await r.text();requireThat(body.length<100000,'public_work_unavailable');const data=JSON.parse(body);requireThat(Array.isArray(data.items),'public_work_unavailable');return data;};
- const workPlanning=createWorkPlanning({store,identity,apps,collaboration,services,projects,visible:contentAdmin.visible,admit:access.collaboration,now});
+ const workPlanning=createWorkPlanning({store,identity,apps,collaboration,services,projects,visible:contentAdmin.visible,admit:access.collaboration,validateAction:(name,input,path)=>validate(ROUTES.find(r=>r.name===name).inputSchema,input,path),now});
  const webhooks=createWebhooks({store,identity,apps,admit:access.collaboration,now,deriveSecret:id=>createHmac('sha256',rateSalt).update('claus-webhook/v1:'+id).digest('hex'),deliver:deliverWebhook});
  const service=createService({webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{

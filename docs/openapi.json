@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.27.0"
+    "version": "0.27.1"
   },
   "servers": [
     {
@@ -615,8 +615,17 @@
                         },
                         "operation": {
                           "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
+                          "enum": [
+                            "public_app",
+                            "public_app_records",
+                            "public_task",
+                            "public_task_progress",
+                            "app_join",
+                            "app_record_create",
+                            "app_task_post",
+                            "service_quote",
+                            "public_project_check"
+                          ]
                         },
                         "input": true
                       },
