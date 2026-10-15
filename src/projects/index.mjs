@@ -3,7 +3,7 @@ import { SITE_LIMITS, canonical, copy, digest, integer, requireThat, text, sourc
 const projectRef = (projectId, id) => digest({ projectId, id });
 const filePath = sourcePath, prose = sourceText;
 
-export function createProjects({ store, identity, publicDetails = async () => ({}), publicAppearance = async () => ({}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
+export function createProjects({ store, identity, publicDetails = async () => ({}), publicAppearance = async () => ({}), publicConnections = async () => ({state:'not_configured',edges:[],nextCursor:null}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
   async function snapshot(reader, projectId, id) {
     const value = (await reader.read('snapshots', projectRef(projectId, id)))?.value;
     requireThat(value && value.projectId === projectId, 'not_found');
@@ -165,7 +165,10 @@ export function createProjects({ store, identity, publicDetails = async () => ({
     },
     async graph({ after = '', limit = 100, view = 'full' } = {}) {
       requireThat(['full','projects'].includes(view), 'invalid_graph_view');
-      const records = await store.list('public-projects', { after, limit });
+      // Full observations resolve several public resources per project. Bound each
+      // page instead of timing out an oversized request; callers retain the cursor.
+      const pageLimit=view==='full'?Math.min(limit,20):limit;
+      const records = await store.list('public-projects', { after, limit:pageLimit });
       if (view === 'projects') {
         const published=records.filter(row=>row.value.published), ids=published.map(row=>row.value.projectId);
         const [owned, allowed]=await Promise.all([
@@ -179,14 +182,16 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         return {schemaVersion:'1.0',view:'projects',observedAt:now(),nodes:[{id:'claus',label:'Claus',kind:'coordinator',href:'/Network'},...nodes],resources:[],
           edges:nodes.map(p=>({source:p.id,target:'claus',relation:'registered_with'})),nextCursor:records.length===limit?records.at(-1).id:null};
       }
-      const projects = [], resources = [], relations = [];
+      const projects = [], resources = [], relations = [], connectionCoverage=[];
       const published=records.filter(x=>x.value.published), resolved=[];
       for(let i=0;i<published.length;i+=4) resolved.push(...await Promise.all(published.slice(i,i+4).map(async record=>{
-        try{return {record,project:await api.publicProject(record.value.slug)};}
+        try{const project=await api.publicProject(record.value.slug);return {record,project,connections:await publicConnections(project)};}
         catch(error){if(error.code==='not_found')return null;throw error;}
       })));
       for (const item of resolved) {
-        if(!item)continue;const {record,project}=item;
+        if(!item)continue;const {record,project,connections}=item;
+        relations.push(...connections.edges);
+        connectionCoverage.push({projectId:project.projectId,state:connections.state,nextCursor:connections.nextCursor});
         const href = '/c/' + project.slug;
         projects.push({ id: project.projectId, slug: project.slug, label: project.name, kind: 'project',
           href, revision: record.revision, status: 'registered' });
@@ -226,15 +231,16 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         const key=[edge.source,edge.target,edge.relation].join('|'),prior=relationMap.get(key);
         if(prior){if(edge.evidence)prior.evidenceIds.push(edge.evidence);}
         else relationMap.set(key,{source:edge.source,target:edge.target,relation:edge.relation,
-          ...(edge.evidence?{evidenceIds:[edge.evidence]}:{})});
+          ...(edge.evidence?{evidenceIds:[edge.evidence]}:{}),...(edge.meaning?{meaning:edge.meaning}:{}),...(edge.evidenceHref?{evidenceHref:edge.evidenceHref}:{})});
       }
       return {
         schemaVersion: '1.0', observedAt: now(),
         nodes: [{ id: 'claus', label: 'Claus', kind: 'coordinator', href: '/Network' }, ...projects],
         // Additive resources keep 1.0 project-only clients compatible.
         resources,
+        connectionCoverage,
         edges: [...projects.map(p => ({ source: p.id, target: 'claus', relation: 'registered_with' })), ...relationMap.values()],
-        nextCursor: records.length === limit ? records.at(-1).id : null
+        nextCursor: records.length === pageLimit ? records.at(-1).id : null
       };
     },
     async export(actor, projectId, { snapshotId }) {

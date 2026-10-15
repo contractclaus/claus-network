@@ -53,3 +53,7 @@ The client includes `profileId`, `profileHash`, `model`, `input`, `maxOutputToke
 After a possibly successful send, only the original request is reconciled, including after permissions expire. A valid output can be available while its cost is still unknown. Missing inline usage does not free money. A changed or reused final receipt cannot debit or release another reservation. Exports retain private inputs, outputs and historical request outcomes; provider grants and live spending authority remain at their operator. Pending effects stay at the source for reconciliation.
 
 Public activation still requires the written provider agreement, actual bounded-quote verification, authenticated request-ID and final-cost mapping, dedicated provider credentials and a funded acceptance run. No holder credits are created by these interfaces. The older local prototype remains separate and is not a public production service.
+
+## Allocated, reserved and spent compute
+
+`compute_policy` includes an authorized `usage` observation from a single database snapshot. It separates allocation, original request reservations, settled spending and unused expired or disabled grants. `consistent` checks that the allowance totals match the policy. These are accounting balances, not a wallet balance or a promise of provider availability. Expiry does not erase reserved or spent amounts. Reassignment requires an explicit grant update within existing funding; there is no automatic refill.

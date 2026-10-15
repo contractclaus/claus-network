@@ -30,3 +30,9 @@ Use `runtime_list` and `runtime_get` for owner export of memory and progress. Cr
 Project archives include the permitted runtime checkpoint, worker source references and execution results. They omit service credentials and live leases. Import restores history, not an automatically running agent or inherited spending rights.
 
 There is no lifetime stop after 1,000 worker admissions. `limits.lifetime` and `globalTotal` are `null`; the lifetime counter remains a historical total, not renewable credit. Daily limits, concurrency, per-runtime cycle limits and financial allocations still apply. Existing runs and idempotency keys are retained.
+
+## Recovering an interrupted cycle
+
+`runtime_reconcile` is an explicit owner action at `expectedRevision`. It retains the original cycle, pending request, worker result and financial commitments. If a stopped runtime's worker already completed, reconciliation reads that result; it does not run the worker again. Current project ownership, worker revision, enabled worker and remaining cycles are checked before resuming. A fresh internal credential uses the same fixed scopes; the stopped credential remains revoked.
+
+Unknown worker execution, uncertain metered reads and unresolved financial effects remain held. Reconciliation cannot convert an unknown outcome into a fresh order. When `maxCycles` is reached, the runtime becomes disabled with `state: completed` and `completionReason: cycle_limit`. That state describes the runtime, not task acceptance or payment.

@@ -18,7 +18,7 @@ function gasLedger(){const sql=neon(process.env.DATABASE_URL);return {async spen
  const rows=await sql`SELECT signed,result FROM claus_wallet_actions WHERE id LIKE 'native-program:%' AND signed IS NOT NULL`;
  return rows.reduce((n,row)=>{const t=parseTransaction(row.signed.raw);return n+t.gas*t.maxFeePerGas;},0n);
 }};}
-export function createProgramService({network,repo,client,account,guard,limits,enabled,ledger,verifier,observeCore=readCore,now=()=>new Date().toISOString()}){
+export function createProgramService({network,repo,client,account,guard,limits,enabled,ledger,verifier,catalog=async()=>{throw Error('program_catalog_unavailable');},observeCore=readCore,now=()=>new Date().toISOString()}){
  async function bundle(id){const b=await repo.release(validId(id));if(!b||b.kind!=='native-program')throw Error('program_not_found');return b;}
  async function included(id){const row=await repo.get(id);if(!row)return null;const state=await observer.status(id);return state.status==='included'&&!state.observationError?state:null;}
  // Read-only reconciliation uses this instance. Only executeStep obtains the
@@ -82,6 +82,15 @@ export function createProgramService({network,repo,client,account,guard,limits,e
   return service.execute(id);
  }
  return {
+  async overview({after=''}={}){
+   if(after!=='')validId(after);
+   const [current,rows,committed]=await Promise.all([observeCore(client),catalog(after),ledger.spent()]);
+   const maximum=BigInt(limits.totalGasWei),remaining=maximum>committed?maximum-committed:0n;
+   return {observedAt:now(),current,installationEnabled:enabled(),limits,
+    gas:{asset:'ETH',committedWei:String(committed),remainingWei:String(remaining),accounting:'Maximum gas of every original signed transaction stays committed, including uncertain effects. No automatic reuse or refill.'},
+    programs:rows.slice(0,20).map(r=>({id:r.id,reference:r.reference,artifactHash:r.artifactHash,createdAt:r.createdAt})),nextCursor:rows.length>20?rows[19].id:null,
+    lifecycle:'Catalog entries are prepared decisions, not installed programs. Read status(id) for original stages and receipts. current.activeModule is observed onchain. No generic keeper/oracle execution is implied.'};
+  },
   async prepare(input){
    if(!input||Object.keys(input).some(k=>!['projectId','caseId','reportHash','reason','acknowledgedFindings'].includes(k)))throw Error('program_invalid_decision');
    const reference=validRef({projectId:input.projectId,caseId:input.caseId}),id=programId(reference),proof=await readProgramEvidence(network,reference);
@@ -147,5 +156,6 @@ export function productionPrograms(){
  if(!same(account.address,CORE.owner))throw Error('program_wallet_mismatch');
  return createProgramService({network:createNetworkAccess({extraRoutes:programReadRoutes,maximumResponseBytes:4100000}),repo:walletRepository(),
   client:createPublicClient({chain:mainnet,transport:http(process.env.ETHEREUM_RPC_URL,{retryCount:0,timeout:15000})}),account,guard,limits,
-  enabled:()=>process.env.NATIVE_PROGRAM_INSTALL_ENABLED==='true',ledger:gasLedger(),verifier:createProgramVerifier({repositoryStore:walletRepository()})});
+  enabled:()=>process.env.NATIVE_PROGRAM_INSTALL_ENABLED==='true',ledger:gasLedger(),verifier:createProgramVerifier({repositoryStore:walletRepository()}),
+  catalog:async after=>neon(process.env.DATABASE_URL)`SELECT id,content->'reference' AS reference,content->'proof'->>'artifactHash' AS "artifactHash",content->>'createdAt' AS "createdAt" FROM claus_wallet_releases WHERE content->>'kind'='native-program' AND id>${after} ORDER BY id LIMIT 21`});
 }
