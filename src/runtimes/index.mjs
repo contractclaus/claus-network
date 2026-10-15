@@ -15,7 +15,7 @@ export function createRuntimes({store,identity,workers,execute,route,readWeb,now
   },
   async resources(actor,projectId){
    const who=await identity.credential(actor),operators=(await store.read('runtime-control','resource-policy'))?.value.operators??[],project=(await store.read('projects',projectId))?.value;
-   requireThat(who.kind==='owner'&&(operators.includes(who.principalId)||project?.ownerId===who.principalId),'scope_denied');const r=await store.read('project-worker-resources',projectId);return{projectId,projectDaily:r?.value.projectDaily??20,active:r?.value.active??1,revision:r?.revision??0,reason:r?.value.reason??null,globalDaily:100,globalActive:4,globalTotal:1000,commandSeconds:30,vmSeconds:60};
+   requireThat(who.kind==='owner'&&(operators.includes(who.principalId)||project?.ownerId===who.principalId),'scope_denied');const r=await store.read('project-worker-resources',projectId);return{projectId,projectDaily:r?.value.projectDaily??20,active:r?.value.active??1,revision:r?.revision??0,reason:r?.value.reason??null,globalDaily:100,globalActive:4,globalTotal:null,commandSeconds:30,vmSeconds:60};
   },
   async setResources(actor,projectId,{projectDaily,active,reason,expectedRevision}){
    integer(projectDaily,0,100);integer(active,1,4);sourceText(reason,1000);integer(expectedRevision);

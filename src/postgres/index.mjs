@@ -1,3 +1,4 @@
+import {executionSummaryQuery} from './execution.mjs';
 import {publicDirectoryQuery} from './search.mjs';
 import {documentByteLimit} from '../shared/index.mjs';
 import { canonical, copy, integer, requireThat, text } from '../shared/index.mjs';
@@ -66,6 +67,12 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
         await client.query('COMMIT');
       } catch(error) { await client.query('ROLLBACK').catch(()=>{}); throw error; }
       finally { client.release(); }
+    },
+    async workerExecutionSummary(at) {
+      integer(at);const client=await pool.connect();
+      try{await client.query('BEGIN READ ONLY');await client.query("SET LOCAL statement_timeout='3s'");const result=await client.query(executionSummaryQuery(documents),[at]);await client.query('COMMIT');return result.rows;}
+      catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}
+      finally{client.release();}
     },
     async workerExecutionStates() {
       // Do not transfer private source, inputs, output or provider handles just

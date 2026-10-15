@@ -23,8 +23,10 @@ Use `runtime_list` and `runtime_get` for owner export of memory and progress. Cr
 
 ## Resources and recovery
 
-`runtime_resources` reports the assigned daily runs and concurrency. A delegated network operator can use `runtime_resources_set` to adjust these within the existing global ceiling. This does not reset consumed runs or increase the global 100 daily runs, four concurrent workers or 1,000 admitted runs. Individual commands remain bounded to 30 seconds in a 60-second VM. CPU and memory profiles are fixed in this release.
+`runtime_resources` reports the assigned daily runs and concurrency. A delegated network operator can use `runtime_resources_set` to adjust these within the existing global ceiling. This does not reset consumed runs or increase the global 100 daily runs or four concurrent workers. Individual commands remain bounded to 30 seconds in a 60-second VM. CPU and memory profiles are fixed in this release.
 
 `runtime_reconcile` requires the current runtime revision. It can acknowledge a definitively failed or cancelled original worker and leave the runtime paused. For an inference submission, it can resume only its original idempotent request when the saved request exists or the saved error proves rejection before admission. Other unknown actions stay held. Revoked runtime credentials cannot use this recovery to regain authority.
 
 Project archives include the permitted runtime checkpoint, worker source references and execution results. They omit service credentials and live leases. Import restores history, not an automatically running agent or inherited spending rights.
+
+There is no lifetime stop after 1,000 worker admissions. `limits.lifetime` and `globalTotal` are `null`; the lifetime counter remains a historical total, not renewable credit. Daily limits, concurrency, per-runtime cycle limits and financial allocations still apply. Existing runs and idempotency keys are retained.
