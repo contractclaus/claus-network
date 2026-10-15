@@ -1,0 +1,19 @@
+{
+  "kind": "native-host-source-reference",
+  "deployed": "dpl_9Dh4FQjCSABjPdc3cCeksTXz36tC",
+  "source": "4a39a5bd987e75f663da1924639e93cf312aeb25df38d6d5c167ceff66b850c3",
+  "files": {
+    "src/operations/policy.ts": "4207f83e628ad6aed2ef2471d9acb50badf48112a648cd28edb45e4f0f1efe04",
+    "src/operations/host.ts": "8c9b93fc26e848620bc7c380db89dd241cdc2dc7763eb1f6826b1123bf8d568f",
+    "src/operations/store.ts": "0ac0a277b50424b67326c4539e79ce5371914bc058f4267ae1e817617cafabf8",
+    "src/operations/service.ts": "4fd9e215d7f33f12d49b313b77f11c227c6e7df87dcf90f65ac53716eadd7fef",
+    "src/operations/worker.ts": "320f461cc24a6e6858a09126ca1d7f5294d1d932307414b3d75f232ce32026ea",
+    "src/operations/handoff.ts": "9bd8338930e0689fe41f9d20a76931f7d12f4c14508ffd9a817ff0a7dfd1496a",
+    "src/operating-context.ts": "5bc31abd4096bcf0c171d3845866bb72b4694ebb693a002496546ccd38d56b68",
+    "src/knowledge-schema.ts": "fee8f8f34372234688bb3c2773b3ec3a77d1d0240c5688b6f8e80b6d9b82f46e",
+    "src/twitter-policy.ts": "6e9698e832767e906204280dac8b84d137c93ee9ebcc2fc450507c0443afdc2e",
+    "src/work-wallet-sponsor.ts": "325134bc9146d516e2e818211b5e5e8e3ea068213726e04229fdd712779099f5",
+    "src/work-wallet.ts": "43875bd0271873ee5935852560101f57d509c31590f99492a0efa3c1bc80664c",
+    "src/work-wallet-store.ts": "745fff5072863cd677c0ffbfd3a220763f076d415d3f39b4ad4db59409a24547"
+  }
+}
