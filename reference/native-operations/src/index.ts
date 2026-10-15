@@ -239,7 +239,7 @@ app.get('/api/recover',async c=>{
   if(!process.env.DATABASE_URL)return c.json({status:'waiting_for_database_setup'});
   const config=await store.configuration();
   if(!config.settings.enabled||!modelReady()) return c.json({status:'paused'});
-  if(process.env.OPERATIONS_NATIVE_TOKEN){
+  if(process.env.PUBLISHER_SECRET){
    try{const {operationalHandoff}=await import('./operations/handoff.js');const {OperationsHost}=await import('./operations/host.js');const handoff=await operationalHandoff(productionLabDatabase(),new OperationsHost(),async generation=>(await start(life,[generation])).runId);if(handoff)return c.json({status:'operational_handoff',...handoff});}catch{/* Existing recovery still handles overdue work. */}
   }
   const state=await store.state();

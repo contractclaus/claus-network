@@ -1,0 +1,127 @@
+import { programHash } from "./program.js";
+import { target, sha } from "./policy.js";
+const team = "team_uolDmrwvORBaI3V7q4JVMKNS";
+class OperationsHostError extends Error {
+  constructor(status, code) {
+    super("operations_host_" + status);
+    this.status = status;
+    this.code = code;
+  }
+  status;
+  code;
+  get rejected() {
+    return [400, 401, 402, 403, 404, 405, 410, 413, 415, 422].includes(this.status);
+  }
+}
+function sourceTree(tree) {
+  const out = {};
+  function walk(a, prefix = "") {
+    for (const n of a) n.children ? walk(n.children, prefix + n.name + "/") : out[prefix + n.name] = n.uid;
+  }
+  const root = tree.find((n) => n.name === "src");
+  if (!root?.children) throw Error("operations_source_missing");
+  walk(root.children);
+  return out;
+}
+class OperationsHost {
+  constructor(fetcher = fetch, token = (scope) => process.env["OPERATIONS_" + scope.toUpperCase() + "_TOKEN"]) {
+    this.fetcher = fetcher;
+    this.token = token;
+  }
+  fetcher;
+  token;
+  async api(path, init = {}, scope) {
+    const token = this.token(scope);
+    if (!token) throw Error("operations_host_not_connected");
+    const r = await this.fetcher("https://api.vercel.com" + path + (path.includes("?") ? "&" : "?") + "teamId=" + team, { ...init, headers: { authorization: "Bearer " + token, "content-type": "application/json" }, redirect: "error", signal: AbortSignal.timeout(25e3) });
+    if (!r.ok) {
+      let code = null;
+      try {
+        const body = await r.json();
+        if (/^[a-zA-Z0-9_-]{1,100}$/.test(body?.error?.code ?? "")) code = body.error.code;
+      } catch {
+      }
+      throw new OperationsHostError(r.status, code);
+    }
+    const text = await r.text();
+    return text ? JSON.parse(text) : null;
+  }
+  async project(scope) {
+    const p = target(scope), current = await this.api("/v9/projects/" + p.project, {}, scope);
+    if (current.id !== p.project || current.name !== p.name) throw Error("operations_host_scope_changed");
+    return current;
+  }
+  async baseline(scope, deployment, manifest) {
+    const p = await this.project(scope);
+    if (p.targets?.production?.id !== deployment) throw Error("operations_production_changed");
+    const actual = sourceTree(await this.api("/v6/deployments/" + deployment + "/files", {}, scope));
+    if (Object.keys(actual).length !== manifest.length || manifest.some((f) => actual[f.path] !== f.sha)) throw Error("operations_baseline_changed");
+    return p;
+  }
+  async read(scope, deployment, file) {
+    const response = await this.api("/v8/deployments/" + deployment + "/files/" + file.sha, {}, scope), bytes = Buffer.from(response.data, "base64");
+    if (sha(bytes) !== file.sha || bytes.length !== file.size) throw Error("operations_source_mismatch");
+    return bytes.toString("utf8");
+  }
+  async deploy(scope, base, manifest, files, id, sourceHash) {
+    const p = target(scope);
+    await this.project(scope);
+    const changes = new Map(files.map((f) => [f.path, f]));
+    const r = await this.api("/v13/deployments?skipAutoDetectionConfirmation=1", { method: "POST", body: JSON.stringify({ name: p.name, project: p.project, target: "production", deploymentId: base, autoAssignCustomDomains: false, ...scope === "api" ? { env: { CLAUS_NETWORK_RELEASE: "ops:" + sourceHash } } : {}, files: manifest.map((f) => changes.has(f.path) ? { file: f.path, data: changes.get(f.path).content, encoding: "utf-8" } : { file: f.path, sha: f.sha, size: f.size }), meta: { clausOperationId: id, clausSourceHash: sourceHash }, gitMetadata: { commitAuthorName: "Claus", commitAuthorEmail: "341484431+contractclaus@users.noreply.github.com", commitMessage: "Reviewed operational update" } }) }, scope);
+    return this.receipt(scope, id, sourceHash, r);
+  }
+  receipt(scope, id, sourceHash, d) {
+    if (d.projectId !== target(scope).project || d.meta?.clausOperationId !== id || d.meta?.clausSourceHash !== sourceHash || !/^dpl_[A-Za-z0-9]+$/.test(d.id) || !/^[-a-z0-9]+\.vercel\.app$/.test(d.url)) throw Error("operations_deployment_mismatch");
+    return { id: d.id, url: "https://" + d.url, state: d.readyState ?? d.state };
+  }
+  async reconcile(scope, id, hash, known) {
+    if (known) return this.receipt(scope, id, hash, await this.api("/v13/deployments/" + known, {}, scope));
+    const r = await this.api("/v6/deployments?projectId=" + target(scope).project + "&limit=100", {}, scope);
+    const a = r.deployments.filter((d) => d.meta?.clausOperationId === id && d.meta?.clausSourceHash === hash);
+    if (a.length !== 1) return null;
+    return this.receipt(scope, id, hash, await this.api("/v13/deployments/" + a[0].uid, {}, scope));
+  }
+  async verify(scope, deployment, manifest, production = false) {
+    const actual = sourceTree(await this.api("/v6/deployments/" + deployment.id + "/files", {}, scope));
+    if (Object.keys(actual).length !== manifest.length || manifest.some((f) => actual[f.path] !== f.sha)) throw Error("operations_deployed_source_mismatch");
+    const p = await this.project(scope);
+    const headers = {};
+    if (!production) {
+      const bypass = Object.entries(p.protectionBypass ?? {}).find(([, v]) => v.scope === "automation-bypass");
+      if (bypass) headers["x-vercel-protection-bypass"] = bypass[0];
+    }
+    const origin = production ? target(scope).origin : deployment.url;
+    const r = await this.fetcher(origin + target(scope).probe, { headers, redirect: "error", signal: AbortSignal.timeout(15e3) });
+    if (!r.ok) throw Error("operations_health_unavailable");
+    const body = await r.text();
+    if (scope !== "web") {
+      let health;
+      try {
+        health = JSON.parse(body);
+      } catch {
+        throw Error("operations_health_invalid");
+      }
+      if (scope === "native" && (health.service !== "claus-agent" || health.databaseConfigured !== true || health.inferenceConfigured !== true)) throw Error("operations_health_invalid");
+      const programRef = manifest.find((f) => f.path === "src/isolated/network.json");
+      if (!programRef || health.isolatedAnalysis?.state !== "available" || health.isolatedAnalysis?.sourceHash !== programHash(JSON.parse(await this.read(scope, deployment.id, programRef)))) throw Error("operations_isolated_program_unavailable");
+      const workRef = manifest.find((f) => f.path === "src/isolated/work.json");
+      if (scope === "native" && workRef && (health.isolatedAnalysis?.workPlanner?.state !== "available" || health.isolatedAnalysis?.workPlanner?.sourceHash !== programHash(JSON.parse(await this.read(scope, deployment.id, workRef))))) throw Error("operations_isolated_work_unavailable");
+      if (scope === "api" && (health.ok !== true && health.status !== "ok" && health.status !== "healthy")) throw Error("operations_health_invalid");
+    }
+    return { passed: true, scope, sourceVerified: true, status: r.status, at: (/* @__PURE__ */ new Date()).toISOString() };
+  }
+  async promote(scope, base, deployment) {
+    const p = await this.project(scope);
+    if (p.targets?.production?.id === deployment.id) return;
+    if (p.targets?.production?.id !== base) throw Error("operations_production_changed");
+    await this.api("/v10/projects/" + target(scope).project + "/promote/" + deployment.id, { method: "POST" }, scope);
+  }
+  async restored(scope, id) {
+    return (await this.project(scope)).targets?.production?.id === id;
+  }
+}
+export {
+  OperationsHost,
+  OperationsHostError,
+  sourceTree
+};
