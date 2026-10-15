@@ -8,7 +8,7 @@ export function publisherRepository(sql=neon(process.env.PUBLISHER_SOURCE_DATABA
   async release(id){return (await sql`SELECT * FROM claus_operations_releases WHERE id=${id}`)[0];},
   async byDeployment(scope,id){return (await sql`SELECT * FROM claus_operations_releases WHERE scope=${scope} AND (base_deployment=${id} OR deployment->>'id'=${id}) ORDER BY created_at DESC LIMIT 1`)[0];},
   async promotion(scope,base,id){return (await sql`SELECT * FROM claus_operations_releases WHERE scope=${scope} AND ((base_deployment=${base} AND deployment->>'id'=${id}) OR (base_deployment=${id} AND deployment->>'id'=${base})) ORDER BY created_at DESC LIMIT 1`)[0];},
-  async review(id){return (await sql`SELECT id,project_id,kind,status,input,output FROM claus_build_effects WHERE id=${id}`)[0];},
+  async review(id){return (await sql`SELECT id,project_id,kind,status,input,output,amount FROM claus_build_effects WHERE id=${id}`)[0];},
   async settings(){const r=(await sql`SELECT content->'settings' AS settings,content->'policy'->'capabilities' AS capabilities FROM claus_config ORDER BY revision DESC LIMIT 1`)[0];return {enabled:r?.settings?.enabled===true&&r.settings.networkOperations?.enabled===true&&r.settings.builder?.enabled===true&&r.capabilities?.networkBuild===true};}
  };
 }

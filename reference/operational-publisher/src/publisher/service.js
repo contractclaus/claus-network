@@ -1,7 +1,7 @@
 import {OperationsHost} from './host.js';
 import {target,hash,sha,validateManifest,validateChanges,patch,denyNewAuthority} from './policy.js';
 import {validateProgram} from './program.js';
-import {completeModelOutput} from './model-completion.js';
+import {trustedReview} from './review-evidence.js';
 
 const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
 const equal=(a,b)=>canonical(a)===canonical(b);
@@ -12,7 +12,7 @@ const deploymentView=d=>({id:d.id,url:d.url,projectId:d.projectId,readyState:d.r
 
 // No caller-selected provider path, URL, environment, build command or SQL.
 // The original release and its completed review come from a read-only DB role.
-export function createPublisher({repository,ledger,host=new OperationsHost()}){
+export function createPublisher({repository,ledger,host=new OperationsHost(),reviewEvidence=trustedReview}){
  async function context(scope){target(scope);const c=await repository.current(scope);if(!c)fail('scope_missing');validateManifest(c.manifest);return c;}
  async function release(scope,id){if(!/^op_[a-f0-9]{24}$/.test(id??''))fail('release_invalid');const r=await repository.release(id);if(!r||r.scope!==scope)fail('release_missing');return r;}
  async function bound(scope,id){
@@ -29,8 +29,9 @@ export function createPublisher({repository,ledger,host=new OperationsHost()}){
   const expected=structuredClone(c.manifest);
   for(const change of r.changes){const file=r.files.find(f=>f.path===change.path),ref=expected.find(f=>f.path===change.path);if(!file||!ref||sha(file.before)!==ref.sha||Buffer.byteLength(file.before)!==ref.size||patch(file.before,change)!==file.content)fail('source_binding');denyNewAuthority(file.before,file.content);if(r.scope!=='web')validateProgram(JSON.parse(file.content));ref.sha=sha(file.content);ref.size=Buffer.byteLength(file.content);}
   if(!equal(expected,r.manifest)||hash(expected)!==r.source_hash)fail('manifest_binding');
-  const e=await repository.review(r.review_effect);if(!e||e.project_id!==r.build_id||e.kind!=='model'||e.status!=='completed'||!completeModelOutput(e.output))fail('review_incomplete');
-  let input,result;try{input=JSON.parse(e.input.input[0].content);const v=e.output.message.content;result=JSON.parse((Array.isArray(v)?v.map(x=>x.text??'').join(''):String(v)).replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,''));}catch{fail('review_invalid');}
+  const e=await repository.review(r.review_effect);if(!e||e.project_id!==r.build_id||e.kind!=='model'||e.status!=='completed')fail('review_incomplete');
+  const output=await reviewEvidence(e,'operational');
+  let input,result;try{input=JSON.parse(e.input.input[0].content);const v=output.message.content;result=JSON.parse((Array.isArray(v)?v.map(x=>x.text??'').join(''):String(v)).replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,''));}catch{fail('review_invalid');}
   if(input.scope!==r.scope||input.sourceHash!==r.source_hash||input.baseDeployment!==r.base_deployment||!equal(input.changes,r.changes)||!equal(input.files,r.files))fail('review_binding');
   if(result.approved!==true||result.withinScope!==true||result.preservesBehaviour!==true||typeof result.summary!=='string')fail('review_rejected');
  }

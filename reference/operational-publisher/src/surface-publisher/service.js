@@ -1,6 +1,6 @@
 import {SurfaceHost} from './host.js';
 import {surfaceProject,validateSource,sourceHash,applyChanges} from './source.js';
-import {completeModelOutput} from '../publisher/model-completion.js';
+import {trustedReview} from '../publisher/review-evidence.js';
 import {hash as requestHash} from '../publisher/policy.js';
 const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
 const equal=(a,b)=>canonical(a)===canonical(b);
@@ -9,7 +9,7 @@ const validId=id=>/^sr_[a-zA-Z0-9_]{1,100}$/.test(id??'');
 
 // This service is fixed operator code. No raw provider path, URL, environment,
 // project selection or deployment command crosses the agent-facing boundary.
-export function createSurfacePublisher({repository,ledger,host=new SurfaceHost()}){
+export function createSurfacePublisher({repository,ledger,host=new SurfaceHost(),reviewEvidence=trustedReview}){
  async function current(){const c=await repository.surfaceCurrent();if(!c||c.project_id!==surfaceProject)fail('scope_changed');return c;}
  async function release(id,hash){
   if(!validId(id)||!/^[a-f0-9]{64}$/.test(hash??''))fail('release_invalid');
@@ -20,13 +20,9 @@ export function createSurfacePublisher({repository,ledger,host=new SurfaceHost()
   if(!/^sr_[a-f0-9]{24}$/.test(r.id)||!r.build_id||!r.review_effect)fail('review_missing');
   const base=await repository.surfaceRelease(c.active_id);if(!base||sourceHash(base.files)!==base.source_hash||!equal(applyChanges(base.files,r.changes),r.files))fail('base_binding');
   const e=await repository.review(r.review_effect);if(!e||e.project_id!==r.build_id||e.kind!=='model'||e.status!=='completed')fail('review_incomplete');
-  let output=e.output;const recovery=r.proof?.reviewRecovery;
-  if(recovery){
-   const proof=recovery.output?.recovery;
-   if(recovery.effectId!==e.id||recovery.sourceHash!==r.source_hash||proof?.version!==1||proof.requestId!==e.id||proof.providerRequestId!==e.output?.receipt?.providerRequestId||!/^[a-f0-9]{64}$/.test(proof.evidenceHash??'')||!/^[a-f0-9]{64}$/.test(proof.originalResponseHash??'')||!equal(recovery.output?.receipt,e.output?.receipt)||recovery.output.model!==e.input?.model)fail('review_recovery_binding');
-   output=recovery.output;
-  }
-  if(!completeModelOutput(output))fail('review_incomplete');
+  // Recovery of a provider response is performed by the separate payer. A
+  // Native-written recovery object cannot replace the original evidence.
+  const output=await reviewEvidence(e,'surface');
   let input,result;
   try{input=JSON.parse(e.input.input[0].content);const content=output.message.content;result=JSON.parse((Array.isArray(content)?content.map(x=>x.text??'').join(''):String(content)).replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,''));}catch{fail('review_invalid');}
   if(input.sourceHash!==r.source_hash||!equal(input.changes,r.changes)||!equal(input.files,r.files.filter(f=>r.changes.some(c=>c.path===f.path))))fail('review_binding');
