@@ -1,5 +1,5 @@
 import {workPlanningRoutes} from './work-planning-routes.mjs';
-export const API_VERSION='0.27.3';
+export const API_VERSION='0.28.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -324,10 +324,24 @@ export const ROUTES=Object.freeze([
  route('contract_binding_get','GET','/v1/projects/{projectId}/contract-bindings/{bindingId}',{projectId:string(),bindingId:string()}),
  route('contract_binding_revoke','DELETE','/v1/projects/{projectId}/contract-bindings/{bindingId}',{projectId:string(),bindingId:string()}),
  route('contract_request_get','GET','/v1/projects/{projectId}/contract-requests/{requestId}',{projectId:string(),requestId:string()}),
+ route('runtime_set','PUT','/v1/projects/{projectId}/runtimes/{runtimeId}',{projectId:string(),runtimeId:string(40),workerId:string(40),workerRevision:{type:'integer',minimum:1},intervalSeconds:{type:'integer',minimum:60,maximum:604800},maxCycles:{type:'integer',minimum:1,maximum:1000000},initialState:true,enabled:boolean,expectedRevision:integer}),
+ route('runtime_checkpoint','PATCH','/v1/projects/{projectId}/runtimes/{runtimeId}/memory',{projectId:string(),runtimeId:string(40),memory:true,expectedRevision:integer}),
+ route('runtime_get','GET','/v1/projects/{projectId}/runtimes/{runtimeId}',{projectId:string(),runtimeId:string(40)}),
+ route('runtime_list','GET','/v1/projects/{projectId}/runtimes',{projectId:string()}),
+ route('runtime_stop','DELETE','/v1/projects/{projectId}/runtimes/{runtimeId}',{projectId:string(),runtimeId:string(40),expectedRevision:integer}),
+ route('compute_policy_set','PUT','/v1/admin/compute/policies',{profile:object({
+  id:string(),version:string(),enabled:boolean,providerId:string(),accountId:string(),model:string(),
+  providers:{type:'array',items:string(),minItems:1,maxItems:32},asset:string(),fundingAccount:string(),
+  permissionHash:string(71),dataPolicyHash:string(71),expiresAt:{type:['integer','null'],minimum:1},maximumPerRequest:string(78),
+  maxInputBytes:{type:'integer',minimum:1,maximum:65536},maxOutputTokens:{type:'integer',minimum:1,maximum:16384}}),operators:{type:'array',items:string(),minItems:1,maxItems:16},enabled:boolean,expiresAt:{type:['integer','null'],minimum:0},totalLimit:string(78),perProjectLimit:string(78),expectedRevision:integer}),
+ route('compute_policy','GET','/v1/compute/policies/{profileId}',{profileId:string()}),
+ route('compute_grants','GET','/v1/compute/policies/{profileId}/grants',{profileId:string(),after:string(),limit:{type:'integer',minimum:1,maximum:100}},['profileId']),
+ route('compute_grant_set','PUT','/v1/compute/projects/{projectId}/grants/{profileId}',{projectId:string(),profileId:string(),enabled:boolean,expiresAt:integer,limit:string(78),expectedRevision:integer,idempotencyKey:string(),reason:string(1000)}),
+ route('inference_profiles','GET','/v1/projects/{projectId}/inference/profiles',{projectId:string(),after:string(),limit:{type:'integer',minimum:1,maximum:100}},['projectId']),
  route('inference_profile_set','PUT','/v1/admin/inference/profiles',{profile:object({
   id:string(),version:string(),enabled:boolean,providerId:string(),accountId:string(),model:string(),
   providers:{type:'array',items:string(),minItems:1,maxItems:32},asset:string(),fundingAccount:string(),
-  permissionHash:string(71),dataPolicyHash:string(71),expiresAt:integer,maximumPerRequest:string(78),
+  permissionHash:string(71),dataPolicyHash:string(71),expiresAt:{type:['integer','null'],minimum:1},maximumPerRequest:string(78),
   maxInputBytes:{type:'integer',minimum:1,maximum:65536},maxOutputTokens:{type:'integer',minimum:1,maximum:16384}}),expectedRevision:integer}),
  route('inference_allowance_set','PUT','/v1/admin/inference/allowances/{projectId}',{projectId:string(),profileId:string(),enabled:boolean,expiresAt:integer,limit:string(78),expectedRevision:integer}),
  route('inference_profile','GET','/v1/projects/{projectId}/inference/profiles/{profileId}',{projectId:string(),profileId:string()}),

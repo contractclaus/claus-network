@@ -1,3 +1,4 @@
+import {inferencePorts} from '../runtime/inference-ports.mjs';
 import {SITE_LIMITS} from '../src/shared/index.mjs';
 import {openAppPostgres} from '../src/app-storage/index.mjs';
 import {dealPorts} from '../runtime/deal-ports.mjs';
@@ -18,7 +19,7 @@ export function application() {
     const pool = new Pool({ connectionString: process.env.CLAUS_NETWORK_DATABASE_URL, max: 3, connectionTimeoutMillis: 8000 });
     const store = await openPostgresStore({ pool });
     const intakePorts = contractIntakePorts();
-    return { store, intakePorts, app: createApplication({ arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',dealPorts:dealPorts(),appWritesEnabled:process.env.CLAUS_APPS_WRITES_ENABLED!=='0', appStorage:process.env.CLAUS_APPS_ENABLED==='1'?await openAppPostgres({pool}):null, store, origin: process.env.CLAUS_NETWORK_ORIGIN,
+    return { store, intakePorts, app: createApplication({ inferencePorts:inferencePorts(),arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',dealPorts:dealPorts(),appWritesEnabled:process.env.CLAUS_APPS_WRITES_ENABLED!=='0', appStorage:process.env.CLAUS_APPS_ENABLED==='1'?await openAppPostgres({pool}):null, store, origin: process.env.CLAUS_NETWORK_ORIGIN,
       rateSalt: process.env.CLAUS_NETWORK_RATE_SALT, operatorPorts: operatorConfig(), chainPorts: readonlyPorts(), intakePorts }) };
   })().catch(error => { loaded = null; throw error; });
   return loaded;
