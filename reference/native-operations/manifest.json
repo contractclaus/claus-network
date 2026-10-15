@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_Hd9DsW4RkBx5z2zzBzzbdsiWM5zw",
-  "source": "claus-full-operation-native33-2026-10-16",
+  "deployed": "dpl_9X5FoxiirzmEWrUJxxAwj3harFQY",
+  "source": "claus-full-operation-native34-2026-10-16",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -32,7 +32,7 @@
     "src/isolated/runner.mjs": "28b3392b74bf64070d379b3815dca7b9e73c22140f9deee191eef8898702c048",
     "src/network-products.ts": "dcb85e4593f5282e36ac2f4aa2a808fc23ede38adaef9beb5deaf318ab1b96e3",
     "src/network-routes.ts": "ec387b73a6c245021404ee762450135738269c1129045cd3b1f1627e7c87189b",
-    "src/operational-capabilities.ts": "8665b376d7febc83f5050b4e20d7aab3b223131917b3a84980edd9a88a856220",
+    "src/operational-capabilities.ts": "92e313a216c8b57a0dc286db26fe9aa5e947623b9b360d8825033e980fc1dd70",
     "src/cycle.ts": "535bbd5eaa72d0ac663d34202a6bb3b4a3b5c218b9ffda109ba00c3eab2be071",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
     "src/social.ts": "14f1cbfc2a91b13b5ed862f1402d0767d1c547c6195c0c0c8310fc5969575f9d",
