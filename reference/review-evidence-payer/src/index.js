@@ -83,7 +83,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     privateKeyToAccount:key=>paymentAccount(key,deriveAccount),address:payer,quoteWithinBudget,inferencePaymentSchemes:isImage=>inferencePaymentSchemes(isImage,'upto_only'),fetch:fetcher,
     inferenceFunding:requirement=>funding(requirement,undefined,payer),validateChallenge,UptoEvmScheme:uptoScheme,ExactEvmScheme:exactScheme,
     inferenceFetch:paidFetch,providerFailure,responseShape,responseMetadata,normalizeImage,normalizeResponse});
-  app.get('/health',c=>c.json({ready:enabled()&&configured(env),payer,inferencePaymentScheme:'upto_only',supportedLifetimeLimitsMicroUsdc:['100000000','500000000'],
+  app.get('/health',c=>c.json({ready:enabled()&&configured(env),payer,inferencePaymentScheme:'upto_only',supportedLifetimeLimitsMicroUsdc:['100000000','500000000','600000000'],
     configPresence:{enabled:enabled(),database:!!env.PAYMENT_DATABASE_URL,signing:!!env.SIGNER_PRIVATE_KEY,
       inference:!!env.INFERENCE_SECRET,operator:!!env.OPERATOR_SECRET,legacy:!!env.LEGACY_STATUS_SECRET&&env.LEGACY_OPERATOR_URL===operatorOrigin,
       billing:configured(env)}}));
