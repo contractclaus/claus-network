@@ -1,0 +1,14 @@
+{
+  "deployed": "dpl_FQMvz35SB7avEopk5iVTwt9nuNHg",
+  "source": "8e0b58636f32f609b7200cefc05758305469837ed107d3fcca12928e8d8273a4",
+  "files": {
+    "src/index.js": "e8a6a1e33773f717c3b2f583be2edcb8e1b255d0fda1f05a18ff60d07b17dea2",
+    "src/publisher/host.js": "6af5a35358719a00c3f70f7c697d070f7911e9480da7e689befa45755700f6f4",
+    "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
+    "src/publisher/policy.js": "1ea8a68136ce4615eddcf8623f4ca34d9fd8eddface64923642a12c814bbc9ce",
+    "src/publisher/program.js": "447b9e5865e9afe65abb2d141a0f997985c67242162709bf0069c9d68049c5f1",
+    "src/publisher/repository.js": "e47752aa2ed8d8c8486bcc661e9e4e4eac67dc363a6db23a61592e3a299c0555",
+    "src/publisher/routes.js": "50796ff35d6a07e31237ba1bd3f4dc2de0e52b8a3b79ce41bc5706df38c6125c",
+    "src/publisher/service.js": "fa27baaa150847e5bb431eff8f6f778fd815667d78d6685f959765f91f1124cb"
+  }
+}

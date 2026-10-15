@@ -1,13 +1,13 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_CiEWAG4Vff1UAyrQkSNTrHSrp4wQ",
-  "source": "420b789b52c96756c4cc83c3502e2740a0afc741c690381b9b36dbf6606951cd",
+  "deployed": "dpl_8ymM7v62EgrM5Gj2odpNggrHJsER",
+  "source": "cfee35497ab06abc0d47720a233959ba62e5420bc44d748f15a956b574cb0785",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
-    "src/operations/host.ts": "b8d7d87b7c53a7310c988b7e86be44182878658cf51c7bdb103956487fadce55",
+    "src/operations/host.ts": "8f8ae7955693bc9544d839379830ff603d5eb173fb27c92afcc585db01b8c25c",
     "src/operations/store.ts": "f6daea65ba45cf473a0eb37840e669d875c5e2c6517f20ed7e16684b61c3c75c",
-    "src/operations/service.ts": "e0b081f0c621f1c50b135b15a47669841bf7dccc9a1cb91732678e8bc5d2772f",
-    "src/operations/worker.ts": "840f5f9c8fe144fb5184721e8c17357eceeedc5a99ca7bdf3a9eedade091fa71",
+    "src/operations/service.ts": "9f051418ea253d155066ae6cf26e285ba6dd4c86c3def536924d6c716622d39b",
+    "src/operations/worker.ts": "61fd49d922473940351ef8136f1fe8fc6a536f9a09de50e3d3f2043950ab5190",
     "src/operations/handoff.ts": "9390139923d623e016b8203d02c07f8be2e88e117157459e6ceff7510783f429",
     "src/operations/review-evidence.ts": "f889924460e2be67aaaf1990eb740e7955b5cda5f4ced42bb965fda6910ff90a",
     "src/operating-context.ts": "5bc31abd4096bcf0c171d3845866bb72b4694ebb693a002496546ccd38d56b68",
@@ -27,7 +27,7 @@
     "src/tool-visibility.ts": "5fa21e6e69223d9cb60ef6076818ad53d24fa8da86cf17642205d5d001d7e9c7",
     "src/tools.ts": "b233ca2b279660caadf6a2ff22cdeaccba301f4b5ee603471115b055c98e3f16",
     "src/trade-program.ts": "33da3c2f78803f67bcfb1d70ebeb3613e1b748b2521598487648dac5d558e83c",
-    "src/index.ts": "ac04b36430675e998e5f69468b63fb9255f1c107d27b710d9f309d42bfca9797",
+    "src/index.ts": "8abbe63a7903478ba14caabd8d75da007133f58f0031a3f68f88cc2d71c2b368",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
     "src/isolated/network.json": "19f3e4caff5b0d27447b646ab762a907ed8e2d9237bef24772e5fef50e98b726",
     "src/isolated/runner.d.mts": "6a3e499db85e3f03b77a9df21f6f300f28858465ec2b15387427758b4707c2d4",
@@ -42,6 +42,7 @@
     "src/isolated/work.json": "2cd86bd1fe86823e8578e466b4750df1979aa9a2741ac62782034f5f14546b32",
     "src/isolated/work.ts": "64f6c8087bd8a367012a4b38c1b488496bbc065b5c7c2f64724530cfe5d76b21",
     "src/network-measurements.ts": "23681901c6f6c4416e8e6c58fff91a96f7f2271ed0fd89e1b3747b7e5cbd4948",
-    "src/recovery.ts": "967acdbfbecd5bd6b27e46e92fdc27bdb01e9b5d7aba8b8386598932751dca7c"
+    "src/recovery.ts": "967acdbfbecd5bd6b27e46e92fdc27bdb01e9b5d7aba8b8386598932751dca7c",
+    "src/builder-store.ts": "051b4993ea5648176c24e657d486a00d5596c060f303bdbee203b9907c81a461"
   }
 }

@@ -3,9 +3,10 @@ import {configuration} from '../store.js';
 import {builderStore} from '../builder-service.js';
 import {OperationsStore} from './store.js';
 import {operationalReviewEvidence} from './review-evidence.js';
+import {publisherConnected} from './host.js';
 import {OPS_TARGETS} from './policy.js';
 export const operationsStore=()=>new OperationsStore(productionLabDatabase());
-export const operationsEnabled=(c:any)=>c.settings.enabled&&c.settings.networkOperations?.enabled===true&&c.settings.builder?.enabled===true&&c.policy.capabilities.networkBuild===true&&Object.keys(OPS_TARGETS).some(s=>!!process.env['OPERATIONS_'+s.toUpperCase()+'_TOKEN']);
+export const operationsEnabled=(c:any)=>c.settings.enabled&&c.settings.networkOperations?.enabled===true&&c.settings.builder?.enabled===true&&c.policy.capabilities.networkBuild===true&&publisherConnected();
 const string={type:'string'},scope={type:'string',enum:Object.keys(OPS_TARGETS)};
 export const operationsDefinitions=[
  {type:'function',function:{name:'rollback_operational_code',description:'Restore the exact previous immutable deployment for an active operational change. Requires the current scope revision. This restores code, not database contents; this release path does not permit schema changes. Original review/effect/deployment IDs remain.',parameters:{type:'object',properties:{id:string,expectedRevision:{type:'integer',minimum:1}},required:['id','expectedRevision'],additionalProperties:false}}},

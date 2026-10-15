@@ -28,7 +28,7 @@ export class OperationsWorker{
   const c=await this.releases.current(r.scope);if(r.state==='active'&&c.deployment===r.deployment?.id){await this.store.status(p.id,owner,'published','Verified operational release active.');return{state:'published',id:p.id};}
   if(['rollback_pending','rolling_back'].includes(r.state)){
    if(!c?.enabled)throw Error('operations_disabled');
-   const previous=await this.host.api('/v13/deployments/'+r.base_deployment,{},r.scope),before=r.manifest.map((f:FileRef)=>{const old=r.files.find((x:any)=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
+   const previous=await this.host.deployment(r.scope,r.base_deployment),before=r.manifest.map((f:FileRef)=>{const old=r.files.find((x:any)=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
    const proof=await this.host.verify(r.scope,{id:r.base_deployment,url:'https://'+previous.url},before);
    if(!await this.host.restored(r.scope,r.base_deployment)){
     if(await this.releases.beginRollback(r.id,proof))await this.host.promote(r.scope,r.deployment.id,{id:r.base_deployment});return{state:'pending',id:p.id};
