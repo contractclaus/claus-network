@@ -13,3 +13,14 @@ This release collects revenue; it does not activate automatic conversion, bridgi
 The module uses the existing replaceable slot. Do not wrap it in the older `TreasuryProtectedProgram`: that adapter forces the direct owner bucket back to 13000, which would incorrectly add the compute allocation on top. Future program composition must explicitly preserve the new split. This release does not make the compute allocation immutable across future replacements.
 
 `deployment.json` records the deployed address and transaction evidence. `standard-input.json` contains the exact publishable Solidity input, without machine-local paths. Solidity 0.8.26, Cancun, optimizer 200 runs, via IR. Four focused contract cases and one same-state Ethereum fork comparison at block 26201191 passed; the fork comparison checked buy/sell outputs, fee allocation, redemption and module removal. The publishable build changes compiler metadata only; executable runtime matches the tested candidate.
+
+
+## Bounded operating conversion
+
+The operating service uses only this designated compute revenue. It can claim at most 0.02 ETH per cycle, swap through the fixed ETH/USDC route, and transfer USDC to Base through Circle CCTP. A cycle can begin at most once per 24 hours, with a maximum of ten cycles and 0.2 ETH of revenue for this authorization. Ethereum gas is bounded at 0.001 ETH per cycle, Base gas at 0.0001 ETH per cycle using the existing extra-fee preflight estimate. The owner reserve is 0.90 ETH. Authorization ends on 14 November 2026 at 23:44:21 UTC, without automatic renewal.
+
+Replenishment starts below 10 USDC of available payment authority or prepaid credit. Prepaid allocation targets 50 USDC, never exceeds 50 USDC per cycle, and is limited to the actual minted proceeds. Every step retains its original operation, nonce and transaction. An uncertain send is not replaced or repeated. Original holds and previous budgets are preserved.
+
+A confirmed transfer to Surplus is different from an attributable credit in its account ledger. The provider currently does not expose a usable per-deposit receipt through the documented history endpoint. Such a deposit remains held: it cannot start another cycle or increase spending permission. Aggregate balance growth does not complete it. This means automatic prepaid funding is not yet verified end to end. Public inference is not enabled by this operating service.
+
+Future reviewed programs use the [compute-preserving adapter](../trade-programs/ComputeProtectedProgram.sol). The fixed deployed collector and current onchain fee state remain available at [Claus fee state](https://claus.si/fee-state.json).

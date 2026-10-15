@@ -3,16 +3,23 @@
   "installationProof": false,
   "files": {
     "src/programs/evidence.js": "b57fc246cce1630f7c95dc258e07486cd3477418d1657e505d92433e37bf0a97",
-    "src/programs/policy.js": "620457fe5e026fdb651fbb5684feaeacf22a5e083314edef7c458c60ff579bec",
+    "src/programs/policy.js": "3aa7244a6ea756d0a2e85bca7c2ba6d62be8b11ee110d28b7c9844539cc20bb5",
     "src/programs/read-routes.js": "c8166c273b253ea8f1dd5e9fd2423eb19bd636ffe39aa32914961a9bad5c8f47",
     "src/programs/receipts.js": "5b430e0de54984625f24640bc7765f32649237997acbf7ab8eccd9bf3e3a4ab0",
     "src/programs/routes.js": "bc889e128f06a72af8b09acd23cc876d454653d4a1db13b438f30da8ec47cec6",
-    "src/programs/service.js": "5b7fedf3a0ae4310f9c780998179285e9d0626419e0d4a15f4aa45fe7b76cdc1",
+    "src/programs/service.js": "6574de2d1278095f41b48764116581718440fde11ebda584e9fecd859995d07d",
     "src/programs/source.js": "c7653b256c000a86492e4b7808614079a972bd06a2f241e7045ec0806757baf8",
     "src/programs/verification.js": "3a771739e1d56efe7987e8843fc97e72eea209d907f9ff932a4608cae72eaa24",
-    "config/native-program-guard.json": "e039048ef70d10ff1b9fd03663d57304c70d4553b1e413857629b03917dbb013",
-    "config/native-program-limits.json": "5b70fe47fdb4bba6ef607ead6ce4f480cfc4e6056e43a696688a51c9509b58f9"
+    "config/native-program-guard.json": "7634e5f31f8ba5add87179e49c4d710118be7d642c67a88677e8bc923e6abf45",
+    "config/native-program-limits.json": "5b70fe47fdb4bba6ef607ead6ce4f480cfc4e6056e43a696688a51c9509b58f9",
+    "ComputeProtectedProgram.sol": "2c6a149813874f3c24b443fe37cf06d79f79a284a950c0bb177046642a01d395"
   },
-  "deployed": "dpl_BdNr6ppoXxk5i46vK7u6EYYdBond",
-  "source": "8a547b33278f28bdcdaf5fb1ec228991381675f6e681d71e50d70b94def97e28"
+  "deployed": "dpl_5AQM43R45gHkjzZ6mJUCxhwiqYUP",
+  "source": "5e97fe624f1cf52e20fd27df7a9c6c92db00ebe146d91777b19a6ab050330932",
+  "sourceMethod": "sha256 of canonical file-hash map",
+  "allocation": {
+    "directOwnerPips": 12000,
+    "computePips": 1000,
+    "totalOwnerPips": 13000
+  }
 }
