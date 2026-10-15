@@ -1,0 +1,17 @@
+{
+  "native": "dpl_6NWgZjHt8jh2D1e4jErqTsgJptDp",
+  "source": "8dfe3065e30178ceb816ce74399983ffc0e70996b041224029fc00e5b3964041",
+  "changed": [
+    "src/cycle.ts",
+    "src/index.ts",
+    "src/operations/handoff.ts",
+    "src/operations/runtime-handoff.ts",
+    "src/operations/store.ts",
+    "src/operations/worker.ts",
+    "src/social.ts",
+    "src/store.ts"
+  ],
+  "profile": "preserved-turn-handoff/1",
+  "arbitraryServerSource": false,
+  "apiVersionUnchanged": "0.28.4"
+}

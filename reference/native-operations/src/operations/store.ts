@@ -4,19 +4,21 @@ import {BuilderStore} from '../builder-store.js';
 import {assertBuilderDeployment} from '../builder-coordination.js';
 import {hash,sha,target,validateManifest,validateChanges,patch,denyNewAuthority,type FileRef} from './policy.js';
 import {OperationsHost} from './host.js';
+import {handoffColumns} from './runtime-handoff.js';
 export class OperationsStore{
  constructor(readonly db:LabDatabase,readonly host=new OperationsHost()){}
  async initialize(){await this.db.query(`CREATE TABLE IF NOT EXISTS claus_operations_control(scope text PRIMARY KEY,enabled boolean NOT NULL DEFAULT false,revision integer NOT NULL DEFAULT 1,deployment text NOT NULL,manifest jsonb NOT NULL,crons jsonb NOT NULL,updated_at timestamptz NOT NULL DEFAULT now());
  CREATE TABLE IF NOT EXISTS claus_operations_releases(id text PRIMARY KEY,request_hash text NOT NULL,scope text NOT NULL REFERENCES claus_operations_control(scope),base_revision integer NOT NULL,base_deployment text NOT NULL,manifest jsonb NOT NULL,files jsonb NOT NULL,source_hash text NOT NULL,changes jsonb NOT NULL,title text NOT NULL,goal text NOT NULL,build_id text UNIQUE,review_effect text,state text NOT NULL,deploy_started timestamptz,promote_started timestamptz,deployment jsonb,proof jsonb,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
  CREATE TABLE IF NOT EXISTS claus_operations_handoffs(id text PRIMARY KEY,release_id text NOT NULL,origin_deployment text NOT NULL,target_deployment text NOT NULL,generation integer NOT NULL,run_id text,created_at timestamptz NOT NULL DEFAULT now());
- CREATE UNIQUE INDEX IF NOT EXISTS claus_operations_one_active ON claus_operations_releases(scope) WHERE state NOT IN ('active','rejected','blocked','rolled_back');`);}
+ CREATE UNIQUE INDEX IF NOT EXISTS claus_operations_one_active ON claus_operations_releases(scope) WHERE state NOT IN ('active','rejected','blocked','rolled_back');
+ ${handoffColumns}`);}
  async current(scope:string,q:LabQuery=this.db){target(scope);return(await q.query('SELECT * FROM claus_operations_control WHERE scope=$1',[scope])).rows[0]??null;}
  async get(id:string,q:LabQuery=this.db){const r=(await q.query('SELECT * FROM claus_operations_releases WHERE id=$1 OR build_id=$1',[id])).rows[0];if(!r)throw Error('operations_release_missing');return r;}
  async read({scope,id,path,offset=0}:any){
-  if(id){const r=await this.get(id);return{id:r.id,scope:r.scope,state:r.state,sourceHash:r.source_hash,baseDeployment:r.base_deployment,deployment:r.deployment,proof:r.proof,buildId:r.build_id,reviewEffect:r.review_effect??null};}
+  if(id){const r=await this.get(id);return{id:r.id,scope:r.scope,state:r.state,sourceHash:r.source_hash,baseDeployment:r.base_deployment,deployment:r.deployment,proof:r.proof,buildId:r.build_id,reviewEffect:r.review_effect??null,...(r.scope==='native'?{runtimeHandoffs:(await this.db.query('SELECT id,generation,run_id,dispatch_state,observed_at FROM claus_operations_handoffs WHERE release_id=$1 ORDER BY created_at DESC',[r.id])).rows}:{})};}
   const c=await this.current(scope);if(!c)throw Error('operations_not_configured');
   if(path){if(typeof path!=='string'||!target(scope).paths.some(r=>r.test(path))||!Number.isSafeInteger(offset)||offset<0)throw Error('operations_path_denied');const ref=c.manifest.find((f:FileRef)=>f.path===path);if(!ref)throw Error('operations_file_missing');const content=await this.host.read(scope,c.deployment,ref);return{scope,revision:c.revision,deployment:c.deployment,path,sha:ref.sha,content:content.slice(offset,offset+18000),nextOffset:offset+18000<content.length?offset+18000:null};}
-  return{scope,enabled:c.enabled,revision:c.revision,deployment:c.deployment,files:c.manifest.filter((f:FileRef)=>target(scope).paths.some(r=>r.test(f.path))),recent:(await this.db.query('SELECT id,state,source_hash,deployment,updated_at FROM claus_operations_releases WHERE scope=$1 ORDER BY created_at DESC LIMIT 8',[scope])).rows};
+  return{scope,enabled:c.enabled,revision:c.revision,deployment:c.deployment,files:c.manifest.filter((f:FileRef)=>target(scope).paths.some(r=>r.test(f.path))),recent:(await this.db.query('SELECT id,state,source_hash,deployment,updated_at FROM claus_operations_releases WHERE scope=$1 ORDER BY created_at DESC LIMIT 8',[scope])).rows,...(scope==='native'?{runtimeHandoffs:(await this.db.query('SELECT id,target_deployment,generation,run_id,dispatch_state,observed_at FROM claus_operations_handoffs WHERE target_deployment=$1 ORDER BY created_at DESC LIMIT 3',[c.deployment])).rows}:{})};
  }
  async propose(requestId:string,input:any,builder:BuilderStore){
   if(!input||Object.keys(input).some(k=>!['scope','expectedRevision','title','goal','changes'].includes(k))||!Number.isSafeInteger(input.expectedRevision)||typeof input.title!=='string'||!input.title.trim()||input.title.length>120||typeof input.goal!=='string'||!input.goal.trim()||input.goal.length>2400)throw Error('operations_input_invalid');
@@ -40,13 +42,24 @@ export class OperationsStore{
  });}
  async finishRollback(id:string,proof:any){return this.db.transaction(async q=>{
   await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);const r=await this.get(id,q),c=await this.current(r.scope,q);
-  if(!['rollback_pending','rolling_back'].includes(r.state)||![r.base_deployment,r.deployment?.id].includes(c.deployment))throw Error('operations_rollback_conflict');
+  if(!c?.enabled||!['rollback_pending','rolling_back'].includes(r.state)||!rollbackBaseCurrent(r,c))throw Error('operations_rollback_conflict');
   const before=r.manifest.map((f:FileRef)=>{const old=r.files.find((x:any)=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
   if(c.deployment!==r.base_deployment)await q.query('UPDATE claus_operations_control SET revision=revision+1,deployment=$2,manifest=$3::jsonb,updated_at=now() WHERE scope=$1',[r.scope,r.base_deployment,JSON.stringify(before)]);
   await q.query("UPDATE claus_operations_releases SET state='rolled_back',proof=$2::jsonb,updated_at=now() WHERE id=$1",[id,JSON.stringify(proof)]);return{state:'rolled_back',deployment:r.base_deployment};
+ });}
+ async beginRollback(id:string,previous:any){return this.db.transaction(async q=>{
+  await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);
+  const r=await this.get(id,q),c=await this.current(r.scope,q);
+  if(!c?.enabled||!rollbackBaseCurrent(r,c))throw Error('operations_rollback_conflict');
+  if(r.state!=='rollback_pending')return false;
+  await q.query("UPDATE claus_operations_releases SET state='rolling_back',proof=$2::jsonb,updated_at=now() WHERE id=$1",[id,JSON.stringify({...r.proof,rollback:{startedAt:new Date().toISOString(),previous}})]);
+  return true;
  });}
  async begin(id:string,kind:'deploy'|'promote'){
   const col=kind==='deploy'?'deploy_started':'promote_started';return this.db.transaction(async q=>{await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);const r=await this.get(id,q),c=await this.current(r.scope,q);if(!c?.enabled||c.revision!==r.base_revision||c.deployment!==r.base_deployment)throw Error('operations_base_changed');return(await q.query(`UPDATE claus_operations_releases SET ${col}=now() WHERE id=$1 AND ${col} IS NULL RETURNING id`,[id])).rows.length===1;});
  }
  async activate(id:string,proof:any){return this.db.transaction(async q=>{await q.query('SELECT pg_advisory_xact_lock(6041010)');await assertBuilderDeployment(q);const r=await this.get(id,q),c=await this.current(r.scope,q);if(c.deployment===r.deployment?.id&&r.state==='active')return c;if(!c.enabled||c.revision!==r.base_revision||!proof.passed||r.state!=='verified')throw Error('operations_activation_conflict');const result=(await q.query('UPDATE claus_operations_control SET revision=revision+1,deployment=$2,manifest=$3::jsonb,updated_at=now() WHERE scope=$1 AND revision=$4 RETURNING *',[r.scope,r.deployment.id,JSON.stringify(r.manifest),r.base_revision])).rows[0];if(!result)throw Error('operations_activation_conflict');await q.query("UPDATE claus_operations_releases SET state='active',proof=$2::jsonb,updated_at=now() WHERE id=$1",[id,JSON.stringify(proof)]);return result;});}
+}
+function rollbackBaseCurrent(r:any,c:any){
+ return c?.deployment===r.base_deployment&&c.revision===r.base_revision || c?.deployment===r.deployment?.id&&c.revision===r.base_revision+1;
 }

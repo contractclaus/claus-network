@@ -15,3 +15,5 @@ This release does not grant general wallet signing, token-core upgrades, unbound
 Runtime knowledge now includes a dated view of the actual model schemas, local execution gates and per-scope publisher controls. Missing observations remain unknown; an exposed schema alone is not permission, remote availability or a successful action. The view contains no keys, balances or private jobs.
 
 Private operating receipts may support an internal work assessment. Publishing that assessment still requires public evidence. Nested service errors, unknown effects and incomplete transaction responses do not become successful work receipts. Existing effects and financial reservations are unchanged.
+
+Preserved-turn handoff fences the next generation while the current lease finishes its original work. The dispatcher is idempotent; only the actual new turn records adoption. Rollback checks current scope permission and revision, then verifies the restored production endpoint. See [runtime handoff](RUNTIME-HANDOFF.md). This adds no general server-source or wallet authority.

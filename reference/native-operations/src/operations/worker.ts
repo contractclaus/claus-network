@@ -27,12 +27,14 @@ export class OperationsWorker{
   validateChanges(r.scope,r.changes);if(r.scope!=='web')for(const file of r.files){validateProgram(JSON.parse(file.content));if(['rollback_pending','rolling_back'].includes(r.state))validateProgram(JSON.parse(file.before));}
   const c=await this.releases.current(r.scope);if(r.state==='active'&&c.deployment===r.deployment?.id){await this.store.status(p.id,owner,'published','Verified operational release active.');return{state:'published',id:p.id};}
   if(['rollback_pending','rolling_back'].includes(r.state)){
+   if(!c?.enabled)throw Error('operations_disabled');
    const previous=await this.host.api('/v13/deployments/'+r.base_deployment,{},r.scope),before=r.manifest.map((f:FileRef)=>{const old=r.files.find((x:any)=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
    const proof=await this.host.verify(r.scope,{id:r.base_deployment,url:'https://'+previous.url},before);
    if(!await this.host.restored(r.scope,r.base_deployment)){
-    if(r.state==='rollback_pending'){await this.releases.mark(r.id,'rolling_back',{proof:{...r.proof,rollback:{startedAt:new Date().toISOString(),previous:proof}}});await this.host.promote(r.scope,r.deployment.id,{id:r.base_deployment});}return{state:'pending',id:p.id};
+    if(await this.releases.beginRollback(r.id,proof))await this.host.promote(r.scope,r.deployment.id,{id:r.base_deployment});return{state:'pending',id:p.id};
    }
-   await this.releases.finishRollback(r.id,{...r.proof,rollback:{...r.proof?.rollback,completedAt:new Date().toISOString(),previous:proof}});await this.store.status(p.id,owner,'published','Previous immutable deployment restored; all receipts retained.');return{state:'published',id:p.id};
+   const production=await this.host.verify(r.scope,{id:r.base_deployment,url:'https://'+previous.url},before,true);
+   await this.releases.finishRollback(r.id,{...r.proof,rollback:{...r.proof?.rollback,completedAt:new Date().toISOString(),previous:proof,production}});await this.store.status(p.id,owner,'published','Previous immutable deployment restored; all receipts retained.');return{state:'published',id:p.id};
   }
   if(c.revision!==r.base_revision||c.deployment!==r.base_deployment)throw Error('operations_base_changed');
   if(!effect){await this.host.baseline(r.scope,r.base_deployment,c.manifest);await admitBuilderModel(this.inference,p);const input={...builderModelProfile(),max_output_tokens:2500,stream:false,store:false,quoteCeilingMicroUsdc:BUILD_LIMITS.modelReservation,
