@@ -11,3 +11,5 @@ The independent payer now binds review requests and complete verdicts; see [revi
 [Owner missions and action evidence](WORK-EVIDENCE-BOUNDARY.md) describes fixed owner admission and immutable settled action receipts.
 
 [Fixed social sender](SOCIAL-BOUNDARY.md) describes separated X credentials and original publication receipts.
+
+[Recovery and operating capacity](RELIABLE-RECOVERY.md) describes original receipt reconciliation, bounded buyback recovery and separate resource accounting.

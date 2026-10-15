@@ -61,7 +61,8 @@ export function proposeFunding({budget,provider,onchain}){
  if(!budget.binding?.address||String(budget.binding.address).toLowerCase()!==provider.binding?.address||budget.binding.keyId!==provider.binding.keyId)return {...result,state:'blocked',reason:'provider_binding_changed'};
  if(provider.providerAutoTopup)return {...result,state:'blocked',reason:'external_auto_topup_enabled'};
  if(pending>0n)return {...result,state:'waiting',reason:'original_provider_deposit_pending'};
- if(remaining<2000000n)return {...result,state:'blocked',reason:'operating_budget_exhausted'};
+ if(remaining===0n)return {...result,state:'blocked',reason:'operating_budget_exhausted'};
+ if(remaining<2000000n)return {...result,state:'limited',reason:'full_request_reservation_unavailable'};
  if(credit>=2000000n)return {...result,state:'funded',reason:'provider_cash_above_request_ceiling'};
  // Hold the maximum unresolved payment exposure plus a 20-USDC wallet reserve.
  const spendable=cash>held+20000000n?cash-held-20000000n:0n;
@@ -71,6 +72,25 @@ export function proposeFunding({budget,provider,onchain}){
  return {...result,state:'proposal',reason:'explicit_funding_authorization_required',amountMicroUsdc:String(amount),
   to:provider.binding.address,token:RESOURCE_USDC,from:RESOURCE_PAYER,
   ledger:'A token transfer is not compute credit. Confirm the original transfer and provider deposit before crediting or admitting work.'};
+}
+
+// A cash balance cannot increase a lifetime allowance. These are present-time
+// reservation capacities, not prepaid jobs, runway estimates or new grants.
+export function operatingCapacity({budget,provider,onchain}) {
+ const result={automaticFundingEnabled:false,authorizationChanged:false};
+ if(budget?.state!=='available')return {...result,state:'unknown',reason:'budget_unavailable'};
+ const remaining=uint(budget.remainingMicroUsdc),held=uint(budget.heldMicroUsdc);
+ if(remaining===null||held===null)return {...result,state:'unknown',reason:'budget_invalid'};
+ const credit=provider?.state==='available'?uint(provider.creditMicroUsdc):null;
+ const cash=onchain?.state==='available'?uint(onchain.usdcMicro):null;
+ return {...result,state:remaining===0n?'exhausted':remaining<2000000n?'limited':'available',
+  remainingAuthorizationMicroUsdc:String(remaining),unresolvedExposureMicroUsdc:String(held),
+  nativeTwoUsdcReservations:String(remaining/2000000n),payerThreeUsdcReservations:String(remaining/3000000n),
+  ...(credit!==null?{providerCreditMicroUsdc:String(credit)}:{}),
+  ...(cash!==null?{payerCashMicroUsdc:String(cash)}:{}),
+  fullRequestCashBufferAvailable:credit===null||cash===null?null:credit>=2000000n||cash>=2000000n,
+  nextAction:remaining===0n?'renew_authorization_before_new_cost':remaining<2000000n?'use_smaller_authorized_requests_or_renew_authorization':'continue_within_existing_authorization',
+  meaning:'Original holds are already deducted. A smaller request may still fit below 2 USDC. Do not refill, release unknown holds or raise limits from these observations.'};
 }
 
 export function createOperatingResources({env=process.env,db,request=fetch,onchain=readPayerCash,now=Date.now,deadlineMs=3500,cacheMs=20000}={}){
@@ -86,7 +106,7 @@ export function createOperatingResources({env=process.env,db,request=fetch,oncha
    const funding=proposeFunding({budget,provider,onchain:cash});
    // The private binding only guides the fixed proposal; it is not an API key.
    const {binding:budgetBinding,...publicBudget}=budget,{binding:providerBinding,...publicProvider}=provider;
-   return {version:1,complete,observedAt:new Date(now()).toISOString(),automaticFundingEnabled:false,budget:publicBudget,provider:publicProvider,onchain:cash,funding};
+   return {version:1,complete,observedAt:new Date(now()).toISOString(),automaticFundingEnabled:false,budget:publicBudget,provider:publicProvider,onchain:cash,funding,capacity:operatingCapacity({budget,provider,onchain:cash})};
   })();
   return current;
  };
