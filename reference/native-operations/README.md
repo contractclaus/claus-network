@@ -29,3 +29,5 @@ See [operating isolation](OPERATING-ISOLATION.md) for the work planner, atomic r
 [Owner missions and action evidence](WORK-EVIDENCE-BOUNDARY.md) describes fixed owner admission and immutable settled action receipts.
 
 [Fixed social sender](SOCIAL-BOUNDARY.md) describes separated X credentials and original publication receipts.
+
+[Recovery and operating capacity](RELIABLE-RECOVERY.md) describes original receipt reconciliation, bounded buyback recovery and separate resource accounting.

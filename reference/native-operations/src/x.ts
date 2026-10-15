@@ -1,3 +1,4 @@
+import {recoverSenderReceipts} from './sender-recovery.js';
 import {textPrefix} from './text.ts';
 import { createHmac, randomBytes } from 'node:crypto';
 import {unresolved,settleAction,ConfirmedFailure,sql} from './store.js';
@@ -125,9 +126,9 @@ export async function xRequest(path:string,method='GET',body?:unknown,request:ty
  const r=await request(socialUrl()+'/api/social',{method:'POST',headers:{Authorization:'Bearer '+process.env.SOCIAL_CLIENT_SECRET,'Content-Type':'application/json'},body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(30000)});
  const value=await r.json();if(!r.ok){if(value.definite===true)throw new ConfirmedFailure(value.error,value.retryAt);throw Error(value.error??'x_broker_unavailable');}return value.result;
 }
-export async function readSocialReceipt(id:string,request:typeof fetch=fetch){
+export async function readSocialReceipt(id:string,request:typeof fetch=fetch,signal:AbortSignal=AbortSignal.timeout(6000)){
  if(!xReady())return null;
- const r=await request(socialUrl()+'/api/social/receipts/'+encodeURIComponent(id),{headers:{Authorization:'Bearer '+process.env.SOCIAL_CLIENT_SECRET},redirect:'error',signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('x_receipt_unavailable');return r.json();
+ const r=await request(socialUrl()+'/api/social/receipts/'+encodeURIComponent(id),{headers:{Authorization:'Bearer '+process.env.SOCIAL_CLIENT_SECRET},redirect:'error',signal});if(!r.ok)throw Error('x_receipt_unavailable');return r.json();
 }
 // This is a positive-evidence window, not proof of non-delivery outside it.
 // Posts take one bounded HTTP request; never match a similar post days later.
@@ -199,7 +200,11 @@ export async function reconcilePostActions(actions:any[],d:PostRecovery,now=Date
 export async function reconcilePendingPosts() {
   const pending=await unresolved();
   // The separate sender may have the original receipt even when Native lost its response.
-  for(const a of pending.filter(a=>a.kind==='x_post'&&Date.parse(a.created_at)>=Date.parse(process.env.SOCIAL_SOURCE_AFTER??'')).slice(-8)){try{const r=await readSocialReceipt(a.id);if(r?.status==='completed'&&/^\d{1,19}$/.test(r.result?.data?.id??'')){await settleAction(a.id,r.result);}else if(r?.status==='failed'&&r.failure?.definite===true){await settleAction(a.id,{error:r.failure.error,...(r.failure.retryAt?{retryAt:r.failure.retryAt}:{})},'failed');}}catch{/* Retain unknown delivery and the existing readback path. */}}
+  await recoverSenderReceipts(pending as any,{
+    read:(id,signal)=>readSocialReceipt(id,fetch,signal),
+    settle:settleAction,
+    schedule:async(id,value)=>{await sql()`UPDATE claus_actions SET progress=jsonb_set(COALESCE(progress,'{}'::jsonb),'{senderReadback}',${JSON.stringify(value)}::jsonb) WHERE id=${id} AND status NOT IN ('completed','failed')`;}
+  },process.env.SOCIAL_SOURCE_AFTER??'');
   await reconcilePostActions(await unresolved(),{
     verify:verifyX,read:xRequest,
     context:async action=>{
