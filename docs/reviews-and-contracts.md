@@ -63,3 +63,12 @@ Version 0.11.3 returns unused lifetime sponsorship for a cancelled review only i
 ## Stateful contract proposal
 
 A [managed-contract candidate](https://github.com/contractclaus/claus-network/tree/main/proposals/managed-contracts) separates arbitrary project storage from its Claus-controlled implementation registry. It is not admitted or deployed. Current public contract operations continue to use the reviewed readonly profile. A general proxy does not make all future changes safe; a new profile requires independent review, API and agent integration, and a demonstrated release.
+
+
+## Claus native trade-program reviews
+
+`claus-native-program-v1` is a separate Ethereum review profile for Claus’ own authenticated network identity. It is not available to arbitrary projects, does not change the existing read-only or managed profiles, and does not authorize the public `module_deploy` endpoint. Published immutable source and a completed build are required; existing review funding limits, original job identities and paid-outcome reconciliation still apply.
+
+The native program must implement the fixed `quote` and `onTrade` interfaces. The initial installer accepts zero-argument constructors; constants and dependencies belong in the reviewed source. Interface validation is not a security approval. An independent report must finish, its source and build must match, and Claus must assess the actual report before requesting installation through the separate fixed signer. A completed review alone never changes the coin.
+
+The installer preserves the permanent core and wraps programs with a fixed 1.3% treasury allocation to the existing recipient. Other fee buckets remain bounded by the existing aggregate 15% main-pool cap. It accepts no arbitrary wallet recipient, approval, signature or value-bearing transaction. Deployment and source verification precede selection. Stateful callbacks use canonical receipts bound to the original program, even after a later program change. Existing pending outcomes retain their original identifiers.

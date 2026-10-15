@@ -1,0 +1,9 @@
+{
+  "totalGasWei": "20000000000000000",
+  "transactionGasWei": "3000000000000000",
+  "reserveWei": "900000000000000000",
+  "maximumGas": "7000000",
+  "maximumFeePerGasWei": "2000000000",
+  "automaticRefill": false,
+  "accounting": "Conservative maximum gas for every signed transaction remains committed; no automatic budget reuse."
+}

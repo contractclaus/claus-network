@@ -1,3 +1,4 @@
+import { NATIVE_PROGRAM_PROFILE } from './native-program.mjs';
 import { createReviewAdmission } from './admission.mjs';
 import { digest, requireThat, text } from '../shared/index.mjs';
 
@@ -18,6 +19,8 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
     await identity.authorize(actor, action, { projectId: value.projectId }, reader);
     await sponsor(reader, value.projectId);
     await sourceIsPublished(reader, value);
+    if (value.profile === NATIVE_PROGRAM_PROFILE)
+      await selectReviewProfile(reader, value.projectId, { actor, chainId: value.chainId, profile: value.profile });
     return true;
   }
   async function networkOwner(reader, actor) {
@@ -56,13 +59,14 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       const build = await builds.get(actor, projectId, buildId);
       requireThat(build.state === 'compiled' && build.artifactHash, 'build_not_complete');
       await identity.authorize(actor, 'review.quote', { projectId });
-      const input = { repoUrl, baseCommit, contracts: [build.entry], sourceHash: build.snapshotId, buildHash: build.artifactHash };
+      const input = { repoUrl, baseCommit, contracts: [build.entry], sourceHash: build.snapshotId, buildHash: build.artifactHash,
+        ...(profile === NATIVE_PROGRAM_PROFILE ? { reviewProfile: profile, chainId } : {}) };
       const inputHash = digest(input), id = digest({ projectId, review: idempotencyKey });
       return store.transaction(async tx => {
         const value = { id, projectId, buildId, input, inputHash, createdAt: now(), quoteId: null, reviewJobId: null, state: 'preparing' };
         await identity.authorize(actor, 'review.quote', { projectId }, tx);
         await sourceIsPublished(tx, value);
-        const scope = selectReviewProfile ? await selectReviewProfile(tx, projectId, { chainId, profile }) : null;
+        const scope = selectReviewProfile ? await selectReviewProfile(tx, projectId, { chainId, profile, actor }) : null;
         requireThat(scope || chainId === undefined && profile === undefined, 'unsupported_profile');
         if (scope) { if (scope.chainId !== undefined) value.chainId = scope.chainId; value.profile = scope.profile; }
         const sameScope = record => (record.profile ?? 'claus-readonly-v1') === (scope?.profile ?? 'claus-readonly-v1') &&
@@ -90,7 +94,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         }
         requireThat(candidates.length < 64, 'capacity_reached');
         const eligibility = await sponsor(tx, projectId);
-        if (eligibility.kind === 'public' || scope?.profile === 'claus-managed-v1') {
+        if (eligibility.kind === 'public' || scope?.profile === 'claus-managed-v1' || scope?.profile === NATIVE_PROGRAM_PROFILE) {
           requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
           await validatePublicBuild(await artifacts.get(projectId, build.artifactHash, tx), scope?.profile);
         }
@@ -179,12 +183,12 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       requireThat(value.state === 'quoted' && value.inputHash === quote.inputHash, 'quote_input_mismatch');
       const pilot = await sponsor(tx, projectId);
       requireThat(BigInt(quote.offer.maximum) <= BigInt(pilot.maximumPerReview), 'sponsor_limit');
-      if (pilot.kind === 'public') {
+      if (pilot.kind === 'public' || value.profile === NATIVE_PROGRAM_PROFILE) {
         requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
         if (selectReviewProfile && value.profile)
-          await selectReviewProfile(tx, projectId, { chainId: value.chainId, profile: value.profile });
+          await selectReviewProfile(tx, projectId, { chainId: value.chainId, profile: value.profile, actor });
         await validatePublicBuild(await artifacts.get(projectId, value.input.buildHash, tx), value.profile);
-        await admission.reserve(tx, projectId, quote.offer.maximum, pilot, jobId);
+        if (pilot.kind === 'public') await admission.reserve(tx, projectId, quote.offer.maximum, pilot, jobId);
       }
       const active = (await tx.read('active-paid-reviews', 'global'))?.value.ids ?? [];
       const live = [];
@@ -254,7 +258,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         });
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
-        const denied = ['scope_denied', 'source_not_published', 'sponsor_not_enabled'].includes(error.code);
+        const denied = ['scope_denied', 'source_not_published', 'sponsor_not_enabled', 'native_program_review_not_enabled'].includes(error.code);
         const retry = !denied && ['provider_outcome_unknown', 'source_unavailable'].includes(error.code) && claim.job.attempts < 3;
         const state = retry ? 'waiting' : denied ? 'blocked' : 'failed';
         return jobs.finish(claim, { state, result: { error: error.code ?? 'review_quote_failed' }, retryAt: retry ? now() + 60000 : null });
@@ -309,7 +313,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
         const denied = ['scope_denied', 'unauthenticated', 'source_not_published', 'sponsor_not_enabled',
-          'payment_not_authorized', 'payment_window_expired', 'payment_signing_unknown', 'quote_expired'].includes(error.code);
+          'native_program_review_not_enabled', 'payment_not_authorized', 'payment_window_expired', 'payment_signing_unknown', 'quote_expired'].includes(error.code);
         if (denied && payment.abandonUnsent) {
           try {
             return await jobs.finish(claim, { state: 'blocked', result: { error: error.code } }, async tx => {
