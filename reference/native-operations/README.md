@@ -19,3 +19,5 @@ Private operating receipts may support an internal work assessment. Publishing t
 Preserved-turn handoff fences the next generation while the current lease finishes its original work. The dispatcher is idempotent; only the actual new turn records adoption. Rollback checks current scope permission and revision, then verifies the restored production endpoint. See [runtime handoff](RUNTIME-HANDOFF.md). This adds no general server-source or wallet authority.
 
 See [operating isolation](OPERATING-ISOLATION.md) for the work planner, atomic recovery policy checks and eight-day evidence retention. Observed sampling is not a full-autonomy or continuous-uptime guarantee.
+
+[Operating resources](OPERATING-RESOURCES.md) distinguishes private payer cash, provider credit, unresolved cost and the finite request allowance without authorizing transfers.

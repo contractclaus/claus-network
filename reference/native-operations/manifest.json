@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_2La4vu6MuY3o9z2ffJb7wHZgmXWg",
-  "source": "d1efec5f9b7b7c30b614090387991b77d1bf8ea76051417a1ffd6f6d0806476d",
+  "deployed": "dpl_Hgn9BVmtcrVhAiKqJFEkZ5WB4Erf",
+  "source": "9964a8f5306d3965ebc493653d3359700463f1dde0bbf9c039e23a4d4ba88109",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "8f8ae7955693bc9544d839379830ff603d5eb173fb27c92afcc585db01b8c25c",
@@ -20,7 +20,7 @@
     "src/network-access.ts": "832c849c93ea2c40dd736c7807e30b800afd6aba5bc30c04de593723bb81e538",
     "src/context.ts": "91d6024655167a1a08253236888c4b7ed50b112bab620d7c6068f92491699c98",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
-    "src/network-care.ts": "9f103a812c06bcfb0dd9f4355c0cb60651fc84c9868e3541e2ae421920896666",
+    "src/network-care.ts": "ad1cbe6293d542846582d26c72ade0005c9bbd617a8ac00fdce14e9d9825018b",
     "src/network-operations.ts": "4df5b6bdf82d2eff5bc04b4491ec0153ead8d7f98299e7e58955839d1af88e6c",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "146cfd27faf10887b536679f1c6ec71346e4d6d4d3ac2bbfa5911ba089c0924b",
@@ -63,6 +63,8 @@
     "src/surface/store.ts": "8e259412e98c0c6d81e389395b5c43123901d707e9a016d9a392f08b4a0e4845",
     "src/workspaces/continuity.ts": "f38b72950a98ff4eecaf684619880d4ca18f02f038cd7b774c8c354bba78651a",
     "src/workspaces/contributions.ts": "58e30e278efd14ac06e37596673a50661bdd72d24c5e8b9d70856850940e2dd5",
-    "src/workspaces/packages.ts": "1cff67a7a7231139bd09ff8cce80575bb6388810d203d4dbcc0afbe22065623f"
-  }
+    "src/workspaces/packages.ts": "1cff67a7a7231139bd09ff8cce80575bb6388810d203d4dbcc0afbe22065623f",
+    "src/operating-resources.ts": "38f988d387d3056ec175ae3f16abf3ee3fce33cd78cc2e6fc8075d7b93409bf4"
+  },
+  "referenceSubset": true
 }
