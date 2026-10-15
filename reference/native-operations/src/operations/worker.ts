@@ -7,7 +7,7 @@ import {admitBuilderModel,admitReservedBuilderModel} from '../builder-admission.
 import {completeModelOutput} from '../model-completion.js';
 import {builderNonpaymentReceipt} from '../builder-preflight.js';
 import {OperationsStore} from './store.js';
-import {OperationsHost} from './host.js';
+import {OperationsHost,OperationsHostError} from './host.js';
 import {hash,sha,type FileRef} from './policy.js';
 export class OperationsWorker{
  readonly releases:OperationsStore;
@@ -21,6 +21,7 @@ export class OperationsWorker{
    await this.store.effectState(effect.id,owner,'completed',result.result);effect={...effect,status:'completed',output:result.result};
   }
   await this.store.coordination.assertCurrent();const eligible=builderWorkEligible(await this.config());if(!await eligible(p,this.store.db))return{state:'disabled',id:p.id};
+  if(['blocked','rejected'].includes(r.state))return{state:'blocked',id:p.id};
   const c=await this.releases.current(r.scope);if(r.state==='active'&&c.deployment===r.deployment?.id){await this.store.status(p.id,owner,'published','Verified operational release active.');return{state:'published',id:p.id};}
   if(['rollback_pending','rolling_back'].includes(r.state)){
    const previous=await this.host.api('/v13/deployments/'+r.base_deployment,{},r.scope),before=r.manifest.map((f:FileRef)=>{const old=r.files.find((x:any)=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
@@ -37,7 +38,14 @@ export class OperationsWorker{
   if(effect.status==='reserved'){await admitReservedBuilderModel(this.inference,effect);await this.store.effectState(effect.id,owner,'running',undefined,{activeUntil:new Date(Date.now()+15*60000).toISOString()});try{const output=await this.inference.complete(effect.id,effect.input);await this.store.effectState(effect.id,owner,'completed',output);effect={...effect,status:'completed',output};}catch{await this.store.effectState(effect.id,owner,'uncertain');return{state:'pending',id:p.id};}}
   if(effect.status!=='completed'||!completeModelOutput(effect.output))throw Error('operations_review_incomplete');let review;try{const content=effect.output.message?.content;review=JSON.parse((Array.isArray(content)?content.map((x:any)=>x.text??'').join(''):String(content)).replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,''));}catch{throw Error('operations_review_invalid');}
   if(review.approved!==true||review.withinScope!==true||review.preservesBehaviour!==true||typeof review.summary!=='string'){await this.releases.mark(r.id,'rejected',{proof:{review,reviewEffect:effect.id}});await this.store.status(p.id,owner,'blocked','Independent review rejected this exact operational change.');return{state:'blocked',id:p.id};}
-  if(!r.deploy_started){await this.host.baseline(r.scope,r.base_deployment,c.manifest);if(await this.releases.begin(r.id,'deploy')){try{const deployment=await this.host.deploy(r.scope,r.base_deployment,r.manifest,r.files,r.id,r.source_hash);await this.releases.mark(r.id,'deploying',{deployment,proof:{review,reviewEffect:effect.id}});}catch{/* Reconcile the saved intent; never create a replacement. */}}return{state:'pending',id:p.id};}
+  if(!r.deploy_started){await this.host.baseline(r.scope,r.base_deployment,c.manifest);if(await this.releases.begin(r.id,'deploy')){try{const deployment=await this.host.deploy(r.scope,r.base_deployment,r.manifest,r.files,r.id,r.source_hash);await this.releases.mark(r.id,'deploying',{deployment,proof:{review,reviewEffect:effect.id}});}catch(error){
+   if(error instanceof OperationsHostError&&error.rejected){
+    await this.releases.mark(r.id,'blocked',{proof:{review,reviewEffect:effect.id,hostRejection:{status:error.status,code:error.code,at:new Date().toISOString(),effect:'deployment-not-admitted'}}});
+    await this.store.status(p.id,owner,'blocked','Hosting rejected this deployment. Original source and paid review retained; no automatic replacement.');return{state:'blocked',id:p.id};
+   }
+   // A timeout, lost response, conflict or server error remains unknown.
+   // Reconcile the saved intent without a second deployment or paid review.
+  }}return{state:'pending',id:p.id};}
   const deployment=await this.host.reconcile(r.scope,r.id,r.source_hash,r.deployment?.id);if(!deployment)return{state:'pending',id:p.id};await this.releases.mark(r.id,'deploying',{deployment});if(['ERROR','CANCELED'].includes(deployment.state))throw Error('operations_build_failed');if(deployment.state!=='READY')return{state:'pending',id:p.id};
   const staged=await this.host.verify(r.scope,deployment,r.manifest);await this.store.coordination.assertCurrent();if(!await builderWorkEligible(await this.config())(p,this.store.db))return{state:'disabled',id:p.id};
   r=await this.releases.get(p.id);if(!r.promote_started){if(await this.releases.begin(r.id,'promote'))await this.host.promote(r.scope,r.base_deployment,deployment);return{state:'pending',id:p.id};}

@@ -1,13 +1,13 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_9Dh4FQjCSABjPdc3cCeksTXz36tC",
-  "source": "4a39a5bd987e75f663da1924639e93cf312aeb25df38d6d5c167ceff66b850c3",
+  "deployed": "dpl_Ga1XuTeprgws2gpJSVhs6sBetaiy",
+  "source": "57b6a25809c39bfcc94a3ea7fe301b1fda113a3dc85d8e4fc3ea1d2703cd7dfb",
   "files": {
     "src/operations/policy.ts": "4207f83e628ad6aed2ef2471d9acb50badf48112a648cd28edb45e4f0f1efe04",
-    "src/operations/host.ts": "8c9b93fc26e848620bc7c380db89dd241cdc2dc7763eb1f6826b1123bf8d568f",
-    "src/operations/store.ts": "0ac0a277b50424b67326c4539e79ce5371914bc058f4267ae1e817617cafabf8",
+    "src/operations/host.ts": "9c0fc69393d198596029843ed9faa3481e6bd2b868eb7b3b8e5190325274d944",
+    "src/operations/store.ts": "02772530ea63b64a5910a57e2985273ce198b8d54d6e6819086415deea99e677",
     "src/operations/service.ts": "4fd9e215d7f33f12d49b313b77f11c227c6e7df87dcf90f65ac53716eadd7fef",
-    "src/operations/worker.ts": "320f461cc24a6e6858a09126ca1d7f5294d1d932307414b3d75f232ce32026ea",
+    "src/operations/worker.ts": "a444f743d82a2afce03d2646e83be621f512cf7789ca81bb692020aa7d97885d",
     "src/operations/handoff.ts": "9bd8338930e0689fe41f9d20a76931f7d12f4c14508ffd9a817ff0a7dfd1496a",
     "src/operating-context.ts": "5bc31abd4096bcf0c171d3845866bb72b4694ebb693a002496546ccd38d56b68",
     "src/knowledge-schema.ts": "fee8f8f34372234688bb3c2773b3ec3a77d1d0240c5688b6f8e80b6d9b82f46e",
