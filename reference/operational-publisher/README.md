@@ -15,3 +15,5 @@ The independent payer now binds review requests and complete verdicts; see [revi
 [Recovery and operating capacity](RELIABLE-RECOVERY.md) describes original receipt reconciliation, bounded buyback recovery and separate resource accounting.
 
 [Network session recovery](NETWORK-SESSION-RECOVERY.md) describes targeted session renewal without replaying actions.
+
+[Search credential boundary](SEARCH-BOUNDARY.md) describes fixed provider search with independent request accounting.

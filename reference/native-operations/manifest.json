@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_7H8K5LCKayTpEhNGAkgk5KT8MSYC",
-  "source": "43a77b34e8bbda0f8ab0a41df7428a4ff17c3453a451aa055bbfa29ab7aee0ad",
+  "deployed": "dpl_2mR5krTXZCLtFhUf6kRTtdjZtrwW",
+  "source": "f89608fafa9b3c0015ede63be2a99dc9ebf4a398c79dd710ef9ccb5c578c2748",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -68,7 +68,10 @@
     "src/x.ts": "7e52e37958b017eb70ed47bc8e28f9120ee7d78782805b5fae94944451946055",
     "src/visuals.ts": "d1ecd46b0299f3a843e071ee8bb3177d8dd99c08968e096db20e0c3b1a25f354",
     "src/reaction-gifs.ts": "79907484a1bd7973ef84dbf49d47f6eeb30992a989017cf23227e674a242749d",
-    "src/sender-recovery.ts": "8408ed060dd86e050936114e0e2d425156ad790a42cbc82ed38864ec45122268"
+    "src/sender-recovery.ts": "8408ed060dd86e050936114e0e2d425156ad790a42cbc82ed38864ec45122268",
+    "src/web-search.ts": "8d0a53bece3cb95172588b4ecc0d70cc19aea1b9c684bdb208f08541a7e049f5",
+    "src/research-cache.ts": "d0ab9f0c9dfef6cb5359a1fe06f4e2b4bc4a7ac1f0a03415de88fd8c1d87af38",
+    "src/search-client.ts": "73ca4be37e9d4f4f9aa14a5a57780861282fe2ab61bfa921cad0d7da6785ef65"
   },
   "referenceSubset": true
 }

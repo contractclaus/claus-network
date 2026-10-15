@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_DhDXu8JaGzqHperGKuKi62x4HTrA",
-  "source": "bd94a72e6c3e35f64901888f49f3616874aa5c67f0c7b22db282a64cf80d6e38",
+  "deployed": "dpl_4JJFmJ7A9ZhecEC9wF7ZrW5WuUvH",
+  "source": "912cd2e738f85f9b7246ff3a6562b58c19fd3ebfc5329a129e36b50f5eafdc25",
   "files": {
-    "src/index.js": "90ff376f9d07b8e493a4c8917ade374a6180dddb044b1acc408d43f03508acd0",
+    "src/index.js": "09b2864398ffe2c280915651cd466135bd39268c610b06e5b50b08d9f70e5228",
     "src/publisher/host.js": "c59603df1592e5b418d6eb44bc4deab0d8028e6fbf9527df9c5d04fdc092197b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
     "src/publisher/policy.js": "1ea8a68136ce4615eddcf8623f4ca34d9fd8eddface64923642a12c814bbc9ce",
@@ -32,7 +32,12 @@
     "src/ordinary-buyback-recovery.js": "d852c518fd6807ab3ac675d0d4d9ec6313cd6a05e15cb4b94e8ee036366ad230",
     "src/jobs-wallet/routes.js": "f61884c6444227a370e5ffea79010d934588493a9b24db9a1b028be2c443664d",
     "src/jobs-wallet/network.js": "3f2f96d7e37226694942a80a2f1918ae7690582fab8195b9b11ac7c3223671e3",
-    "src/jobs-wallet/session-cache.js": "2c43c77bca2ae99703be39333da25eb26073ad2ba23cb44bd32614244c63a76c"
+    "src/jobs-wallet/session-cache.js": "2c43c77bca2ae99703be39333da25eb26073ad2ba23cb44bd32614244c63a76c",
+    "src/search/policy.js": "8ff880d14f3fd5dc85d43b1dd50d12c0be278b6ab1db5165f4e00b47c6db0d83",
+    "src/search/provider.js": "4813e8d9e836a90dc6fa2b634250c8cc59b2368a980cce360367b2086f46a726",
+    "src/search/repository.js": "c62a5a37253ad46208c8129251e0683f70f3dbedad0bd77171de000ed0f360f3",
+    "src/search/service.js": "8f3016ce4ec353c80a0b2dd7069b34b2c60064e079174e0475e32247dbd86118",
+    "src/search/routes.js": "0563bfb04479ba743a7ab8506377650f86a19f53508c167b9b0569a74677d620"
   },
   "referenceSubset": true
 }
