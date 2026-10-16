@@ -1,3 +1,4 @@
+import {refreshCapitalCash} from './capital/budget.js';
 // Trusted adapter accounting only. This store never funds an account, accepts
 // credentials, or treats provider/model response text as spending evidence.
 const validId = value => typeof value === 'string' && /^[a-zA-Z0-9:_-]{1,160}$/.test(value);
@@ -85,6 +86,7 @@ export async function reserveCredit(db, {id, hash, maximum, activeMs} = {}) {
   // The pool UPDATE locks admission. The partial unique index also fences a
   // concurrent statement whose READ COMMITTED snapshot predates that lock.
   // Any duplicate must abort the entire statement, including both writes.
+  await refreshCapitalCash(db);
   return db`WITH admitted AS (
     UPDATE claus_credit_pool SET committed = committed + ${String(amount)}::bigint
     WHERE id = true AND state = 'funded' AND allocated = 2000000

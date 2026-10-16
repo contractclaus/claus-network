@@ -1,0 +1,26 @@
+{
+  "kind": "compute-capital-source-reference",
+  "deployed": "dpl_6vHcg5WTjB1xCQg5H1h5oThVJZyd",
+  "payer": "dpl_8v8WYoiqyxkdWEanwrsyj4EZbDBS",
+  "referenceSubset": true,
+  "files": {
+    "src/compute-funding-legacy/cycle.mjs": "7e1ca25a472e0ed7fa1c1a18b54f70293f484584b98b44e207aa20ad93d77025",
+    "src/compute-funding-legacy/executor.mjs": "20f5a97abf8cfe1eadd800e8ea6db8ef44d892f658373daef17d187c3e6c7031",
+    "src/compute-funding-legacy/policy.mjs": "008a8328a827e69c4340fa83a2ad04dad6f3be259b6b21880544e494f8331b19",
+    "src/compute-funding-legacy/ports.mjs": "b01575bea9d6e1f83c056c137c6669eb282a5def9f5552a06c124cb3094d7d82",
+    "src/compute-funding-legacy/prepaid.mjs": "a565f6a40d697d0fd0f82bff965b1c09aede595557adfade83985562e526c6a2",
+    "src/compute-funding-legacy/provider-credit.mjs": "e3582fdcbee2e03c645810b3949638771925dddb74adfe7aba7e5c60c43e089f",
+    "src/compute-funding-legacy/recovery.mjs": "1530d438e541fb53625b88be464c64618eb5f4d59264ea8af26ffed977e4d45e",
+    "src/compute-funding-legacy/repository.mjs": "ee96ade94e4bce8d4774bba1e8577cf91b427b7a537428f1ef318f16eb7ecfa3",
+    "src/compute-funding-legacy/service.mjs": "6ba52191253ec4c4cb77f6e4ea876bebf1e1d545d7804fa0fc5158f9c84e8c62",
+    "src/compute-funding-legacy/transactions.mjs": "c146431165dc693ef4f0b2977bfe80575abfa9b3a03eb3757538ed776797769c",
+    "src/compute-funding-legacy/wallet-repository.mjs": "5fbe14a5bad0e5ddb9f7a17d287f0f7402857047724b4fdc19473c52012e308f",
+    "src/compute-funding/cycle.mjs": "5f0c8cf56d7081480668def5f6b55325d1757395cc0d09581acbda162660f4b5",
+    "src/compute-funding/policy.mjs": "ec0568afa0783605b24d272f8bfa23a414ec54c12704cabfc0e99ba1362987e7",
+    "src/compute-funding/ports.mjs": "0692b5a489994a13bc44a2db9cc6f3fa01d3d340227e22cc0feab57982f1f818",
+    "src/compute-funding/recovery.mjs": "2c0f3a005efada2a602fc600729bb72d62981e5cb3839a405df10dbda197aebf",
+    "src/compute-funding/repository.mjs": "c153db8597f682287e4691f5800e5026fc13c03c1feffb7e31f8b5b12874da61",
+    "src/compute-funding/service.mjs": "740aae346d974387783099977f596110da62816939c3552af4dd7f930b14b8fc",
+    "capital-schema.sql": "0dd21f879c31462a28efcf3d05c826894c4fde68ae2ae2db3f6dcbae0b156eea"
+  }
+}

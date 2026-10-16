@@ -7,6 +7,6 @@ export async function operatingResources({request=fetch,secret=process.env.INFER
   try{for(;;){const p=await reader.read();if(p.done)break;size+=p.value.length;if(size>20000){await reader.cancel();throw Error('too_large');}parts.push(p.value);}}finally{reader.releaseLock();}
   const value=JSON.parse(Buffer.concat(parts).toString());
   if(value.version!==1||value.automaticFundingEnabled!==false||!value.budget||!value.provider||!value.onchain||!value.funding)throw Error('invalid');
-  return {state:'available',...value,authority:'Read-only operating resources and a non-executable funding proposal; not permission to transfer, refill or raise a budget.'};
+  return {state:'available',...value,authority:'Read-only current cash, original holds and approved rolling capital limits. Automatic compute funding is separately enforced; these observations do not authorize arbitrary transfers or new allocations.'};
  }catch{return {state:'unavailable',reason:'operating_resources_unavailable'};}
 }

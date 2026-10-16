@@ -1,3 +1,4 @@
+import {capitalSnapshot,refreshCapitalCash} from './capital/budget.js';
 import {validateConversation} from './compute-conversation.js';
 import {installFundingRoutes} from './compute-funding/service.mjs';
 import {Hono} from 'hono';
@@ -87,7 +88,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     privateKeyToAccount:key=>paymentAccount(key,deriveAccount),address:payer,quoteWithinBudget,inferencePaymentSchemes:isImage=>inferencePaymentSchemes(isImage,'upto_only'),fetch:fetcher,
     inferenceFunding:requirement=>funding(requirement,undefined,payer),validateChallenge,UptoEvmScheme:uptoScheme,ExactEvmScheme:exactScheme,
     inferenceFetch:paidFetch,providerFailure,responseShape,responseMetadata,normalizeImage,normalizeResponse});
-  app.get('/health',c=>c.json({ready:enabled()&&configured(env),payer,inferencePaymentScheme:'upto_only',supportedLifetimeLimitsMicroUsdc:['100000000','500000000','600000000'],earnedFundingCeilingRangeMicroUsdc:['600000000','1200000000'],
+  app.get('/health',c=>c.json({capitalPolicyHash:'a21b0e70568a888cdb95126b35c57f3b310ada00962a008ff76273ad13adc59c',ready:enabled()&&configured(env),payer,inferencePaymentScheme:'upto_only',supportedLifetimeLimitsMicroUsdc:['100000000','500000000','600000000'],earnedFundingCeilingRangeMicroUsdc:['600000000','1200000000'],
     configPresence:{enabled:enabled(),database:!!env.PAYMENT_DATABASE_URL,signing:!!env.SIGNER_PRIVATE_KEY,
       inference:!!env.INFERENCE_SECRET,operator:!!env.OPERATOR_SECRET,legacy:!!env.LEGACY_STATUS_SECRET&&env.LEGACY_OPERATOR_URL===operatorOrigin,
       billing:configured(env)}}));
@@ -122,7 +123,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     return await next();
   });
   app.post('/api/setup',async c=>{await setupBudget(sql());return c.json({ready:true,payer,budget:await budgetSnapshot(sql())});});
-  app.get('/api/resources',async c=>{c.header('Cache-Control','no-store');return c.json(await resources());});
+  app.get('/api/resources',async c=>{c.header('Cache-Control','no-store');const value=await resources();await refreshCapitalCash(sql());const capital=await capitalSnapshot(sql());if(capital){value.capital=capital;if(capital.state==='active'){value.budget.remainingMicroUsdc=capital.availableMicroUsdc;value.budget.limitMicroUsdc=String(BigInt(value.budget.committedMicroUsdc)+BigInt(capital.availableMicroUsdc));value.capacity={...value.capacity,remainingAuthorizationMicroUsdc:capital.availableMicroUsdc,nextAction:'continue_within_rolling_capital_envelope'};}}return c.json(value);});
   app.get('/api/budget',async c=>c.json({...await budgetSnapshot(sql()),...(creditLedgerEnabled()?{prepaid:await creditSnapshot(sql())}:{})}));
   app.get('/api/review-evidence/:id',async c=>{
     c.header('Cache-Control','no-store');
@@ -243,7 +244,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     if(enabled()&&configured(env))return c.json(await withNonpayment(db,id,await reconcile(db,id,recovery)??unknown()));
     return c.json({status:rows[0].status,response:rows[0].response??null,outcome:rows[0].outcome??null});
   });
-  app.onError((_,c)=>c.json({error:'payment_service_unavailable',...unknown()},503));
+  app.onError((error,c)=>/^capital_[a-z_]+$/.test(error?.message??'')?c.json({error:error.message,payment:'not_signed',retryAfterSeconds:60},409):c.json({error:'payment_service_unavailable',...unknown()},503));
   return app;
 }
 export default createPaymentApp();

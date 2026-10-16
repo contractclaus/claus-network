@@ -103,7 +103,7 @@ export async function requestProgrammable(id:string,input:ProgrammableRequest,tr
   if(response.status>=500||response.status===429)throw Error('programmable_server_outcome_unknown');
   return {httpStatus:response.status,requestId:response.headers.get('x-request-id'),
     ...(response.ok?{}:{error:'programmable_http_'+response.status}),data,instructionAuthority:false,
-    walletSigned:false,transactionBroadcast:false};
+    walletSigned:false,transactionBroadcast:false,capital:{approvedTotalWei:'20000000000000000',maximumPerLaunchIncludingGasWei:'5000000000000000',ownerReserveWei:'900000000000000000',automaticRefill:false,executionAdapter:false,requires:'Real selected project, exact independently reviewed provider transaction, protected transfer/fee rules and registry receipt. Preparation does not reserve or sign capital.'}};
 }
 
 export async function programmableTool(id:string,args:Record<string,any>) {
