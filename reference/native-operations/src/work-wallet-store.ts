@@ -57,7 +57,7 @@ export function createWorkWalletStore(database:any=sql){
     const db=database();
     // Unknown signed transactions retain the wallet lock and both reservations.
     await db`WITH owned AS (UPDATE claus_work_wallet SET active_id=CASE WHEN EXISTS(SELECT 1 FROM claus_work_wallet_actions WHERE id=${id} AND transaction IS NOT NULL) THEN active_id ELSE NULL END,fence=NULL,lease_until=NULL WHERE address=${address} AND active_id=${id} AND fence=${fence} RETURNING address)
-      UPDATE claus_work_wallet_actions SET error=${error??null},updated_at=now() WHERE id=${id} AND EXISTS(SELECT 1 FROM owned)`;
+      UPDATE claus_work_wallet_actions SET error=COALESCE(${error??null},error),updated_at=now() WHERE id=${id} AND EXISTS(SELECT 1 FROM owned)`;
   }
   return {initialize,get,anchor,state,acquire,saveSigned,finish,release};
 }

@@ -142,3 +142,8 @@ At a completed turn boundary, long-lived workflows read the matching native and 
 ## Documentation review evidence
 
 Reviews of the compute and inference guides receive a fresh, allowlisted observation from the public capability endpoint and the runtime bundled inference submission schema. This supplements the existing Jobs-wallet policy evidence. Unavailable or malformed capability reads remain unavailable; no private project content, keys or payment authority are added. A previous review remains immutable.
+
+
+## Working context
+
+Versioned source and knowledge reads retain the newest identical complete exchange. Large overviews defer unrelated project details before active work and current reply contexts. Full original records remain retrievable. This changes the model view, not evidence, permissions or completed work.

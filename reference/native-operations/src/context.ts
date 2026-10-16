@@ -148,6 +148,16 @@ export function conversationWindow(history:any[],leading:any[],fits:(messages:an
         archiveKey=JSON.stringify([args.id,evidence]);
       }
     }catch{/* Keep unrecognized results exactly as before. */}
+    // Exact repeats of read-only versioned source/knowledge add no evidence.
+    // Keep the newest entire exchange. Never deduplicate writes or live chain,
+    // wallet, task, capability or publication state reads.
+    if(!archiveKey&&unit.length===2&&unit[0].tool_calls?.length===1)try{
+      const args=JSON.parse(call.function.arguments),result=JSON.parse(unit[1].content);
+      const {archiveId,...evidence}=result;
+      const source=call.function.name==='read_operational_code'&&typeof args.path==='string'&&typeof result.sha==='string'&&Number.isInteger(result.revision)&&typeof result.content==='string';
+      const knowledge=call.function.name==='read_knowledge'&&typeof args.id==='string'&&typeof result.version==='string'&&result.record?.id===args.id&&typeof result.record?.body==='string';
+      if((source||knowledge)&&!result.error&&!result.truncated)archiveKey=JSON.stringify([call.function.name,evidence]);
+    }catch{/* Unknown shapes retain every original exchange. */}
     if(archiveKey&&archivedReads.has(archiveKey))continue;
     const candidate=[...units[i],...saved];
     if(!fits([...leading,...candidate]))break;
