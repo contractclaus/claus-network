@@ -162,3 +162,8 @@ The legacy credential may inspect and preflight packages, and recover original p
 ## Builder progress
 
 A check for an unresolved original receipt is logged as reconciliation, not a new build. Resuming existing work is distinct from first dispatch, and all Builder journal events remain private. Terminal work has no next eligibility or check time unless an original unresolved effect still needs reconciliation. Existing holds, request IDs, scheduler deadlines and payment limits are unchanged.
+
+
+## Model failure and payment recovery
+
+An authenticated payer record that explicitly reports a failed response from the exact requested model can finish that original native model action as failed. The payer payment outcome and full reservation remain unresolved until independently reconciled. Timeouts, partial responses, unknown results and mismatched models do not qualify. The failed request is never resent; existing unrelated work can continue through its normal runtime.
