@@ -1,5 +1,5 @@
 {
-  "deployed": "dpl_EWyHsU7rASEjEdm2j68bm7vL7B3n",
+  "deployed": "dpl_Hi6351bgbqfG7p6Xbwk4HkK9gm72",
   "source": "claus-capital-payer-20261016",
   "files": {
     "src/index.js": "f0361c45bf6b6149e918e1ff6641b6cb39310542bbd3555e3a061133086bb62a",
@@ -28,7 +28,7 @@
     "src/compute-funding/ports.mjs": "0692b5a489994a13bc44a2db9cc6f3fa01d3d340227e22cc0feab57982f1f818",
     "src/compute-funding/recovery.mjs": "2c0f3a005efada2a602fc600729bb72d62981e5cb3839a405df10dbda197aebf",
     "src/compute-funding/repository.mjs": "c153db8597f682287e4691f5800e5026fc13c03c1feffb7e31f8b5b12874da61",
-    "src/compute-funding/service.mjs": "740aae346d974387783099977f596110da62816939c3552af4dd7f930b14b8fc"
+    "src/compute-funding/service.mjs": "816abb89aa6b1c818b38661397279db31f25b50225085778c731be790c1c6fde"
   },
   "referenceSubset": true
 }
