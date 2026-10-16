@@ -5,6 +5,7 @@ import {hash,text} from './lab-schema.js';
 import {builderCommitment} from './builder-preflight.js';
 import {BUILD_LIMITS,buildHash,buildFiles,buildRuntime,builderRuntimeEnabled,type BuildFile} from './builder-schema.js';
 import {BuilderCoordination} from './builder-coordination.js';
+import {builderProgress} from './builder-progress.js';
 export type BuilderEligibility=(project:any,q:LabQuery)=>Promise<boolean>;
 export function builderWorkEligible(config:any,eligible?:(source:any)=>Promise<boolean>):BuilderEligibility{
  const checked=new Map<string,Promise<boolean>>();
@@ -128,7 +129,7 @@ export class BuilderStore {
     sharedDailyModelBudgetMicroUsdc:BUILD_LIMITS.dailyModelBudget,sharedPendingModelMicroUsdc:String(daily.filter(e=>e.kind==='model'&&['reserved','running','uncertain'].includes(e.status)).reduce((n,e)=>n+builderCommitment(e),0n)),sharedDailyModelUsedMicroUsdc:String(modelUsed),sharedDailyModelRemainingMicroUsdc:String(BigInt(BUILD_LIMITS.dailyModelBudget)>modelUsed?BigInt(BUILD_LIMITS.dailyModelBudget)-modelUsed:0n),sharedDailyModelRequestsRemaining:Number((BigInt(BUILD_LIMITS.dailyModelBudget)>modelUsed?BigInt(BUILD_LIMITS.dailyModelBudget)-modelUsed:0n)/BigInt(BUILD_LIMITS.modelReservation)),
     sharedDailyTestRuns:BUILD_LIMITS.dailyTestRuns,sharedDailyTestRunsUsed:testsUsed,sharedDailyTestRunsRemaining:Math.max(0,BUILD_LIMITS.dailyTestRuns-testsUsed),
     resetsAt:new Date(clock.reset_at).toISOString(),pendingReservationsCarryOver:true,modelCapacity:capacity,
-    projects:own.map(p=>{const es=effects.filter(e=>e.project_id===p.id),models=es.filter(e=>e.kind==='model'),tests=es.filter(e=>e.kind==='test'),used=models.reduce((n,e)=>n+builderCommitment(e),0n);return {id:p.id,status:p.status,waitingReason:p.status==='waiting_model_quota'?capacity.reason:p.status.startsWith('waiting_')?p.status:p.status==='reconciling'?'ambiguous_effect':null,nextEligibleAt:p.status==='waiting_model_quota'?capacity.eligibleAt:p.status==='reconciling'?null:new Date(p.next_at).toISOString(),nextCheckAt:p.status==='waiting_model_quota'?capacity.nextCheckAt:new Date(p.next_at).toISOString(),modelRequestsRemaining:Math.max(0,BUILD_LIMITS.modelRequests-models.length),modelBudgetRemainingMicroUsdc:String(BigInt(BUILD_LIMITS.modelBudget)>used?BigInt(BUILD_LIMITS.modelBudget)-used:0n),testRunsRemaining:Math.max(0,BUILD_LIMITS.testRuns-tests.length),versionsRemaining:Math.max(0,BUILD_LIMITS.versions-(versions.find(v=>v.project_id===p.id)?.n??0)),lifetimeResetsAt:null};})};
+    projects:own.map(p=>{const es=effects.filter(e=>e.project_id===p.id),models=es.filter(e=>e.kind==='model'),tests=es.filter(e=>e.kind==='test'),used=models.reduce((n,e)=>n+builderCommitment(e),0n);return {id:p.id,status:p.status,...builderProgress(p,capacity,es.some(e=>['running','uncertain'].includes(e.status))),modelRequestsRemaining:Math.max(0,BUILD_LIMITS.modelRequests-models.length),modelBudgetRemainingMicroUsdc:String(BigInt(BUILD_LIMITS.modelBudget)>used?BigInt(BUILD_LIMITS.modelBudget)-used:0n),testRunsRemaining:Math.max(0,BUILD_LIMITS.testRuns-tests.length),versionsRemaining:Math.max(0,BUILD_LIMITS.versions-(versions.find(v=>v.project_id===p.id)?.n??0)),lifetimeResetsAt:null};})};
   });
  }
  async upload(requestId:string,id:string,scope:string,expectedRevision:number,input:unknown){
