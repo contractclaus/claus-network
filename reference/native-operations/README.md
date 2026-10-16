@@ -101,3 +101,7 @@ Operating memories default to the private Network scope. Club memories retain th
 ## Public work evidence
 
 A completed work item may contain both internal execution receipts and public product observations. The public Work document preserves only successful public references; all internal evidence stays on the original work. Missing or unsuccessful support still rejects publication, and at least one public observation is required. Exact local validation errors are classified before the document write; transport and database failures remain uncertain. The same work identity/revision and existing announcement queue preserve continuity without a replacement job or duplicate post.
+
+## Active work context
+
+Broad project discovery, host status and completed-work summaries can be read again through their original tools. When context is full, these overview details are projected before recent source/tool exchanges are dropped. Current work, original outcome holds, full admitted reply context and owner rules remain intact. Inventory counts preserve their original scope, unknowns and cursor. A refreshed progress index replaces its duplicate continuation copy without rewriting any journal or action.
