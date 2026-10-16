@@ -93,3 +93,7 @@ Rejected work updates identify the submitted evidence references that are unsuit
 ## Pagination continuity
 
 The retained work receipt index preserves opaque continuation cursors exactly within their API bound, and retains explicit null end markers. It names the observed collection, item count and selected IDs, plus service/source revisions. Oversized values refer back to their original archive rather than exposing a misleading cursor prefix. This is a view of original evidence, not permission or a new operation.
+
+## Scoped operating memories
+
+Operating memories default to the private Network scope. Club memories retain their separate scope. Explicitly public memory cannot cite private or missing internal sources. Main-context recall may recover its private records, while Club recall cannot read them. Original content and identifiers remain unchanged when correcting an older visibility classification; private tool outputs are also kept out of public journals.
