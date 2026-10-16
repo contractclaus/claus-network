@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_9X5FoxiirzmEWrUJxxAwj3harFQY",
-  "source": "claus-full-operation-native34-2026-10-16",
+  "deployed": "dpl_E3mMuidkyz3Whrw6DCeE4z6cVpdW",
+  "source": "claus-phase2-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -25,7 +25,7 @@
     "src/runtime-access.ts": "b11b0b804f5b4aac57230f5236769c5119a541088a97a4007d1a338ca94035cd",
     "src/tool-visibility.ts": "0c6b50562dd7f73eec2d1e945d93d65e0926fd2afea1d3dc215dc9ea24dcee7a",
     "src/tools.ts": "4bbdc7d69369811d5b38f6ef78a66e5fa8aa056252a2356d25d8ace2723025e5",
-    "src/trade-program.ts": "33da3c2f78803f67bcfb1d70ebeb3613e1b748b2521598487648dac5d558e83c",
+    "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
