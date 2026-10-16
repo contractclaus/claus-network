@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_69YDdG3hCdaJWErj2B3n7CPXcYmr",
-  "source": "claus-phase3-delegation-ids-native-20261016",
+  "deployed": "dpl_59rjepkboV4UxboY8VGQDKjnUrL8",
+  "source": "claus-phase3-runtime-rejection-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -89,7 +89,7 @@
     "src/development-output.ts": "1a849965f29569417f22a7c68ef1410b77b563f17d4a360a31611d88f52265b6",
     "src/club-context.ts": "bc44d25e2023ba32576f59c5920a9382beb433fb647c793eff34198161859119",
     "src/club-cycle.ts": "861f87b32f518db05ba5e12325ef59c49aa939a928e1952f66091f5b903b57d0",
-    "src/network-failure.ts": "9801d522ff1736f3861f2b8fb9aed77049034290e6f415b311dc9798415f1b1d",
+    "src/network-failure.ts": "7019d9df7e66cbc0a6faa19e94a691a23687a0faaf7393474b9f3ab9ee8a9a11",
     "src/network-observation.ts": "6d297a04102900c0a5b1dd4f38d7c337f8728c4b426d88b405ca68623a781b0e",
     "reference/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
     "reference/project-path.d.mts": "94ebeb9579b13cb885ea0810e40cb73a3a79dbf4ef96e6728e5352d65fb07195",
