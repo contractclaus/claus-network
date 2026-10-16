@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_BWypFR3m9Db7QByH4CVdsymLamwU",
-  "source": "claus-browser-diagnostics-native-20261016",
+  "deployed": "dpl_C6XbSfsBwwBaCNCP5Wxe7w3vaVDD",
+  "source": "claus-no-self-token-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -24,7 +24,7 @@
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "db308eeede576309e8dffbf6eeddd27f4dc8bef033383421724e5a3fd974ae21",
     "src/tool-visibility.ts": "dc54f3d4323e64bd853f28280993f15ebdcb09e84396d333a7de1f5a1d62cf38",
-    "src/tools.ts": "115582154d47e7c3840adc36b6ab585755750a7103e8ec3ebb7096a0e0bc3ad9",
+    "src/tools.ts": "4252512830646b80511018af5bee783e69f71fe118534b51669435457f70d6bf",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
@@ -94,7 +94,7 @@
     "reference/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
     "reference/project-path.d.mts": "94ebeb9579b13cb885ea0810e40cb73a3a79dbf4ef96e6728e5352d65fb07195",
     "src/network-readiness.ts": "3ae9a655736ef06d9a8cb74b9fcc1d343a5da464deb60402bd175ba31c51c135",
-    "src/capital.ts": "7ca6a572d98c73b6616493c5d74bbadeb79fde24b909702800356cfcf44919b1",
+    "src/capital.ts": "c659399320f0405c43836665392f98db7f2fb1ce531fb52adfffcd46473c72e9",
     "package-lock.json": "b966dfb3bc7add424f6d74d0b9363b98e3d2507db9e667bebaecccb25f1f6e19",
     "package.json": "e1a33f0b06e3e174a142e40df681dc758905e24d8cd8e2ba72e8aeb0a3f5071f",
     "src/external/development-bridge.ts": "3d68f95e159d7f2e4bb68f643b02bf1d19d8e583c3a24146d7fe69c9030b6c5e",
