@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_6snUWaLHq9ewKPnouytcg1CcoGC8",
-  "source": "claus-phase3-original-request-native-20261016",
+  "deployed": "dpl_4NVHpvUHK9sNBRgzh7Rh3FDwQ98P",
+  "source": "claus-phase3-work-guidance-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -20,7 +20,7 @@
     "src/context.ts": "b0b2fa270f3d44310072e31768cdd6e1fb3a7ebba9614f9cfce731a61480745b",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "7d8180a17dd0046af1a508643ef9bde3731ab76af66fb0a2a993f53d39ea0670",
-    "src/network-operations.ts": "971a44e1af33794d6cb4584dd4b92ab479118c432583db3ad4cc5bb32b5ba361",
+    "src/network-operations.ts": "51b5a41ff56136682c139f716356231e4f0110e06d37e10407586aa3e7ac7183",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "34b516d513ec3646a6ef2298144b4640d0c1c1349918efeec997f3c0fa2c50e1",
     "src/tool-visibility.ts": "85b8d6a51abc250268a5349845364d41db007ea17eb45170efec9fde1ea1d4a0",
