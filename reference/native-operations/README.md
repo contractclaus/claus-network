@@ -113,3 +113,7 @@ The continuation receipt index retains exact worker, runtime, profile and origin
 ## Missing runtime workers
 
 The fixed runtime configuration endpoint resolves the configured worker before opening the runtime write transaction. Its missing-worker response is an input rejection. The original failure remains in the journal; current recall explains this classification so the same intended runtime can be inspected and its worker binding corrected. This grants no automatic retry. Transport failures and other uncertain writes retain their original holds.
+
+## External tools
+
+The private host now exposes `external_tools`, also available to isolated development commands through a temporary, command-bound grant. Public source reads and x402 Bazaar discovery are available. Composio and Browserbase account adapters are installed but remain unconnected until account setup. See [external tools](EXTERNAL-TOOLS.md) for usage, current availability and the credential boundary. The included package manifest and lockfile reproduce host dependencies; this directory remains a source reference, not a standalone application.
