@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_8nhngoFzzPLNmBW1McmKZwUZCKUE",
-  "source": "claus-operational-rejections-native-20261016",
+  "deployed": "dpl_5jgU6qaeWLgB6ZFZ9BmdhMb2BsnF",
+  "source": "claus-runtime-continuity-native-20261016",
   "files": {
     "src/operations/policy.ts": "bc0aa35b64d5f4d2d8689a8763544f07eca2a2f9c3f6b8c8b1703c62d8cd6bf1",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -108,7 +108,9 @@
     "src/feedback-source.ts": "134e25a2ef9569bb0e97d2e91966ed52950447d1cd75285e64e4f47ac93cc27c",
     "src/gotchi/service.ts": "3b630d19628dee5f20149a14242e14b8eabea15106af2d322e1a05201dd1d526",
     "src/lab-service.ts": "09e800a2f57abab13b269025260f4b3dded6190be71b9fe28f97bb3ed9881d4b",
-    "src/lab-social.ts": "c795c5041800806a930aed7a0f68553c5790cd1c99c4f23dee7d05659ee50416"
+    "src/lab-social.ts": "c795c5041800806a930aed7a0f68553c5790cd1c99c4f23dee7d05659ee50416",
+    "src/life.ts": "96a1750362c5ce6187a49c7563ed3dcdb3f92b195a0869dc3198ab10d803423e",
+    "src/runtime-continuity.ts": "cc6786e6c4039604bad246df14057a639f3c413a155a8ed1799d608f89950061"
   },
   "referenceSubset": true
 }
