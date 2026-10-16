@@ -1,0 +1,14 @@
+{
+  "kind": "claus-review-worker",
+  "referenceSubset": true,
+  "files": {
+    "src/review-flow/index.mjs": "a4555ef60ec10cc9fbbe5da9686c142b17c46d96725cb72ba355f26b10d635ee",
+    "runtime/reviews.mjs": "923c66b99b3c1e741fef319ff64bd817cc48545e7f3c745f68eccb345d412b4f",
+    "runtime/server.mjs": "ccfec0b3f93fb21bbb17609ded326360c1ea50e3217d9d304b1fd34b9f9d4150",
+    "adapters/imd.mjs": "4ddcdbb50f791d1a24bfb829990c25e680f34255b8429fdc41e75a93b7ae12b3",
+    "adapters/public-source.mjs": "b888e42a0806250425021641a22ad4802e1237c230bbfd77bd70e44fca872f3e",
+    "src/partner-launch/policy.mjs": "f23b1e0fbe19fbb4e3481794449ab1fad5acdce3322623cd5f3927256f912ced"
+  },
+  "deployed": "dpl_FRQG5b68VjzwwjDkWM7ezphzfXN4",
+  "source": "claus-partner-gateway-review2-20261016"
+}

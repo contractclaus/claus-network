@@ -4976,13 +4976,19 @@ export const networkRoutes:Record<string,any>={
           "minLength": 1,
           "maxLength": 160000
         },
+        "partnerLaunchJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000
+        },
         "profile": {
           "type": "string",
           "enum": [
             "claus-readonly-v1",
             "claus-managed-v1",
             "claus-native-program-v1",
-            "claus-capital-v1"
+            "claus-capital-v1",
+            "claus-partner-launch-v1"
           ]
         }
       },
@@ -8842,6 +8848,162 @@ export const networkRoutes:Record<string,any>={
     },
     "public": true,
     "description": "GET /v1/public/graph. Public read."
+  },
+  "partner_launch_evidence": {
+    "name": "partner_launch_evidence",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/partner-launches/reviews/{caseId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "caseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "projectId",
+        "caseId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/partner-launches/reviews/{caseId}. Requires current object read permission."
+  },
+  "partner_launch_approve": {
+    "name": "partner_launch_approve",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/partner-launches",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "caseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "reportHash": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "acknowledgedFindings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "maxItems": 200
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "projectId",
+        "caseId",
+        "reportHash",
+        "reason",
+        "acknowledgedFindings",
+        "expiresAt"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/partner-launches. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "partner_launch_revoke": {
+    "name": "partner_launch_revoke",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/partner-launches/{receiptId}/revoke",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "receiptId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "projectId",
+        "receiptId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/partner-launches/{receiptId}/revoke. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "public_partner_launch": {
+    "name": "public_partner_launch",
+    "method": "GET",
+    "path": "/v1/public/partner-launches/{receiptId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "receiptId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "receiptId"
+      ],
+      "additionalProperties": false
+    },
+    "public": true,
+    "description": "GET /v1/public/partner-launches/{receiptId}. Public read."
+  },
+  "partner_launch_prepare": {
+    "name": "partner_launch_prepare",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/partner-launches/reviews/{caseId}/prepare",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "caseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "projectId",
+        "caseId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/partner-launches/reviews/{caseId}/prepare. Requires current object read permission."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{

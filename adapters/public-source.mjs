@@ -14,7 +14,7 @@ export async function verifyPublicSource({ input, files, fetch: fetcher = global
       const url = `https://raw.githubusercontent.com/${match[1]}/${match[2]}/${input.baseCommit}/${file.path}`;
       const response = await fetcher(url, { redirect: 'error', signal: AbortSignal.timeout(15000) });
       requireThat(response.status === 200, 'source_unavailable');
-      const content = await boundedResponse(response, 48000);
+      const content = await boundedResponse(response, input.reviewProfile==='claus-partner-launch-v1' && file.path===input.partnerLaunch?.requestFile ? 1000000 : 48000);
       const hash = digest({ path: file.path, content });
       requireThat(hash === file.hash, 'source_mismatch');
       return { path: file.path, hash };

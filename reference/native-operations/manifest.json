@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_9TS4BmXBcvLG5cZUGFojWx8LuVxP",
-  "source": "claus-partner-boundary-native-20261016",
+  "deployed": "dpl_DPouMGyqANuDggWrNo2KdPiCG7F8",
+  "source": "claus-partner-gateway-native2-20261016",
   "files": {
     "src/operations/policy.ts": "bc0aa35b64d5f4d2d8689a8763544f07eca2a2f9c3f6b8c8b1703c62d8cd6bf1",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -16,22 +16,22 @@
     "src/work-wallet.ts": "c4434dd0c2363044ffeb0a19c0620a4ee5acea928bf2c8fa4a89ee1e3b8f6dd1",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "04d988f6370c42e387e97bb4fe334df2e60c516c2d3eaa269b556b184fe7ffde",
+    "src/network-access.ts": "5160dd1419517dd30678ba401a7deb3fc48c8769277244fbe3106c0501d14b9d",
     "src/context.ts": "e13aaf4d922292d17c81dd3403467657f9cb177c03c184a68eee0d7dbecc5bad",
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "dbe170fa9d41cca5f8d3ba20c86310650cfed345af987db711832cf542097d5c",
     "src/network-operations.ts": "73f06b88d3b7687210be1abf37fa742ced7dee9c0f3262f9c01ffec8acf81e93",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "db308eeede576309e8dffbf6eeddd27f4dc8bef033383421724e5a3fd974ae21",
-    "src/tool-visibility.ts": "dc54f3d4323e64bd853f28280993f15ebdcb09e84396d333a7de1f5a1d62cf38",
-    "src/tools.ts": "3c619cf30dd9d625ae917837af96467af18f3acc0988803f6bd28b15f1471503",
+    "src/tool-visibility.ts": "88baa0c69c644558da2a2507418fc941a4335cb19c8b832022284eb960bcce32",
+    "src/tools.ts": "c01dd348a6637d68b919ba921011a4c0f9a2a102977c348fec0ed8ad8448ee9e",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
     "src/isolated/runner.mjs": "28b3392b74bf64070d379b3815dca7b9e73c22140f9deee191eef8898702c048",
     "src/network-products.ts": "dcb85e4593f5282e36ac2f4aa2a808fc23ede38adaef9beb5deaf318ab1b96e3",
-    "src/network-routes.ts": "92f4d4849e92743412cc6ddae4d7f0e5c1ea92d5189e93c4b4496bfc445df262",
+    "src/network-routes.ts": "3b9d57f982f9b0d8c93e5fdefa2b9c58f4635840083f6c16ad2b2c3f549b2a67",
     "src/operational-capabilities.ts": "92e313a216c8b57a0dc286db26fe9aa5e947623b9b360d8825033e980fc1dd70",
     "src/cycle.ts": "5a555af558de22084aaa280130e281a9ed198fca1df9b472e639b3ca9422e070",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
@@ -111,7 +111,8 @@
     "src/lab-social.ts": "c795c5041800806a930aed7a0f68553c5790cd1c99c4f23dee7d05659ee50416",
     "src/life.ts": "96a1750362c5ce6187a49c7563ed3dcdb3f92b195a0869dc3198ab10d803423e",
     "src/runtime-continuity.ts": "cc6786e6c4039604bad246df14057a639f3c413a155a8ed1799d608f89950061",
-    "src/work-wallet-gas.ts": "e2e74de62d08d3e9ccd116a7a3fbbcec65f9ed6f3dbceb1074b0b08cc7974ca6"
+    "src/work-wallet-gas.ts": "e2e74de62d08d3e9ccd116a7a3fbbcec65f9ed6f3dbceb1074b0b08cc7974ca6",
+    "src/partner-launch.ts": "41507583f6acecb274e96b21403b884c3a74ec342e719a5823e98e5d0f236c2d"
   },
   "referenceSubset": true
 }

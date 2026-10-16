@@ -1,7 +1,12 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  partner_launch_prepare:(a,i)=>partnerLaunches.prepare(a,i.projectId,i.caseId),
+  partner_launch_evidence:(a,i)=>partnerLaunches.inspect(a,i.projectId,i.caseId),
+  partner_launch_approve:(a,{projectId,...i})=>partnerLaunches.approve(a,projectId,i),
+  partner_launch_revoke:(a,i)=>partnerLaunches.revoke(a,i.projectId,i.receiptId),
+  public_partner_launch:(_,i)=>partnerLaunches.publicReceipt(i.receiptId),
   app_service_configure:(a,i)=>apps.services.configure(a,i.projectId,i),
   app_service_get:(a,i)=>apps.services.get(a,i.projectId,i),
   app_service_call:(a,i)=>apps.services.call(a,i.projectId,i),
