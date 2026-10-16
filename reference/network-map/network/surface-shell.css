@@ -1,0 +1,8 @@
+html,body{margin:0;min-height:100%;background:#ec673a}
+html[data-surface-state="pending"] body>main,html[data-surface-state="pending"] body>footer{visibility:hidden}
+#surface-loading{position:fixed;inset:0;display:grid;place-items:center;background:#ec673a;pointer-events:none}
+.surface-progress{width:40px;height:3px;border-radius:3px;background:#171710;opacity:0;animation:surface-wait 1.3s ease-in-out .4s infinite}
+.claus-surface-frame{position:fixed;inset:0;width:100%;height:100dvh;border:0;background:#ec673a;opacity:0;z-index:500}
+.claus-surface-frame.is-ready{opacity:1}
+@keyframes surface-wait{0%,100%{opacity:.15;transform:scaleX(.55)}50%{opacity:.6;transform:scaleX(1)}}
+@media(prefers-reduced-motion:reduce){.surface-progress{animation:none;opacity:.4}}
