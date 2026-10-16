@@ -20,6 +20,20 @@ export function pageRecord(value:unknown,offset=0,limit=12000) {
 }
 export function toolContent(result:unknown,archiveId:string) {
   const work=result as any;
+  if(typeof work?.actionId==='string'&&typeof work?.projectId==='string'&&Object.hasOwn(work,'checkpointSnapshotId')){
+    // Keep immutable command/checkpoint control fields readable even when the
+    // JSON-escaped log is larger than the tool envelope. Raw evidence remains
+    // in the original action; only this display projection is shortened.
+    const view={...work,archiveId};
+    while(JSON.stringify(view).length>19500&&((view.stdout?.length??0)+(view.stderr?.length??0)>2)){
+      for(const stream of ['stdout','stderr'] as const){
+        if(typeof view[stream]!=='string'||view[stream].length<2)continue;
+        const previous=view[stream];view[stream]=textPrefix(previous,Math.floor(previous.length*0.65));
+        if(view[stream].length<previous.length)view[stream+'Truncated']=true;
+      }
+    }
+    result=view;
+  }
   if(work?.watch&&Array.isArray(work.items)&&work.queue&&work.receiptMeaning){
     result={...work,watch:{...work.watch,capabilities:undefined,opportunities:undefined,readMore:'Current capability facts are in the leading network context. Use recall with this archiveId for the complete original work observation.'},recent:work.recent?.map((r:any)=>({...r,summary:textPrefix(r.summary??'',240)}))};
   }
@@ -50,10 +64,16 @@ export function workProgress(messages:any[]) {
       if(!output)continue;
       let args:any={},result:any={};try{args=JSON.parse(call.function.arguments);}catch{}try{result=JSON.parse(output.content);}catch{}
       const request:any={};
-      for(const key of ['operation','action','url','path','file','offset','chainId','address','id','projectId','expectedRevision','describe'])if(['string','number','boolean'].includes(typeof args?.[key]))request[key]=typeof args[key]==='string'?textPrefix(args[key],240):args[key];
+      for(const key of ['operation','action','url','path','file','offset','chainId','address','id','projectId','expectedRevision','expectedVersion','networkProjectId','expectedProjectRevision','describe'])if(['string','number','boolean'].includes(typeof args?.[key]))request[key]=typeof args[key]==='string'?textPrefix(args[key],240):args[key];
+      if(call.function.name==='develop_project'){
+        if(typeof args.command==='string')request.commandPreview=textPrefix(args.command,360);
+        if(Array.isArray(args.files)){request.writtenFileCount=args.files.length;request.writtenPaths=args.files.slice(0,6).map((f:any)=>textPrefix(String(f?.path??''),160));}
+        if(args.source)request.importedSource={projectId:args.source.projectId,releaseId:args.source.releaseId,prefix:args.source.prefix};
+      }
       if(['read_network','build_network'].includes(call.function.name))try{const input=JSON.parse(args.input??'{}');for(const key of ['projectId','slug','releaseId','snapshotId','taskId','after','filePath'])if(typeof input[key]==='string')request[key]=textPrefix(input[key],180);}catch{}
       const actual=result?.result??result;
       const outcome:any={};for(const key of ['error','status','published','id','revision','releaseId','snapshotId','nextOffset','nextCursor','available','observedAt'])if(['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
+      if(['develop_project','stage_development'].includes(call.function.name))for(const key of ['actionId','projectId','projectVersion','exitCode','checkpointApplied','checkpointSnapshotId','reason','outputLimited','stdoutTruncated','stderrTruncated'])if(actual?.[key]===null||['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
       if(result?.truncated)outcome.truncated=true;
       records.set(call.id,{callId:call.id,tool:call.function.name,request,outcome,archiveId:typeof result.archiveId==='string'?result.archiveId:null});
     }

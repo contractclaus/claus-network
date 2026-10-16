@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_Bwm9GKx9v9Q7GXzi6a5F38HSM5md",
-  "source": "claus-phase3-club-continuity-native-20261016",
+  "deployed": "dpl_DqdevVPvv68qR2LeasLzyWT3nS2L",
+  "source": "claus-phase3-progress-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -17,7 +17,7 @@
     "src/work-wallet-store.ts": "020a10ee51c807d04745b82436d069a12433ad51ea7c65f1bc420da5a45f38a0",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
     "src/network-access.ts": "5bdf5ef9e98044316a9e253de6c09a8ba6fceb294c893fc0533c245308f8dfd1",
-    "src/context.ts": "996b04d9394a319bc2db7eef09dfc30ef613f991345652b0b3b2679e0f055f28",
+    "src/context.ts": "b0b2fa270f3d44310072e31768cdd6e1fb3a7ebba9614f9cfce731a61480745b",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "7d8180a17dd0046af1a508643ef9bde3731ab76af66fb0a2a993f53d39ea0670",
     "src/network-operations.ts": "d75d722a930538ae3336e63543fe3997fef7900bead177ca29ee5fe3c4d270c8",

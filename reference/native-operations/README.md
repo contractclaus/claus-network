@@ -69,3 +69,7 @@ A normal verbose build can finish and save its immutable checkpoint even when it
 ## Private conversation continuity
 
 Private Club work retains a bounded index of its original tool receipts through history trimming and worker boundaries. Large retrievable background inventories yield space to distinct evidence; current member messages, pending events and escalation history remain intact. Private progress stays in the Club checkpoint and cannot enter the public continuation. The original pending paid request is retained unchanged during an upgrade. This fixes a repeated-research failure without increasing the request-size ceiling or replacing existing effects.
+
+## Development progress receipts
+
+Development results retain their original command identity, exit status, checkpoint application and workspace version even when escaped logs exceed the display envelope. The continuation receipt index preserves a bounded command preview and next workspace version, while full logs and source remain in their original private action. Truncated output does not imply a failed command; a hard output limit cannot be treated as a successful checkpoint. This is a display and continuity correction, with no command replay or new financial authority.
