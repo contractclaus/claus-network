@@ -1,3 +1,4 @@
+import {completedCapitalReceipt} from './capital.js';
 import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {planWork} from './isolated/work.js';
 import {readOperationalCapabilities} from './operational-capabilities.js';
@@ -83,16 +84,17 @@ export function validateWork(input:any,now=Date.now()){
  }
 }
 export function validProgressEvidence(row:any){
- const privateReceipt=row?.visibility==='private_network'&&['build_network','work_wallet','trade_program','develop_project','stage_development','run_network_program','resume_network_operation'].includes(row?.summary);
+ const privateReceipt=row?.visibility==='private_network'&&['capital_execution','build_network','work_wallet','trade_program','develop_project','stage_development','run_network_program','resume_network_operation'].includes(row?.summary);
  return row?.kind==='tool'&&(row.visibility==='public'||privateReceipt)&&typeof row.summary==='string'&&!['network_work','finish','finish_mission','remember','project','draft_post'].includes(row.summary)&&row.data?.result&&typeof row.data.result==='object';
 }
 export function validWorkUpdateEvidence(row:any,status:string,capabilityHash?:string){
  return ['ready','working','waiting'].includes(status)&&capabilityHash===undefined?!!validProgressEvidence(row):validWorkEvidence(row,'internal');
 }
 export function validWorkEvidence(row:any,scope:'public'|'internal'='public'){
- const privateReceipt=scope==='internal'&&row?.visibility==='private_network'&&['build_network','work_wallet','trade_program','develop_project','stage_development','run_network_program','resume_network_operation'].includes(row?.summary);
+ const privateReceipt=scope==='internal'&&row?.visibility==='private_network'&&['capital_execution','build_network','work_wallet','trade_program','develop_project','stage_development','run_network_program','resume_network_operation'].includes(row?.summary);
  if(row?.kind!=='tool'||(row.visibility!=='public'&&!privateReceipt)||typeof row.summary!=='string'||['network_work','finish','finish_mission','remember','project','draft_post'].includes(row.summary)||row.data?.success===false)return false;
  const result=row.data?.result;
+ if(row.summary==='capital_execution')return scope==='internal'&&operationSucceeded(result)&&completedCapitalReceipt(result);
  if(row.summary==='develop_project'&&(result?.exitCode!==0||result?.checkpointApplied!==true||!/^snap_[A-Za-z0-9]+$/.test(result?.checkpointSnapshotId??'')))return false;
  if(row.summary==='stage_development'&&(result?.staged!==true||result?.published!==false||!/^sha256:[a-f0-9]{64}$/.test(result?.snapshotId??'')))return false;
  return operationSucceeded(result);

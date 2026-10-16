@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_DDoby8CVvDoqJxQnDHZ7zzhJCyZa",
-  "source": "claus-capital-native-20261016",
+  "deployed": "dpl_DCk1JHsGHDDvwgaFahApEZ59TZfk",
+  "source": "claus-phase3-followthrough-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -20,7 +20,7 @@
     "src/context.ts": "c32e34579e0cb3f8e77e007e5598d684e497d74d05237aa74ff15a9d5fd6f670",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "dbe170fa9d41cca5f8d3ba20c86310650cfed345af987db711832cf542097d5c",
-    "src/network-operations.ts": "51b5a41ff56136682c139f716356231e4f0110e06d37e10407586aa3e7ac7183",
+    "src/network-operations.ts": "73f06b88d3b7687210be1abf37fa742ced7dee9c0f3262f9c01ffec8acf81e93",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "f35dd69c371066be7ae354b78b7bf2cd1661d4af6263ed2b78856da8697c7e24",
     "src/tool-visibility.ts": "4252917c58b21adcfec769d06816e25d27c004156d037054ef91a8757729d5c1",
@@ -82,7 +82,7 @@
     "src/development-execution.ts": "71c1115a6b6f947ac39acb0cb0fe2e62d8f7d113c299c8cf71aeb2829388634e",
     "src/development-workspace.ts": "80787bf62c9a6816bdc0216e81b05d9e469273241a4830d43295ae4e72eba047",
     "src/development-export.ts": "4723c0be3e84dacda691ee7694e1440ade8249a205eada09949325c0982da077",
-    "src/twitter-policy.ts": "690435c8a189afd487a2e19f9a3f7dc03b16fcb2fe1f7bae2a0d0b650b7fbc8d",
+    "src/twitter-policy.ts": "ba06ab848360b5b4415768498d4fa70e682a1863d81fd729a4feb87905637929",
     "src/development-source.ts": "83c6ea53ec2c0d577cb875cef57483d792c0feb0062cfd97750968daa8e43356",
     "src/investment-proposals.ts": "277eee7a82c204644bf6d35125e95be3d862a29bd962cf6c5290cd6bb111e695",
     "src/programmable.ts": "848831a898f8330c878765881dc38ec4696312337e1d986117c34b0dc2b0e493",
@@ -94,7 +94,7 @@
     "reference/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
     "reference/project-path.d.mts": "94ebeb9579b13cb885ea0810e40cb73a3a79dbf4ef96e6728e5352d65fb07195",
     "src/network-readiness.ts": "3ae9a655736ef06d9a8cb74b9fcc1d343a5da464deb60402bd175ba31c51c135",
-    "src/capital.ts": "c3377b1b65d061ab99a7e377225845601d35c15c1b2ccf2d60f2743fbe847ce5"
+    "src/capital.ts": "7ca6a572d98c73b6616493c5d74bbadeb79fde24b909702800356cfcf44919b1"
   },
   "referenceSubset": true
 }

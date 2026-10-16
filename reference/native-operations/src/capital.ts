@@ -12,3 +12,16 @@ export async function capitalTool(args:any){
   const raw=await r.text();if(Buffer.byteLength(raw)>2000000)throw Error('size');return {operation:args.operation,httpStatus:r.status,result:JSON.parse(raw),observedAt:new Date().toISOString()};
  }catch{return {error:'capital_service_unavailable',outcome:'unknown',next:'Inspect the original decision/investment/launch ID. Never replace a potentially signed operation.'};}
 }
+
+// Only a finalized investment observation or verified live launch is completion evidence.
+// Preparation and relay signatures remain private progress, not financial execution.
+export function completedCapitalReceipt(value:any){
+ if(value?.operation!=='status'||!Number.isInteger(value.httpStatus)||value.httpStatus<200||value.httpStatus>=300)return false;
+ const result=value.result,word=(v:unknown)=>typeof v==='string'&&/^0x[a-f0-9]{64}$/i.test(v);
+ if(/^capital-investment:[a-f0-9]{64}$/.test(result?.id??'')){
+  const o=result.observation;
+  return o?.finalized===true&&o.used===true&&[1,2,3].includes(o.state)&&word(o.blockHash)&&word(o.nonce)&&typeof o.blockNumber==='string'&&/^[1-9][0-9]*$/.test(o.blockNumber)&&typeof result.spent==='string'&&/^[1-9][0-9]*$/.test(result.spent);
+ }
+ if(/^capital-launch:[a-f0-9]{64}$/.test(result?.id??''))return result.live===true&&word(result.registration?.transactionHash)&&result.result?.result?.confirmation==='safe'&&result.result?.result?.receipt?.status==='success'&&Array.isArray(result.verification)&&result.verification.length>0&&result.verification.every((r:any)=>r.verified===true);
+ return false;
+}
