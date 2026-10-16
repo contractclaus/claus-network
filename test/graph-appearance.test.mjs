@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import {fixture} from './apps-fixture.mjs';
 import {publishSite} from '../interfaces/site.mjs';
 import {createPublicAppearances} from '../src/releases/appearance.mjs';
+import {createProjects} from '../src/projects/index.mjs';
 import {digest} from '../src/shared/index.mjs';
 
 test('first project graph contains selected public artwork and tracks withdrawal', async t => {
-  const {owner, project, advance} = await fixture(t);
+  const {owner, project, advance, store} = await fixture(t);
   const site = await publishSite({client:owner, slug:project.slug, name:project.name, files:[
     {path:'index.html',content:'<!doctype html><title>Public site</title>'},
     {path:'logo.svg',content:'<svg xmlns="http://www.w3.org/2000/svg"/>'},
@@ -17,6 +18,8 @@ test('first project graph contains selected public artwork and tracks withdrawal
   assert.equal(node.presentation.name,'Public artwork');
   assert.equal(node.presentation.logo,site.siteUrl.replace('index.html','logo.svg'));
   assert.equal(node.presentation.preview,null);
+  const fallback=createProjects({store,identity:{},publicAppearances:async()=>{throw Error('artwork temporarily unavailable');}});
+  assert((await fallback.graph({view:'projects'})).nodes.some(n=>n.id===project.id));
   let state=await owner.call('release_get',{projectId:project.id,releaseId:site.releaseId});
   await owner.call('release_publish',{projectId:project.id,releaseId:site.releaseId,published:true,expiresAt:Date.now()+60000,expectedRevision:state.publication.revision});
   advance(120000);
