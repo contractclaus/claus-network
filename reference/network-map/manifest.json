@@ -1,5 +1,5 @@
 {
-  "websiteDeployment": "dpl_4AnvfnsVpJ8h6efR7WPEpsHfYZ9h",
+  "websiteDeployment": "dpl_2PsLWB5sNSnmbyHs8WeJdJuspaaL",
   "surfaceDeployment": "dpl_21UxtrVzGNtHh3Y85tJDnMf82J2S",
   "surfaceRelease": "sr_40a0c8f999b45697b49a2342",
   "surfaceSourceHash": "5f9b4fe837565e3b90b4cb61c294f66b9516fe87cbcd3f7f440414df78f9f759",
@@ -15,14 +15,17 @@
     "lib/network-surface-program.mjs": "6b994c85cfe5afb2546060a7ce92d00cf57139b222e013a6d441026c7af471a7",
     "network/project-card.js": "a2f9e14318b23bfa5a1eb820471313b6657ceec067a6607d8d1b12c32c1c0285",
     "network-shell.html": "4b9657a53a33ae3a9ea4bd9a5277d86130dc66a833322fca88460156f1b14b21",
-    "network/project-page.js": "8b8e56fd5d21bab9729970cb2d32ab53e77523f83060854e52c75931a6bf6964",
-    "network/project-site.js": "a9512237e8980789002936df6910f9c68389a6a88406b87a3a43a4ae99624195",
+    "network/project-page.js": "2e261ba62d6c6f226f854f1544c461765a40b7792304398d6118d2f6f1833f0a",
+    "network/project-site.js": "6d5e9afe70386f45214fdbce1c954ed51961693e19456284a921a6b1f621dfd9",
     "network/project.css": "61a1ed2aaf33ddf30929cd2846208c8d584d2fde84994191d1a8aff99abe286a",
     "network/project.js": "a147c6a9afac920635db92abe881e6b1363e35b3b89df60876057ff41b48ac28",
     "network/surface-shell.css": "519fb738443e644d8d84efc9be409ca2b3fc5707fb4a80be030c0d9989a8315b",
     "network/surface-shell.js": "aebe5e60292e819d46d7ae3c4024faf6aba2890a6ec2a935b2e54a1378673f54",
     "page-transition.js": "856587ac99ab4ed1ec1d69469c17ada627e56ad700e3b54152b9ec5551f30533",
-    "project.html": "43304208b9aec2269b62c386d245e92ecbc38940cd4eb338785278c7368e5c80"
+    "project.html": "03f0ff3ee8dd7c521e95e40c577ebb957fd4c94f31c6a03f8c007973d77f0c4b",
+    "build.txt": "9e6c7dc8dc0cc6b443f730a066591ec5fbb8bf279e070db9e91b8c3a6c40f9a8",
+    "docs/agent-guide.html": "7b529941f6f5f1c356dacdff7bbdeb40cf0fef1e0b4d918cb91f6f1e69a5489b",
+    "network/site-navigation.js": "0cc86365522a2ae0924a7f6f9a837a27b5d0d8f463dc6dbe8977a90ee413f8f7"
   },
   "surfaceMap": {
     "file": "network/surface-home-map.js",

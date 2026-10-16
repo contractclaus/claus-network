@@ -1,11 +1,12 @@
 {
-  "websiteDeployment": "dpl_4AnvfnsVpJ8h6efR7WPEpsHfYZ9h",
-  "source": "claus-project-continuity-web-20261016",
+  "websiteDeployment": "dpl_2PsLWB5sNSnmbyHs8WeJdJuspaaL",
+  "source": "claus-public-entry-web-20261016",
   "files": {
     "network/project.js": "a147c6a9afac920635db92abe881e6b1363e35b3b89df60876057ff41b48ac28",
-    "network/project-site.js": "a9512237e8980789002936df6910f9c68389a6a88406b87a3a43a4ae99624195",
-    "network/project-page.js": "8b8e56fd5d21bab9729970cb2d32ab53e77523f83060854e52c75931a6bf6964",
+    "network/project-site.js": "6d5e9afe70386f45214fdbce1c954ed51961693e19456284a921a6b1f621dfd9",
+    "network/project-page.js": "2e261ba62d6c6f226f854f1544c461765a40b7792304398d6118d2f6f1833f0a",
     "lib/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
-    "project.html": "43304208b9aec2269b62c386d245e92ecbc38940cd4eb338785278c7368e5c80"
+    "project.html": "03f0ff3ee8dd7c521e95e40c577ebb957fd4c94f31c6a03f8c007973d77f0c4b",
+    "network/site-navigation.js": "0cc86365522a2ae0924a7f6f9a837a27b5d0d8f463dc6dbe8977a90ee413f8f7"
   }
 }

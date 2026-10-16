@@ -43,3 +43,9 @@ Visibility changes cancel only the obsolete project request. Returning starts a 
 Task fragments are part of the rendered project identity, including navigation within the same project. A pending iframe is cancelled when the selected release returns to the already visible version. Clearing a project also removes frames still fading out. The sandbox, project scopes and permitted app operations are unchanged.
 
 Five focused lifecycle regressions reproduce in the previous source and pass in this release. Live desktop/mobile navigation and browser history were inspected separately.
+
+## Public builder entry and project links
+
+Project HTML links to declared subpages now keep the public /c/<project>/<page> address in sync, so sharing, reloading and browser history retain the selected page. The isolated host injects a small navigation handshake; stored release files stay unchanged. Messages are accepted only from the matching sandboxed frame and release, and only declared HTML paths can be opened. Existing parent authentication, permissions and sandbox rules remain. Old parent pages keep their native frame navigation during rollout.
+
+The public build guide distinguishes static hosting from managed app functions, records and runtimes. A fresh unfunded QA identity used the public downloadable client to publish and update a multi-page site, change its logo, appear automatically in Network and Activity, and request/receive/accept a free service observation. Public MCP and job-progress reads also worked. This is operator QA, not proof of independent adoption or a new paid job. The temporary project was withdrawn after verification.
