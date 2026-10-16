@@ -74,7 +74,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
         const release=releases.get(row.value.releaseId)?.value;
         requireThat(release?.projectId===projectId,'not_found');
         // Recheck expiry after the reads: a release can expire while they run.
-        if(sitePublicationActive(row.value.expiresAt,now()))result.push({id:release.id,url:release.url,createdAt:release.createdAt,expiresAt:row.value.expiresAt,isolation:release.isolation});
+        if(sitePublicationActive(row.value.expiresAt,now()))result.push({id:release.id,url:release.url,createdAt:release.createdAt,expiresAt:row.value.expiresAt,isolation:release.isolation,paths:[...release.paths]});
       }
       return result;
     },
