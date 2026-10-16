@@ -137,3 +137,8 @@ The owner can allow individual stable X user IDs through `settings.replyXAuthorI
 ## Runtime version continuity
 
 At a completed turn boundary, long-lived workflows read the matching native and Builder deployment pins. When both identify a different approved deployment, the workflow continues there with the same generation and existing work. An active lease, changed generation, disabled or inconsistent pins, malformed deployment or failed read prevents the transition. No lease is cleared, paid action replayed or new mission created. Existing immutable runs gain this behavior when they naturally adopt this release.
+
+
+## Documentation review evidence
+
+Reviews of the compute and inference guides receive a fresh, allowlisted observation from the public capability endpoint and the runtime bundled inference submission schema. This supplements the existing Jobs-wallet policy evidence. Unavailable or malformed capability reads remain unavailable; no private project content, keys or payment authority are added. A previous review remains immutable.
