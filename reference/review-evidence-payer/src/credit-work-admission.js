@@ -1,3 +1,4 @@
+import {refreshCapitalCash} from './capital/budget.js';
 import {creditSnapshot} from './credit-work-store.js';
 import {CHAT_BUILDER_PROFILE,BOUNDED_BUILDER_PROFILE,SOL_BUILDER_PROFILE,SOL_EXTENDED_BUILDER_PROFILE,SOL_STREAM_BUILDER_PROFILE,SOL_MARKET_BUILDER_PROFILE,SOL_MARKET_XHIGH_BUILDER_PROFILE} from './builder-transport.js';
 const builder=/^build_[a-f0-9]{24}:model:[1-3]$/;
@@ -14,7 +15,8 @@ export async function workAdmission(db,env,id,maximumMicroUsdc){
  if(maximumMicroUsdc!=='2000000')return waiting('credit_ceiling_mismatch');
  try{if(BigInt(env.MAX_INFERENCE_QUOTE_MICRO_USDC??'3000000')<2000000n)return waiting('credit_ceiling_mismatch');}
  catch{return waiting('credit_ceiling_mismatch');}
- const [state]=await db`SELECT ceiling-committed AS remaining,EXISTS(SELECT 1 FROM claus_credit_work WHERE active AND active_until>now()) AS busy FROM claus_payment_budget WHERE id=true AND (ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000)`;
+ await refreshCapitalCash(db);
+ const [state]=await db`SELECT CASE WHEN capital_mode THEN claus_capital_available(false) ELSE ceiling-committed END AS remaining,EXISTS(SELECT 1 FROM claus_credit_work WHERE active AND active_until>now()) AS busy FROM claus_payment_budget WHERE id=true AND (capital_mode OR ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000)`;
  if(!state||BigInt(state.remaining)<2000000n)return waiting('credit_exhausted');
  if(state.busy)return waiting('credit_busy');
  const profile=reviewCreditCandidate(env,id)?null:env.BUILDER_CREDIT_PROFILE??null;
