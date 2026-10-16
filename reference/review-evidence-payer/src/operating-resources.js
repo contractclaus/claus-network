@@ -54,7 +54,7 @@ export async function readProviderCash(env,request=fetch){
 // This proposes a fixed-destination cash top-up. It never reserves money,
 // changes a budget, signs, broadcasts, or credits the compute ledger.
 export function proposeFunding({budget,provider,onchain}){
- const result={automaticFundingEnabled:false,executable:false,asset:'USDC',chainId:8453};
+ const result={automaticFundingEnabled:false,automaticFundingScope:'manual_cash_topup_proposal',executable:false,asset:'USDC',chainId:8453};
  if([budget,provider,onchain].some(x=>x?.state!=='available'))return {...result,state:'unknown',reason:'resource_read_incomplete'};
  const remaining=uint(budget.remainingMicroUsdc),held=uint(budget.heldMicroUsdc),cash=uint(onchain.usdcMicro),credit=uint(provider.creditMicroUsdc),pending=uint(provider.pendingMicroUsdc);
  if([remaining,held,cash,credit,pending].includes(null))return {...result,state:'unknown',reason:'resource_amount_invalid'};
@@ -77,7 +77,7 @@ export function proposeFunding({budget,provider,onchain}){
 // A cash balance cannot increase a lifetime allowance. These are present-time
 // reservation capacities, not prepaid jobs, runway estimates or new grants.
 export function operatingCapacity({budget,provider,onchain}) {
- const result={automaticFundingEnabled:false,authorizationChanged:false};
+ const result={automaticFundingEnabled:false,automaticFundingScope:'manual_cash_topup_proposal',authorizationChanged:false};
  if(budget?.state!=='available')return {...result,state:'unknown',reason:'budget_unavailable'};
  const remaining=uint(budget.remainingMicroUsdc),held=uint(budget.heldMicroUsdc);
  if(remaining===null||held===null)return {...result,state:'unknown',reason:'budget_invalid'};
@@ -93,10 +93,10 @@ export function operatingCapacity({budget,provider,onchain}) {
   meaning:'Original holds are already deducted. A smaller request may still fit below 2 USDC. Do not refill, release unknown holds or raise limits from these observations.'};
 }
 
-export function createOperatingResources({env=process.env,db,request=fetch,onchain=readPayerCash,now=Date.now,deadlineMs=3500,cacheMs=20000}={}){
+export function createOperatingResources({env=process.env,db,request=fetch,onchain=readPayerCash,computeFunding,now=Date.now,deadlineMs=3500,cacheMs=20000}={}){
  let current=null,expires=0;
  const bounded=async(job,reason)=>{let timer;try{return await Promise.race([Promise.resolve().then(job).catch(()=>unavailable(reason)),new Promise(resolve=>{timer=setTimeout(()=>resolve(unavailable(reason)),deadlineMs);})]);}finally{clearTimeout(timer);}};
- return async()=>{
+ const snapshot=async()=>{
   if(current&&now()<expires)return current;
   expires=now()+cacheMs;
   current=(async()=>{
@@ -106,8 +106,19 @@ export function createOperatingResources({env=process.env,db,request=fetch,oncha
    const funding=proposeFunding({budget,provider,onchain:cash});
    // The private binding only guides the fixed proposal; it is not an API key.
    const {binding:budgetBinding,...publicBudget}=budget,{binding:providerBinding,...publicProvider}=provider;
-   return {version:1,complete,observedAt:new Date(now()).toISOString(),automaticFundingEnabled:false,budget:publicBudget,provider:publicProvider,onchain:cash,funding,capacity:operatingCapacity({budget,provider,onchain:cash})};
+   return {version:1,complete,observedAt:new Date(now()).toISOString(),automaticFundingEnabled:false,automaticFundingScope:'manual_cash_topup_proposal',budget:publicBudget,provider:publicProvider,onchain:cash,funding,capacity:operatingCapacity({budget,provider,onchain:cash})};
   })();
   return current;
+ };
+ // Keep the v1 manual-proposal flag for existing readers. The separately
+ // authorized compute service reports its own admission, never a grant or
+ // proof that a provider credited a deposit. Re-read it even with cached cash
+ // so disabling or expiring the service cannot leave a stale enabled status.
+ return async()=>{
+  const [value,status]=await Promise.all([snapshot(),bounded(async()=>{
+   if(!computeFunding)return unavailable('compute_funding_status_not_configured');
+   return {...await computeFunding(),state:'available',observedAt:new Date(now()).toISOString(),scope:'designated_compute_revenue'};
+  },'compute_funding_status_unavailable')]);
+  return {...value,complete:value.complete&&status.state==='available',computeFunding:status};
  };
 }

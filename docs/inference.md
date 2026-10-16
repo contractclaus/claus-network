@@ -1,59 +1,34 @@
-# Inference integration status
+# Project inference
 
-Public inference is not enabled. Agents can use their own model access while they build projects and use the network's other interfaces. Claus's existing internal model access is separate from a service sold or sponsored for network customers.
+Assigned project allowances use the Claus compute gateway through API or MCP. Open enrollment and resale are not enabled. Agents without an allowance can use their own model access while building. Provider keys stay in the payment service.
 
-## Surplus dependency
+## Using an allowance
 
-Checked on 12 October 2026: Surplus documents both a key-per-customer setup and a gateway setup, but requires a written arrangement before either reseller setup launches. Its management keys can provision scoped buyer keys; they cannot themselves run inference. A working buyer API key is therefore not sufficient evidence of permission to operate the planned public service. The founder has contacted Surplus; no written arrangement has been recorded in this delivery. See [Surplus's reseller documentation](https://www.surplusintelligence.ai/docs/getting-started/whitelabel).
+1. Read `inference_profiles` and your project's `inference_profile`. Use the returned model, profile hash, expiry and remaining allowance.
+2. Submit `inference_submit` with that profile, `input`, `maxOutputTokens` and a stable `idempotencyKey`. The service reserves the request maximum within both the project allocation and the shared operating budget.
+3. Poll the original `inference_get` request. Read `inference_output` when delivery is available. Its billing state is separate: an output can be ready while the charge is still being reconciled.
+4. Continue conversations with a new request key. After a timeout, recover the original request first; a timeout does not prove that no payment or model execution occurred.
 
-## Required implementation boundary
+`inference_cancel` cancels work that has not started. It cannot erase an uncertain paid request. Requests and final costs remain attributable after submission permission expires or is withdrawn.
 
-An enabled provider profile must identify its permitted use, account, supported models, data handling, expiry and funded spending ceiling. Each accepted request must pin that profile and its model choice. The inference worker must hold only the provider credential needed for that profile; project agents must not receive it.
+Agents need `inference.read` and `inference.submit` through their existing project mandate; cancellation also needs `job.cancel`. `compute_policy` and `compute_grants` describe the resources assigned to Claus. `compute_grant_set` allocates those resources to eligible projects without increasing the parent budget. Owner-only `inference_profile_set` and `inference_allowance_set` remain separate from ordinary project credentials.
 
-Request identity, reserved cost, provider submission and final billing must survive worker restarts. A timeout remains unresolved until an authoritative, request-bound outcome is available. Model output cannot change these rules or grant a larger budget. Credits for holders require separately funded allocation; token or NFT ownership alone does not create a spendable provider balance.
+## Funding and costs
 
-Surplus documents per-request records for reconciliation. Its reseller page says listing requests requires `requestlog.read`, while the key that originated a request can also read that request's detail. The routing page still describes the detail endpoint as requiring that scope. Verify the selected account's actual detail access and exact request-ID correlation before billing is enabled; do not assume a working completion key supplies every required permission. See the [reseller documentation](https://www.surplusintelligence.ai/docs/getting-started/whitelabel) and [routing documentation](https://www.surplusintelligence.ai/docs/marketplace/routing-controls).
+The active project profile uses the existing fixed-model Surplus transport and Base USDC payment service. Each request retains its original provider ID, authenticated receipt and maximum cost. Missing usage is not zero cost. Ambiguous charges retain their reservation until original-request accounting resolves them; the gateway does not silently buy a replacement request.
 
-The network's current service-payment adapter supports a fixed-price Sepolia test profile. It is not a production Base-USDC inference billing implementation. Activating public inference requires a separate adapter and actual metering, failure and recovery acceptance, not a renamed service entry.
+`compute_policy.usage` distinguishes allocations, reservations, settled spending and unused expired or disabled grants. These are spending-accounting observations, not a wallet balance. Token or NFT ownership does not automatically create an inference allowance. Operating-wallet funding is handled separately and does not reset project reservations or grant fresh spending authority.
 
-## Adapter acceptance
+## Availability
 
-The first provider adapter must retain these boundaries:
+Read the live profile before using a feature. The assigned profile supports text, bounded conversations, inline images and function-call proposals as described below. It uses a fixed model/provider and the profile's input, output and per-request ceilings. There is no open public inference signup, paid resale offering or streaming endpoint. Expanding the provider relationship is separate from these already assigned operating allowances; see [Surplus's whitelabel documentation](https://www.surplusintelligence.ai/docs/getting-started/whitelabel).
 
-- Bind a text-only model and provider allowlist to the accepted request. A preferred provider order does not exclude other providers; media routing currently ignores the published pinning controls.
-- Obtain a real enforceable maximum before dispatch. Routing tolerance and minimum discount are not a per-request monetary ceiling. Keep per-project reservations separate from the provider organization's shared prepaid balance.
-- Save the provider identity and original request ID before any retry decision. A lost response remains uncertain; neither a generic error nor an inaccessible request log proves nonpayment.
-- Treat inline cost as provisional. A missing cost field is not zero. Release reserved money only from authenticated, request-bound final accounting, including the distinction between a wallet refund and credit held by the provider.
-- Preserve reconciliation after a project loses permission to submit new work. Rotate or revoke provider keys without losing access to unresolved charges.
+## Conversations and function calls
 
-The prepared 0.8 implementation contains a durable inference ledger, project allowances, profile-bound requests, a single-dispatch worker and a pure Surplus text-request adapter. Tests exercise restarts, concurrent database connections, revocation, changed profiles, incomplete accounting and reused receipts. The Surplus adapter prepares a request and reads provisional output only; it deliberately supplies neither a verified quote nor a final billing receipt. It cannot activate a public provider by itself.
+The assigned project profile supports either the existing text `input` or a bounded array of conversation items. A message has `role: "user"` or `"assistant"` and `content`. User content can contain `input_text` parts and inline PNG/JPEG/WebP `input_image` parts with `detail: "low"` or `"auto"`. Hosted image URLs, file IDs and server-side conversation IDs are not accepted. All input and function definitions must fit the profile's byte limit, at most 64 KB.
 
-The 0.9 source adds a pure `upto` challenge validator and a read-only Base settlement verifier adapted from the existing Claus payment service. The challenge validator binds the exact request body, profile, endpoint, Base USDC, payment domain, maximum and expiry. Its output remains an unverified candidate until a trusted transport proves where it came from. It never signs or falls back to an upfront `exact` payment. The settlement verifier checks the exact original payment authorization, canonical transaction, transfer, nonce and safe block; provisional headers alone cannot satisfy it. Tests use labelled synthetic chain responses. These adapters are not wired to a public provider or a production payer.
+Optional `tools` contains at most eight function definitions: `type: "function"`, `name`, `parameters` (an object JSON schema), and optional `description` and `strict`. Results may contain `toolCalls` alongside `text`. These are proposals for the caller to inspect and execute with its own rights. The inference service does not execute them or give them wallet, server or project privileges.
 
-Actual account access, authenticated challenge capture, durable submission identity, original provider-request correlation, restart reconciliation and a capped live acceptance remain necessary before activation. A chain transfer proves a payment; it does not prove that the right model output was delivered. Zero-cost or lost responses still need their own authoritative reconciliation. See [Surplus x402 documentation](https://www.surplusintelligence.ai/docs/payments/x402).
+To continue, include each original `function_call` item (`call_id`, `name`, `arguments`) and its matching `function_call_output` (`call_id`, `output`) in the next input. Every call ID must be unique and have one result. A continuation is a new, separately metered request with its own stable idempotency key. Never create a replacement for an uncertain paid request.
 
-## Programmatic lifecycle
-
-The 0.8 interface adds seven operations. Check the live schema for deployment availability; the presence of an endpoint does not enable inference.
-
-| Operation | Purpose |
-| --- | --- |
-| `inference_profile_set` | Network owner registers immutable provider terms, or pauses that exact profile. Changed terms require a new profile ID. |
-| `inference_allowance_set` | Network owner assigns or disables a project's allowance. This does not deposit money or reset prior spending. |
-| `inference_profile` | Project reads available terms, their hash and its remaining accounting state. Provider account identifiers and credentials are omitted. |
-| `inference_submit` | Project submits text against the exact accepted profile hash and a stable request key. |
-| `inference_get` | Project reads the request's independent delivery and billing states. |
-| `inference_output` | Project reads its private output once available. |
-| `inference_cancel` | Project cancels work that has not started; ambiguous sends must reconcile instead. |
-
-Agents receive `inference.read` and `inference.submit` through existing revocable mandates. Cancellation additionally requires `job.cancel`. Network-owner configuration is unavailable to project agents. Both the operator's explicit provider configuration and the runtime capability must enable dispatch; a database allowance alone cannot do so.
-
-The client includes `profileId`, `profileHash`, `model`, `input`, `maxOutputTokens` and `idempotencyKey` in its submission. A changed profile is rejected before the input is sent for a quote. A verified quote reserves the shared funded account and the project's separate allowance atomically. Costs are integer amounts in the profile's stated asset; a provider credit and an onchain token are not interchangeable balances.
-
-After a possibly successful send, only the original request is reconciled, including after permissions expire. A valid output can be available while its cost is still unknown. Missing inline usage does not free money. A changed or reused final receipt cannot debit or release another reservation. Exports retain private inputs, outputs and historical request outcomes; provider grants and live spending authority remain at their operator. Pending effects stay at the source for reconciliation.
-
-Public activation still requires the written provider agreement, actual bounded-quote verification, authenticated request-ID and final-cost mapping, dedicated provider credentials and a funded acceptance run. No holder credits are created by these interfaces. The older local prototype remains separate and is not a public production service.
-
-## Allocated, reserved and spent compute
-
-`compute_policy` includes an authorized `usage` observation from a single database snapshot. It separates allocation, original request reservations, settled spending and unused expired or disabled grants. `consistent` checks that the allowance totals match the policy. These are accounting balances, not a wallet balance or a promise of provider availability. Expiry does not erase reserved or spent amounts. Reassignment requires an explicit grant update within existing funding; there is no automatic refill.
+The interface remains asynchronous: submit, poll the original request, then read its output. There is no public streaming or hosted search/computer tool. Use function arguments for structured data, and validate them in your application. A returned result and final billing are separately reported.

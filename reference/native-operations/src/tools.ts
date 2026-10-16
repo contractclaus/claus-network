@@ -1,3 +1,5 @@
+import {stageDevelopment} from './development-export.js';
+import {developProject} from './development-workspace.js';
 import {runtimeAccess} from './runtime-access.js';
 import {networkProgramDefinitions,networkProgram,resumeNetworkProgramDefinition,resumeNetworkOperation} from './network-program.js';
 import {programDefinitions,programEnabled,programTool} from './trade-program.js';
@@ -52,6 +54,8 @@ function tool(name:string,description:string,properties:Record<string,unknown>,r
 const text={type:'string'};
 const attributions={type:'array',maxItems:3,items:{type:'object',properties:{username:text,sourceUrl:text},required:['username','sourceUrl'],additionalProperties:false}};
 export const definitions:ReturnType<typeof tool>[]=[
+  tool('develop_project','Develop your own products in an isolated workspace: write files, run shell commands, install npm/Python packages and build applications. Supply title/purpose for a new private working project; for an existing project supply projectId and expectedVersion from its last result or recall. Files persist in an immutable checkpoint. Inspect exitCode, checkpointApplied and original actionId before claiming success. A concurrent version remains as a branch instead of overwriting newer work. stdout/stderr are bounded; redirect large output to files and read only needed sections. Public package/GitHub egress only, no host secrets, signing or general host access. Use read_url for other sources and build_network for network publication. A completed command is not a live deployment. Do not repeat an uncertain action; recovery reads its original command. Ten to300seconds per command;100runs/day and4unresolved runs, separate from paid inference budgets.',{projectId:text,expectedVersion:{type:'integer',minimum:1},title:text,purpose:text,command:text,files:{type:'array',maxItems:64,items:{type:'object',properties:{path:text,content:text},required:['path','content'],additionalProperties:false}},timeoutSeconds:{type:'integer',minimum:10,maximum:300}},['command','files']),
+  tool('stage_development','Copy selected UTF-8 files from an exact private development checkpoint into your existing Network project as one immutable private source snapshot. No model copy/paste, no publication or signing. Supply current workspace and network project revisions. Keep lockfiles with source; choose only files intended for this project. At most256files/3MB. After success use build_network release_create/release_publish for static websites, or the existing build/review APIs. Never repeat an uncertain submission: recovery reads its exact content-addressed snapshot.',{projectId:text,expectedVersion:{type:'integer',minimum:1},networkProjectId:text,expectedProjectRevision:{type:'integer',minimum:1},paths:{type:'array',minItems:1,maxItems:256,items:text}},['projectId','expectedVersion','networkProjectId','expectedProjectRevision','paths']),
   ...networkProgramDefinitions,
   resumeNetworkProgramDefinition,
   ...gotchiDefinitions,
@@ -125,6 +129,7 @@ for(const name of ['read_chain','read_contract_source','read_market','read_knowl
 permission.read_image='research';permission.generate_image='images';permission.review_image='images';permission.prepare_gif='images';
 for(const name of researchTools)permission[name]='research';
 export function toolEnabled(config:Configuration,name:string) {
+  if(['develop_project','stage_development'].includes(name))return operationsEnabled(config)&&config.policy.capabilities.networkBuild===true&&custodyConfigured();
   if(name==='run_network_program'||name==='resume_network_operation')return operationsEnabled(config)&&config.policy.capabilities.networkBuild===true&&custodyConfigured();
   if(name==='trade_program')return programEnabled(config);
   if(name==='work_wallet')return workWalletEnabled(config);
@@ -150,6 +155,8 @@ export async function executeTool(id:string,name:string,args:Record<string,any>,
   const config=await configuration();
   if(!channelAllows(name,decisionContext?.channel??'public'))return {error:'tool_unavailable_in_this_channel',name};
   if (!toolEnabled(config,name)) return {error:'capability_not_enabled',name};
+  if(name==='stage_development')return stageDevelopment('development-export:'+id,args);
+  if(name==='develop_project')return developProject('development:'+id,args);
   if(name==='run_network_program')return networkProgram(id,args);
   if(name==='resume_network_operation')return resumeNetworkOperation(args);
   if(name==='trade_program')return programTool(args);

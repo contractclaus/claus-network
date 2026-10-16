@@ -50,7 +50,7 @@ export async function allocateCredit(db, {address, keyId} = {}) {
   try {
     await db`WITH allocated AS (
       UPDATE claus_payment_budget SET committed = committed + 2000000
-      WHERE id = true AND ceiling IN (100000000,500000000,600000000) AND committed BETWEEN 0 AND ceiling - 2000000
+      WHERE id = true AND (ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000) AND committed BETWEEN 0 AND ceiling - 2000000
         AND NOT EXISTS (SELECT 1 FROM claus_credit_pool)
       RETURNING id
     ) INSERT INTO claus_credit_pool(id, allocated, committed, state, deposit_address, key_id)

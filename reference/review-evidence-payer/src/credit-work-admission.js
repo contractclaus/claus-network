@@ -14,7 +14,7 @@ export async function workAdmission(db,env,id,maximumMicroUsdc){
  if(maximumMicroUsdc!=='2000000')return waiting('credit_ceiling_mismatch');
  try{if(BigInt(env.MAX_INFERENCE_QUOTE_MICRO_USDC??'3000000')<2000000n)return waiting('credit_ceiling_mismatch');}
  catch{return waiting('credit_ceiling_mismatch');}
- const [state]=await db`SELECT ceiling-committed AS remaining,EXISTS(SELECT 1 FROM claus_credit_work WHERE active AND active_until>now()) AS busy FROM claus_payment_budget WHERE id=true AND ceiling IN (100000000,500000000,600000000)`;
+ const [state]=await db`SELECT ceiling-committed AS remaining,EXISTS(SELECT 1 FROM claus_credit_work WHERE active AND active_until>now()) AS busy FROM claus_payment_budget WHERE id=true AND (ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000)`;
  if(!state||BigInt(state.remaining)<2000000n)return waiting('credit_exhausted');
  if(state.busy)return waiting('credit_busy');
  const profile=reviewCreditCandidate(env,id)?null:env.BUILDER_CREDIT_PROFILE??null;

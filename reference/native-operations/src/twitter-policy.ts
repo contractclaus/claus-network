@@ -4,8 +4,8 @@ export const twitterTools = new Set([
   'read_mentions','recall_conversation','resolve_mention','publish_reply','publish_post',
   'draft_post','remember','recall','finish',
   // Visibility only: execution still checks current capabilities, identity and channel.
-  'read_network','build_network','finish_mission','network_work','network_care','read_network_code','change_network_code','work_wallet','trade_program',
-  'read_operational_code','change_operational_code','rollback_operational_code',
+  'stage_development','develop_project','read_network','build_network','finish_mission','network_work','network_care','read_network_code','change_network_code','work_wallet','trade_program',
+  'read_operational_code','change_operational_code','rollback_operational_code','run_network_program','resume_network_operation',
   'play_gotchi','read_gotchi',
   'read_chain','read_contract_source','read_market','read_image','generate_image','review_image','prepare_gif'
 ]);

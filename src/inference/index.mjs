@@ -1,3 +1,4 @@
+import {validateConversation,conversationBytes,validateToolOutput} from './protocol.mjs';
 import { amount, contentHash, copy, digest, integer, requireThat, shape, text, operatingExpiry, operatingWindowOpen } from '../shared/index.mjs';
 import { reserve, settleReservation } from '../billing/index.mjs';
 
@@ -21,12 +22,11 @@ export function validateInferenceProfile(p) {
 const allowanceId = (projectId, profileId) => digest({ projectId, profileId });
 const requestId = (projectId, idempotencyKey) => digest({ projectId, inference: idempotencyKey });
 function requestBody(body) {
-  shape(body, ['profileId', 'profileHash', 'model', 'input', 'maxOutputTokens', 'idempotencyKey']);
+  shape(body, ['profileId', 'profileHash', 'model', 'input', 'maxOutputTokens', 'idempotencyKey', ...(Object.hasOwn(body??{},'tools')?['tools']:[])]);
   text(body.profileId); text(body.model); text(body.idempotencyKey);
   contentHash(body.profileHash);
   integer(body.maxOutputTokens, 1, 16384);
-  requireThat(typeof body.input === 'string' && body.input.trim() &&
-    Buffer.byteLength(body.input) <= 65536, 'invalid_inference_input');
+  validateConversation(body.input,body.tools);
   const { idempotencyKey, ...request } = body;
   return copy(request);
 }
@@ -88,8 +88,9 @@ export function createInference({ store, identity, jobs, artifacts, provider,
   }
   const api = {
     async discovery() {
-      return {enabled:await enabled(store)===true,profile:'claus-project-inference/1',authentication:'project-credential',
-        input:['text'],output:['text'],streaming:false,tools:false,images:false,structuredOutput:false,
+      return {enabled:await enabled(store)===true,profile:'claus-project-inference/2',authentication:'project-credential',
+        input:['text','conversation','inline-image'],output:['text','function-calls'],streaming:false,tools:true,images:true,structuredOutput:false,
+        toolExecution:'caller-owned-no-automatic-execution',conversationLimitBytes:65536,maxTools:8,remoteImages:false,
         accounting:'maximum-reserved-final-receipt-settled',access:'project-allowance',
         profiles:'/v1/projects/{projectId}/inference/profiles',requests:'/v1/projects/{projectId}/inference/requests'};
     },
@@ -154,7 +155,7 @@ export function createInference({ store, identity, jobs, artifacts, provider,
       const { profile } = await maySubmit(store, actor, projectId, request.profileId);
       requireThat(request.profileHash === digest(profile), 'inference_profile_changed');
       requireThat(request.model === profile.model && request.maxOutputTokens <= profile.maxOutputTokens &&
-        Buffer.byteLength(request.input) <= profile.maxInputBytes, 'inference_request_outside_profile');
+        conversationBytes(request) <= profile.maxInputBytes, 'inference_request_outside_profile');
       // Quote must be read-only. The independently supplied verifier establishes
       // that the selected adapter can enforce this exact financial ceiling.
       const quote = copy(await provider.quote({ request: copy(request), profile: copy(profile), requestHash: hash }));
@@ -243,9 +244,10 @@ export function createInference({ store, identity, jobs, artifacts, provider,
         requireThat(!v.providerRequestId || providerId === v.providerRequestId, 'inference_provider_identity_changed');
         let output = null;
         if (result.output) {
-          shape(result.output, ['model', 'text']);
+          shape(result.output, ['model', 'text', ...(Object.hasOwn(result.output,'toolCalls')?['toolCalls']:[])]);
           requireThat(result.output.model === v.profile.model && typeof result.output.text === 'string' &&
             Buffer.byteLength(result.output.text) <= 262144, 'invalid_inference_output');
+          if(result.output.toolCalls)validateToolOutput(result.output.toolCalls,(await artifacts.get(v.projectId,v.inputHash)).tools);
           output = copy(result.output);
         }
         let receipt = null;

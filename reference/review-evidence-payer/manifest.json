@@ -1,15 +1,16 @@
 {
-  "deployed": "dpl_9gbZ4rbEdFueDPpKt5MPmGyqqbj5",
-  "source": "0dcaa5372358dfbd4fb621deabe63f903916a8c5e8dc81c23f34ed65259127ae",
+  "deployed": "dpl_Do3GnqFvX5qfMkCtstQuW1Ma5Kdt",
+  "source": "claus-phase3-runtime-payer-20261016",
   "files": {
-    "src/index.js": "247ad7177b0aa52aca602e9abace54a6db9a49a1a0cc72a487615b8694349e8f",
+    "src/index.js": "f7805f7d66034417867692c21b6d56b10a4384b12d25e81c3def32ab6efabdd5",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
-    "src/credit-work-store.js": "d5086f50f7be78f0e57bdd4bd8caba662c9c53c295a945a8b760b77101321412",
+    "src/credit-work-store.js": "ecc78828d13ecd54ace95b20999d027e1862e7116d4d113842e54a8214731ae8",
     "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
-    "src/operating-resources.js": "4c3c1c480c286d53735bd98d2815bd998cf667d104d39a2e7cec475bb3bc062d",
-    "src/budget.js": "e3fe762cc3004051066797668b7ede62be8551fd4827af5fb8ad68d72a1b8709",
-    "src/credit-store.js": "b5d138dfc5c818e096b5d13fdc4112e11aad5d2850229c4007099eb001d45f85",
-    "src/credit-work-admission.js": "c497b8570437c8ac7e25ea49e6cd27d62f2036966f97cec4e457016b5150a045"
+    "src/operating-resources.js": "98b1935ffe0798fe935a0b0bd2b332eaeb1c4f94c669f17e569d9ec29795d0f9",
+    "src/budget.js": "82b8e725ea357fb67906a4e3a2ce2a75dd8fce0652923dddf9d147a2f8cb11fb",
+    "src/credit-store.js": "832cba71619dc0426f40abf2877e97f69fc17a0a033ee880a4d18f6904381355",
+    "src/credit-work-admission.js": "09906289b96d2d7ba81267025ca32330ae1acafd8a21bfcbadfe6b380f51b3a2",
+    "src/compute-conversation.js": "04e8bf6d3ef4a0fbbd673a8c66d20a804877e0eea2d5631a1a10c05092421554"
   },
   "referenceSubset": true
 }

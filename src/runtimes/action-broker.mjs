@@ -1,6 +1,6 @@
 import {copy,digest,requireThat} from '../shared/index.mjs';
 
-export const RUNTIME_ACTIONS=Object.freeze(['project_web_read','network_discover','public_project','public_app','public_task','public_task_progress','public_task_payment','app_join','app_get','app_records','app_task_messages','app_task_message','app_task_review_request','app_task_review_submit','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_record_create','app_record_update','inference_profiles','inference_profile','inference_submit','inference_get','inference_output']);
+export const RUNTIME_ACTIONS=Object.freeze(['app_service_get','app_service_call','project_web_read','network_discover','public_project','public_app','public_task','public_task_progress','public_task_payment','app_join','app_get','app_records','app_task_messages','app_task_message','app_task_review_request','app_task_review_submit','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_record_create','app_record_update','inference_profiles','inference_profile','inference_submit','inference_get','inference_output']);
 
 // Worker JSON may name an operation, never choose a URL, credential, SQL statement
 // or signer. The host keeps the actor and calls the same authorized API routes.

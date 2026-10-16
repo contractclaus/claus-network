@@ -3,7 +3,7 @@ import { SITE_LIMITS, canonical, copy, digest, integer, requireThat, text, sourc
 const projectRef = (projectId, id) => digest({ projectId, id });
 const filePath = sourcePath, prose = sourceText;
 
-export function createProjects({ store, identity, publicDetails = async () => ({}), publicAppearance = async () => ({}), publicConnections = async () => ({state:'not_configured',edges:[],nextCursor:null}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
+export function createProjects({ store, identity, publicDetails = async () => ({}), publicAppearance = async () => ({}), publicEntry, publicConnections = async () => ({state:'not_configured',edges:[],nextCursor:null}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
   async function snapshot(reader, projectId, id) {
     const value = (await reader.read('snapshots', projectRef(projectId, id)))?.value;
     requireThat(value && value.projectId === projectId, 'not_found');
@@ -136,13 +136,13 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       }, {projectId});
     },
     async publicProject(slug, {view = 'full'} = {}) {
-      requireThat(['full','appearance'].includes(view),'invalid_project_view');
+      requireThat(['full','appearance','entry'].includes(view),'invalid_project_view');
       const record = await store.read('public-projects', text(slug));
       requireThat(record?.value.published === true && await visible(record.value.projectId), 'not_found');
       const project = (await store.read('projects', record.value.projectId))?.value;
       requireThat(project && !project.archivedAt, 'not_found');
       // A logo lookup should not wait for unrelated services, apps or chain evidence.
-      if(view==='appearance')return {...record.value,revision:record.revision,...await publicAppearance(record.value.projectId)};
+      if(view==='appearance'||view==='entry')return {...record.value,revision:record.revision,...await (view==='entry'&&publicEntry?publicEntry:publicAppearance)(record.value.projectId)};
       // Independent public reads begin only after the publication/visibility gates.
       const [agentRows,evidenceRow,details]=await Promise.all([
         store.list('project-public-agents',{prefix:record.value.projectId+':',limit:128}),

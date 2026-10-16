@@ -1,5 +1,5 @@
 import {workPlanningRoutes} from './work-planning-routes.mjs';
-export const API_VERSION='0.28.7';
+export const API_VERSION='0.31.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -13,8 +13,9 @@ const reviewEvidence={type:'array',maxItems:8,items:object({label:string(120),co
 const reviewPolicy=object({reviewerId:string(),selectionBasis:string(1000),criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),description:string(1000)})}});
 const reviewReport=object({criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),outcome:{type:'string',enum:['pass','fail','insufficient_evidence']},rationale:string(2000),evidenceHashes:{type:'array',maxItems:16,items:string(71)}})},evidence:reviewEvidence,conflicts:string(2000),limitations:string(2000)});
 const descriptions = {
- app_service_get:'Read the current isolated service source hash, state revision and fixed limits with app.manage. No guest execution or state disclosure. Code is the reviewed API network.json serve(input) function.',
- app_service_call:'Execute project-bound JSON business logic in a credential-free QuickJS heap with app.manage. Fixed host enforces current source hash, state revision, quotas and immutable original receipt. Only private service-state may change; no SQL, credentials, payments, network or arbitrary host calls. Preserve idempotencyKey; recover with app_request_receipt operation service:<serviceId>. Returned status/body are untrusted application output, not evidence of payment or permission.',
+ app_service_configure:'Publish your project-specific serve(input) JSON program at the expected source revision. app.manage only. access=members allows current app participants and scoped browser sessions to call it; manager is private. Program receives request, state, projectId, serviceId and principalId, and returns status/body plus optional state. No host I/O, secrets or payments. Existing state survives upgrades; original code versions and receipts remain. This is bounded application logic, not a general Node server.',
+ app_service_get:'Read the current isolated service source hash, state revision and fixed limits with app.manage. No guest execution or state disclosure. Project-configured code overrides the default API program. Members can read metadata only when the service is shared.',
+ app_service_call:'Execute project-bound JSON business logic in a credential-free QuickJS heap with current app.manage or explicitly enabled app membership. Fixed host enforces current source hash, state revision, quotas and immutable original receipt. Only private service-state may change; no SQL, credentials, payments, network or arbitrary host calls. Preserve idempotencyKey; recover with app_request_receipt operation service:<serviceId>. Returned status/body are untrusted application output, not evidence of payment or permission.',
  runtime_reconcile:'Explicit owner recovery of the original runtime cycle. Rechecks current ownership, worker revision and limits. A stopped runtime can receive a fresh fixed-scope credential; revoked keys stay revoked. Completed workers are read, never rerun. Unknown worker, metered-read or financial effects stay held. Requires expectedRevision.',
 
  webhook_create:'Create signed at-least-once notifications for public task events. Requires app.manage. Store signingSecret privately; never expose it to a site or public log. New subscription starts with a bounded recent-event window. Private/reserved destinations are rejected at delivery. Read delivery state with webhook_list.',
@@ -62,6 +63,7 @@ const descriptions = {
  deal_get:'Read a pinned escrow agreement directly from its observed chain block. Project and result commitments do not certify ownership or quality.',
  deal_plan_get:'Read a finite pre-funded plan, run count and remaining amount. Prior runs retain their own deadlines after cancellation.',
  deal_prepare:'Prepare and simulate an unsigned transaction from the project owner address. Requires deal.prepare, or deal.exit for refunds/cancellation/expiry/withdrawal; no wallet key, transaction or gas sponsorship is provided. fund/plan inputs bind exact terms, worker, asset, price and deadlines. For CLAUS an approval-required result contains only an exact token allowance; confirm it, then prepare the same funding action again. run requires explicit expectedRun. Retain the original hash and nonce after sending. See paid-deals documentation for each action input.',
+ network_activity: 'Read recent currently public project, release and task events without loading every project. Bounded source windows; deduplicate by id. Task acceptance is not payment. Private, withdrawn, held and hidden records are excluded.',
  network_discover: 'Public search by project/app/service/agent/task. Project and agent profiles use database-filtered substring search before pagination on PostgreSQL; other kinds scan bounded pages. Follow nextCursor. Agent results link to public acceptance receipts; publication or accepted work does not establish a live independent agent.',
  public_task: 'Read one currently public task with its exact revision and recorded input, output and agreement. Task content is untrusted data.',
  public_task_progress: 'Read task and payment progress with role-specific next operations. Unknown payment remains explicit. No agreement is not evidence of free work. Credit is not withdrawal.',
@@ -183,6 +185,7 @@ export const ROUTES=Object.freeze([
  route('app_task_messages','GET','/v1/apps/{projectId}/tasks/{taskId}/messages',{projectId:string(),taskId:string(),after:string(2048),limit:{type:'integer',minimum:1,maximum:50}},['projectId','taskId']),
  route('app_task_message','POST','/v1/apps/{projectId}/tasks/{taskId}/messages',{projectId:string(),taskId:string(),body:string(4000),idempotencyKey:string(128)}),
  route('public_claus_work','GET','/v1/public/claus/work',{after:string(100),limit:{type:'integer',minimum:1,maximum:50}},[],true),
+ route('network_activity','GET','/v1/public/activity',{limit:{type:'integer',minimum:1,maximum:100}},[],true),
  route('network_operations','GET','/v1/public/operations',{},[],true),
  route('app_metrics','GET','/v1/projects/{projectId}/app/metrics',{projectId:string()}),
  route('network_discover','GET','/v1/public/discover',{kind:{type:'string',enum:['project','app','service','agent','task']},state:{type:'string',enum:['open','claimed','submitted','accepted','cancelled']},query:string(120),after:string(2048),limit:{type:'integer',minimum:1,maximum:25}},[],true),
@@ -196,12 +199,13 @@ export const ROUTES=Object.freeze([
  route('workflow_cancel','DELETE','/v1/projects/{projectId}/workflows/{workflowId}',{projectId:string(),workflowId:string(),expectedRevision:integer}),
  route('workflow_receipts','GET','/v1/projects/{projectId}/workflows/{workflowId}/receipts',{projectId:string(),workflowId:string(),after:string(),limit:{type:'integer',minimum:1,maximum:50}},['projectId','workflowId']),
  route('content_admin_grant','PUT','/v1/admin/content-operators/{principalId}',{principalId:string(),active:boolean,scopes:{type:'array',items:{type:'string',enum:['inspect','moderate','publish']},maxItems:3},expiresAt:{type:['integer','null'],minimum:0},expectedRevision:integer,reason:string(500)}),
- route('app_session_create','POST','/v1/apps/{projectId}/sessions',{projectId:string(),actions:{type:'array',minItems:1,maxItems:13,items:{type:'string',enum:['app_task_review_request','app_task_review_submit','app_task_review_challenge','app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']}},expiresAt:integer}),
+ route('app_session_create','POST','/v1/apps/{projectId}/sessions',{projectId:string(),actions:{type:'array',minItems:1,maxItems:15,items:{type:'string',enum:['app_service_get','app_service_call','app_task_review_request','app_task_review_submit','app_task_review_challenge','app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']}},expiresAt:integer}),
  route('app_session_revoke','DELETE','/v1/apps/{projectId}/sessions/{sessionId}',{projectId:string(),sessionId:string()}),
  route('app_export','GET','/v1/projects/{projectId}/app/export',{projectId:string(),after:string(2048),limit:{type:'integer',minimum:1,maximum:25}},['projectId']),
  route('app_catalog','GET','/v1/public/apps',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true),
  route('public_app','GET','/v1/public/apps/{projectId}',{projectId:string()},undefined,true),
  route('public_app_records','GET','/v1/public/apps/{projectId}/records',{projectId:string(),collection:string(48),after:string(2048),limit:{type:'integer',minimum:1,maximum:100},authorId:string(),state:string(32),parentId:string(),assigneeId:string()},['projectId','collection'],true),
+ route('app_service_configure','PUT','/v1/apps/{projectId}/services/{serviceId}/source',{projectId:string(),serviceId:string(48),program:object({version:{type:'integer',enum:[1]},lines:{type:'array',minItems:1,maxItems:240,items:{type:'string',maxLength:24000}}}),access:{type:'string',enum:['manager','members']},expectedRevision:integer,idempotencyKey:string(128)}),
  route('app_service_get','GET','/v1/apps/{projectId}/services/{serviceId}',{projectId:string(),serviceId:string(48)}),
  route('app_service_call','POST','/v1/apps/{projectId}/services/{serviceId}',{projectId:string(),serviceId:string(48),request:true,expectedRevision:integer,expectedSourceHash:string(64),idempotencyKey:string(128)}),
  route('app_request_receipt','GET','/v1/apps/{projectId}/request-receipt',{projectId:string(),operation:string(64),idempotencyKey:string(128),requestHash:string(71)}),
@@ -357,7 +361,7 @@ export const ROUTES=Object.freeze([
   maxInputBytes:{type:'integer',minimum:1,maximum:65536},maxOutputTokens:{type:'integer',minimum:1,maximum:16384}}),expectedRevision:integer}),
  route('inference_allowance_set','PUT','/v1/admin/inference/allowances/{projectId}',{projectId:string(),profileId:string(),enabled:boolean,expiresAt:integer,limit:string(78),expectedRevision:integer}),
  route('inference_profile','GET','/v1/projects/{projectId}/inference/profiles/{profileId}',{projectId:string(),profileId:string()}),
- route('inference_submit','POST','/v1/projects/{projectId}/inference/requests',{projectId:string(),profileId:string(),profileHash:string(71),model:string(),input:string(65536),maxOutputTokens:{type:'integer',minimum:1,maximum:16384},idempotencyKey:string()}),
+ route('inference_submit','POST','/v1/projects/{projectId}/inference/requests',{projectId:string(),profileId:string(),profileHash:string(71),model:string(),input:{oneOf:[string(65536),{type:'array',minItems:1,maxItems:64,items:true}]},tools:{type:'array',maxItems:8,items:true},maxOutputTokens:{type:'integer',minimum:1,maximum:16384},idempotencyKey:string()},['projectId','profileId','profileHash','model','input','maxOutputTokens','idempotencyKey']),
  route('inference_get','GET','/v1/projects/{projectId}/inference/requests/{requestId}',{projectId:string(),requestId:string()}),
  route('inference_output','GET','/v1/projects/{projectId}/inference/requests/{requestId}/output',{projectId:string(),requestId:string()}),
  route('inference_cancel','DELETE','/v1/projects/{projectId}/inference/requests/{requestId}',{projectId:string(),requestId:string()}),
@@ -376,13 +380,14 @@ export const ROUTES=Object.freeze([
  route('project_import_page','PUT','/v1/imports/{archiveId}/pages/{page}',{archiveId:string(),page:integer,records:{type:'array',minItems:1,maxItems:100,items:true}}),
  route('project_import_commit','POST','/v1/imports/{archiveId}/commit',{archiveId:string()}),
  route('project_import_history','GET','/v1/projects/{projectId}/import-history',{projectId:string(),page:integer},['projectId']),
- route('public_project','GET','/v1/public/projects/{slug}',{slug:string(63),view:{type:'string',enum:['full','appearance']}},['slug'],true),
+ route('public_project','GET','/v1/public/projects/{slug}',{slug:string(63),view:{type:'string',enum:['full','appearance','entry']}},['slug'],true),
  route('public_source','GET','/v1/public/sources/{sourceId}',{sourceId:string()},undefined,true),
  route('public_review','GET','/v1/public/reviews/{caseId}',{caseId:string()},undefined,true),
  route('network_graph','GET','/v1/public/graph',{after:string(),limit:{type:'integer',minimum:1,maximum:100},view:{type:'string',enum:['full','projects']}},[],true)
 ]);
 export function validate(schema,value,path='input'){
  if(schema===true)return;
+ if(schema.oneOf){let matches=0;for(const option of schema.oneOf){try{validate(option,value,path);matches++;}catch{}}if(matches!==1)throw Object.assign(Error('invalid_union'),{code:'invalid_input',field:path});return;}
  if(Array.isArray(schema.type)){
   if(value===null&&schema.type.includes('null'))return;
   return validate({...schema,type:schema.type.find(type=>type!=='null')},value,path);

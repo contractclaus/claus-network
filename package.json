@@ -1,7 +1,7 @@
 {
   "name": "@claus/network-core",
   "private": true,
-  "version": "0.28.7",
+  "version": "0.31.0",
   "type": "module",
   "engines": {
     "node": ">=24.14.0 <25"

@@ -1,10 +1,12 @@
+import {validateToolOutput} from '../src/inference/protocol.mjs';
 import {createHmac,createHash,timingSafeEqual} from 'node:crypto';
 import {amount,canonical,digest,requireThat} from '../src/shared/index.mjs';
 
 const ORIGIN='https://claus-ecosystem-payments.vercel.app';
 const wire=(profile,request)=>({model:profile.model,provider:'openai',stream:false,store:false,
   reasoning:{effort:'low',context:'all_turns'},max_output_tokens:request.maxOutputTokens,
-  input:[{role:'user',content:request.input}]});
+  input:typeof request.input==='string'?[{role:'user',content:request.input}]:request.input,
+  ...(request.tools?{tools:request.tools,parallel_tool_calls:false}:{})});
 const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 export function inferencePorts({env=process.env,fetcher=fetch,now=()=>Date.now()}={}) {
   const secret=env.CLAUS_COMPUTE_SECRET,model=env.CLAUS_COMPUTE_MODEL;
@@ -33,9 +35,9 @@ export function inferencePorts({env=process.env,fetcher=fetch,now=()=>Date.now()
     const value=await json('/api/compute/'+id(p));
     requireThat(value.id===id(p)&&value.requestHash===expectedHash(p),'compute_receipt_binding_mismatch');
     const response=value.response,choice=response?.choices?.[0];
-    const complete=value.status==='completed'&&response?.model===p.profile.model&&choice?.finish_reason==='stop'&&typeof choice?.message?.content==='string'&&!choice.message.tool_calls?.length;
+    const complete=value.status==='completed'&&response?.model===p.profile.model&&['stop','tool_calls'].includes(choice?.finish_reason)&&(typeof choice?.message?.content==='string'||choice?.finish_reason==='tool_calls'&&choice?.message?.content==null);
     const result={providerRequestId:id(p),work:complete?'completed':['failed','completed'].includes(value.status)?'failed':'unknown'};
-    if(complete)result.output={model:p.profile.model,text:choice.message.content};
+    if(complete){const calls=choice.message.tool_calls??[];validateToolOutput(calls,p.request.tools);if(choice.finish_reason==='tool_calls'&&!calls.length)throw Error('compute_tool_output_missing');result.output={model:p.profile.model,text:choice.message.content??'',...(calls.length?{toolCalls:calls}:{})};}
     if(value.accounting?.final===true){
       const a=value.accounting;
       requireThat(amount(a.amount)<=amount(a.maximum)&&amount(a.maximum)<=amount(p.quote.maximum)&&/^sha256:[a-f0-9]{64}$/.test(a.proofHash),'compute_cost_mismatch');

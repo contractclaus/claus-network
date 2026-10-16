@@ -50,7 +50,7 @@ export function createApps({storage,identity,store,taskPayments,schemaDefinition
   const taskReviews=createTaskReviews({storage,app,participant,effect,event,countRecord,taskPayments,now});
   const api={
     taskReviews,
-    services:createAppServices({storage,manager,app,effect,event,program:serviceProgram}),
+    services:createAppServices({storage,manager,participant,app,effect,event,program:serviceProgram}),
     requestReceipt:(actor,projectId,input)=>{ready();return readAppRequestReceipt({storage,identity},actor,projectId,input);},
     enabled:!!storage,writesEnabled,limits:APP_LIMITS,
     async messages(actor,projectId,{taskId,after='',limit=30}){ready();integer(limit,1,50);const tx=storage.reader(projectId),{who}=await participant(tx,projectId,actor);await messageParty(tx,projectId,taskId,who);const rows=await tx.list('task-messages',{parentId:taskId,after:afterCursor(after,projectId,who,'messages:'+taskId),limit});return {items:rows.map(rowValue),nextCursor:rows.length===limit?cursor(projectId,who,'messages:'+taskId,rows.at(-1).id):null,visibility:'Current requester, assignee and selected reviewer only.'};},
@@ -74,7 +74,7 @@ export function createApps({storage,identity,store,taskPayments,schemaDefinition
     async export(actor,projectId,{after='',limit=25}={}){ready();integer(limit,1,25);return storage.transaction(projectId,async tx=>{
       const {who}=await identity.owner(actor,projectId,tx.network),a=await tx.read('meta','app');requireThat(a,'not_found');
       const sequence=(await tx.read('meta','sequence'))?.value.next??0,stamp=digest({revision:a.revision,sequence});
-      const collections=['versions','members','tasks','task-reviews','task-review-reports','task-review-challenges','task-review-commissions','task-messages',...a.value.manifest.collections.map(c=>'records:'+c.id),'events'];
+      const collections=['versions','members','tasks','task-reviews','task-review-reports','task-review-challenges','task-review-commissions','task-messages','service-code','service-state','service-versions',...a.value.manifest.collections.map(c=>'records:'+c.id),'events'];
       let index=0,last='';if(after){let saved;try{saved=JSON.parse(afterCursor(after,projectId,who.principalId,'export'));}catch{requireThat(false,'invalid_cursor');}
         requireThat(saved.stamp===stamp,'app_export_changed');integer(saved.index,0,collections.length-1);requireThat(typeof saved.last==='string','invalid_cursor');index=saved.index;last=saved.last;}
       const collection=collections[index],rows=await tx.list(collection,{after:last,limit});

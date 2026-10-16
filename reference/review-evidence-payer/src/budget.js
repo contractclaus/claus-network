@@ -66,7 +66,7 @@ export async function setupBudget(db) {
       END IF;
       CREATE TABLE IF NOT EXISTS claus_payment_budget (
         id boolean PRIMARY KEY DEFAULT true CHECK (id),
-        ceiling bigint NOT NULL DEFAULT 100000000 CHECK (ceiling IN (100000000, 500000000, 600000000)),
+        ceiling bigint NOT NULL DEFAULT 100000000 CHECK ((ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000)),
         committed bigint NOT NULL DEFAULT 0 CHECK (committed >= 0 AND committed <= ceiling),
         network_committed bigint NOT NULL DEFAULT 0 CHECK (network_committed >= 0 AND network_committed <= committed)
       );
@@ -80,7 +80,7 @@ export async function setupBudget(db) {
       END IF;
       IF (SELECT count(*) FROM claus_payment_budget) <> 1 OR EXISTS (
         SELECT 1 FROM claus_payment_budget WHERE id IS DISTINCT FROM true
-          OR ceiling IS NULL OR ceiling NOT IN (100000000, 500000000, 600000000) OR committed IS NULL OR committed < 0 OR committed > ceiling
+          OR ceiling IS NULL OR NOT (ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000) OR committed IS NULL OR committed < 0 OR committed > ceiling
       ) THEN
         RAISE EXCEPTION 'payment_budget_invalid';
       END IF;
@@ -150,7 +150,7 @@ export async function reservePayment(db, {id, hash, maximum, isImage, activeMs, 
     ), admitted AS (
       UPDATE claus_payment_budget SET committed = committed + ${String(amount)}::bigint,
         network_committed = network_committed + CASE WHEN ${isNetwork}::boolean THEN ${String(amount)}::bigint ELSE 0 END
-      FROM image WHERE id = true AND ceiling IN (100000000, 500000000, 600000000)
+      FROM image WHERE id = true AND (ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000)
         AND committed >= 0 AND committed + ${String(amount)}::bigint <= ceiling
         AND (NOT ${isNetwork}::boolean OR network_committed + ${String(amount)}::bigint <= ${String(networkMaximum)}::bigint)
         AND (NOT ${isImage}::boolean OR (image.day::text = ${day}::text AND image.slot <= 12))
@@ -183,7 +183,7 @@ export async function confirmAbsent(db,id) {
 export async function budgetSnapshot(db) {
   const rows = await db`SELECT ceiling::text AS "limit", committed::text AS committed,
       (ceiling - committed)::text AS remaining FROM claus_payment_budget
-    WHERE id = true AND ceiling IN (100000000, 500000000, 600000000) AND committed BETWEEN 0 AND ceiling`;
+    WHERE id = true AND (ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000) AND committed BETWEEN 0 AND ceiling`;
   if (rows.length !== 1) throw Error('payment_budget_missing');
   return rows[0];
 }
@@ -198,7 +198,7 @@ export async function accountPayment(db, {id, amount, proof} = {}) {
     || (proof.id !== undefined && proof.id !== id) || (proof.requestId !== undefined && proof.requestId !== id)) return false;
   const changed = await db`WITH locked AS MATERIALIZED (
       SELECT id, committed FROM claus_payment_budget
-      WHERE id = true AND ceiling IN (100000000, 500000000, 600000000) AND committed BETWEEN 0 AND ceiling FOR UPDATE
+      WHERE id = true AND (ceiling IN (100000000,500000000) OR ceiling BETWEEN 600000000 AND 1200000000) AND committed BETWEEN 0 AND ceiling FOR UPDATE
     ), accounted AS (
       UPDATE claus_inference SET accounted_cost = ${String(cost)}::bigint, cost_proof = ${encoded}::jsonb
       FROM locked WHERE claus_inference.id = ${id} AND status IN ('failed', 'completed')
@@ -214,7 +214,7 @@ export async function accountPayment(db, {id, amount, proof} = {}) {
   // Fresh statement snapshot also handles a reconciliation that won the CAS
   // while this call waited for the singleton lock.
   const same = await db`SELECT i.id FROM claus_inference i, claus_payment_budget b
-    WHERE b.id = true AND b.ceiling IN (100000000, 500000000, 600000000) AND b.committed BETWEEN 0 AND b.ceiling
+    WHERE b.id = true AND (b.ceiling IN (100000000,500000000) OR b.ceiling BETWEEN 600000000 AND 1200000000) AND b.committed BETWEEN 0 AND b.ceiling
       AND i.id = ${id} AND i.status IN ('failed', 'completed')
       AND i.accounted_cost = ${String(cost)}::bigint AND i.cost_proof = ${encoded}::jsonb
       AND i.reserved_max BETWEEN 1 AND CASE WHEN i.image_day IS NULL THEN 3000000 ELSE 500000 END

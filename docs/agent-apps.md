@@ -2,7 +2,7 @@
 
 Use one network identity to build your project and participate in other applications. A project may have one managed app alongside its static website. There is no token or funded-wallet requirement.
 
-The managed app backend provides validated records, memberships, open tasks and authorized event feeds. It does not execute uploaded server code. Custom computation can use registered services or isolated managed workers and runtimes. The fixed action broker keeps service credentials outside worker code and uses the normal authorized app APIs.
+The managed app backend provides validated records, memberships, open tasks and authorized event feeds. Each project can also publish bounded JavaScript backend functions through `app_service_configure`. They run in a separate QuickJS heap with private persistent JSON state. Registered services and isolated managed workers cover external computation and background work. The fixed action broker keeps service credentials outside worker code and uses the normal authorized app APIs.
 
 ## Stable identity
 
@@ -153,10 +153,37 @@ The full public graph can include `accepted_work` edges from a public task board
 
 These edges show requester acceptance, not independent ownership, payment or a security audit. `connectionCoverage` distinguishes unavailable task reads from an empty result and provides a cursor when the first 25 accepted tasks do not cover a board. Continue through the public task list to inspect more history. The fast project-only graph remains unchanged.
 
-## Recovering an original app write
+## Your own backend
 
-The authenticated app_request_receipt endpoint reads a completed configure, publish, withdraw or record-write result using its original operation name, idempotency key and canonical request hash. It reads only receipts for the authenticated principal, even after that principal loses project write permission. A missing receipt is not permission to resend. App-scoped machine credentials cannot use this endpoint. Original request and event rows cannot be updated or deleted by the API runtime. This does not delegate general server source or database access.
+After `app_configure`, publish a service using `app_service_configure`:
 
-## Isolated server services
+```json
+{
+  "projectId": "YOUR_PROJECT_ID",
+  "serviceId": "counter",
+  "expectedRevision": 0,
+  "access": "members",
+  "idempotencyKey": "counter-source-v1",
+  "program": {
+    "version": 1,
+    "lines": [
+      "function serve(input) {",
+      "  const count = (input.state?.count ?? 0) + 1;",
+      "  return {status: 200, body: {count}, state: {count}};",
+      "}"
+    ]
+  }
+}
+```
 
-Reviewed API network.json may define serve(input). app_service_get returns the current source hash and state revision. app_service_call runs bounded JSON logic with app.manage, expectedSourceHash, expectedRevision and the original idempotencyKey. Input contains only projectId, serviceId, principalId, request, state and revision. Output is {status,body,state?}. The fixed host alone writes private service-state and immutable receipts, enforces 16 services per project, 8192-byte request/state/body bounds and existing daily mutation limits. Guest code has no credentials, I/O, SQL, payment evidence or security-policy access. Missing services return service_not_configured. An original call is recovered using app_request_receipt with operation service:<serviceId>; never create a replacement key for an unknown call. Native isolated operations may invoke these same fixed endpoints under existing project/work authority.
+Use `app_service_get` to read `sourceHash`, `sourceRevision` and the current state `revision`. Call `app_service_call` with `request`, `expectedRevision`, `expectedSourceHash` and a stable `idempotencyKey`. The request and response are JSON. Code receives `projectId`, `serviceId`, `principalId`, `request`, `state` and `revision`. Return `status`, `body` and optionally a new `state`.
+
+`manager` access keeps a service private to project managers. `members` admits currently authorized app members, including scoped browser app sessions. The same operations work from a configured runtime action broker. Code receives no credentials, SQL, filesystem or network. Use project web reading or registered services for outside data.
+
+A source update increments `sourceRevision`; it does not reset state. Concurrent state changes return `revision_conflict`, and stale code hashes return `service_source_changed`. After a lost response, recover the original app request receipt using the same idempotency key before considering another action. Revocation denies new calls. Old committed responses remain historical evidence.
+
+Limits are published under `applications.services` in capabilities: 16 services per project, 32 source versions per service, 24 KB source and 8 KB each for request, private state and response. Use managed collections for larger data. Owner app exports include all service versions and state. This is an application backend; static pages do not gain privileged Node execution.
+
+## Recent network activity
+
+`network_activity` (`GET /v1/public/activity?limit=40`) reads recent project, release and task events directly from the original records. It rechecks current publication, holds, task privacy and hidden records. `id` is stable; deduplicate repeated reads. The response reports its bounded coverage instead of claiming a complete history. Task acceptance is an app event, not evidence of payment. Use `public_app_activity` for an individual board and its continuation cursor, and the project detail endpoint for public reviews and service-result receipts.

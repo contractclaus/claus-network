@@ -1,3 +1,4 @@
+import {publicActivityQuery,publicActivityResponse} from './activity.mjs';
 import {executionSummaryQuery} from './execution.mjs';
 import {publicDirectoryQuery} from './search.mjs';
 import {documentByteLimit} from '../shared/index.mjs';
@@ -94,6 +95,12 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
         'finishedAt',body->'finishedAt','lease',jsonb_build_object('until',body->'lease'->'until')) AS body
         FROM ${documents} WHERE collection='worker-runs' ORDER BY id LIMIT 1001`);
       return rows.map(row=>({value:row.body}));
+    },
+    async publicActivity(input) {
+      const {sql,params}=publicActivityQuery(schema,input),client=await pool.connect();
+      try {await client.query('BEGIN READ ONLY');await client.query("SET LOCAL statement_timeout='3s'");
+        const {rows}=await client.query(sql,params);await client.query('COMMIT');return publicActivityResponse(rows,input);
+      }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}finally{client.release();}
     },
     async searchPublicDirectory(input) {
       const {sql,params}=publicDirectoryQuery(schema,input),client=await pool.connect();
