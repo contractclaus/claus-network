@@ -132,3 +132,8 @@ The owner can allow individual stable X user IDs through `settings.replyXAuthorI
 ## Operational input rejection
 
 `change_operational_code` reports typed local input-validation failures with `stage: input_validation`, `executed: false`, and corrective guidance. Each file may appear once in the replacement list; combine edits against freshly read source. These failures occur before creating a build, reserving a review or saving a release. Preserve the original rejected attempt while correcting its input. Database, transport, review and deployment failures are not classified from message text and retain their original recovery requirements. This distinction does not relax file scopes, permissions or budgets.
+
+
+## Runtime version continuity
+
+At a completed turn boundary, long-lived workflows read the matching native and Builder deployment pins. When both identify a different approved deployment, the workflow continues there with the same generation and existing work. An active lease, changed generation, disabled or inconsistent pins, malformed deployment or failed read prevents the transition. No lease is cleared, paid action replayed or new mission created. Existing immutable runs gain this behavior when they naturally adopt this release.
