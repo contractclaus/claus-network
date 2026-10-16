@@ -12,3 +12,6 @@ Missing reads remain unavailable. They never become zero balances or permission 
 This version adds no transaction sender, top-up, grant, withdrawal, budget increase, fee change or scheduled task. Existing project compute grants and Jobs gas/principal allowances are unchanged. A funded provider account does not remove the finite request allowance, and a wallet balance is not proof of revenue or a settled deposit.
 
 The native integration is a normal private tool read, outside Club access. A failed resource read does not remove the existing Jobs wallet/forecast result. Current unknown financial effects remain held until their original evidence resolves them.
+
+
+Current compute-service status is available separately in `computeFunding`; the version-1 `automaticFundingEnabled` flag remains scoped to the non-executable cash proposal. See the [current status contract](../compute-funding/README.md#private-operating-status).
