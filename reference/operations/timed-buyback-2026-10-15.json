@@ -1,0 +1,409 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-16T00:08:02.873Z",
+  "title": "Original timed-buyback interruption, 15 October 2026",
+  "scope": "Historical diagnosis. This record is not permission to execute a transaction or change a program.",
+  "transactions": [
+    {
+      "id": 759,
+      "hash": "0xd3a07b4b2791e2a2ab2b07d456d1337921716c4963d08f16950ef2f31df2deb8",
+      "from": "0xbb145ca83272c3806d4ddc75ca1d5514789cf1c5",
+      "to": "0x37bfb8ac7c960e558657871d41ca70e07e7dbfff",
+      "call": {
+        "functionName": "processBuybacksGuarded",
+        "args": [
+          "327986028580299101840012",
+          "260968635579274986",
+          "1792030883"
+        ]
+      },
+      "status": "success",
+      "blockNumber": "26194877",
+      "blockHash": "0xc308a866696e218f782e0771c58a8c24d20c13a17afe1408a95cb8354f75523f",
+      "canonical": true,
+      "blockTimestamp": "1792030715",
+      "blockTime": "2026-10-15T02:18:35.000Z",
+      "deadline": "2026-10-15T02:21:23.000Z",
+      "secondsAfterDeadline": "-168",
+      "explorer": "https://etherscan.io/tx/0xd3a07b4b2791e2a2ab2b07d456d1337921716c4963d08f16950ef2f31df2deb8"
+    },
+    {
+      "id": 760,
+      "hash": "0xc93fbdb664dea1d7ca6ab90c4528636b70ea29d770e4a2dbaadd547ac9121154",
+      "from": "0xbb145ca83272c3806d4ddc75ca1d5514789cf1c5",
+      "to": "0x37bfb8ac7c960e558657871d41ca70e07e7dbfff",
+      "call": {
+        "functionName": "processBuybacksGuarded",
+        "args": [
+          "328463843482648143626020",
+          "259773665446954812",
+          "1792031123"
+        ]
+      },
+      "status": "reverted",
+      "blockNumber": "26195794",
+      "blockHash": "0xb90ec176089ad96433329dcd4e12b2ae18301732ce0244eb1615ea063c866b3c",
+      "canonical": true,
+      "blockTimestamp": "1792041779",
+      "blockTime": "2026-10-15T05:22:59.000Z",
+      "deadline": "2026-10-15T02:25:23.000Z",
+      "secondsAfterDeadline": "10656",
+      "explorer": "https://etherscan.io/tx/0xc93fbdb664dea1d7ca6ab90c4528636b70ea29d770e4a2dbaadd547ac9121154"
+    }
+  ],
+  "originalExecutionTrace": {
+    "from": "0xbb145ca83272c3806d4ddc75ca1d5514789cf1c5",
+    "gas": "0x3a2ef",
+    "gasUsed": "0x9690",
+    "to": "0x37bfb8ac7c960e558657871d41ca70e07e7dbfff",
+    "input": "0x293b1c6a00000000000000000000000000000000000000000000458e0f85bb70dbaa7f24000000000000000000000000000000000000000000000000039ae6c5baf7873c000000000000000000000000000000000000000000000000000000006ad03993",
+    "output": "0x33b094a1",
+    "error": "execution reverted",
+    "calls": [
+      {
+        "from": "0x37bfb8ac7c960e558657871d41ca70e07e7dbfff",
+        "gas": "0x32d60",
+        "gasUsed": "0x2dc2",
+        "to": "0xd770a418310bc8fd164aac5f1e1e3f4159102f2c",
+        "input": "0x293b1c6a00000000000000000000000000000000000000000000458e0f85bb70dbaa7f24000000000000000000000000000000000000000000000000039ae6c5baf7873c000000000000000000000000000000000000000000000000000000006ad03993",
+        "output": "0x33b094a1",
+        "error": "execution reverted",
+        "calls": [
+          {
+            "from": "0x37bfb8ac7c960e558657871d41ca70e07e7dbfff",
+            "gas": "0x315df",
+            "gasUsed": "0x22a2",
+            "to": "0x3b1b1a7c8db9bbbafa073996cfcf0b87d7b45ddd",
+            "input": "0x293b1c6a00000000000000000000000000000000000000000000458e0f85bb70dbaa7f24000000000000000000000000000000000000000000000000039ae6c5baf7873c000000000000000000000000000000000000000000000000000000006ad03993",
+            "output": "0x33b094a1",
+            "error": "execution reverted",
+            "calls": [
+              {
+                "from": "0x37bfb8ac7c960e558657871d41ca70e07e7dbfff",
+                "gas": "0x2fd59",
+                "gasUsed": "0x986",
+                "to": "0x000000000004444c5dc75cb358380d2e3de08a90",
+                "input": "0x00fdd58e00000000000000000000000072d94600a7a57afb6a2090e9739fd8ab21e02eb20000000000000000000000000000000000000000000000000000000000000000",
+                "output": "0x0000000000000000000000000000000000000000000000000000000000000001",
+                "type": "STATICCALL"
+              },
+              {
+                "from": "0x37bfb8ac7c960e558657871d41ca70e07e7dbfff",
+                "gas": "0x2f254",
+                "gasUsed": "0x986",
+                "to": "0x000000000004444c5dc75cb358380d2e3de08a90",
+                "input": "0x00fdd58e00000000000000000000000037bfb8ac7c960e558657871d41ca70e07e7dbfff0000000000000000000000000000000000000000000000000000000000000000",
+                "output": "0x00000000000000000000000000000000000000000000000002d4a626811b0352",
+                "type": "STATICCALL"
+              }
+            ],
+            "value": "0x0",
+            "type": "DELEGATECALL"
+          }
+        ],
+        "value": "0x0",
+        "type": "DELEGATECALL"
+      }
+    ],
+    "value": "0x0",
+    "type": "CALL"
+  },
+  "originalProcessor": {
+    "deployment": "dpl_EqYzFMVb5DczwKXib91GTay3bBHY",
+    "sourceSha256": "20b6ecdd96114a2d6f8dcd1d05d6b8d8735e066b284c859859cd10dfdfa49da2",
+    "behavior": "Pending original requests block new requests. Original recovery recognizes price/pending-growth reverts, not an expired deadline. Unclassified reverts return failure_review_required."
+  },
+  "originalInvocations": {
+    "source": "Authenticated Vercel request-log export for the original deployment",
+    "records": [
+      {
+        "id": "qfctl-1792030529182-ffc701dd8d7d",
+        "at": "2026-10-15T02:15:29.182Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "vwrpz-1792030589124-c7932f368bc1",
+        "at": "2026-10-15T02:16:29.124Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "8fjkd-1792030649256-f1a61ea79b1a",
+        "at": "2026-10-15T02:17:29.256Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "xjsvs-1792030709375-66c5f9f92e20",
+        "at": "2026-10-15T02:18:29.375Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "jsc47-1792030769246-9de04753d064",
+        "at": "2026-10-15T02:19:29.246Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "slcbq-1792030829195-61f7a86c7d0f",
+        "at": "2026-10-15T02:20:29.195Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "8ddjv-1792030889299-3348ee1d1b96",
+        "at": "2026-10-15T02:21:29.299Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "994zd-1792030949296-01c4dcce09f8",
+        "at": "2026-10-15T02:22:29.296Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "8wmnr-1792031009326-16bb388a78d4",
+        "at": "2026-10-15T02:23:29.326Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "7czzk-1792031069411-0ae11dd894dc",
+        "at": "2026-10-15T02:24:29.411Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "7k78m-1792031129102-59183793dd6c",
+        "at": "2026-10-15T02:25:29.102Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "dr9km-1792031189324-3cf3c415d197",
+        "at": "2026-10-15T02:26:29.324Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "bktrg-1792031249289-cca3cd40d363",
+        "at": "2026-10-15T02:27:29.289Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "9wc8k-1792031309323-7f951921ed63",
+        "at": "2026-10-15T02:28:29.323Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "qsfkb-1792031369200-34a78da3d86b",
+        "at": "2026-10-15T02:29:29.200Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "jqgzx-1792031429272-cd4246542afb",
+        "at": "2026-10-15T02:30:29.272Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "5fnpn-1792031489217-10c775252172",
+        "at": "2026-10-15T02:31:29.217Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "m98bz-1792031549345-473d04c290a6",
+        "at": "2026-10-15T02:32:29.345Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "g72bb-1792031609470-d69ede8d9d6d",
+        "at": "2026-10-15T02:33:29.470Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "rzrcg-1792031669454-f19418ce36cf",
+        "at": "2026-10-15T02:34:29.454Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "bvn7p-1792031729209-a99ae7d7ef55",
+        "at": "2026-10-15T02:35:29.209Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "jvqzk-1792031789243-c5854d14f7dd",
+        "at": "2026-10-15T02:36:29.243Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "86zjp-1792031849500-29d8101f3ed2",
+        "at": "2026-10-15T02:37:29.500Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "4hztg-1792031909217-ae9aa2b289ee",
+        "at": "2026-10-15T02:38:29.217Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "wdt9t-1792031969327-a09ef79b1d56",
+        "at": "2026-10-15T02:39:29.327Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "6qdsr-1792032029223-b6ef6ddcac1e",
+        "at": "2026-10-15T02:40:29.223Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "cjctm-1792032089488-60da761430e3",
+        "at": "2026-10-15T02:41:29.488Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "xbdqd-1792032149243-f3907cf32f74",
+        "at": "2026-10-15T02:42:29.243Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "9hnwv-1792032209461-0dd83ca07600",
+        "at": "2026-10-15T02:43:29.461Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "2jknm-1792032269101-1466af90a051",
+        "at": "2026-10-15T02:44:29.101Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "8jk9j-1792032329092-b81b645b96a1",
+        "at": "2026-10-15T02:45:29.092Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "lvdbb-1792032389107-4490a81636cc",
+        "at": "2026-10-15T02:46:29.107Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "nm9zd-1792032449157-3a02c27f49b6",
+        "at": "2026-10-15T02:47:29.157Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "xbdqd-1792032509241-a71f371ad8ef",
+        "at": "2026-10-15T02:48:29.241Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "fsp7d-1792032569306-5681a7b7fe54",
+        "at": "2026-10-15T02:49:29.306Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "xpszx-1792032629414-e45a02971d2d",
+        "at": "2026-10-15T02:50:29.414Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "4hlzt-1792032689142-a6db017b0c14",
+        "at": "2026-10-15T02:51:29.142Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "bvn7p-1792032749303-67c6014c36eb",
+        "at": "2026-10-15T02:52:29.303Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "px2q2-1792032809275-e96f377721ff",
+        "at": "2026-10-15T02:53:29.275Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "g72bb-1792032869086-f438f30010f9",
+        "at": "2026-10-15T02:54:29.086Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "6b78f-1792032929273-4b522b91140c",
+        "at": "2026-10-15T02:55:29.273Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "r28vh-1792032989245-4b0a69664f03",
+        "at": "2026-10-15T02:56:29.245Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "ndwsj-1792033049288-d873747a00a9",
+        "at": "2026-10-15T02:57:29.288Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "ct5qh-1792033109315-2f4dc85ffb73",
+        "at": "2026-10-15T02:58:29.315Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      },
+      {
+        "id": "5fp7s-1792033169246-e17846e45509",
+        "at": "2026-10-15T02:59:29.246Z",
+        "path": "/api/ordinary-buybacks/process",
+        "httpStatus": 200
+      }
+    ],
+    "coverage": "Only the listed 02:15–02:59 UTC requests. HTTP 200 establishes an HTTP response, not a successful buyback. Response bodies were not retained."
+  },
+  "findings": [
+    "The last matched successful timed buyback is original759 at02:18:35 UTC.",
+    "Original760 was created at02:22:29.823 UTC and included at05:22:59 UTC, 10,656 seconds after its02:25:23 deadline. Its canonical receipt is reverted.",
+    "The original trace returns0x33b094a1 (InvalidBatch) through the historical timed wrapper and base.",
+    "The original processor recognizes price/pending-growth reverts but lacks expiry recovery. It does not replace a pending original transaction.",
+    "R33 added classification of proven expired original batches; the existing processor resumed with original761."
+  ],
+  "limitations": [
+    "These records do not establish why original760 was included late.",
+    "No inference that every HTTP200 response had a particular processor result is made.",
+    "This is an operator diagnosis of an existing program, not a newly selected Claus-authored hook."
+  ],
+  "resumption": {
+    "transactionHash": "0x877230ac76b1cc412595ed234c3a7d18c9ac905a93f57ef639fde21204211450",
+    "explorer": "https://etherscan.io/tx/0x877230ac76b1cc412595ed234c3a7d18c9ac905a93f57ef639fde21204211450"
+  },
+  "newTransactionsInitiatedForThisRecord": 0
+}
