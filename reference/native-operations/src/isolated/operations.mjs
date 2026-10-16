@@ -61,12 +61,13 @@ export async function runNetworkProgram({program,projectId,runId,context,allowWr
  return {state:'bounded',success:false,sourceHash,receipts,reason:'four_operations_completed',next:'Read the original results before deciding on another run.'};
 }
 
-// Only this non-financial namespace may be isolated from unrelated work.
-// Wallet, social and provider request uncertainty keeps its existing treatment.
+// App/development work and explicitly journaled external tools may be isolated.
+// External tools block further mutations at that provider until the original resolves.
+// Wallet, social and inference payment uncertainty keeps its existing treatment.
 export function isolateProgramActions(actions){
  const held=[],blocking=[];
  for(const action of actions){
-  if(action.kind==='development_export'&&/^development-export:[a-zA-Z0-9:_-]{1,160}$/.test(action.id??'')||action.kind==='development'&&/^development:[a-zA-Z0-9:_-]{1,160}$/.test(action.id??'')||action.kind==='network_program'&&/^network-program:[a-f0-9]{64}$/.test(action.id??'')||
+  if(action.kind==='external_tools'&&/^external:[a-zA-Z0-9:_-]{1,200}$/.test(action.id??'')||action.kind==='development_export'&&/^development-export:[a-zA-Z0-9:_-]{1,160}$/.test(action.id??'')||action.kind==='development'&&/^development:[a-zA-Z0-9:_-]{1,160}$/.test(action.id??'')||action.kind==='network_program'&&/^network-program:[a-f0-9]{64}$/.test(action.id??'')||
      action.kind==='network_program_run'&&/^network-program-run:[a-f0-9]{64}$/.test(action.id??''))held.push(action);
   else blocking.push(action);
  }

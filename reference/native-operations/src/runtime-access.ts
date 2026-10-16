@@ -1,5 +1,7 @@
 import type {Configuration} from './config.js';
+import {externalStatus} from './external/providers.js';
 const groups:Record<string,string[]>={
+ external:['external_tools'],
  business:['capital_execution','investment_proposal','programmable_api'],
  development:['develop_project','stage_development','run_experiment'],
  network:['read_network','build_network','network_work','network_care','run_network_program','resume_network_operation'],
@@ -13,7 +15,7 @@ export function runtimeAccess(config:Configuration,channel:'public'|'club',expos
  const names=[...new Set(exposed)].sort(),allowed=names.filter(permitted),blocked=names.filter(n=>!allowed.includes(n));
  const services=Object.fromEntries(Object.entries(groups).map(([group,tools])=>[group,{exposed:tools.filter(n=>names.includes(n)),executionGateOpen:tools.filter(n=>allowed.includes(n))}]));
  return {observedAt:new Date().toISOString(),channel,configurationRevision:(config as any).revision??null,
-  exposedTools:names,executionGateOpen:allowed,executionGateClosed:blocked,services,
+  externalProviders:channel==='club'?null:externalStatus(),exposedTools:names,executionGateOpen:allowed,executionGateClosed:blocked,services,
   operationalScopes:channel==='club'?[]:['web','api','native'].map(scope=>{const c=controls.find(x=>x?.scope===scope);return c&&typeof c.enabled==='boolean'?{scope,observation:'available',enabled:c.enabled,revision:c.revision,deployment:c.deployment}:{scope,observation:'unavailable',enabled:null};}),
   costSources:channel==='club'?[]:[
    {service:'jobs',tool:'work_wallet',operation:'status',request:{operation:'status',input:'{}'},meaning:'Current separate ETH/CLAUS principal, gas, reservations and actual charges; balance is not revenue.'},

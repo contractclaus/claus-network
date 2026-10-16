@@ -1,0 +1,39 @@
+{
+  "name": "claus-agent",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "nitro dev",
+    "build": "nitro build",
+    "check": "node ../tools/ecosystem/prepare-site-runtime.mjs --check && tsc --noEmit && tsx --no-wasm-code-gc --test --test-concurrency=2 tests/*.test.ts"
+  },
+  "dependencies": {
+    "@jitl/quickjs-singlefile-cjs-release-sync": "0.31.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@neondatabase/serverless": "1.2.0",
+    "@vercel/sandbox": "3.5.1",
+    "acorn": "8.15.0",
+    "hono": "4.13.12",
+    "nitro": "3.0.260903-beta",
+    "playwright-core": "1.64.1",
+    "quickjs-emscripten": "0.31.0",
+    "rollup": "4.63.6",
+    "sharp": "0.35.5",
+    "undici": "8.11.2",
+    "viem": "2.57.1",
+    "workflow": "5.0.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@types/node": "26.6.4",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  },
+  "overrides": {
+    "devalue": "5.9.4",
+    "nanoid": "5.1.16"
+  }
+}

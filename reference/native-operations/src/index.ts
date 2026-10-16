@@ -1,3 +1,4 @@
+import {developmentToolsRoute} from './external/development-bridge.js';
 import {managedSchemaReady} from './database-schema.js';
 import {isolatedHealth} from './isolated/bridge.js';
 import {publicWork,networkCare} from './network-care.js';
@@ -55,6 +56,7 @@ import {networkReviewRoutes} from './network-review-routes.js';
 import {networkOperations,networkOperationsEnabled} from './network-operations.js';
 
 const app=new Hono();
+app.post('/internal/development/tools',c=>developmentToolsRoute(c.req.raw));
 app.route('/internal/network',networkReviewRoutes);
 app.get('/public/lab/:view',async c=>{const view=c.req.param('view');if(!['feed','ideas'].includes(view))return c.json({error:'not_found'},404);const limit=Number(c.req.query('limit')??20);if(!Number.isInteger(limit)||limit<1||limit>50)return c.json({error:'invalid_limit'},400);const data=await publicLab(view,{after:c.req.query('after'),before:c.req.query('before'),id:c.req.query('idea'),limit});c.header('Cache-Control','no-store');return data?c.json(data):c.json({error:'not_available'},404);});
 app.get('/public/lab/ideas/:id',async c=>{const data=await publicLab('idea',{id:c.req.param('id')});c.header('Cache-Control','no-store');return data?c.json(data):c.json({error:'not_found'},404);});
@@ -81,6 +83,7 @@ app.use('/api/*',async(c,next)=>{
   if(Number(c.req.header('content-length')??0)>(c.req.path==='/api/config'?256000:c.req.path==='/api/workspaces'?150000:100000)) return c.json({error:'request_too_large'},413);
   await next();
 });
+app.post('/api/external-tools',async c=>{const id=c.req.header('idempotency-key');if(!id||!/^[-a-zA-Z0-9_:]{1,160}$/.test(id))return c.json({error:'idempotency_key_required'},400);const raw=await c.req.text();if(Buffer.byteLength(raw)>32000)return c.json({error:'request_too_large'},413);try{return c.json(await executeTool(id,'external_tools',JSON.parse(raw)));}catch(e){return c.json({error:e instanceof Error?e.message:'external_tool_unavailable'},409);}});
 app.post('/api/network-care',async c=>{try{if(!networkOperationsEnabled(await store.configuration()))return c.json({error:'disabled'},403);return c.json(await networkCare(await c.req.json()));}catch(e){return c.json({error:e instanceof Error?e.message:'unavailable'},409);}});
 app.get('/api/network-releases',async c=>c.json({releases:await networkReleaseFeed()}));
 app.post('/api/network-releases',async c=>{try{const raw=await c.req.text();if(Buffer.byteLength(raw)>16000)return c.json({error:'request_too_large'},413);return c.json(await enqueueNetworkRelease(JSON.parse(raw)),201);}catch(e){return c.json({error:e instanceof Error?e.message:'network_release_invalid'},400);}});
@@ -150,10 +153,10 @@ app.get('/api/inference-bindings',c=>c.json(inferenceBindings()));
 app.get('/api/missions',async c=>c.json(await activeMissions()));
 app.post('/api/network-surface/setup',async c=>{const v=await c.req.json();const host=new SurfaceHost();await host.assertProject(v.projectId);const d=await host.reconcile(v.projectId,'sr_bootstrap_20261014_v2',sourceHash(initialSource),v.deploymentId);if(!d||d.state!=='READY')return c.json({error:'surface_bootstrap_not_ready'},409);await host.verifySource(d.id,initialSource,'sr_bootstrap_20261014_v2',sourceHash(initialSource));const proof=await host.verify(d.url,'sr_bootstrap_20261014_v2',sourceHash(initialSource));return c.json(await surfaceStore().bootstrap(v.projectId,d,proof));});
 app.get('/api/network-surface',async c=>c.json(await surfaceStore().read(c.req.query('path'),Number(c.req.query('offset')??0),c.req.query('id'))));
-app.post('/api/network-surface/control',async c=>{const v=await c.req.json();if(typeof v.enabled!=='boolean'||!Number.isSafeInteger(v.expectedRevision))return c.json({error:'invalid_control'},400);return c.json(await surfaceStore().setEnabled(v.enabled,v.expectedRevision));});
+app.post('/api/network-surface/control',c=>c.json({error:'fixed_operator_control_required'},410));
 app.get('/api/network-surface/host',async c=>{try{const current=await surfaceStore().current();await new SurfaceHost().assertProject(current.project_id);return c.json({ready:true});}catch(error){const code=error instanceof Error&&/^surface_[a-z0-9_]+$/.test(error.message)?error.message:'surface_host_unavailable';return c.json({ready:false,error:code},503);}});
 app.get('/api/network-surface/runner',async c=>c.json({active:await builderStore().coordination.active(),deploymentId:process.env.VERCEL_DEPLOYMENT_ID}));
-app.post('/api/network-surface/runner',async c=>{const v=await c.req.json();if(!process.env.VERCEL_DEPLOYMENT_ID||!Number.isSafeInteger(v.expectedRevision))return c.json({error:'invalid_runner'},400);await builderStore().coordination.initialize();return c.json(await builderStore().coordination.pin(v.expectedRevision,process.env.VERCEL_DEPLOYMENT_ID));});
+app.post('/api/network-surface/runner',c=>c.json({error:'fixed_operator_control_required'},410));
 app.post('/api/network-surface/check',async c=>c.json(await monitorSurface()));
 app.post('/api/network-surface/recover-review',async c=>{const v=await c.req.json();if(!v||Object.keys(v).some(k=>!['id','expectedReviewEffect'].includes(k)))return c.json({error:'surface_recovery_invalid'},400);return c.json(await surfaceStore().recoverReview(v.id,v.expectedReviewEffect,labInference()));});
 app.post('/api/network-surface/retry-review',async c=>{const v=await c.req.json();if(!v||Object.keys(v).some(k=>!['id','expectedReviewEffect'].includes(k)))return c.json({error:'surface_retry_invalid'},400);return c.json(await surfaceStore().retryReview(c.req.header('idempotency-key')??'',v.id,v.expectedReviewEffect));});
@@ -162,7 +165,7 @@ app.get('/api/network-operations',async c=>c.json({enabled:networkOperationsEnab
 // a previously signed receipt after new work-wallet spending is disabled.
 app.get('/api/work-wallet',async c=>{c.header('Cache-Control','no-store');return c.json(await workWallet.tool({operation:'status',input:JSON.stringify(c.req.query('id')?{id:c.req.query('id')}:{})}));});
 app.post('/api/work-wallet',async c=>{c.header('Cache-Control','no-store');return c.json(await executeTool('operator-work-wallet','work_wallet',await c.req.json()));});
-app.post('/api/missions',async c=>{const v=await c.req.json();return c.json(await assignMission(v.id,v.body,v.allowChainWrite??false));});
+app.post('/api/missions',c=>c.json({error:'fixed_owner_mission_required'},410));
 // Operator-only selection for a separately authorized next test/production
 // deployment. Ordinary agent publications retain the current token and hook.
 app.post('/api/public-project',async c=>{

@@ -1,3 +1,4 @@
+import {developmentTools,developmentToolClient} from './external/development-grant.js';
 import {createHash} from 'node:crypto';
 import {Sandbox} from '@vercel/sandbox';
 import {developmentSandboxFetch} from './sandbox-fetch.js';
@@ -29,15 +30,17 @@ export class DevelopmentExecution {
   try{
    // Each original effect gets its own copy. Concurrent work cannot mutate a
    // shared running VM; only a compare-and-swap publishes the new checkpoint.
-   box=await this.backend.create({name:progress.name,source:{type:'snapshot',snapshotId:baseSnapshot},timeout:(seconds+60)*1000,resources:{vcpus:2},networkPolicy:network,persistent:true,snapshotExpiration:0,env:{},fetch:developmentSandboxFetch});
+   const bridge=developmentTools(id,progress.deadline);
+   const net=bridge?{allow:[...network.allow,bridge.host]}:network;
+   box=await this.backend.create({name:progress.name,source:{type:'snapshot',snapshotId:baseSnapshot},timeout:(seconds+60)*1000,resources:{vcpus:2},networkPolicy:net,persistent:true,snapshotExpiration:0,env:{},fetch:developmentSandboxFetch});
    const session=box.currentSession();await record({phase:'writing',sessionId:session.sessionId});
    // A previous project may contain symlinks. Never write supplied files
    // through them: first validate parents and leaf within the guest itself.
    const merged=new Map(importedFiles.map(f=>[f.path,f]));for(const f of input.files)merged.set(f.path,f);
    const payload=JSON.stringify([...merged.values()]);
-   await session.writeFiles([{path:'/tmp/claus-development-input.json',content:Buffer.from(payload)},{path:'/tmp/claus-development-write.mjs',content:Buffer.from(developmentWriter(!input.projectId))}]);
+   await session.writeFiles([{path:'/tmp/claus-tools.mjs',content:Buffer.from(developmentToolClient)},{path:'/tmp/claus-development-input.json',content:Buffer.from(payload)},{path:'/tmp/claus-development-write.mjs',content:Buffer.from(developmentWriter(!input.projectId))}]);
    await record({phase:'command_starting'});
-   const command=await session.runCommand({cmd:'/usr/bin/env',args:['-i','PATH=/vercel/sandbox/bin:/vercel/runtimes/node24/bin:/usr/local/bin:/usr/bin:/bin','HOME=/home/vercel-sandbox','timeout','--kill-after=3s',seconds+'s','bash','--noprofile','--norc','-c','node /tmp/claus-development-write.mjs && cd /vercel/sandbox/project &&\n'+input.command],detached:true});
+   const command=await session.runCommand({cmd:'/usr/bin/env',args:['-i','PATH=/vercel/sandbox/bin:/vercel/runtimes/node24/bin:/usr/local/bin:/usr/bin:/bin','HOME=/home/vercel-sandbox',...(bridge?['CLAUS_TOOLS_URL='+bridge.url,'CLAUS_TOOLS_TOKEN='+bridge.token]:[]),'timeout','--kill-after=3s',seconds+'s','bash','--noprofile','--norc','-c','node /tmp/claus-development-write.mjs && cd /vercel/sandbox/project &&\n'+input.command],detached:true});
    await record({phase:'command_running',commandId:command.cmdId});
    const result=await developmentOutput(command,AbortSignal.timeout(Math.max(1,Date.parse(progress.deadline)-Date.now())));
    await record({phase:'command_finished',commandResult:result});

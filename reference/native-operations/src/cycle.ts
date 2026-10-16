@@ -40,7 +40,8 @@ When the tools are available, read_adaptation and adapt_behavior manage only tho
 
 export function interruptionPlan(pending:any[],failures=0,now=Date.now()) {
   if(pending.length) {
-    const recoverable=canReconcileActions(pending);
+    const blocking=isolateProgramActions(pending).blocking;if(!blocking.length)return {status:'retrying',failureCount:failures,nextAt:new Date(now+60000).toISOString()};
+    const recoverable=canReconcileActions(blocking);
     return {status:recoverable?'waiting_for_effect':'blocked',failureCount:failures,nextAt:recoverable?new Date(now+60000).toISOString():null};
   }
   const failureCount=Math.min(failures+1,8);
@@ -132,7 +133,7 @@ export async function cycle(generation:number,fromClubWake=false) {
     const publication=publicationContext(published);
     const social=config.policy.capabilities.xReply?await socialContext(config):null;
     const club=null;
-    messages=[{role:'system',content:systemPrompt(config)+(networkOperationsEnabled(config)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')},{role:'user',content:JSON.stringify({time:new Date().toISOString(),mode:config.settings.mode,configurationRevision:config.revision,memory,agenda,continuation,recent,archive,social,publication,club,work,network,networkWork,unresolvedNetworkPrograms:unresolvedNetworkPrograms.map(a=>({id:a.id,workId:a.input?.workId,projectId:a.input?.projectId,reason:a.kind==='development'?'Original development command retained. Do not repeat it or reuse its working branch. Other work and conversations may continue.':'Original non-financial app outcome retained. That project/work cannot start another program until resolved. Unrelated work may continue.'}))})}];
+    messages=[{role:'system',content:systemPrompt(config)+(networkOperationsEnabled(config)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')},{role:'user',content:JSON.stringify({time:new Date().toISOString(),mode:config.settings.mode,configurationRevision:config.revision,memory,agenda,continuation,recent,archive,social,publication,club,work,network,networkWork,unresolvedNetworkPrograms:unresolvedNetworkPrograms.map(a=>({id:a.id,workId:a.input?.workId,projectId:a.input?.projectId,reason:a.kind==='external_tools'?'Original external tool response retained. Read external_tools receipt with this id. New writes to that provider are held; unrelated work may continue.':a.kind==='development'?'Original development command retained. Do not repeat it or reuse its working branch. Other work and conversations may continue.':'Original non-financial app outcome retained. That project/work cannot start another program until resolved. Unrelated work may continue.'}))})}];
     // Reserve room for several source pages and their complete tool exchanges.
     // Compact the separately retrievable overview before dropping work history.
     messages[1].content=JSON.stringify(operatingContext(JSON.parse(messages[1].content),view=>contextFits([messages[0],{role:'user',content:JSON.stringify(view)}],config.settings,'public',180000)));
