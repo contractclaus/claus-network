@@ -42,7 +42,7 @@ async function publishNextNetworkRelease(){
  try{
   const result:any=await reserve(id,'x_post',{text:receipt.text,networkReleaseId:receipt.id,receiptHash:row.hash},async()=>{
    if(!announcementsEnabled(await config()))throw new ConfirmedFailure('publication_disabled');
-   const r=await publish('tweets','POST',{text:receipt.text});if(!/^\d{1,19}$/.test(r.data?.id??''))throw Error('x_post_response_missing');
+   const r=await publish('tweets','POST',{text:receipt.text},undefined,id);if(!/^\d{1,19}$/.test(r.data?.id??''))throw Error('x_post_response_missing');
    await progress(id,{result:r});await log('x_post','Published a verified network release',{postId:r.data.id,account:verifiedAccount.username,networkReleaseId:receipt.id,sourceHash:receipt.sourceHash});return r;
   });
   await db()`UPDATE claus_network_releases SET status='published',updated_at=now() WHERE id=${receipt.id}`;return {published:true,postId:result.data.id,releaseId:receipt.id};

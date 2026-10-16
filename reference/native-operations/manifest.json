@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_DCk1JHsGHDDvwgaFahApEZ59TZfk",
-  "source": "claus-phase3-followthrough-native-20261016",
+  "deployed": "dpl_AjeMVnF7rdJF9FUb5xnhj5ct5rxV",
+  "source": "claus-release-publisher-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -54,7 +54,7 @@
     "src/gotchi/store.ts": "8f454cf1bf9b4648a7a7b75396a5a5e71f11b5488b2a680a682bcc33c659c82e",
     "src/lab-store.ts": "9301f6a24a7d3d04824bc4d3a0a70742cd02048ae6978562750b90f5423e8085",
     "src/network-incidents.ts": "bfada06cf675df294eada82a0a34ace6fc5deb9704a5e88bc6968156dac56e00",
-    "src/network-releases.ts": "5f8b7cb4667d2b2db64301b205b5034ee991e53297dd306a9e3b53920cb90221",
+    "src/network-releases.ts": "e6ad2528ffda667de0cc45967c459d294aa9f65e48a33a458bb9fb0388e07ed2",
     "src/network-review.ts": "edcc7e884b64d06d780a8f6762cc757df9be2ffbef95933e1b1fb0964a70a475",
     "src/site/feature-store.ts": "16b8b7cbdb59e0fbb8a317f6dba71ec8f23ea7c0636e7560e3fc31a0e0f992de",
     "src/site/store.ts": "a20bc479eb9dab3daa5d47add36118325d34a3a9ccb6bac45380ae2edf899bbd",
