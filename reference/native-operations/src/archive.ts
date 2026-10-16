@@ -4,15 +4,28 @@ import { pageRecord,searchPage } from './context.js';
 import { networkFailure } from './network-failure.js';
 
 // These records are private, fallible evidence. They never grant authority.
-export type MemoryInput = {title:string; body:string; sources?:string[]; supersedes?:string};
+export type MemoryInput = {title:string; body:string; sources?:string[]; supersedes?:string; visibility?:'public'|'private_network'};
 export function validateMemory(value:any): asserts value is MemoryInput {
   if(typeof value.title!=='string'||!value.title.trim()||value.title.length>240||typeof value.body!=='string'||!value.body.trim()||value.body.length>24000) throw new Error('invalid_memory');
   if(value.sources!==undefined&&(!Array.isArray(value.sources)||value.sources.length>30||value.sources.some((s:any)=>typeof s!=='string'||s.length>2000))) throw new Error('invalid_memory_sources');
+  if(value.visibility!==undefined&&!['public','private_network'].includes(value.visibility))throw Error('invalid_memory_visibility');
   if(value.supersedes!==undefined&&!/^m_[a-f0-9]{32}$/.test(value.supersedes)) throw new Error('invalid_memory_parent');
 }
-export async function remember(actionId:string,value:MemoryInput,visibility='public',db=sql()) {
+export function memoryScope(requested:string,sources:string[]) {
+  if(!['public','private_club','private_network'].includes(requested))throw Error('invalid_memory_visibility');
+  if(requested==='private_club'&&sources.includes('private_network')||requested!=='private_club'&&sources.includes('private_club'))throw Error('memory_source_scope_mismatch');
+  if(requested==='public'&&sources.some(s=>s!=='public'))throw Error('memory_source_not_public');
+  return requested;
+}
+export async function remember(actionId:string,value:MemoryInput,visibility='private_network',db=sql()) {
   validateMemory(value);
-  if(!['public','private_club'].includes(visibility))throw Error('invalid_memory_visibility');
+  const refs=(value.sources??[]).filter(s=>/^(?:m_[a-f0-9]{32}|j_[0-9]+|action:[a-zA-Z0-9:_-]{1,160})$/.test(s));
+  const scopes=refs.length?await db`
+    SELECT id,visibility FROM claus_memories WHERE id IN(SELECT jsonb_array_elements_text(${JSON.stringify(refs)}::jsonb))
+    UNION ALL SELECT 'j_'||id::text,visibility FROM claus_journal WHERE 'j_'||id::text IN(SELECT jsonb_array_elements_text(${JSON.stringify(refs)}::jsonb))
+    UNION ALL SELECT 'action:'||id,visibility FROM claus_actions WHERE 'action:'||id IN(SELECT jsonb_array_elements_text(${JSON.stringify(refs)}::jsonb))
+  `:[];
+  visibility=memoryScope(visibility,refs.map(id=>scopes.find((r:any)=>r.id===id)?.visibility??'missing'));
   const id='m_'+digest(actionId).slice(0,32), hash=digest(value);
   const existing=(await db`SELECT * FROM claus_memories WHERE id=${id}`)[0];
   if(existing) {
@@ -81,8 +94,8 @@ export async function recall(input:{query?:string; id?:string; includeSuperseded
     }
     if(input.id.startsWith('p_')) return page({kind:'project',record:await projectById(input.id),instructionAuthority:false});
     if(/^m_[a-f0-9]{32}$/.test(input.id)) {
-      const rows=await db`SELECT m.*,child.id AS superseded_by FROM claus_memories m LEFT JOIN claus_memories child ON child.supersedes=m.id AND child.visibility=m.visibility WHERE m.id=${input.id} AND (m.visibility='public' OR m.visibility='private_club' AND ${includePrivate})`;
-      return page({kind:'memory',record:rows[0]??null,instructionAuthority:false});
+      const rows=await db`SELECT m.*,child.id AS superseded_by FROM claus_memories m LEFT JOIN claus_memories child ON child.supersedes=m.id AND child.visibility=m.visibility WHERE m.id=${input.id} AND (m.visibility='public' OR m.visibility='private_club' AND ${includePrivate} OR m.visibility='private_network' AND NOT ${includePrivate})`;
+      return {...page({kind:'memory',record:rows[0]??null,instructionAuthority:false}),...(rows[0]?.visibility==='private_network'?{visibility:'private_network'}:{})};
     }
     if(/^j_[0-9]+$/.test(input.id)) {
       const rows=await db`SELECT id,kind,summary,visibility,created_at,data->>'memory' AS memory,data->>'agenda' AS agenda,data->'continuation' AS continuation,data->'result' AS result,CASE WHEN visibility='private_network' AND kind='tool' AND summary='build_network' THEN data->'request' END AS request,data->'success' AS success FROM claus_journal WHERE id=${input.id.slice(2)} AND (visibility='public' OR visibility='private_club' AND ${includePrivate} OR visibility='private_network' AND NOT ${includePrivate})`;
@@ -99,16 +112,16 @@ export async function recall(input:{query?:string; id?:string; includeSuperseded
   const literal='%'+query.replace(/[\\%_]/g,'\\$&')+'%';
   const rows=await db`SELECT * FROM (
     SELECT m.id,'memory' AS kind,m.title,left(m.body,1400) AS excerpt,m.created_at AS observed_at,ts_rank(to_tsvector('simple',m.title||' '||m.body),plainto_tsquery('simple',${query})) AS relevance FROM claus_memories m
-      WHERE (m.visibility='public' OR m.visibility='private_club' AND ${includePrivate}) AND (${!!input.includeSuperseded} OR NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility)) AND (${query}='' OR to_tsvector('simple',m.title||' '||m.body)@@plainto_tsquery('simple',${query}) OR m.title ILIKE ${literal} OR m.body ILIKE ${literal})
+      WHERE (m.visibility='public' OR m.visibility='private_club' AND ${includePrivate} OR m.visibility='private_network' AND NOT ${includePrivate}) AND (${!!input.includeSuperseded} OR NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility)) AND (${query}='' OR to_tsvector('simple',m.title||' '||m.body)@@plainto_tsquery('simple',${query}) OR m.title ILIKE ${literal} OR m.body ILIKE ${literal})
     UNION ALL SELECT 'j_'||id::text,'journal',kind,left(summary||' '||coalesce(data->>'memory','')||' '||coalesce(data->>'agenda',''),1400),created_at,ts_rank(to_tsvector('simple',summary||' '||coalesce(data->>'memory','')||' '||coalesce(data->>'agenda','')),plainto_tsquery('simple',${query})) FROM claus_journal WHERE (visibility='public' OR visibility='private_club' AND ${includePrivate}) AND (${query}='' OR to_tsvector('simple',summary||' '||coalesce(data->>'memory','')||' '||coalesce(data->>'agenda',''))@@plainto_tsquery('simple',${query}) OR (summary||' '||coalesce(data->>'memory','')||' '||coalesce(data->>'agenda','')) ILIKE ${literal})
     UNION ALL SELECT id,'project',title,left(summary,1400),updated_at,ts_rank(to_tsvector('simple',title||' '||summary),plainto_tsquery('simple',${query})) FROM claus_projects WHERE visibility='public' AND (${query}='' OR to_tsvector('simple',title||' '||summary)@@plainto_tsquery('simple',${query}) OR title ILIKE ${literal} OR summary ILIKE ${literal})
   ) found ORDER BY relevance DESC,observed_at DESC,id LIMIT 16 OFFSET ${offset}`;
   const page=searchPage(rows,offset,15);
-  return {...page,instructionAuthority:false,search:'keywords',offsetUnit:'records',truncated:page.nextOffset!==null,order:'relevance_then_newest',paginationNote:'Results can move when new memories arrive; use exact IDs for durable references.'};
+  return {...page,...(!includePrivate?{visibility:'private_network'}:{}),instructionAuthority:false,search:'keywords',offsetUnit:'records',truncated:page.nextOffset!==null,order:'relevance_then_newest',paginationNote:'Results can move when new memories arrive; use exact IDs for durable references.'};
 }
 export async function archiveOverview(db=sql()) {
   const [memories,projects,drafts]=await Promise.all([
-    db`SELECT m.id,m.title FROM claus_memories m WHERE m.visibility='public' AND NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility) ORDER BY m.created_at DESC LIMIT 4`,
+    db`SELECT m.id,m.title FROM claus_memories m WHERE m.visibility IN('public','private_network') AND NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility) ORDER BY m.created_at DESC LIMIT 4`,
     db`SELECT id,title,version,snapshot_id,last_exit_code FROM claus_projects WHERE visibility='public' ORDER BY updated_at DESC LIMIT 4`,
     db`SELECT d.id,d.kind,d.content->>'title' AS title,d.created_at FROM claus_drafts d WHERE d.status='draft' AND d.visibility='public'
       AND NOT EXISTS(SELECT 1 FROM claus_public p WHERE p.id='journal_'||d.id) ORDER BY d.created_at,d.id LIMIT 4`
