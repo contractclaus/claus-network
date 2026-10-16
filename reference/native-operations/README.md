@@ -61,3 +61,7 @@ Successful development/export/operating-program receipts can advance internal wo
 The fixed launch-preparation adapter accepts exact request files from completed development checkpoints as well as completed experiments. The service retains the provider credential. It can read and prepare provider resources; it cannot sign or broadcast a launch. Current discovery and client compatibility do not establish a launched token, liquidity or an authorized investment.
 
 Provider launch reads, source requests and their original action records stay private, including uncertain outcomes. A repeated unknown submission retains its original identity and cannot cause another send.
+
+## Development output
+
+A normal verbose build can finish and save its immutable checkpoint even when its displayed stdout or stderr is truncated. Results carry separate truncation flags, an exit code and the checkpoint outcome. Truncated stdout cannot be used as a complete launch request. Development log transport remains bounded at4MiB and the original command keeps its deadline; a flood requests termination and cannot produce a successful checkpoint. Recovery reads the same original command without rerunning it. The separate experiment tool retains its existing bounds.
