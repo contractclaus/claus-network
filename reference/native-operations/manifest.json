@@ -1,12 +1,12 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_63cmXJ93kyPbuqe6gNafirSMo47e",
-  "source": "claus-x-audience-exception-native-20261016",
+  "deployed": "dpl_8nhngoFzzPLNmBW1McmKZwUZCKUE",
+  "source": "claus-operational-rejections-native-20261016",
   "files": {
-    "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
+    "src/operations/policy.ts": "bc0aa35b64d5f4d2d8689a8763544f07eca2a2f9c3f6b8c8b1703c62d8cd6bf1",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
-    "src/operations/store.ts": "a48d3a623742ea3e1dae69751e741681fd15894e385a76c492e0dc969f1d3678",
-    "src/operations/service.ts": "858774001333e8b8794e8e3da1e209360ed2cbb5c9686bd06e016320704bcfc0",
+    "src/operations/store.ts": "b36767bb8040ef1abf88194fc8a0d0d3061beeacfacafbbd5551b62f2b51542b",
+    "src/operations/service.ts": "55c6b88a70c0deb2ec4ae4fe36ae921b6c1144cf85fe40e8b96cbb54adf147a4",
     "src/operations/worker.ts": "3a1463e79c144d63e84ab11f4d14e815da1cfa52273c7249ec8ca4b6c9671817",
     "src/operations/handoff.ts": "4057b37e738c1eed06e63ec287f071748f14c5f1e16be56f817559c3d2f31c27",
     "src/operations/review-evidence.ts": "f889924460e2be67aaaf1990eb740e7955b5cda5f4ced42bb965fda6910ff90a",

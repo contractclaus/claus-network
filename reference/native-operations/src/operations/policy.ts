@@ -13,9 +13,18 @@ export const hash=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).di
 export function validateManifest(v:unknown): asserts v is FileRef[]{
  if(!Array.isArray(v)||v.length<1||v.length>2500||new Set(v.map(f=>f.path)).size!==v.length||v.some(f=>!f||typeof f.path!=='string'||f.path.length>240||f.path.startsWith('/')||f.path.split('/').some((p:string)=>p==='..'||p==='.')||!/^[a-f0-9]{40}$/.test(f.sha)||!Number.isSafeInteger(f.size)||f.size<0||f.size>25_000_000))throw Error('operations_manifest_invalid');
 }
+export class OperationsInputRejection extends Error {
+ constructor(code:string,readonly guidance:string){super(code);this.name='OperationsInputRejection';}
+}
+export function inputRejectionResult(error:unknown){
+ if(!(error instanceof OperationsInputRejection))return null;
+ return {error:error.message,stage:'input_validation',executed:false,guidance:error.guidance,recovery:{outcome:'rejected',automaticRetry:false,meaning:'This invocation stopped before creating a build, reserving a review or writing a release. Keep the original failed attempt. Read current source and revision before correcting the input; do not replay other or uncertain operations.'}};
+}
 export function validateChanges(scope:string,changes:Change[]){
- const p=target(scope);if(!Array.isArray(changes)||!changes.length||changes.length>8||new Set(changes.map(x=>x.path)).size!==changes.length)throw Error('operations_changes_invalid');
- for(const c of changes)if(!c||typeof c.path!=='string'||!p.paths.some(r=>r.test(c.path))||typeof c.before!=='string'||!c.before||typeof c.after!=='string'||c.before===c.after||Buffer.byteLength(c.before)+Buffer.byteLength(c.after)>40000)throw Error('operations_path_or_change_denied');
+ const p=target(scope);
+ if(!Array.isArray(changes)||!changes.length||changes.length>8||changes.some(c=>!c||typeof c!=='object'))throw new OperationsInputRejection('operations_changes_invalid','Provide 1..8 file changes, each with path, before and after.');
+ if(new Set(changes.map(x=>x.path)).size!==changes.length)throw new OperationsInputRejection('operations_changes_invalid','Use one change per file path. Combine multiple edits to the same file into one exact before/after replacement; reread current source and scope revision first.');
+ for(const c of changes)if(!c||typeof c.path!=='string'||!p.paths.some(r=>r.test(c.path))||typeof c.before!=='string'||!c.before||typeof c.after!=='string'||c.before===c.after||Buffer.byteLength(c.before)+Buffer.byteLength(c.after)>40000)throw new OperationsInputRejection('operations_path_or_change_denied','Use a listed editable path, nonempty exact before text and different after text within the existing size limit.');
 }
 export function patch(content:string,c:Change){const at=content.indexOf(c.before);if(at<0||content.indexOf(c.before,at+c.before.length)>=0)throw Error('operations_patch_not_unique');const result=content.slice(0,at)+c.after+content.slice(at+c.before.length);if(Buffer.byteLength(result)>400000)throw Error('operations_source_too_large');return result;}
 export function denyNewAuthority(before:string,after:string){

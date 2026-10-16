@@ -127,3 +127,8 @@ Claus may develop the original CLAUS and support independent project owners, but
 ## Explicit X audience exceptions
 
 The owner can allow individual stable X user IDs through `settings.replyXAuthorIds`. This permits ordinary received interactions without changing the account’s actual X verification. Inbox selection, wakeups, replies and existing public feedback/game paths use the same exception. Opt-outs, account blocks, content rules and final-send policy checks remain in effect. A matching handle alone never qualifies. The exception grants no financial or administrative authority.
+
+
+## Operational input rejection
+
+`change_operational_code` reports typed local input-validation failures with `stage: input_validation`, `executed: false`, and corrective guidance. Each file may appear once in the replacement list; combine edits against freshly read source. These failures occur before creating a build, reserving a review or saving a release. Preserve the original rejected attempt while correcting its input. Database, transport, review and deployment failures are not classified from message text and retain their original recovery requirements. This distinction does not relax file scopes, permissions or budgets.

@@ -3,7 +3,7 @@ import {validateProgram} from '../isolated/runner.mjs';
 import type {LabDatabase,LabQuery} from '../lab-db.js';
 import {BuilderStore} from '../builder-store.js';
 import {assertBuilderDeployment} from '../builder-coordination.js';
-import {hash,sha,target,validateManifest,validateChanges,patch,denyNewAuthority,type FileRef} from './policy.js';
+import {hash,sha,target,validateManifest,validateChanges,patch,denyNewAuthority,OperationsInputRejection,type FileRef} from './policy.js';
 import {OperationsHost} from './host.js';
 import {handoffColumns} from './runtime-handoff.js';
 export class OperationsStore{
@@ -22,7 +22,7 @@ export class OperationsStore{
   return{scope,enabled:c.enabled,revision:c.revision,deployment:c.deployment,files:c.manifest.filter((f:FileRef)=>target(scope).paths.some(r=>r.test(f.path))),recent:(await this.db.query('SELECT id,state,source_hash,deployment,updated_at FROM claus_operations_releases WHERE scope=$1 ORDER BY created_at DESC LIMIT 8',[scope])).rows,...(scope==='native'?{runtimeHandoffs:(await this.db.query('SELECT id,target_deployment,generation,run_id,dispatch_state,observed_at FROM claus_operations_handoffs WHERE target_deployment=$1 ORDER BY created_at DESC LIMIT 3',[c.deployment])).rows}:{})};
  }
  async propose(requestId:string,input:any,builder:BuilderStore){
-  if(!input||Object.keys(input).some(k=>!['scope','expectedRevision','title','goal','changes'].includes(k))||!Number.isSafeInteger(input.expectedRevision)||typeof input.title!=='string'||!input.title.trim()||input.title.length>120||typeof input.goal!=='string'||!input.goal.trim()||input.goal.length>2400)throw Error('operations_input_invalid');
+  if(!input||Object.keys(input).some(k=>!['scope','expectedRevision','title','goal','changes'].includes(k))||!Number.isSafeInteger(input.expectedRevision)||typeof input.title!=='string'||!input.title.trim()||input.title.length>120||typeof input.goal!=='string'||!input.goal.trim()||input.goal.length>2400)throw new OperationsInputRejection('operations_input_invalid','Provide the current expectedRevision, a title up to 120 characters, a goal up to 2400 characters and only supported fields.');
   validateChanges(input.scope,input.changes);const id='op_'+hash(requestId).slice(0,24),requestHash=hash(input),old=(await this.db.query('SELECT * FROM claus_operations_releases WHERE id=$1',[id])).rows[0];if(old){if(old.request_hash!==requestHash)throw Error('operations_request_conflict');return old;}
   const c=await this.current(input.scope);if(!c?.enabled||c.revision!==input.expectedRevision)throw Error('operations_disabled_or_revision_conflict');validateManifest(c.manifest);await this.host.baseline(input.scope,c.deployment,c.manifest);
   const files:{path:string;before:string;content:string}[]=[],manifest:FileRef[]=structuredClone(c.manifest);
