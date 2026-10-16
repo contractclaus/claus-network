@@ -2,14 +2,16 @@ import {createHash} from 'node:crypto';
 import {Sandbox} from '@vercel/sandbox';
 import {sandboxFetch} from './sandbox-fetch.js';
 import {experimentOutput} from './lab-experiment-output.js';
+import {developmentSource,developmentWriter,type DevelopmentSource,type SourceFile} from './development-source.js';
 
 export const DEVELOPMENT_LIMITS=Object.freeze({files:64,sourceBytes:500000,seconds:300,daily:100,active:4});
-export type DevelopmentInput={projectId?:string;expectedVersion?:number;title?:string;purpose?:string;command:string;files:{path:string;content:string}[];timeoutSeconds?:number};
+export type DevelopmentInput={projectId?:string;expectedVersion?:number;title?:string;purpose?:string;command:string;files:{path:string;content:string}[];timeoutSeconds?:number;source?:DevelopmentSource};
 export function developmentInput(value:any):DevelopmentInput {
- if(!value||typeof value!=='object'||Object.keys(value).some(k=>!['projectId','expectedVersion','title','purpose','command','files','timeoutSeconds'].includes(k)))throw Error('development_input_invalid');
+ if(!value||typeof value!=='object'||Object.keys(value).some(k=>!['projectId','expectedVersion','title','purpose','command','files','timeoutSeconds','source'].includes(k)))throw Error('development_input_invalid');
  if(typeof value.command!=='string'||!value.command.trim()||value.command.length>12000||!Array.isArray(value.files)||value.files.length>DEVELOPMENT_LIMITS.files)throw Error('development_input_invalid');
  if(value.projectId!==undefined?(!/^p_[a-f0-9]{32}$/.test(value.projectId)||!Number.isSafeInteger(value.expectedVersion)||value.expectedVersion<1):(value.expectedVersion!==undefined||typeof value.title!=='string'||!value.title.trim()||value.title.length>240||typeof value.purpose!=='string'||!value.purpose.trim()||value.purpose.length>8000))throw Error('development_project_invalid');
  if(value.timeoutSeconds!==undefined&&(!Number.isInteger(value.timeoutSeconds)||value.timeoutSeconds<10||value.timeoutSeconds>DEVELOPMENT_LIMITS.seconds))throw Error('development_timeout_invalid');
+ if(value.source!==undefined)developmentSource(value.source);
  const paths=new Set<string>();let size=0;
  for(const f of value.files){if(!f||typeof f.path!=='string'||!f.path||f.path.length>240||f.path.startsWith('/')||f.path.includes('\\')||/[\x00-\x1f]/.test(f.path)||f.path.split('/').some((p:string)=>!p||p==='.'||p==='..')||paths.has(f.path)||typeof f.content!=='string')throw Error('development_file_invalid');paths.add(f.path);size+=Buffer.byteLength(f.content);}
  if(size>DEVELOPMENT_LIMITS.sourceBytes)throw Error('development_source_too_large');
@@ -20,7 +22,7 @@ const network={allow:['registry.npmjs.org','github.com','api.github.com','raw.gi
 type Save=(progress:any)=>Promise<void>;
 export class DevelopmentExecution {
  constructor(readonly backend:Pick<typeof Sandbox,'create'|'get'>=Sandbox){}
- async run(id:string,input:DevelopmentInput,baseSnapshot:string,save:Save){
+ async run(id:string,input:DevelopmentInput,baseSnapshot:string,save:Save,importedFiles:SourceFile[]=[]){
   developmentInput(input);const seconds=input.timeoutSeconds??100;
   let progress:any={name:developmentName(id),baseSnapshot,phase:'creating',deadline:new Date(Date.now()+(seconds+60)*1000).toISOString()},box:Sandbox|undefined;
   const record=async(value:any)=>{progress={...progress,...value};await save(progress);};await record({});
@@ -31,8 +33,9 @@ export class DevelopmentExecution {
    const session=box.currentSession();await record({phase:'writing',sessionId:session.sessionId});
    // A previous project may contain symlinks. Never write supplied files
    // through them: first validate parents and leaf within the guest itself.
-   const payload=JSON.stringify(input.files);
-   await session.writeFiles([{path:'/tmp/claus-development-input.json',content:Buffer.from(payload)},{path:'/tmp/claus-development-write.mjs',content:Buffer.from(`import fs from 'node:fs';import path from 'node:path';const root='/vercel/sandbox/project';fs.mkdirSync(root,{recursive:true});for(const f of JSON.parse(fs.readFileSync('/tmp/claus-development-input.json','utf8'))){let p=root;for(const part of f.path.split('/')){p=path.join(p,part);if(fs.existsSync(p)&&fs.lstatSync(p).isSymbolicLink())throw Error('symlink_write_denied');}const dest=path.join(root,f.path);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,f.content);}`)}]);
+   const merged=new Map(importedFiles.map(f=>[f.path,f]));for(const f of input.files)merged.set(f.path,f);
+   const payload=JSON.stringify([...merged.values()]);
+   await session.writeFiles([{path:'/tmp/claus-development-input.json',content:Buffer.from(payload)},{path:'/tmp/claus-development-write.mjs',content:Buffer.from(developmentWriter(!input.projectId))}]);
    await record({phase:'command_starting'});
    const command=await session.runCommand({cmd:'/usr/bin/env',args:['-i','PATH=/vercel/sandbox/bin:/vercel/runtimes/node24/bin:/usr/local/bin:/usr/bin:/bin','HOME=/home/vercel-sandbox','timeout','--kill-after=3s',seconds+'s','bash','--noprofile','--norc','-c','node /tmp/claus-development-write.mjs && cd /vercel/sandbox/project &&\n'+input.command],detached:true});
    await record({phase:'command_running',commandId:command.cmdId});

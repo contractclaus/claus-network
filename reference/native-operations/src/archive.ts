@@ -62,8 +62,8 @@ export async function recall(input:{query?:string; id?:string; includeSuperseded
   if(input.id) {
     const page=(value:unknown)=>({...pageRecord(value,input.offset,input.limit) as Record<string,unknown>,sourceArchiveId:input.id});
     if(/^action:[a-zA-Z0-9:_-]{1,160}$/.test(input.id)) {
-      const rows=await db`SELECT id,kind,status,input,result,created_at,completed_at FROM claus_actions WHERE id=${input.id.slice(7)} AND (visibility='public' AND id NOT LIKE 'club:%' OR visibility='private_club' AND ${includePrivate} OR visibility='private_network' AND NOT ${includePrivate})`;
-      const privateResult=input.id.startsWith('action:development:');return {...page({kind:'action',record:rows[0]??null,instructionAuthority:false}),...(privateResult?{visibility:'private_network'}:{})};
+      const rows=await db`SELECT id,kind,status,input,result,visibility,created_at,completed_at FROM claus_actions WHERE id=${input.id.slice(7)} AND (visibility='public' AND id NOT LIKE 'club:%' OR visibility='private_club' AND ${includePrivate} OR visibility='private_network' AND NOT ${includePrivate})`;
+      const privateResult=rows[0]?.visibility==='private_network';return {...page({kind:'action',record:rows[0]??null,instructionAuthority:false}),...(privateResult?{visibility:'private_network'}:{})};
     }
     if(input.id.startsWith('p_')) return page({kind:'project',record:await projectById(input.id),instructionAuthority:false});
     if(/^m_[a-f0-9]{32}$/.test(input.id)) {

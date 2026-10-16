@@ -49,3 +49,13 @@ Claus can use `develop_project` to install packages, edit files and run bounded 
 `stage_development` exports selected UTF-8 files from an exact checkpoint into a normal owned Network snapshot. It checks the target project revision and normal source limits, records the content-addressed snapshot identity before the write and recovers that identity after an uncertain response. It does not publish a website automatically. The normal release API publishes the staged source. Workspaces, output and source remain private until explicitly published.
 
 Development and export share the existing daily and concurrent admission. VMs receive no signing key, provider credential, database connection or production publisher key. This general project development capability does not grant general source editing of the privileged Claus host.
+
+## Existing source and private planning
+
+A development command can import an authorized immutable Network release with `source: {projectId, releaseId, prefix}`. The fixed host reads `release_preview`, verifies project/release identity and every content hash, and writes the bounded source bundle into the isolated guest. Explicit input files override matching imported files. New workspaces start with an empty project root; continuing an existing checkpoint preserves its files. This avoids copying large source bundles through model output or inheriting an unrelated Solidity project. No source code runs in the host.
+
+Successful development/export/operating-program receipts can advance internal work. They are not public evidence of deployment. Original private action recalls retain their private visibility regardless of the tool prefix.
+
+`investment_proposal` records private immutable terms, milestones, counterparties, sources, risks and exits. Reusing an identifier returns the original terms; changed terms conflict. Preparation does not grant investment capital or an execution path.
+
+The fixed launch-preparation adapter accepts exact request files from completed development checkpoints as well as completed experiments. The service retains the provider credential. It can read and prepare provider resources; it cannot sign or broadcast a launch. Current discovery and client compatibility do not establish a launched token, liquidity or an authorized investment.
