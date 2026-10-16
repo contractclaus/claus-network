@@ -130,7 +130,9 @@ export async function cycle(generation:number,fromClubWake=false) {
     const social=config.policy.capabilities.xReply?await socialContext(config):null;
     const club=null;
     messages=[{role:'system',content:systemPrompt(config)+(networkOperationsEnabled(config)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')},{role:'user',content:JSON.stringify({time:new Date().toISOString(),mode:config.settings.mode,configurationRevision:config.revision,memory,agenda,continuation,recent,archive,social,publication,club,work,network,networkWork,unresolvedNetworkPrograms:unresolvedNetworkPrograms.map(a=>({id:a.id,workId:a.input?.workId,projectId:a.input?.projectId,reason:'Original non-financial app outcome retained. That project/work cannot start another program until resolved. Unrelated work may continue.'}))})}];
-    messages[1].content=JSON.stringify(operatingContext(JSON.parse(messages[1].content),view=>contextFits([messages[0],{role:'user',content:JSON.stringify(view)}],config.settings,'public',220000)));
+    // Reserve room for several source pages and their complete tool exchanges.
+    // Compact the separately retrievable overview before dropping work history.
+    messages[1].content=JSON.stringify(operatingContext(JSON.parse(messages[1].content),view=>contextFits([messages[0],{role:'user',content:JSON.stringify(view)}],config.settings,'public',180000)));
     if(/^j_[0-9]+$/.test(continuation?.checkpointId??'')) {
       const saved=(await sql()`SELECT data FROM claus_journal WHERE id=${continuation.checkpointId.slice(2)}`)[0]?.data;
       if(Array.isArray(saved?.continuation)) {
@@ -172,7 +174,7 @@ export async function cycle(generation:number,fromClubWake=false) {
         const view=JSON.parse(messages[1].content);view.workProgress=workProgress(messages);
         if(networkOperationsEnabled(current))view.networkWork=await networkOperations.read().then(work=>({...work,due:networkDue})).catch(()=>({available:false,error:'network_work_unavailable'}));
         if(current.policy.capabilities.xReply){if(current.policy.capabilities.xRead)await pollMentions();view.social=await socialContext(current);view.publication=view.social.published;}
-        view.configurationRevision=current.revision;view.time=new Date().toISOString();view.adaptation=await readAdaptationContext(current);messages[1].content=JSON.stringify(operatingContext(view,value=>contextFits([messages[0],{role:'user',content:JSON.stringify(value)}],current.settings,'public',220000)));
+        view.configurationRevision=current.revision;view.time=new Date().toISOString();view.adaptation=await readAdaptationContext(current);messages[1].content=JSON.stringify(operatingContext(view,value=>contextFits([messages[0],{role:'user',content:JSON.stringify(value)}],current.settings,'public',180000)));
         // Private Club work uses its own context on the next shared-lease turn.
         const leading=messages.slice(0,2);
         messages=[...leading,...conversationWindow(messages.slice(2),leading,m=>contextFits(m,current.settings))];

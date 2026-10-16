@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_7mRZHD2rntJ3vE8dF8fGQHk8zH29",
-  "source": "claus-phase2-pagination-native-20261016",
+  "deployed": "dpl_Ei1qu1XkktkxdqCGvFuX5WYhcy6b",
+  "source": "claus-phase2-context-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -17,7 +17,7 @@
     "src/work-wallet-store.ts": "020a10ee51c807d04745b82436d069a12433ad51ea7c65f1bc420da5a45f38a0",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
     "src/network-access.ts": "93e7722c9e663219007b8fefba780a12a8c9ac12c9cff2022c49ae055f62a4cb",
-    "src/context.ts": "06668cc2a28c08625244ae32bcff7aa5377c324575bf4dd45d8131bba97db76d",
+    "src/context.ts": "996b04d9394a319bc2db7eef09dfc30ef613f991345652b0b3b2679e0f055f28",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "ad1cbe6293d542846582d26c72ade0005c9bbd617a8ac00fdce14e9d9825018b",
     "src/network-operations.ts": "4df5b6bdf82d2eff5bc04b4491ec0153ead8d7f98299e7e58955839d1af88e6c",
@@ -33,7 +33,7 @@
     "src/network-products.ts": "dcb85e4593f5282e36ac2f4aa2a808fc23ede38adaef9beb5deaf318ab1b96e3",
     "src/network-routes.ts": "ec387b73a6c245021404ee762450135738269c1129045cd3b1f1627e7c87189b",
     "src/operational-capabilities.ts": "92e313a216c8b57a0dc286db26fe9aa5e947623b9b360d8825033e980fc1dd70",
-    "src/cycle.ts": "535bbd5eaa72d0ac663d34202a6bb3b4a3b5c218b9ffda109ba00c3eab2be071",
+    "src/cycle.ts": "f6f017d8407cd829ec0e4d8064e4b4921f1ef7b96cd01b8b356b335e7d5f8a2b",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
     "src/social.ts": "14f1cbfc2a91b13b5ed862f1402d0767d1c547c6195c0c0c8310fc5969575f9d",
     "src/store.ts": "82ef73828569b4ebe51145ae40eafad13a5dc3fed7811170b2107b608d387cf3",
