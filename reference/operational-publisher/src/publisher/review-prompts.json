@@ -1,4 +1,7 @@
 {
-  "operational": "a88bc182f3dc0ba31690fe14a731c3f5de20d8af94ca179edaccc8a5b594f46c",
+  "operational": [
+    "a88bc182f3dc0ba31690fe14a731c3f5de20d8af94ca179edaccc8a5b594f46c",
+    "ca229a3fa31df528769a8feb630e806a5cf5ecda167b2879dcfa6af803d7a846"
+  ],
   "surface": "7753cd3bf2fcb46923722debdfc8e687cf2fe10703d150e11362d27218bad54d"
 }

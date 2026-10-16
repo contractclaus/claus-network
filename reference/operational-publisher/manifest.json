@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_4JJFmJ7A9ZhecEC9wF7ZrW5WuUvH",
-  "source": "912cd2e738f85f9b7246ff3a6562b58c19fd3ebfc5329a129e36b50f5eafdc25",
+  "deployed": "dpl_CAdd2VPKj5ga6Ez1ESk4EnqqWYUy",
+  "source": "claus-active-work-signer-r2-20261016",
   "files": {
-    "src/index.js": "09b2864398ffe2c280915651cd466135bd39268c610b06e5b50b08d9f70e5228",
+    "src/index.js": "1a7b28c0bb5d55523cacb229c80c08f9f24b7577e735dbb46802a3884a0a13c1",
     "src/publisher/host.js": "c59603df1592e5b418d6eb44bc4deab0d8028e6fbf9527df9c5d04fdc092197b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
     "src/publisher/policy.js": "1ea8a68136ce4615eddcf8623f4ca34d9fd8eddface64923642a12c814bbc9ce",
@@ -19,8 +19,8 @@
     "src/configuration/routes.js": "98c6a0cab5adba1c7a33af3f9a8d837a5bb61ed8f7d1b0ff3cb91452b793b9db",
     "src/configuration/service.js": "ab9e223e7235e927bd15911b4b6732dda80c4b606d3a25abe592b45568ace5af",
     "src/configuration/validation.js": "2fce7cb19f899a2681458f3671cd45db71ab2ceccb2c1bf676c30884e8119a63",
-    "src/publisher/review-evidence.js": "f47fcbef7961850f30558dc8ec8a8089b00359d0f7dafdcc87cd1bf6ddd697b6",
-    "src/publisher/review-prompts.json": "60bcd88764a331275f0e7925270c6bfa2f7dbdfec7506f76c69287fcf80150a4",
+    "src/publisher/review-evidence.js": "2fb68224e62e34c1a0669d93b5db558eec2bf3ecf0b3185a8a175ed0dfe67ad7",
+    "src/publisher/review-prompts.json": "359c425528ee5540f5c2bb0df4c3c0c51165059cb5e5dcee4e162e2d58ee0564",
     "src/publisher/controls.js": "b899403662a96fda5b85c9376406f6a2c4c4553de4b72c6cc53eea44dff425ae",
     "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2",
     "src/social/policy.js": "14a29a18e50609260a24908c22fa3c164252bf0004e47bf1be342d6ac904f624",

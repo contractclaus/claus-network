@@ -1,19 +1,19 @@
 {
   "kind": "fixed-jobs-custody-source-reference",
-  "deployed": "dpl_3wAZ1vVsuHXjawmgRHC8tmTnd3ST",
-  "source": "claus-work-continuity-signer-20261016",
+  "deployed": "dpl_CAdd2VPKj5ga6Ez1ESk4EnqqWYUy",
+  "source": "claus-active-work-signer-r2-20261016",
   "files": {
-    "src/index.js": "24d58c78bb6d23f569de84df63b3facb68a4cde59b93bb004aaaf310db84a83a",
+    "src/index.js": "1a7b28c0bb5d55523cacb229c80c08f9f24b7577e735dbb46802a3884a0a13c1",
     "src/jobs-wallet/login.js": "6ae5a178d47e5d656179beed9b3a86c3dd1a78cd73e7735e5783f50a05b12f1f",
-    "src/jobs-wallet/network.js": "c877cdac1a0ccbfb746b889837b2d038127f2a6da3b620f4ed8d531ad8ab79ee",
+    "src/jobs-wallet/network.js": "3f2f96d7e37226694942a80a2f1918ae7690582fab8195b9b11ac7c3223671e3",
     "src/jobs-wallet/read-routes.js": "ac57980525c10a2eb5237092042baf1b38e4f87fda794b4aea5f429c04329952",
-    "src/jobs-wallet/routes.js": "25f3aeda475d7b0c5d3da60384befc1479cd3554ce55e7232af4148ad0bfcc1d",
+    "src/jobs-wallet/routes.js": "f61884c6444227a370e5ffea79010d934588493a9b24db9a1b028be2c443664d",
     "src/jobs-wallet/validation.js": "04beea30a5a24c51395d1e4d801e3bea2d5f2cdce0857a11f78eeac2af83586c",
     "src/jobs-wallet/work-wallet-contract.js": "b86a8f11aba65d407bfb0c214d619b1c28beeda19c3f0190ec66a024176efb1b",
     "src/jobs-wallet/work-wallet-sponsor.js": "fe6d4f0769275b3e8cb83d05d6c266149d36e3e1c28c5bdcf3666c6f5e25e355",
     "src/jobs-wallet/work-wallet-store.js": "aaad2fe15e57f70be594f53a00d80632b705850b216ca84a434ddf73afc59a1e",
     "src/jobs-wallet/work-wallet-token.js": "5608f86087c55825c0309fadf5217a13af9bdfe454b903024ffbef03f3823050",
-    "src/jobs-wallet/work-wallet.js": "3ca2d4ea9fb5410f3dcb35e81f908a9e0cb5738ae50743c7a7ecce568b3b594d",
+    "src/jobs-wallet/work-wallet.js": "8823f2eea5536980b8c9d2d2d3acce41c26afb781ee681a788b95771cc00d1cc",
     "src/jobs-wallet/work-wallet-gas.js": "e234574965e55a8ad07dd28efb1466a0f4cf7b95c719b49b9372f500d2fb6828"
   }
 }

@@ -144,7 +144,8 @@ function createWorkWallet({ store = createWorkWalletStore(), key = () => process
         await checkAnchor(row.receipt);
         return visible(row);
       }
-      if (!row.transaction && inspect) return visible(row);
+      // Unsigned status follows the same preparation through gas simulation,
+      // then returns before signing or reserving funds.
       if (!row.transaction) {
         await permitted();
         await chain();
@@ -172,6 +173,13 @@ function createWorkWallet({ store = createWorkWalletStore(), key = () => process
         requireThat(Math.abs(Date.now() / 1e3 - Number(feeBlock.timestamp)) < 180, "work_wallet_stale_fee_block");
         await client.call({ ...transaction, account: who.address });
         await permitted();
+        if (inspect) {
+          const {account} = await store.state(who.address);
+          const gasCost = gas * maxFeePerGas;
+          requireThat(BigInt(account.principal_spent ?? '0') + BigInt(account.principal_reserved ?? '0') + transaction.value <= BigInt(workWalletPolicy.principal), 'work_wallet_principal_budget');
+          requireThat(BigInt(account.gas_spent ?? '0') + BigInt(account.gas_reserved ?? '0') + gasCost <= BigInt(workWalletPolicy.gas), 'work_wallet_total_gas_budget');
+          return {...visible(row), readiness: {state:'ready', observedAt:new Date().toISOString(), blockNumber:String(feeBlock.number), estimatedGas:String(gas), maximumGasCostWei:String(gasCost), perTransactionGasLimitWei:workWalletPolicy.perTransactionGas, signed:false, next:'Resume this exact original id if still appropriate. All conditions are rechecked before signing. This observation is not a reservation or payment.'}};
+        }
         const tx = { chainId: 1, type: "eip1559", ...transaction, nonce, gas, maxFeePerGas, maxPriorityFeePerGas };
         const raw = await who.account.signTransaction(tx);
         row = await store.saveSigned(who.address, id, locked.fence, { ...json(tx), tokenValue: String(tokenValue) }, who.vault.seal(raw, id), keccak256(raw), workWalletPolicy);
@@ -202,6 +210,7 @@ function createWorkWallet({ store = createWorkWalletStore(), key = () => process
       return { ...visible(row), status: "pending", next: "Read status with this id. Two observed blocks confirm a receipt; no finality wait or replacement purchase." };
     } catch (error) {
       if (/^(work_wallet_|invalid_work_wallet_)/.test(error?.message ?? "")) failure = error.message;
+      if (inspect && locked?.row && !locked.row.transaction) return {...visible(locked.row), readiness:{state:'blocked', observedAt:new Date().toISOString(), reason:failure ?? 'work_wallet_preflight_unavailable', signed:false, next:'Keep this original action. This status call did not sign, reserve funds or broadcast.'}};
       throw error;
     } finally {
       if (locked?.fence) await store.release(who.address, id, locked.fence, failure);
