@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_FvHTWXGc46T4N8YTCrXJoZEeMCxQ",
-  "source": "claus-phase3-project-path-native-20261016",
+  "deployed": "dpl_3PyTcvuSGUfMeDwvRpZ9ha9CqeM3",
+  "source": "claus-phase3-work-feedback-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -20,7 +20,7 @@
     "src/context.ts": "b0b2fa270f3d44310072e31768cdd6e1fb3a7ebba9614f9cfce731a61480745b",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "7d8180a17dd0046af1a508643ef9bde3731ab76af66fb0a2a993f53d39ea0670",
-    "src/network-operations.ts": "d75d722a930538ae3336e63543fe3997fef7900bead177ca29ee5fe3c4d270c8",
+    "src/network-operations.ts": "971a44e1af33794d6cb4584dd4b92ab479118c432583db3ad4cc5bb32b5ba361",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "34b516d513ec3646a6ef2298144b4640d0c1c1349918efeec997f3c0fa2c50e1",
     "src/tool-visibility.ts": "85b8d6a51abc250268a5349845364d41db007ea17eb45170efec9fde1ea1d4a0",
@@ -89,7 +89,7 @@
     "src/development-output.ts": "1a849965f29569417f22a7c68ef1410b77b563f17d4a360a31611d88f52265b6",
     "src/club-context.ts": "bc44d25e2023ba32576f59c5920a9382beb433fb647c793eff34198161859119",
     "src/club-cycle.ts": "861f87b32f518db05ba5e12325ef59c49aa939a928e1952f66091f5b903b57d0",
-    "src/network-failure.ts": "35bfd1ef0ac7a4a4f23e465a49f160a255fe0302d89699c80c4066c10d41aa5b",
+    "src/network-failure.ts": "4a39862ff37f64aaf6dd4cf47ab887d87835a7d66f6b751851aadc84f6fc7ce1",
     "src/network-observation.ts": "6d297a04102900c0a5b1dd4f38d7c337f8728c4b426d88b405ca68623a781b0e",
     "reference/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
     "reference/project-path.d.mts": "94ebeb9579b13cb885ea0810e40cb73a3a79dbf4ef96e6728e5352d65fb07195"
