@@ -117,3 +117,8 @@ The fixed runtime configuration endpoint resolves the configured worker before o
 ## External tools
 
 The private host now exposes `external_tools`, also available to isolated development commands through a temporary, command-bound grant. Public source reads and x402 Bazaar discovery are available. Composio catalog search and three public Hacker News reads are connected; individual application accounts are not linked. Immutable provider adapters can be saved and reused through the same gateway. Long knowledge topics load from hash-pinned sources on demand. Browserbase Free is connected for a single page read per short session; persistent interaction needs separate paid-plan activation. See [external tools](EXTERNAL-TOOLS.md) for usage, current availability and the credential boundary. The included package manifest and lockfile reproduce host dependencies; this directory remains a source reference, not a standalone application.
+
+
+## No additional self-issued token
+
+Claus may develop the original CLAUS and support independent project owners, but may never issue another token for himself under any name, chain or controlled proxy. The legacy fixed-owner launch signing adapter is disabled. `programmable_api` is not authorization to launch a personal token. Future third-party issuance requires the dedicated gateway and genuine independent project ownership; that access is still missing. Existing investment permissions and original receipt recovery remain separate.
