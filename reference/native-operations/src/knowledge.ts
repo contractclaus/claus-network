@@ -6,8 +6,9 @@ import {ecosystemRecords} from './ecosystem.js';
 import {workSkillRecords} from './work-skills.js';
 import {referenceSourceHash} from './reference.js';
 import {knowledgeArchive} from './knowledge-archive.js';
+import {sql} from './store.js';
 
-type RecordEntry={id:string;title:string;summary:string;body:string;kind:string;status:string;visibility:string;source:string;updatedAt?:string;reviewAfter?:string;relatedRules?:string[];sources?:unknown[];readMore?:unknown};
+type RecordEntry={id:string;title:string;summary:string;body:string;bodyRef?:{id:string;sha256:string;chars:number};kind:string;status:string;visibility:string;source:string;updatedAt?:string;reviewAfter?:string;relatedRules?:string[];sources?:unknown[];readMore?:unknown};
 const hash=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const pathOf=(href:string)=>{try{return new URL(href).pathname;}catch{return null;}};
 // A projection of settings, not an executor. Keep this dependency-free from
@@ -50,7 +51,7 @@ export function knowledgeRecords(config:Configuration,published:any,channel:'pub
     ...knowledgeArchive,
     ...ecosystemRecords(),
     ...workSkillRecords(),
-    ...(config.knowledge?.topics??[]).map(t=>({...t,id:'topic:'+t.id,kind:'topic',source:'live_configuration'})),
+    ...(config.knowledge?.topics??[]).filter(t=>!(channel==='club'&&t.bodyRef&&t.visibility==='internal')).map(t=>({...t,id:'topic:'+t.id,kind:'topic',source:'live_configuration'})),
     ...config.policy.rules.filter(r=>r.enabled).map(r=>({id:'rule:'+r.id,title:r.id,summary:'Current owner rule',body:r.text,kind:'rule',status:'enabled',visibility:'internal',source:'live_configuration'})),
     {id:'runtime:current',title:'Current runtime and authority',summary:'Configured bounded capabilities and channel tools; not execution evidence',body:JSON.stringify({model:config.settings.model,provider:config.settings.provider,reasoningEffort:config.settings.reasoningEffort,role:config.settings.role,enabled:config.settings.enabled,capabilities:Object.fromEntries(['research','memory','drafts','club','xRead','xReply','xPublish','images','chainWrite','externalTransfer','sandbox','publicPublish','networkBuild','workPayments','networkReview','networkDealReview'].map(key=>[key,config.policy.capabilities[key]===true])),bounded:runtimeCapabilityView(config.settings,channel)},null,2),kind:'runtime',status:'current',visibility:'internal',source:'live_configuration'},
     {id:'publication:token',title:'Published token and installed hook',summary:'Current editorial record, not a fresh chain observation',body:JSON.stringify({token:published.token,hook:published.hook,observation:published.observation},null,2),kind:'publication',status:'published',visibility:'public',source:'current_publication',updatedAt:published.updatedAt},
@@ -59,8 +60,9 @@ export function knowledgeRecords(config:Configuration,published:any,channel:'pub
   ];
 }
 
-export function readKnowledge(args:{id?:string;query?:string;kind?:string;offset?:number;limit?:number;version?:string},config:Configuration,published:any,channel:'public'|'club'='public') {
-  const records=knowledgeRecords(config,published,channel),version=hash(records),offset=args.offset??0,limit=args.limit??12000;
+type KnowledgeArgs={id?:string;query?:string;kind?:string;offset?:number;limit?:number;version?:string};
+export function readKnowledge(args:KnowledgeArgs,config:Configuration,published:any,channel:'public'|'club'='public',hydrated?:RecordEntry[]) {
+  const canonical=knowledgeRecords(config,published,channel),records=hydrated??canonical,version=hash(canonical),offset=args.offset??0,limit=args.limit??12000;
   if(!Number.isSafeInteger(offset)||offset<0||!Number.isSafeInteger(limit)||limit<1000||limit>24000)throw Error('invalid_knowledge_page');
   if(args.id!==undefined&&(typeof args.id!=='string'||args.query!==undefined||args.kind!==undefined))throw Error('knowledge_id_or_search_required');
   if(args.query!==undefined&&(typeof args.query!=='string'||args.query.length>240))throw Error('invalid_knowledge_query');
@@ -78,8 +80,33 @@ export function readKnowledge(args:{id?:string;query?:string;kind?:string;offset
     const title=(r.id+' '+r.title+' '+r.summary).toLowerCase(),all=(title+' '+r.body).toLowerCase();
     return {r,score:terms.every(t=>all.includes(t))?terms.reduce((n,t)=>n+(title.includes(t)?3:1),0):-1};
   }).filter(x=>x.score>=0).sort((a,b)=>b.score-a.score||a.r.id.localeCompare(b.r.id)).map(x=>x.r);
-  const candidates=matched.slice(offset,offset+21).map(r=>({id:r.id,title:r.title,summary:textPrefix(r.summary,240),kind:r.kind,status:r.status,visibility:r.visibility,source:r.source,reviewAfter:r.reviewAfter,totalChars:r.body.length}));
+  const candidates=matched.slice(offset,offset+21).map(r=>({id:r.id,title:r.title,summary:textPrefix(r.summary,240),kind:r.kind,status:r.status,visibility:r.visibility,source:r.source,reviewAfter:r.reviewAfter,totalChars:r.bodyRef?.chars??r.body.length}));
   return {...meta,...searchPage(candidates,offset,20),totalRecords:matched.length,offsetUnit:'records',readMore:'Read an exact id for its complete body and source references. Pass version and nextOffset to continue this snapshot. No matches means not found here, not proof that a fact is false.'};
+}
+
+export function pinnedKnowledgeBody(record:RecordEntry,row:any,channel:'public'|'club') {
+  const ref=record.bodyRef;
+  if(!ref||!row||row.id!==ref.id||typeof row.body!=='string'||row.body.length!==ref.chars
+    ||createHash('sha256').update(row.body).digest('hex')!==ref.sha256
+    ||record.visibility==='public'&&row.visibility!=='public'
+    ||record.visibility==='internal'&&(channel==='club'||row.visibility!=='private_network'))throw Error('knowledge_source_unavailable');
+  return row.body as string;
+}
+
+// The catalogue stays small. Exact reads and searches hydrate only the pinned
+// bodies needed for that request; mutable/latest memories are never substituted.
+export async function readKnowledgeResolved(args:KnowledgeArgs,config:Configuration,published:any,channel:'public'|'club'='public',db=sql()) {
+  const records=knowledgeRecords(config,published,channel);
+  const needed=records.filter(r=>r.bodyRef&&(args.id?r.id===args.id:!args.kind||r.kind===args.kind));
+  if((!args.id&&!args.query?.trim())||!needed.length)return readKnowledge(args,config,published,channel);
+  // Check the snapshot and query shape before I/O. Exact pagination must be
+  // applied to the full body below, not to the shorter inline summary.
+  readKnowledge({...args,offset:args.id?0:args.offset},config,published,channel);
+  const ids=needed.map(r=>r.bodyRef!.id);
+  const rows=await db`SELECT id,body,visibility FROM claus_memories WHERE id IN (SELECT jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb))
+    AND (visibility='public' OR visibility='private_network' AND ${channel}='public')`;
+  const bodies=new Map(needed.map(record=>[record.id,pinnedKnowledgeBody(record,rows.find((row:any)=>row.id===record.bodyRef!.id),channel)]));
+  return readKnowledge(args,config,published,channel,records.map(r=>bodies.has(r.id)?{...r,body:bodies.get(r.id)!}:r));
 }
 
 // Structural checks name their exact scope. They do not certify arbitrary prose.

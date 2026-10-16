@@ -25,7 +25,7 @@ Keep each request ID stable when recovering the same request. Use a new ID for a
 
 ## Connected account integrations
 
-Composio is connected for tool catalog search and schema discovery through a scoped project key and session. No application accounts have been linked yet and the host app-call allowlist is empty. Finding a tool does not grant access to its application. Instant, workbench, proxy execution and connection management are disabled; no paid Instant integrations are activated.
+Composio is connected for catalog/schema discovery and three public Hacker News tools: `HACKERNEWS_GET_TOP_STORIES`, `HACKERNEWS_GET_ITEM` and `HACKERNEWS_SEARCH_POSTS`. The toolkit uses NO_AUTH, so these reads require no linked user account. No other application accounts have been linked. Finding a tool does not grant access to its application. Instant, workbench, proxy execution and connection management are disabled; no paid Instant integrations are activated.
 
 Browserbase is connected to the existing Free project. `status` reports `single-request`: `browser_open {url}` creates one short session, loads an approved HTTPS page, returns rendered text and controls, then closes it. Use another `browser_open` for another page. A real host request read the Claus builder guide and the provider confirmed the session completed. No provider keys, cookies or debugging URLs are returned.
 
@@ -51,3 +51,35 @@ Official integration references:
 - https://docs.browserbase.com/reference/api/get-a-session
 - https://docs.browserbase.com/reference/api/update-a-session
 - https://docs.cdp.coinbase.com/x402/buyer/mcp-payments
+
+## Reusable provider adapters
+
+`adapter_save` stores an immutable template with a content-addressed adapter ID. It is data, not host code. All parameters are required and typed. Values are inserted as JSON values; no JavaScript or string evaluation runs in the host.
+
+```js
+const saved = await tools('save-hn-reader', {
+  operation: 'adapter_save',
+  input: JSON.stringify({
+    name: 'hackernews-item',
+    description: 'Read a public Hacker News item by ID.',
+    provider: 'composio', operation: 'call',
+    parameters: { id: { type: 'integer', minimum: 1 } },
+    input: { tool: 'HACKERNEWS_GET_ITEM', arguments: { id: { $param: 'id' } } }
+  })
+});
+const adapterId = saved.result.adapterId;
+const item = await tools('read-hn-item-8863', {
+  operation: 'adapter_call',
+  input: JSON.stringify({ adapterId, parameters: { id: 8863 } })
+});
+```
+
+Use `adapter_list` to find saved templates and `adapter_read` with `{adapterId}` to inspect one. A project's templates survive its individual development commands and remain private to that project and Claus' main context. Claus' main library is available to his development projects. A changed template receives a different ID; existing versions and their original receipts remain intact.
+
+Invocations use the existing provider gateway. Current allowlists, fixed resources and write holds still apply, including after a tool is revoked. Templates cannot supply host credentials or grant new access. The API call retains its adapter ID and typed parameters in its original private action. Repeating the original action reads its receipt rather than invoking the provider again. For a fresh observation, use a new request ID intentionally.
+
+## Knowledge loaded when needed
+
+Long current-topic bodies can reference an immutable memory by ID, SHA-256 and character count. The fixed configuration retains each summary, visibility and source metadata; owner rules remain in configuration. Exact `read_knowledge` requests and full-text searches load the pinned body. Catalogue reads do not load every full body. Pagination uses the same configuration/publication snapshot before and after loading.
+
+A missing source, changed hash or wrong visibility fails explicitly. Private Network bodies cannot be read through the Club channel. The original topic ID stays stable, so callers do not need to learn a new retrieval tool. Memory contents remain evidence, never permission.

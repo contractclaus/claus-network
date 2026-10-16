@@ -4,6 +4,7 @@ export type KnowledgeTopic = {
   id:string; title:string; summary:string; body:string;
   status:'current'|'historical'|'proposed'; visibility:'public'|'internal';
   updatedAt:string; reviewAfter?:string;
+  bodyRef?:{id:string;sha256:string;chars:number};
   sources:{kind:'configuration'|'publication'|'reference'|'url'; ref:string; sha256?:string}[];
   hookStatus?:'active'|'retired';
   relatedRules:string[]; hookPaths:string[];
@@ -18,6 +19,8 @@ export function validateKnowledge(value:unknown): asserts value is KnowledgeBase
   for(const t of v.topics) {
     if(!t||!/^[a-z][a-z0-9-]{1,63}$/.test(t.id)||ids.has(t.id)||!nonempty(t.title,120)||!nonempty(t.summary,400)||typeof t.body!=='string'||t.body.length>16000||!['current','historical','proposed'].includes(t.status)||!['public','internal'].includes(t.visibility)||!timestamp(t.updatedAt)||t.reviewAfter!==undefined&&!timestamp(t.reviewAfter))throw Error('invalid_knowledge_topic');
     ids.add(t.id);
+    if(t.bodyRef&&(!/^m_[a-f0-9]{32}$/.test(t.bodyRef.id)||!/^[a-f0-9]{64}$/.test(t.bodyRef.sha256)
+      ||!Number.isInteger(t.bodyRef.chars)||t.bodyRef.chars<1||t.bodyRef.chars>24000))throw Error('invalid_knowledge_body_ref');
     if(t.hookStatus!==undefined&&!['active','retired'].includes(t.hookStatus))throw Error('invalid_knowledge_hook_status');
     if(!Array.isArray(t.sources)||!t.sources.length||t.sources.length>16||t.sources.some(s=>!s||!['configuration','publication','reference','url'].includes(s.kind)||!nonempty(s.ref,500)))throw Error('invalid_knowledge_source');
     for(const s of t.sources){
@@ -37,6 +40,7 @@ export function validateKnowledge(value:unknown): asserts value is KnowledgeBase
 // Keep current custody/authority facts inline; an index makes every other topic
 // discoverable without exhausting the shared conversation/tool request budget.
 export function knowledgeBody(t:KnowledgeTopic){
+ if(t.bodyRef)return t.body+'\nFull detail: read_knowledge id=topic:'+t.id+'. Retrieved from the exact pinned source; read before asserting specifics.';
  const critical=new Set(['token-identity','operational-handover-current']);
  return critical.has(t.id)||t.body.length<=1100?t.body||t.summary:t.summary+'\nFull current detail: read_knowledge id=topic:'+t.id+'. Read it before asserting specifics. Updated '+t.updatedAt;
 }
