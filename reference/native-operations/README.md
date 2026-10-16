@@ -152,3 +152,8 @@ Versioned source and knowledge reads retain the newest identical complete exchan
 ## Active work and economics views
 
 Working summaries retain the focused task and defer unrelated task descriptions. Economics retain every amount, limit, payment identity and outcome while leaving receipt logs in the original archive. Full stored records, archived cursor bytes, and transaction admission remain unchanged.
+
+
+## Independent project launch boundary
+
+The legacy credential may inspect and preflight packages, and recover original provider receipts. It cannot create new launches or treat a historical capital envelope as authority. The independent-project gateway must verify its authenticated partner profile, official CLAUS quote, fixed 0.3% platform fee within the 15% aggregate cap, immutable protections and reviewed Claus governance. That gateway is not activated by this source release. No additional self-issued Claus token is permitted.

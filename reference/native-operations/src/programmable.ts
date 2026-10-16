@@ -103,7 +103,23 @@ export async function requestProgrammable(id:string,input:ProgrammableRequest,tr
   if(response.status>=500||response.status===429)throw Error('programmable_server_outcome_unknown');
   return {httpStatus:response.status,requestId:response.headers.get('x-request-id'),
     ...(response.ok?{}:{error:'programmable_http_'+response.status}),data,instructionAuthority:false,
-    walletSigned:false,transactionBroadcast:false,capital:{approvedTotalWei:'20000000000000000',maximumPerLaunchIncludingGasWei:'5000000000000000',ownerReserveWei:'900000000000000000',automaticRefill:false,executionAdapter:false,requires:'Real selected project, exact independently reviewed provider transaction, protected transfer/fee rules and registry receipt. Preparation does not reserve or sign capital.'}};
+    walletSigned:false,transactionBroadcast:false,launchPolicy:programmableLaunchPolicy()};
+}
+
+// This legacy integration can inspect/preflight packages and recover original
+// provider receipts. It is not the independently governed partner launch lane.
+// Never derive authority from a model's profile fields or a historical budget.
+export function programmableLaunchPolicy() {
+  return {independentProjectLaunches:false,selfTokenLaunches:false,signingEnabled:false,
+    requiredChainId:1,requiredQuoteToken:'0x1b54E762aa34CF6E28E9C082F2848e28E45DA6b8',
+    maximumTotalFeeBps:1500,platformFeeBps:30,platformFeeIncluded:true,
+    creatorRights:['own_fee_claims'],upgradeAuthority:'claus_after_independent_imd_review',
+    missing:'verified_partner_profile_and_protected_submission_gateway'};
+}
+
+export function requireLegacyProgrammableWrite(request:ProgrammableRequest) {
+  if(request.method==='POST'&&request.path===resource)
+    throw new ConfirmedFailure('programmable_partner_launch_gateway_required: New launches require the authenticated Claus partner profile, an independent project, CLAUS quote, fixed platform fee and reviewed Claus upgrade authority. The legacy API key and historical capital allocation are not launch authority.');
 }
 
 export async function programmableTool(id:string,args:Record<string,any>) {
@@ -124,6 +140,9 @@ export async function programmableTool(id:string,args:Record<string,any>) {
   // It is private bookkeeping, never a model parameter or public receipt.
   const evidence={request,credentialHash:createHash('sha256').update(process.env.PROGRAMMABLE_API_KEY).digest('hex')};
   return once(id,'programmable_api',args,async()=>{
+    // Run only for a new effect. Completed/uncertain original actions retain
+    // their original receipt/reconciliation instead of being rewritten.
+    requireLegacyProgrammableWrite(request);
     await actionProgress(id,evidence);
     return requestProgrammable(id,request);
   });

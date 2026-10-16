@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_7xNEQvQiXuefwBkiHVc6xqBEV6Ra",
-  "source": "claus-active-work-context-native-20261016",
+  "deployed": "dpl_9TS4BmXBcvLG5cZUGFojWx8LuVxP",
+  "source": "claus-partner-boundary-native-20261016",
   "files": {
     "src/operations/policy.ts": "bc0aa35b64d5f4d2d8689a8763544f07eca2a2f9c3f6b8c8b1703c62d8cd6bf1",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -24,7 +24,7 @@
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "db308eeede576309e8dffbf6eeddd27f4dc8bef033383421724e5a3fd974ae21",
     "src/tool-visibility.ts": "dc54f3d4323e64bd853f28280993f15ebdcb09e84396d333a7de1f5a1d62cf38",
-    "src/tools.ts": "4252512830646b80511018af5bee783e69f71fe118534b51669435457f70d6bf",
+    "src/tools.ts": "3c619cf30dd9d625ae917837af96467af18f3acc0988803f6bd28b15f1471503",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
@@ -85,7 +85,7 @@
     "src/twitter-policy.ts": "fe6a3c0fa28fc78f94aeca7747786be18062cac11749ff34e464f62e69d5bc8b",
     "src/development-source.ts": "83c6ea53ec2c0d577cb875cef57483d792c0feb0062cfd97750968daa8e43356",
     "src/investment-proposals.ts": "277eee7a82c204644bf6d35125e95be3d862a29bd962cf6c5290cd6bb111e695",
-    "src/programmable.ts": "848831a898f8330c878765881dc38ec4696312337e1d986117c34b0dc2b0e493",
+    "src/programmable.ts": "be25341943395270cc41f4b5d4cfa8b2288a7fea2eb36a5eac4ebd1748cf5268",
     "src/development-output.ts": "1a849965f29569417f22a7c68ef1410b77b563f17d4a360a31611d88f52265b6",
     "src/club-context.ts": "bc44d25e2023ba32576f59c5920a9382beb433fb647c793eff34198161859119",
     "src/club-cycle.ts": "861f87b32f518db05ba5e12325ef59c49aa939a928e1952f66091f5b903b57d0",
