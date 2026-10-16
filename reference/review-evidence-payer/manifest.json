@@ -1,5 +1,5 @@
 {
-  "deployed": "dpl_3uV8JnzyqrmLdqfRfseauZUvT4L6",
+  "deployed": "dpl_EqAF5XU7hxUpwE7sV66hdvNvAPW3",
   "source": "claus-inference-recovery-payer-20261016",
   "files": {
     "src/index.js": "888341122fb007690b7564a5973a617644f71763df4701928abf0e06a879dbdb",
@@ -35,7 +35,8 @@
     "src/capital/routes.mjs": "83d76257e5b003ab7c2b5121d8fb52da91f3f6c69e0d07c184b520714003eebc",
     "src/capital/service.mjs": "ca3035e571cea6e62615ffe425ebd9d441a3b5d4a57d413a78a7ff015928025b",
     "src/capital/store.mjs": "0b43fd729641235801d227af51bf4da014b9a20d445e114c213574448d2a5879",
-    "vendor/src/outcomes.js": "eeab785b68adbcd9d4d2fe051a62b3c343c9cd334792c6da3558f851e75bf8c8"
+    "vendor/src/outcomes.js": "eeab785b68adbcd9d4d2fe051a62b3c343c9cd334792c6da3558f851e75bf8c8",
+    "vendor-manifest.json": "1b1078957e0fb3dac74cfb9ded458c1c8950590e4a68e39eb4c7ba5ea30fe4e6"
   },
   "referenceSubset": true
 }
