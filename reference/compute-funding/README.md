@@ -26,3 +26,12 @@ A confirmed transfer to Surplus is different from an attributable credit in its 
 The existing schedule also reconciles original transaction receipts when the provider is unavailable or authorization for new spending has expired. This recovery path does not load a signing key. It cannot sign or send transactions, replace an unknown operation, or grant spending permission. New execution still requires the fixed authorized wallet. It records confirmed outcomes and releases the corresponding wallet lock; unresolved outcomes remain held. Provider errors are recorded as the current status, and expired spending authorization is reported as inactive.
 
 Future reviewed programs use the [compute-preserving adapter](../trade-programs/ComputeProtectedProgram.sol). The fixed deployed collector and current onchain fee state remain available at [Claus fee state](https://claus.si/fee-state.json).
+
+
+## Private operating status
+
+The authenticated payer resource endpoint and Claus' existing `network_care` economics reader now include `computeFunding`. It reports admission for the designated-compute service from its actual configuration and bounded approval: enabled or disabled, expiry, policy identity and required prepaid-credit verification. It is re-read independently of the short balance cache. This is read-only configuration status, not a transfer, grant, completed funding cycle or provider credit receipt. Missing status remains unavailable while successful balance reads are retained.
+
+For existing version-1 clients, `automaticFundingEnabled: false` is retained with `automaticFundingScope: manual_cash_topup_proposal`. That field describes only the old non-executable cash proposal. Read `computeFunding.enabled` for the separate compute service. Existing callers do not need a runtime restart.
+
+[Resource reader source](./operating-resources.js), deployed with payer `dpl_eTWAfLsGwPP9ngP5Rii3fDLQqiW9`. The runtime, wallet destinations, approval, limits and schedule are unchanged. Current inference continues from existing resources; a future prepaid refill still needs its attributable provider receipt.
