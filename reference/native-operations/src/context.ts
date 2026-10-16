@@ -18,7 +18,33 @@ export function pageRecord(value:unknown,offset=0,limit=12000) {
   const page=textWindow(encoded,offset,limit);
   return {format:'json',...page,totalChars:encoded.length,truncated:page.nextOffset!==null};
 }
+// These are display projections only. The original journal still contains the
+// complete result, including logs; never alter archived page offsets or bytes.
+export function operatingResultView(value:any):any {
+  if(!value||typeof value!=='object'||Array.isArray(value)||value.contextProjection)return value;
+  if(value.kind==='journal'&&value.record?.kind==='tool'&&value.record.result){
+    const result=operatingResultView(value.record.result);
+    return result===value.record.result?value:{...value,record:{...value.record,result}};
+  }
+  if(value.watch&&Array.isArray(value.items)&&value.queue&&value.receiptMeaning){
+    const focused=value.focus?.id;
+    return {...value,contextProjection:'work-overview',
+      watch:{...value.watch,capabilities:undefined,opportunities:undefined,readMore:'Use network_work for current watch details. This view grants no execution permission.'},
+      items:value.items.map((item:any)=>item.id===focused?item:{id:item.id,title:item.title,status:item.status,revision:item.revision,next_at:item.next_at,nextAt:item.nextAt,evidence:item.evidence,readMore:'Use network_work with this exact id for its full goal, blocker, summary and next step before acting.'}),
+      recent:value.recent?.map((item:any)=>({id:item.id,title:item.title,status:item.status,revision:item.revision,readMore:'Read this original work id for its full evidence and summary.'}))};
+  }
+  if(value.models?.modelCapacity&&Array.isArray(value.models.projects)&&value.wallet?.policy&&value.wallet.account&&Array.isArray(value.wallet.actions)&&value.resources?.capacity&&value.accounting){
+    return {...value,contextProjection:'economics-overview',wallet:{...value.wallet,actions:value.wallet.actions.map((action:any)=>{
+      if(!action.receipt||typeof action.receipt!=='object')return action;
+      const {logs,logsBloom,...receipt}=action.receipt;
+      return {...action,receipt:{...receipt,logsDeferred:Array.isArray(logs)?logs.length:null,readMore:'Complete logs and bloom remain on the original wallet action/archived result. Read that original id before interpreting its events.'}};
+    })}};
+  }
+  return value;
+}
+
 export function toolContent(result:unknown,archiveId:string) {
+  result=operatingResultView(result);
   const work=result as any;
   if(typeof work?.actionId==='string'&&typeof work?.projectId==='string'&&Object.hasOwn(work,'checkpointSnapshotId')){
     // Keep immutable command/checkpoint control fields readable even when the
@@ -33,9 +59,6 @@ export function toolContent(result:unknown,archiveId:string) {
       }
     }
     result=view;
-  }
-  if(work?.watch&&Array.isArray(work.items)&&work.queue&&work.receiptMeaning){
-    result={...work,watch:{...work.watch,capabilities:undefined,opportunities:undefined,readMore:'Current capability facts are in the leading network context. Use recall with this archiveId for the complete original work observation.'},recent:work.recent?.map((r:any)=>({...r,summary:textPrefix(r.summary??'',240)}))};
   }
   let withReference:any=result!==null&&typeof result==='object'&&!Array.isArray(result)?{...result,archiveId}:result;
   let encoded=JSON.stringify(withReference);
@@ -129,7 +152,10 @@ export function conversationWindow(history:any[],leading:any[],fits:(messages:an
       if(calls.length) {
         const outputs=history.slice(i+1,i+1+calls.length);
         if(outputs.length!==calls.length||!calls.every((c:any,n:number)=>outputs[n]?.role==='tool'&&outputs[n].tool_call_id===c.id))continue;
-        units.push([message,...outputs]);i+=outputs.length;
+        units.push([message,...outputs.map((output:any)=>{
+          try {const result=JSON.parse(output.content),view=operatingResultView(result);return view===result?output:{...output,content:JSON.stringify(view)};}
+          catch{return output;}
+        })]);i+=outputs.length;
       } else units.push([message]);
     } else if(message.role==='user')units.push([message]);
   }

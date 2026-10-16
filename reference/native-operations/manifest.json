@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_8keEpdF6Wcz9eaLwvr5zCohs4U1k",
-  "source": "claus-work-continuity-native-20261016",
+  "deployed": "dpl_7xNEQvQiXuefwBkiHVc6xqBEV6Ra",
+  "source": "claus-active-work-context-native-20261016",
   "files": {
     "src/operations/policy.ts": "bc0aa35b64d5f4d2d8689a8763544f07eca2a2f9c3f6b8c8b1703c62d8cd6bf1",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -17,7 +17,7 @@
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
     "src/network-access.ts": "04d988f6370c42e387e97bb4fe334df2e60c516c2d3eaa269b556b184fe7ffde",
-    "src/context.ts": "4ef845c3766dc7117d9ee43bb795dee09e312fc2b0db996666037aae66e7ea5e",
+    "src/context.ts": "e13aaf4d922292d17c81dd3403467657f9cb177c03c184a68eee0d7dbecc5bad",
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "dbe170fa9d41cca5f8d3ba20c86310650cfed345af987db711832cf542097d5c",
     "src/network-operations.ts": "73f06b88d3b7687210be1abf37fa742ced7dee9c0f3262f9c01ffec8acf81e93",

@@ -147,3 +147,8 @@ Reviews of the compute and inference guides receive a fresh, allowlisted observa
 ## Working context
 
 Versioned source and knowledge reads retain the newest identical complete exchange. Large overviews defer unrelated project details before active work and current reply contexts. Full original records remain retrievable. This changes the model view, not evidence, permissions or completed work.
+
+
+## Active work and economics views
+
+Working summaries retain the focused task and defer unrelated task descriptions. Economics retain every amount, limit, payment identity and outcome while leaving receipt logs in the original archive. Full stored records, archived cursor bytes, and transaction admission remain unchanged.
