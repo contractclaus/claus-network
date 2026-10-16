@@ -35,3 +35,11 @@ The host no longer displays a separate Claus splash before the isolated map. Sur
 Document entry waits for the destination surface or project frame before opening the ink transition. Project pages retain their small home mark and show a minimal loading indicator, without a second full-size character. The first website frame is fully opaque before its loading background disappears; later versions can crossfade over the previous page. Back/forward cache navigation retains the rendered project frame.
 
 The fixed paths were exercised on the live origin in desktop and narrow viewports. This is not a guarantee about the loading time or correctness of independently published websites.
+
+## Project loading continuity
+
+Visibility changes cancel only the obsolete project request. Returning starts a new read immediately; an older response or cleanup cannot overwrite the current view or postpone its refresh. Intentional cancellations retain the last signal state instead of displaying a false outage. Real read failures still report unavailability.
+
+Task fragments are part of the rendered project identity, including navigation within the same project. A pending iframe is cancelled when the selected release returns to the already visible version. Clearing a project also removes frames still fading out. The sandbox, project scopes and permitted app operations are unchanged.
+
+Five focused lifecycle regressions reproduce in the previous source and pass in this release. Live desktop/mobile navigation and browser history were inspected separately.
