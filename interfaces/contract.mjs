@@ -118,7 +118,7 @@ const descriptions = {
  signal_latest: 'Read the finalized store record, authority/version status and source digest with signal.read. Publisher attestation and hashes do not prove input truth.',
  signal_publish: 'Explicitly publish or withdraw the signal feed with project.publish and expectedRevision. Existing onchain data remains readable onchain.',
  public_signal: 'Read the current finalized published feed. Reports current, stale, empty or unavailable; these states do not certify downstream financial use.',
- agent_publish: 'Explicitly publish or withdraw one agent name. Requires project.publish and expectedRevision; other identities stay private.',
+ agent_publish: 'Explicitly publish or withdraw one existing agent name. Requires project.publish and expectedRevision. The owner of both projects may display an owned agent on another project without publishing its private source project or changing its rights; the association expires on ownership changes. Other identities stay private.',
  review_admission_get: 'Read sponsored-review rules and lifetime committed maximum. Network owner session only.',
  review_admission_publish: 'Store immutable bounded sponsored-review rules. Network owner session only. Does not fund or activate spending.',
  review_admission_activate: 'Activate review rules by expectedGeneration. Network owner only. Existing exposure and reservations are preserved; funding remains necessary.',

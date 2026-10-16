@@ -1,4 +1,5 @@
 import { SITE_LIMITS, canonical, copy, digest, integer, requireThat, text, sourcePath, sourceText } from '../shared/index.mjs';
+import { agentPublicationVisible } from './agent-publication.mjs';
 
 const projectRef = (projectId, id) => digest({ projectId, id });
 const filePath = sourcePath, prose = sourceText;
@@ -35,20 +36,36 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       return store.transaction(async tx => {
         await identity.authorize(actor, 'project.publish', { projectId, withdrawal: !published }, tx);
         const agent = (await tx.read('principals', text(agentId)))?.value;
-        requireThat(agent?.kind === 'agent' && agent.projectId === projectId, 'not_found');
+        requireThat(agent?.kind === 'agent', 'not_found');
+        let ownerBinding;
+        if (agent.projectId !== projectId && !published) {
+          const old = await tx.read('project-public-agents', projectId + ':' + agentId);
+          requireThat(old?.value.ownerBinding, 'not_found');
+          ownerBinding = old.value.ownerBinding;
+        }
+        if (agent.projectId !== projectId && published) {
+          // Only the owner of BOTH projects can explicitly expose this name.
+          // The private source project, worker state and credentials stay private.
+          const { project: source } = await identity.owner(actor, agent.projectId, tx);
+          const { project: destination } = await identity.owner(actor, projectId, tx);
+          await identity.authorize(actor, 'project.publish', { projectId: agent.projectId }, tx);
+          requireThat(source.ownerId === destination.ownerId, 'scope_denied');
+          ownerBinding = { sourceProjectId: agent.projectId, ownerId: source.ownerId };
+        }
         let name = agent.name;
         if (published && !name) {
           // A runtime already has an agent identity. Publish its bound name,
           // never its private checkpoint, credential or a replacement identity.
-          const runtimes = await tx.list('project-runtimes', { projectId, limit: 5 });
-          const runtime = runtimes.find(row => row.value.projectId === projectId &&
-            row.id === projectId + ':' + row.value.runtimeId &&
+          const runtimes = await tx.list('project-runtimes', { projectId: agent.projectId, limit: 5 });
+          const runtime = runtimes.find(row => row.value.projectId === agent.projectId &&
+            row.id === agent.projectId + ':' + row.value.runtimeId &&
             agentId === 'runtime_' + digest({ id: row.id }).slice(7));
           requireThat(runtime && /^[a-z][a-z0-9-]{0,39}$/.test(runtime.value.runtimeId), 'invalid_agent_name');
           name = runtime.value.runtimeId.replaceAll('-', ' ');
         }
         const value = { projectId, agentId, name: name || agentId, published };
-        const row = await tx.write('project-public-agents', projectId + ':' + agentId, value, expectedRevision);
+        const row = await tx.write('project-public-agents', projectId + ':' + agentId,
+          { ...value, ...(ownerBinding ? { ownerBinding } : {}) }, expectedRevision);
         await tx.event({ type: published ? 'agent.published' : 'agent.withdrawn', projectId, agentId, at: now() });
         return { ...value, revision: row.revision };
       }, {projectId});
@@ -159,7 +176,9 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         store.list('project-public-agents',{prefix:record.value.projectId+':',limit:128}),
         store.read('public-evidence',record.value.projectId),publicDetails(record.value.projectId)
       ]);
-      const agents=agentRows.filter(row=>row.value.published).map(row=>({id:row.value.agentId,name:row.value.name,revision:row.revision}));
+      const admitted=await Promise.all(agentRows.map(row=>agentPublicationVisible(store,row.value)));
+      const agents=agentRows.filter((row,i)=>admitted[i]).map(row=>({id:row.value.agentId,name:row.value.name,revision:row.revision,
+        ...(row.value.ownerBinding?{relationship:'owned'}:{})}));
       // Evidence is written only by the trusted workflow, not profile input.
       const evidence=evidenceRow?.value??{reviews:[],decisions:[],deployments:[]};
       return {...record.value,revision:record.revision,agents,evidence,...details};
@@ -169,7 +188,8 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       const ids=[...new Set(rows.filter(r=>r.value.published).map(r=>r.value.projectId))];
       const many=(collection,keys)=>store.readMany?store.readMany(collection,keys):Promise.all(keys.map(async id=>[id,await store.read(collection,id)])).then(r=>new Map(r));
       const [owned,allowed]=await Promise.all([many('projects',ids),visibleMany?visibleMany(ids):Promise.all(ids.map(async id=>[id,await visible(id)])).then(r=>new Set(r.filter(([,ok])=>ok).map(([id])=>id)))]);
-      const candidates=rows.filter(r=>r.value.published&&allowed.has(r.value.projectId)&&owned.get(r.value.projectId)?.value&&!owned.get(r.value.projectId).value.archivedAt);
+      const admitted=await Promise.all(rows.map(row=>agentPublicationVisible(store,row.value)));
+      const candidates=rows.filter((r,i)=>admitted[i]&&allowed.has(r.value.projectId)&&owned.get(r.value.projectId)?.value&&!owned.get(r.value.projectId).value.archivedAt);
       const pages=await many('public-projects',[...new Set(candidates.map(r=>owned.get(r.value.projectId).value.slug))]);
       const items=candidates.flatMap(row=>{const p=owned.get(row.value.projectId).value,pub=pages.get(p.slug)?.value;return pub?.published&&pub.projectId===p.id?[{id:row.value.agentId,projectId:row.value.projectId,name:row.value.name,revision:row.revision,url:'/c/'+p.slug+'#agents'}]:[];});
       return {items,nextCursor:rows.length===limit?rows.at(-1).id:null};
@@ -209,8 +229,9 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         for (const [field, kind, relation, section] of [['services', 'service', 'offers', 'services'],
           ['agents', 'agent', 'belongs_to', 'agents'], ['releases', 'interface', 'published_interface', 'interfaces']]) {
           for (const item of project[field] ?? []) {
-            const id = kind + ':' + item.id;
-            resources.push({ id, projectId: project.projectId, kind, label: item.name ?? 'Interface', href: href + '#' + section });
+            const id = kind + ':' + (item.relationship==='owned'?project.projectId+':':'') + item.id;
+            resources.push({ id, projectId: project.projectId, kind, label: item.name ?? 'Interface', href: href + '#' + section,
+              ...(item.relationship==='owned'?{relationship:'owned'}:{}) });
             relations.push({ source: id, target: project.projectId, relation });
           }
         }

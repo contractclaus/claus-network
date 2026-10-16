@@ -1,6 +1,7 @@
 import {analyzeOperations} from '../isolated/bridge.mjs';
 import {executionEvidence} from './execution.mjs';
 import {copy,digest,integer,requireThat} from '../shared/index.mjs';
+import {agentPublicationVisible} from '../projects/agent-publication.mjs';
 
 // Live projections, not a second registry. PostgreSQL filters public profiles
 // before pagination; other kinds retain a bounded page scan.
@@ -21,6 +22,10 @@ export function createDiscovery({store,projects,apps,services,now=()=>Date.now()
     let candidates=[],next=null,scanned=0,indexed=false;let portfolios=new Set();
     if(['project','agent'].includes(kind)&&store.searchPublicDirectory){
       const page=await store.searchPublicDirectory({kind,query:needle,after:position,limit});indexed=true;next=page.nextCursor;scanned=page.items.length;portfolios=new Set(page.items.filter(r=>r.portfolio).map(r=>r.value.projectId+':'+r.value.agentId));
+      if(kind==='agent'){
+        const admitted=await Promise.all(page.items.map(row=>agentPublicationVisible(store,row.value)));
+        page.items=page.items.filter((row,i)=>admitted[i]);
+      }
       candidates=page.items.map(row=>kind==='project'?{kind,id:row.value.projectId,projectId:row.value.projectId,name:row.value.name,description:row.value.description,url:'/c/'+row.slug,version:row.revision,availability:{state:'published',scope:'project profile'},price:null,evidence:{type:'owner-published',claimOnly:true}}:{kind,id:row.value.agentId,projectId:row.value.projectId,name:row.value.name,revision:row.revision,version:row.revision,url:'/c/'+row.slug+'#agents',availability:{state:'published-profile',workerPresence:'unknown'},price:null,evidence:{type:'project-owner-published',claimOnly:true}});
     }else if(kind==='task'){
       const page=resume?{items:[{projectId:resume.board,tasks:true}]}:await apps.catalog({after:position,limit:1});

@@ -1,4 +1,5 @@
 import {copy,digest,integer,requireThat,text,sourceText,amount} from '../shared/index.mjs';
+import {agentPublicationVisible} from '../projects/agent-publication.mjs';
 export {createDependencies} from './dependencies.mjs';
 export {createProjectInspection} from './inspection.mjs';
 import {templates} from './templates.mjs';
@@ -16,7 +17,7 @@ function position(after,binding){if(!after)return '';let c;try{c=JSON.parse(Buff
 export function createCollaboration({store,identity,apps,visible,admit,renderTemplate,now=()=>Date.now()}) {
  async function publicProfile(projectId,agentId,reader=store){
   const p=(await reader.read('projects',projectId))?.value,a=(await reader.read('project-public-agents',projectId+':'+agentId))?.value;
-  requireThat(p&&!p.archivedAt&&!p.transfer&&await visible(projectId,reader)&&a?.published&&(await reader.read('public-projects',p.slug))?.value.published,'not_found');
+  requireThat(p&&!p.archivedAt&&!p.transfer&&await visible(projectId,reader)&&await agentPublicationVisible(reader,a)&&(await reader.read('public-projects',p.slug))?.value.published,'not_found');
   const r=await reader.read('agent-work-profiles',projectId+':'+agentId);requireThat(r?.value.published,'not_found');
   return {...value(r),name:a.name,url:'/c/'+p.slug,availability:{declared:r.value.availability,updatedAt:r.value.updatedAt,workerPresence:'unknown'},scope:'Skills and prices are declarations. Portfolio receipts are separate evidence.'};
  }
@@ -30,7 +31,14 @@ export function createCollaboration({store,identity,apps,visible,admit,renderTem
    if(input.quote!==null){requireThat(['ETH','CLAUS'].includes(input.quote.asset),'invalid_asset');amount(input.quote.amount);sourceText(input.quote.unit,80);}
    requireThat(typeof input.published==='boolean','invalid_publication');integer(input.expectedRevision);text(input.idempotencyKey);
    return store.transaction(async tx=>{await identity.authorize(actor,'project.publish',{projectId,withdrawal:!input.published},tx);if(input.published)await admit(projectId,tx);
-    const a=(await tx.read('principals',input.agentId))?.value;requireThat(a?.kind==='agent'&&a.projectId===projectId,'not_found');
+    const a=(await tx.read('principals',input.agentId))?.value;requireThat(a?.kind==='agent','not_found');
+    if(a.projectId!==projectId){
+      const publication=(await tx.read('project-public-agents',projectId+':'+input.agentId))?.value;
+      requireThat(publication?.ownerBinding,'not_found');
+      if(input.published){await identity.owner(actor,projectId,tx);await identity.owner(actor,a.projectId,tx);
+        await identity.authorize(actor,'project.publish',{projectId:a.projectId},tx);
+        requireThat(await agentPublicationVisible(tx,publication),'not_found');}
+    }
     const who=await identity.credential(actor,tx),key=digest({projectId,actor:who.principalId,key:input.idempotencyKey}),old=await tx.read('agent-profile-requests',key),requestHash=digest(input);
     if(old){requireThat(old.value.requestHash===requestHash,'idempotency_conflict');return old.value.result;}
     const r=await tx.write('agent-work-profiles',projectId+':'+input.agentId,{projectId,agentId:input.agentId,skills:copy(input.skills),availability:input.availability,description:input.description,role:input.role,quote:copy(input.quote),published:input.published,updatedAt:now()},input.expectedRevision);
