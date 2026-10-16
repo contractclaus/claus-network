@@ -1,3 +1,4 @@
+import {attachSiteNavigation} from './site-navigation.js';
 import {attachAppBridge} from './app-bridge.js';
 import {projectPagePath} from '../lib/project-path.mjs';
 export function createProjectSite(root){
@@ -17,7 +18,7 @@ export function createProjectSite(root){
     const back=document.createElement('a');back.href='/c/'+encodeURIComponent(slug);back.textContent='Back to project';note.append(back);root.replaceChildren(note);
     return true;
    }
-   const fragment=/^#task=[A-Za-z0-9:_%-]{1,360}$/.test(location.hash)?location.hash:'';
+   const fragment=/^#[A-Za-z0-9_=:.%~-]{1,360}$/.test(location.hash)?location.hash:'';
    const key=release.id+':'+path+fragment;
    if(key===current){cancelPending();dispose?.update?.(project);return true;}
    if(key===pending?.key){pending.dispose?.update?.(project);return true;}
@@ -34,7 +35,9 @@ export function createProjectSite(root){
     next.classList.remove('is-loading');next.inert=false;loading(false);if(old){old.inert=true;retired.set(old,setTimeout(()=>{old.remove();retired.delete(old);},200));}
    })),{once:true});
    next.src='https://claus-network-sites.vercel.app/r/'+release.id.slice(7)+'/'+path+fragment;
-   pending={key,frame:next,dispose:attachAppBridge(next,project)};
+   const app=attachAppBridge(next,project),navigation=attachSiteNavigation(next,{slug,release});
+   const detach=()=>{app();navigation();};detach.update=app.update;
+   pending={key,frame:next,dispose:detach};
    if(!frame)root.replaceChildren(next);else root.append(next);
    return true;
   },

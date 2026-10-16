@@ -1,3 +1,4 @@
+import {withSiteNavigation} from './navigation.mjs';
 import {connectSources} from '../src/shared/site-connect.mjs';
 const contentTypes={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',
   json:'application/json; charset=utf-8',svg:'image/svg+xml'};
@@ -23,6 +24,6 @@ export async function render(request,{fetcher=fetch,apiOrigin='https://claus-net
     if(!file||file.path!==match[2]||typeof file.content!=='string'||Buffer.byteLength(file.content)>1000000)return new Response('Not found',{status:404,headers});
     const connect=connectSources(release.connect);
     const csp=connect.length?headers['content-security-policy'].replace("connect-src 'none'",'connect-src '+connect.join(' ')):headers['content-security-policy'];
-    return new Response(request.method==='HEAD'?null:file.content,{headers:{...headers,'content-security-policy':csp,'content-type':contentTypes[match[3]]}});
+    return new Response(request.method==='HEAD'?null:match[3]==='html'?withSiteNavigation(file.content,{releaseId:release.id,paths:release.paths,frameOrigin}):file.content,{headers:{...headers,'content-security-policy':csp,'content-type':contentTypes[match[3]]}});
   }catch{return new Response('Temporarily unavailable',{status:503,headers});}
 }
