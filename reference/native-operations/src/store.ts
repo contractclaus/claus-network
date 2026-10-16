@@ -132,7 +132,7 @@ export async function reconcileInference(id:string,status:'completed'|'failed',r
 export async function once<T>(id:string,kind:string,input:unknown,fn:()=>Promise<T>,db:ActionQuery=sql(),admit?:()=>Promise<any[]>):Promise<T> {
   const hash=digest(input);
   const model=kind==='inference'?(input as any)?.model??null:null;
-  const inserted=admit?await admit():await db`INSERT INTO claus_actions(id,kind,input_hash,status,requested_model,input,visibility) VALUES(${id},${kind},${hash},'pending',${model},${kind==='inference'?null:JSON.stringify(input)}::jsonb,${id.startsWith('club:')?'private_club':['network_program','network_program_run'].includes(kind)?'private_network':'public'}) ON CONFLICT DO NOTHING RETURNING id`;
+  const inserted=admit?await admit():await db`INSERT INTO claus_actions(id,kind,input_hash,status,requested_model,input,visibility) VALUES(${id},${kind},${hash},'pending',${model},${kind==='inference'?null:JSON.stringify(input)}::jsonb,${id.startsWith('club:')?'private_club':['network_program','network_program_run','programmable_api'].includes(kind)?'private_network':'public'}) ON CONFLICT DO NOTHING RETURNING id`;
   if (!inserted.length) {
     const row=(await db`SELECT * FROM claus_actions WHERE id=${id}`)[0];
     if (row.input_hash!==hash) throw new Error('action_id_conflict');
