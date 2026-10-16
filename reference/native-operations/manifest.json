@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_5CXTkJmDkDxTFmmtzbZNiv2GcB81",
-  "source": "claus-phase3-source-native-20261016",
+  "deployed": "dpl_FPDDQ5Q4krH8KngLqmW7aJWRLBz9",
+  "source": "claus-phase3-private-launch-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -23,7 +23,7 @@
     "src/network-operations.ts": "d75d722a930538ae3336e63543fe3997fef7900bead177ca29ee5fe3c4d270c8",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "34b516d513ec3646a6ef2298144b4640d0c1c1349918efeec997f3c0fa2c50e1",
-    "src/tool-visibility.ts": "0d21ed323ba398c03abe60837c6f8a40357093070e93b1c9ec9ad3f4fc88a344",
+    "src/tool-visibility.ts": "85b8d6a51abc250268a5349845364d41db007ea17eb45170efec9fde1ea1d4a0",
     "src/tools.ts": "ab7073c32b1f0d885d2683d0e2bec588ea11a4dde7a467808c47973cc0145b33",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
@@ -36,7 +36,7 @@
     "src/cycle.ts": "53b7e5e8daa342bb6f1b5a1f27fb071903b9aec7b84d83d69e81a8b9f3f56e27",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
     "src/social.ts": "14f1cbfc2a91b13b5ed862f1402d0767d1c547c6195c0c0c8310fc5969575f9d",
-    "src/store.ts": "82ef73828569b4ebe51145ae40eafad13a5dc3fed7811170b2107b608d387cf3",
+    "src/store.ts": "586f34c3581758b7518a799cf1095d4327c4e5207d12ad0cab47a86c676c4a57",
     "src/isolated/work.json": "2cd86bd1fe86823e8578e466b4750df1979aa9a2741ac62782034f5f14546b32",
     "src/isolated/work.ts": "64f6c8087bd8a367012a4b38c1b488496bbc065b5c7c2f64724530cfe5d76b21",
     "src/network-measurements.ts": "528442b47850c9ede35ca17e1ac516c014523855a0ec67fb73bda1952a183089",
