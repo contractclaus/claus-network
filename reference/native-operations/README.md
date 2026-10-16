@@ -77,3 +77,7 @@ Development results retain their original command identity, exit status, checkpo
 ## Publication validation feedback
 
 A private source snapshot can retain build inputs and tests; website publication selects only supported HTML, CSS, JavaScript, JSON and SVG assets, including index.html. The tool description exposes that distinction. Exact release validation errors returned before any write are reported as rejected, with corrective guidance. Other request failures retain their original uncertain-outcome handling. No automatic write retry or new financial authority is introduced.
+
+## Failed work observations
+
+Active work may retain failed operating receipts for diagnosis. Completion, capability reconciliation and public evidence retain the existing successful-only checks; private Club data remains excluded. Exact isolated-service validation failures returned before transaction commit are reported as rejected. Other transport or execution failures keep their original uncertain status; no request is automatically replayed.
