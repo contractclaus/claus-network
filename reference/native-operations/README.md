@@ -89,3 +89,7 @@ Exact internal Network journal reads retain the original tool request alongside 
 ## Work update feedback
 
 Rejected work updates identify the submitted evidence references that are unsuitable and preserve the current work revision. Guidance distinguishes original operating journals from recalled wrappers, and diagnostic progress from completion or capability reconciliation. Existing acceptance and privacy boundaries are unchanged.
+
+## Pagination continuity
+
+The retained work receipt index preserves opaque continuation cursors exactly within their API bound, and retains explicit null end markers. It names the observed collection, item count and selected IDs, plus service/source revisions. Oversized values refer back to their original archive rather than exposing a misleading cursor prefix. This is a view of original evidence, not permission or a new operation.
