@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_YLqaP3JeN3AWZHBE539hdzorRuQW",
-  "source": "claus-phase3-public-outcome-native-20261016",
+  "deployed": "dpl_BBhdD5WUju2819h7n1iqxBDQdWZH",
+  "source": "claus-phase3-context-budget-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -10,7 +10,7 @@
     "src/operations/worker.ts": "3a1463e79c144d63e84ab11f4d14e815da1cfa52273c7249ec8ca4b6c9671817",
     "src/operations/handoff.ts": "4057b37e738c1eed06e63ec287f071748f14c5f1e16be56f817559c3d2f31c27",
     "src/operations/review-evidence.ts": "f889924460e2be67aaaf1990eb740e7955b5cda5f4ced42bb965fda6910ff90a",
-    "src/operating-context.ts": "5bc31abd4096bcf0c171d3845866bb72b4694ebb693a002496546ccd38d56b68",
+    "src/operating-context.ts": "b1be8451847953e31c0eaf80d1e57cf9b184bfd4a498246bc795b2966d813e9f",
     "src/knowledge-schema.ts": "fee8f8f34372234688bb3c2773b3ec3a77d1d0240c5688b6f8e80b6d9b82f46e",
     "src/work-wallet-sponsor.ts": "325134bc9146d516e2e818211b5e5e8e3ea068213726e04229fdd712779099f5",
     "src/work-wallet.ts": "70923fdd77ba7579919cd26382a48327d50a4ec0589857b295ac00cdc295332e",
