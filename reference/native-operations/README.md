@@ -85,3 +85,7 @@ Active work may retain failed operating receipts for diagnosis. Completion, capa
 ## Original request recovery
 
 Exact internal Network journal reads retain the original tool request alongside its historical result. Proven fixed-host rejections receive a separate current recovery assessment; historical receipts are unchanged. These inputs are unavailable to public and Club contexts. The annotation neither replays an operation nor creates new authority.
+
+## Work update feedback
+
+Rejected work updates identify the submitted evidence references that are unsuitable and preserve the current work revision. Guidance distinguishes original operating journals from recalled wrappers, and diagnostic progress from completion or capability reconciliation. Existing acceptance and privacy boundaries are unchanged.
