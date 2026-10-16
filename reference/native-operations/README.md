@@ -109,3 +109,7 @@ Broad project discovery, host status and completed-work summaries can be read ag
 ## Delegated resource identities
 
 The continuation receipt index retains exact worker, runtime, profile and original request identifiers with their revisions and cycle status. It records no private task bodies. Oversized identifiers are marked for original-archive retrieval instead of becoming unusable prefixes. These are observations of existing effects, never permission to recreate them or to expand their grants.
+
+## Missing runtime workers
+
+The fixed runtime configuration endpoint resolves the configured worker before opening the runtime write transaction. Its missing-worker response is an input rejection. The original failure remains in the journal; current recall explains this classification so the same intended runtime can be inspected and its worker binding corrected. This grants no automatic retry. Transport failures and other uncertain writes retain their original holds.
