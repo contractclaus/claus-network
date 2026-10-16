@@ -246,7 +246,13 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     if(enabled()&&configured(env))return c.json(await withNonpayment(db,id,await reconcile(db,id,recovery)??unknown()));
     return c.json({status:rows[0].status,response:rows[0].response??null,outcome:rows[0].outcome??null});
   });
-  app.onError((error,c)=>/^capital_[a-z_]+$/.test(error?.message??'')?c.json({error:error.message,payment:'not_signed',retryAfterSeconds:60},409):c.json({error:'payment_service_unavailable',...unknown()},503));
+  app.onError((error,c)=>{
+    // Public errors remain bounded; operational logs never include requests,
+    // credentials, SQL, payment signatures, or arbitrary exception messages.
+    const token=(v,pattern)=>typeof v==='string'&&pattern.test(v)?v:undefined;
+    console.error(JSON.stringify({event:'claus_payment_error',name:token(error?.name,/^[A-Za-z][A-Za-z0-9]{0,63}$/),code:token(String(error?.code??''),/^[A-Z0-9-]{1,10}$/),constraint:token(error?.constraint_name??error?.constraint,/^[a-z][a-z0-9_]{0,95}$/),reason:token(error?.message,/^[a-z][a-z0-9_]{0,95}$/),cause:token(error?.cause?.name,/^[A-Za-z][A-Za-z0-9]{0,63}$/)}));
+    return /^capital_[a-z_]+$/.test(error?.message??'')?c.json({error:error.message,payment:'not_signed',retryAfterSeconds:60},409):c.json({error:'payment_service_unavailable',...unknown()},503);
+  });
   return app;
 }
 export default createPaymentApp();
