@@ -7,12 +7,21 @@ const uint=x=>typeof x==='string'&&/^(0|[1-9][0-9]{0,17})$/.test(x)?BigInt(x):nu
 const unavailable=reason=>({state:'unavailable',reason});
 const abi=parseAbi(['function balanceOf(address) view returns(uint256)']);
 
-export async function readPayerCash(){
- const client=createPublicClient({chain:base,transport:http('https://mainnet.base.org',{timeout:3000,retryCount:0})});
- if(await client.getChainId()!==8453)throw Error('wrong_chain');
- const block=await client.getBlock({blockTag:'latest'});
- const [eth,usdc]=await Promise.all([client.getBalance({address:RESOURCE_PAYER,blockNumber:block.number}),client.readContract({address:RESOURCE_USDC,abi,functionName:'balanceOf',args:[RESOURCE_PAYER],blockNumber:block.number})]);
- return {state:'available',chainId:8453,blockNumber:String(block.number),blockHash:block.hash,ethWei:String(eth),usdcMicro:String(usdc)};
+// Both fixed public endpoints are already used by Claus. Retry the whole
+// read on one endpoint so a snapshot never combines providers or blocks.
+const CASH_RPC_URLS=['https://mainnet.base.org','https://base-rpc.publicnode.com'];
+export async function readPayerCash(createClient=createPublicClient){
+ for(const url of CASH_RPC_URLS){
+  try{
+   const client=createClient({chain:base,transport:http(url,{timeout:1500,retryCount:0})});
+   if(await client.getChainId()!==8453)throw Error('wrong_chain');
+   const block=await client.getBlock({blockTag:'latest'});
+   if(typeof block.number!=='bigint'||block.number<0n||!/^0x[0-9a-f]{64}$/i.test(block.hash??''))throw Error('invalid_cash_anchor');
+   const [eth,usdc]=await Promise.all([client.getBalance({address:RESOURCE_PAYER,blockNumber:block.number}),client.readContract({address:RESOURCE_USDC,abi,functionName:'balanceOf',args:[RESOURCE_PAYER],blockNumber:block.number})]);
+   return {state:'available',chainId:8453,blockNumber:String(block.number),blockHash:block.hash,ethWei:String(eth),usdcMicro:String(usdc)};
+  }catch{ /* No cached balance or zero substitute may admit spending. */ }
+ }
+ throw Error('capital_cash_unavailable');
 }
 
 export async function readResourceBudget(db){

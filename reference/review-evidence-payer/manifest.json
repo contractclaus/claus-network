@@ -1,12 +1,12 @@
 {
-  "deployed": "dpl_Fr4DZUerZ7tXgSvX2Vf2Y8KiA4ew",
-  "source": "claus-capital-payer-20261016",
+  "deployed": "dpl_7YaB8GSMh8N2dBhigEXQQi4Wr1HU",
+  "source": "claus-cash-rpc-payer-20261016",
   "files": {
-    "src/index.js": "db1398a5d708ca0660f4a3f0eaa425759fa6dd8c2d722ae5deafbc396c17ffc5",
+    "src/index.js": "888341122fb007690b7564a5973a617644f71763df4701928abf0e06a879dbdb",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
     "src/credit-work-store.js": "274409e275e0f493f4f6ffc0178573048990391c9a602891936355f3d797cfe7",
     "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
-    "src/operating-resources.js": "98b1935ffe0798fe935a0b0bd2b332eaeb1c4f94c669f17e569d9ec29795d0f9",
+    "src/operating-resources.js": "966c995813640a474bb95e858b304504368d6de8e3209cfeeeb713ef99dc200b",
     "src/budget.js": "29236fd7c56e9656aa457b7a3c10a182c378889fc10b90465c9ab91ffe1e8519",
     "src/credit-store.js": "3df03030341dd83d07234c411b381af4234bfbe2229620d8457c27392611351a",
     "src/credit-work-admission.js": "a52b2dae3dbc4c42a7012e9ab10022dffd1ddd31c6a860ca7ca0b360c742d931",
