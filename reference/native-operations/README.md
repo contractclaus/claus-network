@@ -81,3 +81,7 @@ A private source snapshot can retain build inputs and tests; website publication
 ## Failed work observations
 
 Active work may retain failed operating receipts for diagnosis. Completion, capability reconciliation and public evidence retain the existing successful-only checks; private Club data remains excluded. Exact isolated-service validation failures returned before transaction commit are reported as rejected. Other transport or execution failures keep their original uncertain status; no request is automatically replayed.
+
+## Original request recovery
+
+Exact internal Network journal reads retain the original tool request alongside its historical result. Proven fixed-host rejections receive a separate current recovery assessment; historical receipts are unchanged. These inputs are unavailable to public and Club contexts. The annotation neither replays an operation nor creates new authority.
