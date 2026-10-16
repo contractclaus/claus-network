@@ -70,9 +70,19 @@ export function workProgress(messages:any[]) {
         if(Array.isArray(args.files)){request.writtenFileCount=args.files.length;request.writtenPaths=args.files.slice(0,6).map((f:any)=>textPrefix(String(f?.path??''),160));}
         if(args.source)request.importedSource={projectId:args.source.projectId,releaseId:args.source.releaseId,prefix:args.source.prefix};
       }
-      if(['read_network','build_network'].includes(call.function.name))try{const input=JSON.parse(args.input??'{}');for(const key of ['projectId','slug','releaseId','snapshotId','taskId','after','filePath'])if(typeof input[key]==='string')request[key]=textPrefix(input[key],180);}catch{}
+      if(['read_network','build_network'].includes(call.function.name))try{
+        const input=JSON.parse(args.input??'{}');
+        for(const key of ['projectId','slug','releaseId','snapshotId','taskId','serviceId','expectedSourceHash','filePath'])if(typeof input[key]==='string')request[key]=textPrefix(input[key],180);
+        // Cursor bytes are opaque: a prefix is not a usable continuation.
+        if(typeof input.after==='string'){if(input.after.length<=2048)request.after=input.after;else request.afterArchived=true;}
+        if(typeof input.request?.action==='string')request.serviceAction=textPrefix(input.request.action,80);
+      }catch{}
       const actual=result?.result??result;
-      const outcome:any={};for(const key of ['error','status','published','id','revision','releaseId','snapshotId','nextOffset','nextCursor','available','observedAt'])if(['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
+      const outcome:any={};for(const key of ['error','status','published','id','revision','sourceRevision','sourceHash','releaseId','snapshotId','collection','contentVersion','available','observedAt'])if(['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
+      if(Object.hasOwn(actual??{},'nextOffset')&&(actual.nextOffset===null||Number.isSafeInteger(actual.nextOffset)))outcome.nextOffset=actual.nextOffset;
+      if(Object.hasOwn(actual??{},'nextCursor')){if(actual.nextCursor===null||typeof actual.nextCursor==='string'&&actual.nextCursor.length<=2048)outcome.nextCursor=actual.nextCursor;else outcome.nextCursorArchived=true;}
+      if(Array.isArray(actual?.items)){outcome.itemCount=actual.items.length;outcome.itemIds=actual.items.slice(0,4).flatMap((item:any)=>typeof item?.id==='string'?[textPrefix(item.id,160)]:[]);}
+      if(actual?.recovery?.outcome)outcome.recoveryOutcome=actual.recovery.outcome;
       if(['develop_project','stage_development'].includes(call.function.name))for(const key of ['actionId','projectId','projectVersion','exitCode','checkpointApplied','checkpointSnapshotId','reason','outputLimited','stdoutTruncated','stderrTruncated'])if(actual?.[key]===null||['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
       if(result?.truncated)outcome.truncated=true;
       records.set(call.id,{callId:call.id,tool:call.function.name,request,outcome,archiveId:typeof result.archiveId==='string'?result.archiveId:null});
