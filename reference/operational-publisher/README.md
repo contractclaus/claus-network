@@ -17,3 +17,6 @@ The independent payer now binds review requests and complete verdicts; see [revi
 [Network session recovery](NETWORK-SESSION-RECOVERY.md) describes targeted session renewal without replaying actions.
 
 [Search credential boundary](SEARCH-BOUNDARY.md) describes fixed provider search with independent request accounting.
+
+
+Known operational review prompt versions are explicitly pinned. A completed response must match the exact original request, maximum allowance and prompt hash. Updating trusted review context does not create a new paid review or permit a modified request.

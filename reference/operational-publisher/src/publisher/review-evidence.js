@@ -11,8 +11,10 @@ export function verifyReviewEvidence(effect,kind,evidence) {
   if(!effect?.input||!Object.hasOwn(prompts,kind)||!evidence||evidence.version!==1||
     evidence.id!==effect.id||evidence.status!=='completed'||String(effect.amount??effect.input.quoteCeilingMicroUsdc)!==evidence.maximumMicroUsdc)fail();
   const {quoteCeilingMicroUsdc,...request}=effect.input;
-  if(hash(canonical(request))!==evidence.inputHash||hash(request.instructions??'')!==prompts[kind]||
-    evidence.instructionsHash!==prompts[kind])fail();
+  const instructionHash=hash(request.instructions??'');
+  const accepted=Array.isArray(prompts[kind])?prompts[kind]:[prompts[kind]];
+  if(hash(canonical(request))!==evidence.inputHash||!accepted.includes(instructionHash)||
+    evidence.instructionsHash!==instructionHash)fail();
   const response=evidence.response;
   if(response?.model!==request.model||!response.choices?.[0]?.message)fail();
   const output={message:response.choices[0].message,model:response.model,receipt:response.receipt??null,completion:completionMetadata(response)};

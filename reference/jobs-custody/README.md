@@ -10,3 +10,6 @@ Unknown transaction outcomes retain the original signed bytes and reservations. 
 ## Bounded gas envelopes
 
 New unsigned Jobs transactions fit the existing per-transaction gas cap and actual ETH balance while covering a fresh base fee and bounded tip. If they cannot fit, they remain unsigned with a specific reason. Original signed bytes, cumulative limits, nonce recovery and fixed recipients remain unchanged.
+
+
+Status for an existing unsigned action now reports a fresh preparation and gas simulation, including cumulative gas availability. It returns before signing, reserving funds or broadcasting. A ready observation is not a payment or reservation; resuming the original ID repeats every check. Signed recovery is unchanged.
