@@ -4383,12 +4383,14 @@
                   "actions": {
                     "type": "array",
                     "minItems": 1,
-                    "maxItems": 15,
+                    "maxItems": 17,
                     "items": {
                       "type": "string",
                       "enum": [
                         "app_service_get",
                         "app_service_call",
+                        "app_task_messages",
+                        "app_task_message",
                         "app_task_review_request",
                         "app_task_review_submit",
                         "app_task_review_challenge",
