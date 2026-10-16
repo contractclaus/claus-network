@@ -65,3 +65,7 @@ Provider launch reads, source requests and their original action records stay pr
 ## Development output
 
 A normal verbose build can finish and save its immutable checkpoint even when its displayed stdout or stderr is truncated. Results carry separate truncation flags, an exit code and the checkpoint outcome. Truncated stdout cannot be used as a complete launch request. Development log transport remains bounded at4MiB and the original command keeps its deadline; a flood requests termination and cannot produce a successful checkpoint. Recovery reads the same original command without rerunning it. The separate experiment tool retains its existing bounds.
+
+## Private conversation continuity
+
+Private Club work retains a bounded index of its original tool receipts through history trimming and worker boundaries. Large retrievable background inventories yield space to distinct evidence; current member messages, pending events and escalation history remain intact. Private progress stays in the Club checkpoint and cannot enter the public continuation. The original pending paid request is retained unchanged during an upgrade. This fixes a repeated-research failure without increasing the request-size ceiling or replacing existing effects.

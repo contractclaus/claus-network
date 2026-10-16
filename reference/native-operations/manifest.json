@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_4nyr3yEuLybmNipmahsH6yQvkSuq",
-  "source": "claus-phase3-output-native-20261016",
+  "deployed": "dpl_Bwm9GKx9v9Q7GXzi6a5F38HSM5md",
+  "source": "claus-phase3-club-continuity-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -86,7 +86,9 @@
     "src/development-source.ts": "83c6ea53ec2c0d577cb875cef57483d792c0feb0062cfd97750968daa8e43356",
     "src/investment-proposals.ts": "52344c76ceea27e3559b16243c57a217db1f3aaf8506067266138fb14fea6abc",
     "src/programmable.ts": "b04c472cea75e5d31db038583e0a4aa98198dedde54027322fd2a7a9867ef5f9",
-    "src/development-output.ts": "1a849965f29569417f22a7c68ef1410b77b563f17d4a360a31611d88f52265b6"
+    "src/development-output.ts": "1a849965f29569417f22a7c68ef1410b77b563f17d4a360a31611d88f52265b6",
+    "src/club-context.ts": "bc44d25e2023ba32576f59c5920a9382beb433fb647c793eff34198161859119",
+    "src/club-cycle.ts": "861f87b32f518db05ba5e12325ef59c49aa939a928e1952f66091f5b903b57d0"
   },
   "referenceSubset": true
 }
