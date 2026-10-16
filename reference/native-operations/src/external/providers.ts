@@ -4,7 +4,7 @@ import {chromium} from 'playwright-core';
 import {readPublicUrl} from '../research.js';
 
 export type ToolRule={toolkit:string;account?:string;effect:'read'|'write';fixed?:Record<string,unknown>};
-export type ExternalPolicy={version:1;composio?:{sessionId:string;userId:string;tools:Record<string,ToolRule>;connectToolkits?:string[]};browser?:{projectId:string;origins:string[];contextId?:string;seconds:number}};
+export type ExternalPolicy={version:1;composio?:{sessionId:string;userId:string;tools:Record<string,ToolRule>;connectToolkits?:string[]};browser?:{projectId:string;origins:string[];contextId?:string;seconds:number;mode?:'single-request'|'persistent'}};
 export class ProviderFailure extends Error {constructor(message:string,readonly confirmed:boolean,readonly retryAfter?:string){super(message);}}
 const object=(v:any)=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 export function externalPolicy(env:NodeJS.ProcessEnv=process.env):ExternalPolicy {
@@ -12,13 +12,13 @@ export function externalPolicy(env:NodeJS.ProcessEnv=process.env):ExternalPolicy
  const p=JSON.parse(raw);if(p?.version!==1)throw Error('external_policy_invalid');
  if(p.composio&&(!/^trs_[A-Za-z0-9_-]+$/.test(p.composio.sessionId)||typeof p.composio.userId!=='string'||!object(p.composio.tools)))throw Error('external_policy_invalid');
  for(const [slug,r]of Object.entries(p.composio?.tools??{}) as [string,ToolRule][]){if(!/^[A-Z][A-Z0-9_]{1,159}$/.test(slug)||slug.startsWith('COMPOSIO_')||!r.toolkit||!['read','write'].includes(r.effect)||r.fixed!==undefined&&!object(r.fixed))throw Error('external_policy_invalid');}
- if(p.browser&&(!p.browser.projectId||!Array.isArray(p.browser.origins)||!p.browser.origins.length||p.browser.origins.some((x:any)=>typeof x!=='string'||new URL(x).origin!==x||!x.startsWith('https://'))||!Number.isInteger(p.browser.seconds)||p.browser.seconds<60||p.browser.seconds>600))throw Error('external_policy_invalid');
+ if(p.browser&&(!p.browser.projectId||(p.browser.mode!==undefined&&!['single-request','persistent'].includes(p.browser.mode))||!Array.isArray(p.browser.origins)||!p.browser.origins.length||p.browser.origins.some((x:any)=>typeof x!=='string'||new URL(x).origin!==x||!x.startsWith('https://'))||!Number.isInteger(p.browser.seconds)||p.browser.seconds<60||p.browser.seconds>600))throw Error('external_policy_invalid');
  return p;
 }
 export const externalStatus=(p=externalPolicy(),env:NodeJS.ProcessEnv=process.env)=>({
  profile:'claus-external-tools/1',development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,bazaar:{discovery:true,payments:false},
  composio:{configured:!!env.COMPOSIO_API_KEY&&!!p.composio,tools:Object.keys(p.composio?.tools??{}),missing:env.COMPOSIO_API_KEY&&p.composio?[]:['connected-provider-session']},
- browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
+ browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
  secretsExposed:false,instructionAuthority:false
 });
 export function boundedObject(value:any,max=24000):Record<string,any>{if(!object(value)||Buffer.byteLength(JSON.stringify(value))>max)throw new ProviderFailure('external_input_invalid',true);return value;}
@@ -72,21 +72,25 @@ export function browserUrl(p:ExternalPolicy,raw:string){let u:URL;try{u=new URL(
 export async function browserRequest(p:ExternalPolicy,operation:string,input:any,original:string){
  const spec=p.browser,key=process.env.BROWSERBASE_API_KEY;if(!spec||!key)throw new ProviderFailure('browser_not_connected',true);
  const headers={'X-BB-API-Key':key,'content-type':'application/json'};
+ let opened:any;
  if(operation==='browser_open'){
   browserUrl(p,input.url);
-  const r=await providerJson('https://api.browserbase.com/v1/sessions',{method:'POST',headers,body:JSON.stringify({projectId:spec.projectId,timeout:spec.seconds,keepAlive:true,userMetadata:{clausAction:original},browserSettings:{solveCaptchas:false,recordSession:false,logSession:false,ignoreCertificateErrors:false,allowedDomains:spec.origins.map(o=>new URL(o).hostname),...(spec.contextId?{context:{id:spec.contextId,persist:true}}:{})}})},false);
+  const r=await providerJson('https://api.browserbase.com/v1/sessions',{method:'POST',headers,body:JSON.stringify({projectId:spec.projectId,timeout:spec.seconds,keepAlive:spec.mode!=='single-request',userMetadata:{clausAction:original},browserSettings:{solveCaptchas:false,recordSession:false,logSession:false,ignoreCertificateErrors:false,allowedDomains:spec.origins.map(o=>new URL(o).hostname),...(spec.contextId?{context:{id:spec.contextId,persist:true}}:{})}})},false);
   if(typeof r.id!=='string')throw new ProviderFailure('browser_missing_session',false);
   // Navigation is a separate original action: a failed navigation cannot lose
   // the successfully created provider session or cause another session charge.
-  return {sessionId:r.id,status:r.status,expiresAt:r.expiresAt,requestedUrl:input.url,next:'browser_navigate'};
+  if(spec.mode!=='single-request')return {sessionId:r.id,status:r.status,expiresAt:r.expiresAt,requestedUrl:input.url,next:'browser_navigate'};
+  opened=r;input={...input,sessionId:r.id};operation='browser_navigate';
  }
  if(typeof input.sessionId!=='string'||!/^[a-zA-Z0-9-]{8,100}$/.test(input.sessionId))throw new ProviderFailure('browser_session_invalid',true);
  if(operation==='browser_close')return providerJson('https://api.browserbase.com/v1/sessions/'+input.sessionId,{method:'POST',headers,body:JSON.stringify({status:'REQUEST_RELEASE'})},false);
- const session=await providerJson('https://api.browserbase.com/v1/sessions/'+input.sessionId,{headers},true);
+ if(spec.mode==='single-request'&&!opened)throw new ProviderFailure('browser_use_open_for_single_request',true);
+ const session=opened??await providerJson('https://api.browserbase.com/v1/sessions/'+input.sessionId,{headers},true);
  if(session.projectId!==spec.projectId||typeof session.connectUrl!=='string')throw new ProviderFailure('browser_session_unavailable',true);
  const connect=new URL(session.connectUrl);if(connect.protocol!=='wss:'||!(connect.hostname==='connect.browserbase.com'||connect.hostname.endsWith('.browserbase.com')))throw new ProviderFailure('browser_connection_invalid',true);
- const browser=await chromium.connectOverCDP(session.connectUrl,{timeout:20000});
+ let browser:Awaited<ReturnType<typeof chromium.connectOverCDP>>|undefined;
  try{
+  browser=await chromium.connectOverCDP(session.connectUrl,{timeout:20000});
   const context=browser.contexts()[0];if(!context)throw new ProviderFailure('browser_context_missing',true);
   await context.route('**/*',async route=>{const req=route.request();if(req.isNavigationRequest()&&req.frame()===req.frame().page().mainFrame()){try{browserUrl(p,req.url());}catch{await route.abort();return;}}await route.continue();});
   const page=context.pages()[0]??await context.newPage();page.setDefaultTimeout(10000);
@@ -103,7 +107,11 @@ export async function browserRequest(p:ExternalPolicy,operation:string,input:any
   if(page.url()!=='about:blank')browserUrl(p,page.url());
   const text=(await page.locator('body').innerText()).slice(0,24000);
   const controls=await page.locator('a,button,input,textarea,select,[role="button"]').evaluateAll(nodes=>nodes.slice(0,80).map((n:any)=>({tag:n.tagName.toLowerCase(),role:n.getAttribute('role'),text:(n.innerText||n.getAttribute('aria-label')||n.getAttribute('placeholder')||'').slice(0,180),label:n.labels?.[0]?.innerText??null,type:n.type??null,href:n.tagName==='A'?n.getAttribute('href'):undefined})));
-  return {sessionId:input.sessionId,url:page.url(),title:await page.title(),text,controls,instructionAuthority:false};
+  return {sessionId:input.sessionId,...(opened?{sessionMode:'single-request',closedAfterRead:true}:{}),url:page.url(),title:await page.title(),text,controls,instructionAuthority:false};
  }catch(e){if(e instanceof ProviderFailure)throw e;throw new ProviderFailure('browser_action_outcome_unavailable',operation==='browser_read');}
- finally{await browser.close().catch(()=>{});}
+ finally{
+  let disconnected=false;
+  if(browser)try{await browser.close();disconnected=true;}catch{}
+  if(opened&&!disconnected)await providerJson('https://api.browserbase.com/v1/sessions/'+input.sessionId,{method:'POST',headers,body:JSON.stringify({status:'REQUEST_RELEASE'})},false);
+ }
 }

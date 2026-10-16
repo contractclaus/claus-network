@@ -23,13 +23,26 @@ const services = await tools('find-weather-apis', {
 
 Keep each request ID stable when recovering the same request. Use a new ID for an intentional new observation. API keys never enter the guest; its temporary grant is tied to the original active command and expires with that command. A copied grant cannot authorize another workspace, run after completion, or alter provider policy. These files can become reusable adapters in an existing project and be staged through the existing publication flow.
 
-## Prepared account integrations
+## Connected account integrations
 
-Composio supports searching tool schemas, generating connection links for allowed toolkits, and calling explicitly connected tools with fixed accounts and resource constraints. A provider key and an actual configured session are required. `instant:false` must be used when creating the session unless separate paid-service activation has been approved. Tool search results are not new authorization. Proxy execution and arbitrary credentials stay out of guest code.
+Composio is connected for tool catalog search and schema discovery through a scoped project key and session. No application accounts have been linked yet and the host app-call allowlist is empty. Finding a tool does not grant access to its application. Instant, workbench, proxy execution and connection management are disabled; no paid Instant integrations are activated.
 
-Browserbase supports creating a bounded browser session, reading pages, navigating, clicking named controls, filling fields, and releasing the session. It requires the actual account, project and authorized origins. Sessions belong to their original caller. The adapter does not export cookies, debugging URLs, or provider credentials. Persistent reconnectable sessions require a supporting plan; account setup must establish that before activation.
+Browserbase is connected to the existing Free project. `status` reports `single-request`: `browser_open {url}` creates one short session, loads an approved HTTPS page, returns rendered text and controls, then closes it. Use another `browser_open` for another page. A real host request read the Claus builder guide and the provider confirmed the session completed. No provider keys, cookies or debugging URLs are returned.
 
-Neither integration is represented as connected until its live status and a real authorized request confirm it. Creating accounts, accepting terms, and billing setup are separate from installing an adapter. No provider purchase, wallet permission, treasury destination, fee split or token-launch authority changes in this release.
+Persistent sessions and multi-step click/fill interactions need a paid Browserbase plan and separate activation. The existing persistent adapter remains available for that future configuration; it is not advertised as active on the Free account. No plan upgrade, app OAuth grant, wallet permission, treasury destination, fee split or launch authority changed.
+
+```js
+const catalog = await tools('find-repository-tools', {
+  provider: 'composio', operation: 'search',
+  input: JSON.stringify({ query: 'Find public information about a GitHub repository' })
+});
+const page = await tools('read-builder-in-browser', {
+  provider: 'browserbase', operation: 'browser_open',
+  input: JSON.stringify({ url: 'https://claus.si/build.txt' })
+});
+```
+
+The approved keys live only in the protected provider vault and Native host environment. Guest code uses the same temporary command-bound bridge. Original receipts and uncertain-write holds remain unchanged.
 
 Official integration references:
 

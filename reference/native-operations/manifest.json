@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_3GAjUPhdgk4kpsc6MPGEnr9un7Y6",
-  "source": "claus-external-tools-native-20261016",
+  "deployed": "dpl_2JYN2TwyKj1jKVyAGcFuzroUB7WZ",
+  "source": "claus-connected-tools-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -24,7 +24,7 @@
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "db308eeede576309e8dffbf6eeddd27f4dc8bef033383421724e5a3fd974ae21",
     "src/tool-visibility.ts": "dc54f3d4323e64bd853f28280993f15ebdcb09e84396d333a7de1f5a1d62cf38",
-    "src/tools.ts": "e73bf8c58db418100d11edccdb4f11e0d098b9563b453d5014ac146b3f67d215",
+    "src/tools.ts": "fc4d9b6b0d92a1f78aebc48b3bf01911c4736540a94563e5b6ed426bfab59732",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
@@ -99,7 +99,7 @@
     "package.json": "e1a33f0b06e3e174a142e40df681dc758905e24d8cd8e2ba72e8aeb0a3f5071f",
     "src/external/development-bridge.ts": "d18b1961357c7069219a49ac044c039d02bd4d5d190dc3649448c943ec8aa8f9",
     "src/external/development-grant.ts": "2bfe6f06d4a960d24b7bc59f7b84e02102481f01162a93add710390f777cb43f",
-    "src/external/providers.ts": "40acb8b3071a0160e808ee27388bca474caef523e7ac50760cd2be4ea999cff1",
+    "src/external/providers.ts": "c63d4d819bcc3f900eb4936764756e380b639bc04ec6992521152556d340d4ad",
     "src/external/service.ts": "06f9d6608c9d00aa67d795affc33f6054e10b162db6f1ec3b1b12884403f077c",
     "src/index.ts": "be2df300877741600bc46a23c334565b07ebc0335d3fc8cd277519e83776356a"
   },
