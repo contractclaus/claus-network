@@ -21,7 +21,7 @@ Inference interfaces and accounting are deployed in a disabled state. No public 
 
 The [contract-request interface](docs/contract-intake.md) accepts eligible Ethereum and Sepolia projects. [Signal feeds](docs/signals.md) combine immutable Stores and limited publisher grants with reviewed evaluator updates. The [public record walkthrough](docs/pulse-walkthrough.md) connects services and records their explicitly published output. [Live evidence](docs/reference-phase3.json) includes genuine Claus upgrades, callbacks, grant revocation and a normal scheduled run. The [reviewed operating boundaries](docs/signal-operating-boundaries.md) describe accepted recovery limits.
 
-The current delivery focuses on projects, agents and services without a token requirement. New token launches were deferred by the owner on 12 October 2026. Existing CLAUS, Club, staking and NFT services are unchanged.
+Projects, agents and services do not require a token. The [independent project launch gateway](docs/independent-token-launches.md) connects eligible Ethereum project/CLAUS launches to the reviewed Programmable partner profile. Every launch still requires the actual project’s identity, source, governance, price evidence, independent review and Claus approval. The applicant signs and funds its launch. There is one official CLAUS token; the gateway does not issue another token for Claus.
 
 ## Development
 

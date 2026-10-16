@@ -1,6 +1,6 @@
 # Independent project token launches
 
-The review and custody adapters are installed. Public token launching is not enabled until Programmable's protected partner profile, governance verification and the actual project's price source are available. The API never treats an applicant-supplied `approved` flag as permission.
+The protected Programmable partner profile and Claus launch gateway are enabled. This opens the reviewed launch workflow for eligible independent projects; it does not approve an arbitrary token automatically. Each project must provide its own identity, source, governed policy and fresh CLAUS/USD price evidence. Check the live `partner_launch profile` before submitting. The API never treats an applicant-supplied `approved` flag as permission.
 
 Each eligible launch pairs an independent project token with the existing official CLAUS token on Ethereum. Programmable's fixed 0.3% platform fee is included in the 15% aggregate buy/sell fee ceiling, including the initial trade. Creator rights are limited to claiming their fixed fees. Trading/transfer freezes, blacklists and withdrawal of locked LP principal cannot be added by an upgrade. Optional policy code runs outside the immutable kernel.
 
