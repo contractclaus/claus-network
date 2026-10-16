@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_DqdevVPvv68qR2LeasLzyWT3nS2L",
-  "source": "claus-phase3-progress-native-20261016",
+  "deployed": "dpl_BBYSA4nnLqWu5MjszpHXXZVorwhM",
+  "source": "claus-phase3-publication-feedback-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -16,7 +16,7 @@
     "src/work-wallet.ts": "70923fdd77ba7579919cd26382a48327d50a4ec0589857b295ac00cdc295332e",
     "src/work-wallet-store.ts": "020a10ee51c807d04745b82436d069a12433ad51ea7c65f1bc420da5a45f38a0",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "5bdf5ef9e98044316a9e253de6c09a8ba6fceb294c893fc0533c245308f8dfd1",
+    "src/network-access.ts": "8c13ccb7ecbfc16fad828040d0e3f949afc402076ed7c5568ffcead1a346bac8",
     "src/context.ts": "b0b2fa270f3d44310072e31768cdd6e1fb3a7ebba9614f9cfce731a61480745b",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "7d8180a17dd0046af1a508643ef9bde3731ab76af66fb0a2a993f53d39ea0670",
@@ -81,14 +81,15 @@
     "src/archive.ts": "44d29391ef766f267b8f2b132ecce47c20ba788d30273acb70f60b3e0f8941b5",
     "src/development-execution.ts": "71c1115a6b6f947ac39acb0cb0fe2e62d8f7d113c299c8cf71aeb2829388634e",
     "src/development-workspace.ts": "80787bf62c9a6816bdc0216e81b05d9e469273241a4830d43295ae4e72eba047",
-    "src/development-export.ts": "1a3d7c8df4b44e6c4a0f6d79c2aaebf8f0bb89e502d1970011363e41d53adcde",
+    "src/development-export.ts": "4723c0be3e84dacda691ee7694e1440ade8249a205eada09949325c0982da077",
     "src/twitter-policy.ts": "10e50b8a07336d8cafdbe923cc5eb8541df3ed9060b13f21542fbf326746d9de",
     "src/development-source.ts": "83c6ea53ec2c0d577cb875cef57483d792c0feb0062cfd97750968daa8e43356",
     "src/investment-proposals.ts": "52344c76ceea27e3559b16243c57a217db1f3aaf8506067266138fb14fea6abc",
     "src/programmable.ts": "b04c472cea75e5d31db038583e0a4aa98198dedde54027322fd2a7a9867ef5f9",
     "src/development-output.ts": "1a849965f29569417f22a7c68ef1410b77b563f17d4a360a31611d88f52265b6",
     "src/club-context.ts": "bc44d25e2023ba32576f59c5920a9382beb433fb647c793eff34198161859119",
-    "src/club-cycle.ts": "861f87b32f518db05ba5e12325ef59c49aa939a928e1952f66091f5b903b57d0"
+    "src/club-cycle.ts": "861f87b32f518db05ba5e12325ef59c49aa939a928e1952f66091f5b903b57d0",
+    "src/network-failure.ts": "35bfd1ef0ac7a4a4f23e465a49f160a255fe0302d89699c80c4066c10d41aa5b"
   },
   "referenceSubset": true
 }

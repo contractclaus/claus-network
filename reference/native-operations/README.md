@@ -73,3 +73,7 @@ Private Club work retains a bounded index of its original tool receipts through 
 ## Development progress receipts
 
 Development results retain their original command identity, exit status, checkpoint application and workspace version even when escaped logs exceed the display envelope. The continuation receipt index preserves a bounded command preview and next workspace version, while full logs and source remain in their original private action. Truncated output does not imply a failed command; a hard output limit cannot be treated as a successful checkpoint. This is a display and continuity correction, with no command replay or new financial authority.
+
+## Publication validation feedback
+
+A private source snapshot can retain build inputs and tests; website publication selects only supported HTML, CSS, JavaScript, JSON and SVG assets, including index.html. The tool description exposes that distinction. Exact release validation errors returned before any write are reported as rejected, with corrective guidance. Other request failures retain their original uncertain-outcome handling. No automatic write retry or new financial authority is introduced.

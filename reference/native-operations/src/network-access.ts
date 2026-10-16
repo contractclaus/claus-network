@@ -98,9 +98,9 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
  async function tool(name:string,args:any){
   if(!args||Object.keys(args).some(k=>!['operation','input','describe'].includes(k))||typeof args.operation!=='string')return {error:'invalid_network_tool_input'};
   const route=networkRoutes[args.operation]??observationRoutes[args.operation];if(!['read_network','build_network'].includes(name)||!route||(name==='read_network'&&!publicNames.has(args.operation))||(name==='build_network'&&publicNames.has(args.operation)))return {error:'network_operation_unavailable'};
-  if(args.describe===true)return {operation:route.name,inputSchema:route.inputSchema,description:route.description};
+  if(args.describe===true)return {operation:route.name,inputSchema:route.inputSchema,description:route.description,...(route.name==='release_create'?{publicationFiles:'Select existing website files only: .html, .css, .js, .json and .svg, including index.html. Keep README.md, .cjs scripts, tests and package/lock inputs in the private source snapshot unless intentionally publishing an eligible file. A source snapshot and a website bundle are different selections.'}:{})};
   try{const input=args.input===undefined?{}:JSON.parse(args.input);return {observedAt:new Date(now()).toISOString(),operation:route.name,result:await call(route.name,input)};}
-  catch(e:any){return networkFailure(e,writeNames.has(route.name));}
+  catch(e:any){return networkFailure(e,writeNames.has(route.name),route.name);}
  }
  return {call,tool};
 }
