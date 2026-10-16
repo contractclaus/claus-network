@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_E3mMuidkyz3Whrw6DCeE4z6cVpdW",
-  "source": "claus-phase2-native-20261016",
+  "deployed": "dpl_7mRZHD2rntJ3vE8dF8fGQHk8zH29",
+  "source": "claus-phase2-pagination-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -17,7 +17,7 @@
     "src/work-wallet-store.ts": "020a10ee51c807d04745b82436d069a12433ad51ea7c65f1bc420da5a45f38a0",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
     "src/network-access.ts": "93e7722c9e663219007b8fefba780a12a8c9ac12c9cff2022c49ae055f62a4cb",
-    "src/context.ts": "91d6024655167a1a08253236888c4b7ed50b112bab620d7c6068f92491699c98",
+    "src/context.ts": "06668cc2a28c08625244ae32bcff7aa5377c324575bf4dd45d8131bba97db76d",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
     "src/network-care.ts": "ad1cbe6293d542846582d26c72ade0005c9bbd617a8ac00fdce14e9d9825018b",
     "src/network-operations.ts": "4df5b6bdf82d2eff5bc04b4491ec0153ead8d7f98299e7e58955839d1af88e6c",
@@ -77,7 +77,8 @@
     "src/isolated/program-run.d.mts": "cf7f66c384c6d0b2a606955086e4e222a42a527c7063045d7988f0f6b33e35e1",
     "src/isolated/program-run.mjs": "69b4e838a4d862114408dfad8ae3c51dc7ee412e3a58f12e4d50f422e58fe090",
     "src/isolated/app-receipt.d.mts": "f08e190dd4f0630eee4898a4ca13c6b23076bdd3fc66d6630ae046cdfef5405a",
-    "src/isolated/app-receipt.mjs": "1d610f7cce21edd2b27e669f6b00b4d3148baa5ab5625103d5ed36c779ff5318"
+    "src/isolated/app-receipt.mjs": "1d610f7cce21edd2b27e669f6b00b4d3148baa5ab5625103d5ed36c779ff5318",
+    "src/archive.ts": "bd389ab8451a9e99041adc5b3b52680f848bdea010fe7003cac382ea1892b75f"
   },
   "referenceSubset": true
 }
