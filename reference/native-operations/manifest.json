@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_2k2DRcqKXPti8kqxA7Pc2eDWLjJ5",
-  "source": "claus-builder-status-native2-20261016",
+  "deployed": "dpl_AvE74PATPLASj7xj2pMWKRc8qTm9",
+  "source": "claus-inference-recovery-native-20261016",
   "files": {
     "src/operations/policy.ts": "bc0aa35b64d5f4d2d8689a8763544f07eca2a2f9c3f6b8c8b1703c62d8cd6bf1",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -114,7 +114,9 @@
     "src/work-wallet-gas.ts": "e2e74de62d08d3e9ccd116a7a3fbbcec65f9ed6f3dbceb1074b0b08cc7974ca6",
     "src/partner-launch.ts": "41507583f6acecb274e96b21403b884c3a74ec342e719a5823e98e5d0f236c2d",
     "src/builder-life.ts": "763a97b9098083d355c4e1c8279c329937ba155273abf3ef87977ef0939b6d97",
-    "src/builder-progress.ts": "f5905970b3d6ed248345c51bdc37a95a72a208f836418aedb084f487c0bd77b5"
+    "src/builder-progress.ts": "f5905970b3d6ed248345c51bdc37a95a72a208f836418aedb084f487c0bd77b5",
+    "src/inference-outcome.ts": "4306762fe0a0fa983d4fe6fe9e67f3df2211fbb4668ee6c9d5f989defbd9d3c5",
+    "src/model.ts": "49a15363d17fdfdd83e06c1b1d3c77d30183c469368163d7b53769cae65be9ba"
   },
   "referenceSubset": true
 }
