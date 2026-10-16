@@ -16,14 +16,16 @@ export function externalPolicy(env:NodeJS.ProcessEnv=process.env):ExternalPolicy
  return p;
 }
 export const externalStatus=(p=externalPolicy(),env:NodeJS.ProcessEnv=process.env)=>({
- profile:'claus-external-tools/1',development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,bazaar:{discovery:true,payments:false},
+ profile:'claus-external-tools/2',adapters:{available:true,immutable:true,permissions:'current-provider-policy',scope:'claus-library-and-own-project'},development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,bazaar:{discovery:true,payments:false},
  composio:{configured:!!env.COMPOSIO_API_KEY&&!!p.composio,tools:Object.keys(p.composio?.tools??{}),missing:env.COMPOSIO_API_KEY&&p.composio?[]:['connected-provider-session']},
  browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
  secretsExposed:false,instructionAuthority:false
 });
 export function boundedObject(value:any,max=24000):Record<string,any>{if(!object(value)||Buffer.byteLength(JSON.stringify(value))>max)throw new ProviderFailure('external_input_invalid',true);return value;}
 export function selectTool(p:ExternalPolicy,slug:string,args:any){
- const rule=p.composio?.tools[slug];if(!rule)throw new ProviderFailure('external_tool_not_authorized',true);
+ const rules=p.composio?.tools;
+ const rule=typeof slug==='string'&&/^[A-Z][A-Z0-9_]{1,159}$/.test(slug)&&rules&&Object.prototype.hasOwnProperty.call(rules,slug)?rules[slug]:undefined;
+ if(!rule)throw new ProviderFailure('external_tool_not_authorized',true);
  const input=boundedObject(args);for(const[k,v]of Object.entries(rule.fixed??{}))if(k in input&&JSON.stringify(input[k])!==JSON.stringify(v))throw new ProviderFailure('external_tool_resource_mismatch',true);
  return {rule,arguments:{...input,...rule.fixed}};
 }
@@ -51,7 +53,9 @@ export async function composioRequest(p:ExternalPolicy,operation:string,input:an
   const selected=selectTool(p,input.tool,input.arguments??{});readOnly=selected.rule.effect==='read';path='/execute';
   body={tool_slug:input.tool,arguments:selected.arguments,...(selected.rule.account?{account:selected.rule.account}:{}),enable_auto_workbench_offload:false};
  }else throw new ProviderFailure('external_operation_invalid',true);
- return providerJson(base+path,{method,headers,...(body?{body:JSON.stringify(body)}:{})},readOnly,fetcher);
+ const result=await providerJson(base+path,{method,headers,...(body?{body:JSON.stringify(body)}:{})},readOnly,fetcher);
+ if(result.error||result.data?.success===false||result.data?.successful===false||result.result_type&&result.result_type!=='completed')throw new ProviderFailure('composio_tool_failed',readOnly);
+ return result;
 }
 export async function bazaarRequest(operation:string,input:any){
  if(!['search','describe'].includes(operation))throw new ProviderFailure('bazaar_discovery_only',true);

@@ -16,5 +16,7 @@ export async function developmentToolsRoute(req:Request):Promise<Response>{
  const row=(await sql()`SELECT status,progress FROM claus_actions WHERE id=${grant.parent} AND kind='development'`)[0];
  if(!row||row.status!=='pending'||!['command_starting','command_running'].includes(row.progress?.execution?.phase)||Date.parse(row.progress?.execution?.deadline??'')!==grant.expires)return Response.json({error:'development_task_not_active'},{status:403});
  const id='external:guest:'+createHash('sha256').update(grant.parent+'\0'+input.requestId).digest('hex');
- try{return Response.json(await externalTool(id,input.request,grant.parent),{headers:{'cache-control':'no-store'}});}catch(e){const message=e instanceof Error?e.message:'external_tool_unavailable';return Response.json({error:message.startsWith('action_')||/^[a-z_]+$/.test(message)?message:'external_tool_unavailable',actionId:id,retrySameRequestId:true},{status:409,headers:{'cache-control':'no-store'}});}
+ const projectId=row.progress?.project?.id;
+ if(!/^p_[a-f0-9]{32}$/.test(projectId??''))return Response.json({error:'development_project_not_available'},{status:403});
+ try{return Response.json(await externalTool(id,input.request,grant.parent,'project:'+projectId),{headers:{'cache-control':'no-store'}});}catch(e){const message=e instanceof Error?e.message:'external_tool_unavailable';return Response.json({error:message.startsWith('action_')||/^[a-z_]+$/.test(message)?message:'external_tool_unavailable',actionId:id,retrySameRequestId:true},{status:409,headers:{'cache-control':'no-store'}});}
 }

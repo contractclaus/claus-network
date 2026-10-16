@@ -50,7 +50,7 @@ import {workWallet} from './work-wallet.js';
 import {operatorAttention,reviewSecurityReport} from './operator-attention.js';
 import {publicXPosts} from './public-x.js';
 import {recoveryCandidate} from './recovery.js';
-import {readKnowledge,knowledgeAudit} from './knowledge.js';
+import {readKnowledgeResolved,knowledgeAudit} from './knowledge.js';
 import {inferenceBindings} from './inference-bindings.js';
 import {networkReviewRoutes} from './network-review-routes.js';
 import {networkOperations,networkOperationsEnabled} from './network-operations.js';
@@ -188,7 +188,7 @@ app.get('/api/overview',async c=>{
 app.get('/api/x/attention',async c=>{c.header('Cache-Control','no-store');return c.json(await operatorAttention(c.req.query('before')));});
 app.post('/api/x/attention/:id/review',async c=>{const input=await c.req.json();return c.json(await reviewSecurityReport(c.req.param('id'),input.issue));});
 app.get('/api/reference',async c=>c.json(readReference({path:c.req.query('path'),query:c.req.query('query'),offset:c.req.query('offset')===undefined?undefined:Number(c.req.query('offset')),limit:c.req.query('limit')===undefined?undefined:Number(c.req.query('limit'))},await store.configuration())));
-app.get('/api/knowledge',async c=>c.json(readKnowledge({id:c.req.query('id'),query:c.req.query('query'),kind:c.req.query('kind'),version:c.req.query('version'),offset:c.req.query('offset')===undefined?undefined:Number(c.req.query('offset')),limit:c.req.query('limit')===undefined?undefined:Number(c.req.query('limit'))},await store.configuration(),await publicState())));
+app.get('/api/knowledge',async c=>c.json(await readKnowledgeResolved({id:c.req.query('id'),query:c.req.query('query'),kind:c.req.query('kind'),version:c.req.query('version'),offset:c.req.query('offset')===undefined?undefined:Number(c.req.query('offset')),limit:c.req.query('limit')===undefined?undefined:Number(c.req.query('limit'))},await store.configuration(),await publicState())));
 // Operator diagnostics use the same bounded read paths, never a generic tool runner.
 app.post('/api/observations/:tool',async c=>{
   const name=c.req.param('tool');

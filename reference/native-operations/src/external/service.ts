@@ -1,8 +1,9 @@
 import {digest} from '../config.js';
 import {once,sql,ConfirmedFailure} from '../store.js';
 import {externalPolicy,externalStatus,ProviderFailure,boundedObject,composioRequest,bazaarRequest,browserRequest,publicWeb,selectTool} from './providers.js';
+import {saveAdapter,getAdapter,listAdapters,renderAdapter} from './adapters.js';
 
-export const externalOperations=['status','search','describe','call','connect','read','receipt','browser_open','browser_navigate','browser_read','browser_action','browser_close'] as const;
+export const externalOperations=['status','search','describe','call','connect','read','receipt','adapter_save','adapter_list','adapter_read','adapter_call','browser_open','browser_navigate','browser_read','browser_action','browser_close'] as const;
 type Call={operation:string;provider?:string;input?:string;actionId?:string;offset?:number};
 export function externalInput(raw:any):Call {
  const value=boundedObject(raw,32000);
@@ -18,18 +19,29 @@ function safeResult(value:any):any {
  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([k])=>!/(?:^|_)(?:api_?key|access_?token|refresh_?token|secret|password|cookie|authorization|connect_?url)(?:$|_)/i.test(k)).map(([k,v])=>[k,safeResult(v)]));
  return value;
 }
-export async function externalTool(id:string,raw:any,principal='claus'){
- const call=externalInput(raw),policy=externalPolicy(),db=sql();
+export async function externalTool(id:string,raw:any,principal='claus',libraryOwner=principal){
+ let call=externalInput(raw);const policy=externalPolicy(),db=sql();
  if(call.operation==='status')return externalStatus(policy);
  if(call.operation==='receipt'){
   if(!call.actionId)throw new ConfirmedFailure('external_action_id_required');
-  const row=(await db`SELECT id,status,result,input FROM claus_actions WHERE id=${call.actionId} AND kind='external_tools'`)[0];
+  const row=(await db`SELECT id,status,result,input FROM claus_actions WHERE id=${call.actionId} AND kind IN ('external_tools','external_adapter')`)[0];
   if(!row||principal!=='claus'&&row.input?.principal!==principal)throw new ConfirmedFailure('external_receipt_unavailable');
   return {status:row.status,...resultPage(row.id,row.result??{status:row.status,retry:false},call.offset)};
  }
  let input:any;try{input=boundedObject(JSON.parse(call.input??'{}'));}catch{throw new ConfirmedFailure('external_input_invalid');}
+ if(call.operation==='adapter_save')return resultPage(id,await saveAdapter(id,input,principal,libraryOwner,db),call.offset);
+ if(call.operation==='adapter_list')return listAdapters(libraryOwner,call.offset,db);
+ let adapterTrace:unknown;
+ if(call.operation==='adapter_read'||call.operation==='adapter_call'){
+  if(Object.keys(input).some(k=>!['adapterId','parameters'].includes(k)))throw new ConfirmedFailure('adapter_request_invalid');
+  const saved=await getAdapter(input.adapterId,libraryOwner,db);
+  if(call.operation==='adapter_read')return {...saved,instructionAuthority:false};
+  adapterTrace={adapterId:saved.adapterId,parameters:input.parameters??{}};
+  call={...renderAdapter(saved.definition,input.parameters??{},policy),offset:call.offset};
+  input=JSON.parse(call.input!);
+ }
  const readOnly=call.provider==='web'||call.provider==='bazaar'||call.provider==='browserbase'&&call.operation==='browser_read'||call.provider==='composio'&&(['search','describe'].includes(call.operation)||call.operation==='call'&&selectTool(policy,input.tool,input.arguments??{}).rule.effect==='read');
- const original={...call,principal,readOnly};
+ const original={...call,principal,readOnly,...(adapterTrace?{adapter:adapterTrace}:{})};
  const admit=async()=>{
   const [,rows]=await db.transaction([db`SELECT pg_advisory_xact_lock(746201605)`,db`INSERT INTO claus_actions(id,kind,input_hash,status,input,visibility) SELECT ${id},'external_tools',${digest(original)},'pending',${JSON.stringify(original)}::jsonb,'private_network' WHERE ${readOnly} OR NOT EXISTS(SELECT 1 FROM claus_actions WHERE kind='external_tools' AND status NOT IN ('completed','failed') AND input->>'provider'=${call.provider??''} AND input->>'readOnly'='false') ON CONFLICT DO NOTHING RETURNING id`]);
   if(!rows.length&&!(await db`SELECT id FROM claus_actions WHERE id=${id}`).length)throw new ConfirmedFailure('external_provider_original_action_unresolved');return rows;
