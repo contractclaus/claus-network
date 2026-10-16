@@ -4,7 +4,7 @@ import { agentPublicationVisible } from './agent-publication.mjs';
 const projectRef = (projectId, id) => digest({ projectId, id });
 const filePath = sourcePath, prose = sourceText;
 
-export function createProjects({ store, identity, publicDetails = async () => ({}), publicAppearance = async () => ({}), publicEntry, publicConnections = async () => ({state:'not_configured',edges:[],nextCursor:null}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
+export function createProjects({ store, identity, publicDetails = async () => ({}), publicAppearance = async () => ({}), publicAppearances, publicEntry, publicConnections = async () => ({state:'not_configured',edges:[],nextCursor:null}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
   async function snapshot(reader, projectId, id) {
     const value = (await reader.read('snapshots', projectRef(projectId, id)))?.value;
     requireThat(value && value.projectId === projectId, 'not_found');
@@ -210,6 +210,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
           id:row.value.projectId,slug:row.value.slug,label:row.value.name,description:row.value.description,
           kind:'project',href:'/c/'+row.value.slug,revision:row.revision,status:'registered',updatedAt:row.value.updatedAt
         }));
+        if(publicAppearances){const appearances=await publicAppearances(nodes.map(node=>node.id));for(const node of nodes){const value=appearances.get(node.id);if(value)node.presentation=value;}}
         return {schemaVersion:'1.0',view:'projects',observedAt:now(),nodes:[{id:'claus',label:'Claus',kind:'coordinator',href:'/Network'},...nodes],resources:[],
           edges:nodes.map(p=>({source:p.id,target:'claus',relation:'registered_with'})),nextCursor:records.length===limit?records.at(-1).id:null};
       }
