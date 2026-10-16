@@ -22,7 +22,7 @@ export function createProjectSite(root){
    sequence++;const own=sequence;
    pending?.dispose?.();pending?.frame.remove();pending=null;
    root.closest('main').classList.add('has-project-site');if(!frame)loading(true);
-   const next=document.createElement('iframe');next.className='network-project-site is-loading';next.title=(project.presentation?.name||project.name)+' website';next.sandbox='allow-scripts';next.referrerPolicy='no-referrer';next.inert=true;
+   const next=document.createElement('iframe');next.className='network-project-site is-loading';next.title=(project.presentation?.name||project.name)+' website';next.sandbox='allow-scripts allow-forms';next.referrerPolicy='no-referrer';next.inert=true;
    next.setAttribute('allow',"camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'");
    next.addEventListener('load',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
     if(own!==sequence||pending?.frame!==next)return;

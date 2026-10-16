@@ -36,7 +36,18 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         await identity.authorize(actor, 'project.publish', { projectId, withdrawal: !published }, tx);
         const agent = (await tx.read('principals', text(agentId)))?.value;
         requireThat(agent?.kind === 'agent' && agent.projectId === projectId, 'not_found');
-        const value = { projectId, agentId, name: agent.name, published };
+        let name = agent.name;
+        if (published && !name) {
+          // A runtime already has an agent identity. Publish its bound name,
+          // never its private checkpoint, credential or a replacement identity.
+          const runtimes = await tx.list('project-runtimes', { projectId, limit: 5 });
+          const runtime = runtimes.find(row => row.value.projectId === projectId &&
+            row.id === projectId + ':' + row.value.runtimeId &&
+            agentId === 'runtime_' + digest({ id: row.id }).slice(7));
+          requireThat(runtime && /^[a-z][a-z0-9-]{0,39}$/.test(runtime.value.runtimeId), 'invalid_agent_name');
+          name = runtime.value.runtimeId.replaceAll('-', ' ');
+        }
+        const value = { projectId, agentId, name: name || agentId, published };
         const row = await tx.write('project-public-agents', projectId + ':' + agentId, value, expectedRevision);
         await tx.event({ type: published ? 'agent.published' : 'agent.withdrawn', projectId, agentId, at: now() });
         return { ...value, revision: row.revision };
