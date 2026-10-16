@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_59rjepkboV4UxboY8VGQDKjnUrL8",
-  "source": "claus-phase3-runtime-rejection-native-20261016",
+  "deployed": "dpl_CJoqCKXJuq5pD56tvAjm3YtzSEPv",
+  "source": "claus-phase3-capability-continuity-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -22,7 +22,7 @@
     "src/network-care.ts": "40334d8f89ea5099746968f69f01c45e1d86a1f07a3a8b093efa0610d179a5cc",
     "src/network-operations.ts": "51b5a41ff56136682c139f716356231e4f0110e06d37e10407586aa3e7ac7183",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
-    "src/runtime-access.ts": "34b516d513ec3646a6ef2298144b4640d0c1c1349918efeec997f3c0fa2c50e1",
+    "src/runtime-access.ts": "0ad80308d986b0a89a35d83e23186348742173e41e1f04768454a9902fe63be4",
     "src/tool-visibility.ts": "1dce425ff62ad35dd435b2686b74a9d1a2df9369607e562c2cfb68d523d119bf",
     "src/tools.ts": "7794f39ccb44b9d28b862c7f38838e1d81d01e08cbc48d737e780dfcc97818f4",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
@@ -82,7 +82,7 @@
     "src/development-execution.ts": "71c1115a6b6f947ac39acb0cb0fe2e62d8f7d113c299c8cf71aeb2829388634e",
     "src/development-workspace.ts": "80787bf62c9a6816bdc0216e81b05d9e469273241a4830d43295ae4e72eba047",
     "src/development-export.ts": "4723c0be3e84dacda691ee7694e1440ade8249a205eada09949325c0982da077",
-    "src/twitter-policy.ts": "10e50b8a07336d8cafdbe923cc5eb8541df3ed9060b13f21542fbf326746d9de",
+    "src/twitter-policy.ts": "690435c8a189afd487a2e19f9a3f7dc03b16fcb2fe1f7bae2a0d0b650b7fbc8d",
     "src/development-source.ts": "83c6ea53ec2c0d577cb875cef57483d792c0feb0062cfd97750968daa8e43356",
     "src/investment-proposals.ts": "52344c76ceea27e3559b16243c57a217db1f3aaf8506067266138fb14fea6abc",
     "src/programmable.ts": "b04c472cea75e5d31db038583e0a4aa98198dedde54027322fd2a7a9867ef5f9",
