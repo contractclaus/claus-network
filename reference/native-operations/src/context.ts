@@ -23,8 +23,17 @@ export function toolContent(result:unknown,archiveId:string) {
   if(work?.watch&&Array.isArray(work.items)&&work.queue&&work.receiptMeaning){
     result={...work,watch:{...work.watch,capabilities:undefined,opportunities:undefined,readMore:'Current capability facts are in the leading network context. Use recall with this archiveId for the complete original work observation.'},recent:work.recent?.map((r:any)=>({...r,summary:textPrefix(r.summary??'',240)}))};
   }
-  const withReference=result!==null&&typeof result==='object'&&!Array.isArray(result)?{...result,archiveId}:result;
-  const encoded=JSON.stringify(withReference);
+  let withReference:any=result!==null&&typeof result==='object'&&!Array.isArray(result)?{...result,archiveId}:result;
+  let encoded=JSON.stringify(withReference);
+  // Bound the actual text page, not its JSON envelope. A second excerpt would
+  // hide the source cursor and send recall back through another archive layer.
+  if(typeof withReference?.content==='string'&&Number.isSafeInteger(withReference.offset)&&withReference.offset>=0&&Number.isSafeInteger(withReference.totalChars)&&withReference.totalChars>=withReference.offset+withReference.content.length&&(withReference.nextOffset===null||Number.isSafeInteger(withReference.nextOffset))){
+    while(encoded.length>20000&&withReference.content.length>2){
+      const content=textPrefix(withReference.content,Math.floor(withReference.content.length*0.75));
+      withReference={...withReference,content,nextOffset:withReference.offset+content.length,truncated:true};
+      encoded=JSON.stringify(withReference);
+    }
+  }
   return encoded.length<=20000?encoded:JSON.stringify({archiveId,truncated:true,totalChars:encoded.length,excerpt:textPrefix(encoded,16000),readMore:'Use recall with this archive ID and offset to retrieve the full result.'});
 }
 

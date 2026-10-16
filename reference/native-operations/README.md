@@ -37,3 +37,5 @@ See [operating isolation](OPERATING-ISOLATION.md) for the work planner, atomic r
 [Search credential boundary](SEARCH-BOUNDARY.md) describes fixed provider search with independent request accounting.
 
 [Isolated operating code](ISOLATED-OPERATIONS.md) describes fixed API operations and recovery of original requests without granting server credentials.
+
+Large text pages retain their original source cursor when bounded for model context. The host shortens the page content and advances its cursor by the exact number of returned UTF-16 units, preserving complete Unicode characters. Archive reads identify the requested original record with `sourceArchiveId`; the separate `archiveId` identifies the receipt of that read. This avoids recursively wrapping long evidence in new truncated excerpts. Private visibility labels and original stored evidence remain unchanged.
