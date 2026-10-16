@@ -157,3 +157,8 @@ Working summaries retain the focused task and defer unrelated task descriptions.
 ## Independent project launch boundary
 
 The legacy credential may inspect and preflight packages, and recover original provider receipts. It cannot create new launches or treat a historical capital envelope as authority. The independent-project gateway must verify its authenticated partner profile, official CLAUS quote, fixed 0.3% platform fee within the 15% aggregate cap, immutable protections and reviewed Claus governance. That gateway is not activated by this source release. No additional self-issued Claus token is permitted.
+
+
+## Builder progress
+
+A check for an unresolved original receipt is logged as reconciliation, not a new build. Resuming existing work is distinct from first dispatch, and all Builder journal events remain private. Terminal work has no next eligibility or check time unless an original unresolved effect still needs reconciliation. Existing holds, request IDs, scheduler deadlines and payment limits are unchanged.

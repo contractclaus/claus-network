@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_DPouMGyqANuDggWrNo2KdPiCG7F8",
-  "source": "claus-partner-gateway-native2-20261016",
+  "deployed": "dpl_2k2DRcqKXPti8kqxA7Pc2eDWLjJ5",
+  "source": "claus-builder-status-native2-20261016",
   "files": {
     "src/operations/policy.ts": "bc0aa35b64d5f4d2d8689a8763544f07eca2a2f9c3f6b8c8b1703c62d8cd6bf1",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -41,7 +41,7 @@
     "src/isolated/work.ts": "64f6c8087bd8a367012a4b38c1b488496bbc065b5c7c2f64724530cfe5d76b21",
     "src/network-measurements.ts": "528442b47850c9ede35ca17e1ac516c014523855a0ec67fb73bda1952a183089",
     "src/recovery.ts": "967acdbfbecd5bd6b27e46e92fdc27bdb01e9b5d7aba8b8386598932751dca7c",
-    "src/builder-store.ts": "c5d87b6c126f1a162b5169eabd32e5f2c62dc1a1ece87245502ba7921b4747e6",
+    "src/builder-store.ts": "a7cb98a11225893cb1b55b43d588f7aa3c08aeee5c73454ed6b11eb990196686",
     "src/surface/host.ts": "fa9cba7d929ba605b5c75a57c36227380ce3553892116458cd2e20ff12474959",
     "src/surface/service.ts": "826a8cf91d26476e86ddbc0917ade87c7e362ce628b5a7609e461c22f12bb8a8",
     "src/surface/worker.ts": "9a3a377b23a6300af7b947aafb1c28cc692937251e781bf9355b91b3804c868b",
@@ -112,7 +112,9 @@
     "src/life.ts": "96a1750362c5ce6187a49c7563ed3dcdb3f92b195a0869dc3198ab10d803423e",
     "src/runtime-continuity.ts": "cc6786e6c4039604bad246df14057a639f3c413a155a8ed1799d608f89950061",
     "src/work-wallet-gas.ts": "e2e74de62d08d3e9ccd116a7a3fbbcec65f9ed6f3dbceb1074b0b08cc7974ca6",
-    "src/partner-launch.ts": "41507583f6acecb274e96b21403b884c3a74ec342e719a5823e98e5d0f236c2d"
+    "src/partner-launch.ts": "41507583f6acecb274e96b21403b884c3a74ec342e719a5823e98e5d0f236c2d",
+    "src/builder-life.ts": "763a97b9098083d355c4e1c8279c329937ba155273abf3ef87977ef0939b6d97",
+    "src/builder-progress.ts": "f5905970b3d6ed248345c51bdc37a95a72a208f836418aedb084f487c0bd77b5"
   },
   "referenceSubset": true
 }
