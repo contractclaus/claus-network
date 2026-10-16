@@ -103,9 +103,24 @@ export function conversationWindow(history:any[],leading:any[],fits:(messages:an
     } else if(message.role==='user')units.push([message]);
   }
   let saved:any[]=[];
+  const archivedReads=new Set<string>();
   for(let i=units.length-1;i>=0;i--) {
+    // Repeated reads of the same immutable journal result do not add evidence.
+    // Keep the most recent complete exchange; all original calls remain in the
+    // journal. Never apply this to live reads, action receipts or writes.
+    const unit=units[i],call=unit[0]?.tool_calls?.[0];
+    let archiveKey:string|undefined;
+    if(unit.length===2&&unit[0].tool_calls?.length===1&&call?.function.name==='recall')try{
+      const args=JSON.parse(call.function.arguments),result=JSON.parse(unit[1].content);
+      if(/^j_[0-9]+$/.test(args.id)&&result.sourceArchiveId===args.id&&!result.error){
+        const {archiveId,...evidence}=result;
+        archiveKey=JSON.stringify([args.id,evidence]);
+      }
+    }catch{/* Keep unrecognized results exactly as before. */}
+    if(archiveKey&&archivedReads.has(archiveKey))continue;
     const candidate=[...units[i],...saved];
     if(!fits([...leading,...candidate]))break;
+    if(archiveKey)archivedReads.add(archiveKey);
     saved=candidate;
   }
   return saved;
