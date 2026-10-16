@@ -28,6 +28,24 @@ export function operatingContext(view:any,fits:(value:any)=>boolean){
  if(value.networkWork?.watch&&apply('network watch detail',()=>{value.networkWork.watch={pending:value.networkWork.watch.pending,failures:value.networkWork.watch.failures,readMore:'Use network_work to inspect current watch capabilities and opportunities; this projection supplies no execution grant.'};}))return value;
  if(value.networkWork?.recent&&apply('completed work summaries',()=>{value.networkWork.recent=value.networkWork.recent.map((w:any)=>({id:w.id,title:w.title,status:w.status,revision:w.revision,readMore:'Use network_work with this id for the original summary and evidence.'}));}))return value;
  if(value.work?.builder&&apply('builder detail',()=>{const builder=value.work.builder;value.work.builder={availability:builder.availability,projects:(builder.projects??[]).map((p:any)=>({id:p.id,status:p.status,revision:p.revision,title:p.title,nextCheckAt:p.nextCheckAt})),readMore:'Use read_prototype with the original id for source, pending outcomes and review evidence. Do not recreate work from this overview.'};}))return value;
+ // Defer unrelated discovery details before evicting the active source/code.
+ // Each record remains addressable; omitted arrays are explicitly unavailable,
+ // never empty evidence or permission to ignore an outstanding effect.
+ if(value.networkWork?.items&&apply('other work detail',()=>{
+  const focused=value.networkWork.focus?.id;
+  value.networkWork.items=value.networkWork.items.map((w:any)=>w.id===focused?w:{id:w.id,title:w.title,status:w.status,revision:w.revision,next_at:w.next_at,nextAt:w.nextAt,blocker:w.blocker,evidence:w.evidence,readMore:'Use network_work with this id for its complete goal, next step and summary before acting.'});
+ }))return value;
+ if(value.work?.networkUpdates&&apply('historical publication links',()=>{
+  value.work.networkUpdates=value.work.networkUpdates.map((r:any)=>({id:r.id,status:r.status,verifiedAt:r.verifiedAt,readMore:'Read this original release before using its links or announcing it. This index is not a new publication.'}));
+ }))return value;
+ if(value.network?.inventory?.projects&&apply('deferred project index',()=>{
+  const inventory=value.network.inventory;
+  inventory.deferredProjectCount=inventory.projects.length;delete inventory.projects;
+  inventory.projectDetailsDeferred=true;inventory.readMore='Project entries are omitted from this context view, not absent. Use read_network network_overview to obtain the actual entries and cursor. Counts retain their original scope.';
+ }))return value;
+ if(value.work?.ideas&&apply('deferred idea bodies',()=>{
+  value.work.ideas=value.work.ideas.map((idea:any)=>({id:idea.id,title:idea.title,status:idea.status,readMore:'Use read_work with this original idea id before continuing its work.'}));
+ }))return value;
  // Keep each admitted reply with its entire source context and freshness stamp.
  // Unselected inbox records are not marked delivered: cycle acknowledges only
  // value.social.messages after a model response. Nothing is deleted or replied

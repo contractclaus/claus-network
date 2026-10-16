@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_4eVKet37egyJm61BYgVvwgjHPfUx",
-  "source": "claus-review-context-native-20261016",
+  "deployed": "dpl_8keEpdF6Wcz9eaLwvr5zCohs4U1k",
+  "source": "claus-work-continuity-native-20261016",
   "files": {
     "src/operations/policy.ts": "bc0aa35b64d5f4d2d8689a8763544f07eca2a2f9c3f6b8c8b1703c62d8cd6bf1",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -10,14 +10,14 @@
     "src/operations/worker.ts": "e5b3cab6e600d280f8f31f85bcf2f5ed7b0f73b0a2f1c64562abfc367688a01f",
     "src/operations/handoff.ts": "4057b37e738c1eed06e63ec287f071748f14c5f1e16be56f817559c3d2f31c27",
     "src/operations/review-evidence.ts": "e60c4f25c1cd3aab8abbc72af45617e5369d1e137c671dd5d2dce8c85f2ab8d8",
-    "src/operating-context.ts": "b1be8451847953e31c0eaf80d1e57cf9b184bfd4a498246bc795b2966d813e9f",
+    "src/operating-context.ts": "835ea2feff26df686fe8dfae8db18b04c6b0e8b5c46de1dba4f2b362250accc3",
     "src/knowledge-schema.ts": "52205d68b086be1fd36584c0a702b31782d50529468697d1528f9caba5202139",
     "src/work-wallet-sponsor.ts": "325134bc9146d516e2e818211b5e5e8e3ea068213726e04229fdd712779099f5",
-    "src/work-wallet.ts": "70923fdd77ba7579919cd26382a48327d50a4ec0589857b295ac00cdc295332e",
-    "src/work-wallet-store.ts": "020a10ee51c807d04745b82436d069a12433ad51ea7c65f1bc420da5a45f38a0",
+    "src/work-wallet.ts": "c4434dd0c2363044ffeb0a19c0620a4ee5acea928bf2c8fa4a89ee1e3b8f6dd1",
+    "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
     "src/network-access.ts": "04d988f6370c42e387e97bb4fe334df2e60c516c2d3eaa269b556b184fe7ffde",
-    "src/context.ts": "c32e34579e0cb3f8e77e007e5598d684e497d74d05237aa74ff15a9d5fd6f670",
+    "src/context.ts": "4ef845c3766dc7117d9ee43bb795dee09e312fc2b0db996666037aae66e7ea5e",
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "dbe170fa9d41cca5f8d3ba20c86310650cfed345af987db711832cf542097d5c",
     "src/network-operations.ts": "73f06b88d3b7687210be1abf37fa742ced7dee9c0f3262f9c01ffec8acf81e93",
@@ -110,7 +110,8 @@
     "src/lab-service.ts": "09e800a2f57abab13b269025260f4b3dded6190be71b9fe28f97bb3ed9881d4b",
     "src/lab-social.ts": "c795c5041800806a930aed7a0f68553c5790cd1c99c4f23dee7d05659ee50416",
     "src/life.ts": "96a1750362c5ce6187a49c7563ed3dcdb3f92b195a0869dc3198ab10d803423e",
-    "src/runtime-continuity.ts": "cc6786e6c4039604bad246df14057a639f3c413a155a8ed1799d608f89950061"
+    "src/runtime-continuity.ts": "cc6786e6c4039604bad246df14057a639f3c413a155a8ed1799d608f89950061",
+    "src/work-wallet-gas.ts": "e2e74de62d08d3e9ccd116a7a3fbbcec65f9ed6f3dbceb1074b0b08cc7974ca6"
   },
   "referenceSubset": true
 }

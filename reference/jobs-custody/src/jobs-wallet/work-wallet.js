@@ -25,10 +25,7 @@ const amount = (v) => {
   requireThat(typeof v === "string" && /^[1-9][0-9]{0,77}$/.test(v), "invalid_work_wallet_amount");
   return BigInt(v);
 };
-function workWalletFees(fees) {
-  const maxPriorityFeePerGas = fees.maxPriorityFeePerGas > 1000000n ? fees.maxPriorityFeePerGas : 1000000n;
-  return { maxPriorityFeePerGas, maxFeePerGas: fees.maxFeePerGas * 2n + maxPriorityFeePerGas };
-}
+import { workWalletFees } from "./work-wallet-gas.js";
 function workWalletEnabled(c) {
   return c.settings.enabled === true && c.settings.mode === "production" && c.policy.capabilities.networkBuild === true && c.policy.capabilities.workPayments === true && !!process.env.JOBS_WALLET_PRIVATE_KEY;
 }
@@ -139,7 +136,7 @@ function createWorkWallet({ store = createWorkWalletStore(), key = () => process
   }
   async function run(id, savedInput, inputHash, resume = false, inspect = false) {
     const who = identity();
-    let locked;
+    let locked, failure;
     try {
       locked = await store.acquire(who.address, id, inputHash, savedInput);
       let row = locked.row;
@@ -169,10 +166,10 @@ function createWorkWallet({ store = createWorkWalletStore(), key = () => process
           const st = await store.state(who.address), n = BigInt(prepared.payment.agreement.priceWei);
           requireThat(BigInt(st.account.claus_spent ?? "0") + BigInt(st.account.claus_reserved ?? "0") + n <= BigInt(tokenWorkPolicy.principal), "work_wallet_token_budget");
         }
-        const [nonce, pending, balance, fees, estimate] = await Promise.all([client.getTransactionCount({ address: who.address, blockTag: "latest" }), client.getTransactionCount({ address: who.address, blockTag: "pending" }), client.getBalance({ address: who.address }), client.estimateFeesPerGas(), client.estimateGas({ ...transaction, account: who.address })]);
+        const [nonce, pending, balance, fees, estimate, feeBlock] = await Promise.all([client.getTransactionCount({ address: who.address, blockTag: "latest" }), client.getTransactionCount({ address: who.address, blockTag: "pending" }), client.getBalance({ address: who.address }), client.estimateFeesPerGas(), client.estimateGas({ ...transaction, account: who.address }), client.getBlock()]);
         requireThat(nonce === pending, "work_wallet_unknown_pending_nonce");
-        const gas = estimate * 120n / 100n + 5000n, { maxFeePerGas, maxPriorityFeePerGas } = workWalletFees(fees);
-        requireThat(gas <= 600000n && maxFeePerGas > 0n && maxFeePerGas * gas <= BigInt(workWalletPolicy.perTransactionGas) && balance >= transaction.value + gas * maxFeePerGas, "work_wallet_balance_or_gas_limit");
+        const gas = estimate * 120n / 100n + 5000n, { maxFeePerGas, maxPriorityFeePerGas } = workWalletFees(fees, { gas, baseFeePerGas: feeBlock.baseFeePerGas, maxCost: BigInt(workWalletPolicy.perTransactionGas), balance, value: transaction.value });
+        requireThat(Math.abs(Date.now() / 1e3 - Number(feeBlock.timestamp)) < 180, "work_wallet_stale_fee_block");
         await client.call({ ...transaction, account: who.address });
         await permitted();
         const tx = { chainId: 1, type: "eip1559", ...transaction, nonce, gas, maxFeePerGas, maxPriorityFeePerGas };
@@ -203,8 +200,11 @@ function createWorkWallet({ store = createWorkWalletStore(), key = () => process
         }
       }
       return { ...visible(row), status: "pending", next: "Read status with this id. Two observed blocks confirm a receipt; no finality wait or replacement purchase." };
+    } catch (error) {
+      if (/^(work_wallet_|invalid_work_wallet_)/.test(error?.message ?? "")) failure = error.message;
+      throw error;
     } finally {
-      if (locked?.fence) await store.release(who.address, id, locked.fence);
+      if (locked?.fence) await store.release(who.address, id, locked.fence, failure);
     }
   }
   async function tool(args) {
