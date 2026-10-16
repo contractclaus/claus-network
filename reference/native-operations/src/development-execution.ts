@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {Sandbox} from '@vercel/sandbox';
-import {sandboxFetch} from './sandbox-fetch.js';
-import {experimentOutput} from './lab-experiment-output.js';
+import {developmentSandboxFetch} from './sandbox-fetch.js';
+import {developmentOutput} from './development-output.js';
 import {developmentSource,developmentWriter,type DevelopmentSource,type SourceFile} from './development-source.js';
 
 export const DEVELOPMENT_LIMITS=Object.freeze({files:64,sourceBytes:500000,seconds:300,daily:100,active:4});
@@ -29,7 +29,7 @@ export class DevelopmentExecution {
   try{
    // Each original effect gets its own copy. Concurrent work cannot mutate a
    // shared running VM; only a compare-and-swap publishes the new checkpoint.
-   box=await this.backend.create({name:progress.name,source:{type:'snapshot',snapshotId:baseSnapshot},timeout:(seconds+60)*1000,resources:{vcpus:2},networkPolicy:network,persistent:true,snapshotExpiration:0,env:{},fetch:sandboxFetch});
+   box=await this.backend.create({name:progress.name,source:{type:'snapshot',snapshotId:baseSnapshot},timeout:(seconds+60)*1000,resources:{vcpus:2},networkPolicy:network,persistent:true,snapshotExpiration:0,env:{},fetch:developmentSandboxFetch});
    const session=box.currentSession();await record({phase:'writing',sessionId:session.sessionId});
    // A previous project may contain symlinks. Never write supplied files
    // through them: first validate parents and leaf within the guest itself.
@@ -39,7 +39,7 @@ export class DevelopmentExecution {
    await record({phase:'command_starting'});
    const command=await session.runCommand({cmd:'/usr/bin/env',args:['-i','PATH=/vercel/sandbox/bin:/vercel/runtimes/node24/bin:/usr/local/bin:/usr/bin:/bin','HOME=/home/vercel-sandbox','timeout','--kill-after=3s',seconds+'s','bash','--noprofile','--norc','-c','node /tmp/claus-development-write.mjs && cd /vercel/sandbox/project &&\n'+input.command],detached:true});
    await record({phase:'command_running',commandId:command.cmdId});
-   const result=await experimentOutput(command,AbortSignal.timeout(Math.max(1,Date.parse(progress.deadline)-Date.now())));
+   const result=await developmentOutput(command,AbortSignal.timeout(Math.max(1,Date.parse(progress.deadline)-Date.now())));
    await record({phase:'command_finished',commandResult:result});
    if(result.outputLimited)return {...result,checkpointSnapshotId:null,checkpointApplied:false,reason:'output_limit_command_termination_requested'};
    const checkpoint=await box.snapshot({expiration:0});
@@ -53,10 +53,10 @@ export class DevelopmentExecution {
   // GET never resumes the VM and no execution command is sent during recovery.
   let box:Sandbox|undefined;
   try{
-   box=await this.backend.get({name:p.name,resume:false,fetch:sandboxFetch});
+   box=await this.backend.get({name:p.name,resume:false,fetch:developmentSandboxFetch});
    const session=box.currentSession();if(session.sessionId!==p.sessionId){box=undefined;return null;}
    let result=p.commandResult;
-   if(!result&&p.commandId)result=await experimentOutput(await session.getCommand(p.commandId),AbortSignal.timeout(10000));
+   if(!result&&p.commandId)result=await developmentOutput(await session.getCommand(p.commandId),AbortSignal.timeout(10000));
    if(!result)return null;
    if(result.outputLimited)return {...result,checkpointSnapshotId:null,checkpointApplied:false,reason:'output_limit_command_termination_requested'};
    await save({...p,phase:'command_finished',commandResult:result});
