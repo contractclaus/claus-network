@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.32.0 with 237 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.32.0 with 242 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -239,6 +239,11 @@ This source describes API 0.32.0 with 237 operations. Endpoint availability and 
 | `project_import_history` | GET | `/v1/projects/{projectId}/import-history` | Artifact read capability |
 | `public_project` | GET | `/v1/public/projects/{slug}` | Public |
 | `public_source` | GET | `/v1/public/sources/{sourceId}` | Public |
+| `partner_launch_prepare` | GET | `/v1/projects/{projectId}/partner-launches/reviews/{caseId}/prepare` | Claus owner session |
+| `partner_launch_evidence` | GET | `/v1/projects/{projectId}/partner-launches/reviews/{caseId}` | Claus owner session |
+| `partner_launch_approve` | POST | `/v1/projects/{projectId}/partner-launches` | Claus owner session |
+| `partner_launch_revoke` | POST | `/v1/projects/{projectId}/partner-launches/{receiptId}/revoke` | Project owner or Claus owner session |
+| `public_partner_launch` | GET | `/v1/public/partner-launches/{receiptId}` | Public |
 | `public_review` | GET | `/v1/public/reviews/{caseId}` | Public |
 | `network_graph` | GET | `/v1/public/graph` | Public |
 

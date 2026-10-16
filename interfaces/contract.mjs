@@ -267,7 +267,7 @@ export const ROUTES=Object.freeze([
  route('review_admission_get','GET','/v1/admin/review-admission'),
  route('review_admission_publish','POST','/v1/admin/review-admission/versions',{version:string(64),config:object({enabled:boolean,expiresAt:operatingDeadline,maximumPerReview:string(18),maximumLifetime:string(30),perOwnerDay:integer,perProjectDay:integer,globalDay:integer,activeGlobal:integer})}),
  route('review_admission_activate','PUT','/v1/admin/review-admission/active',{version:string(64),expectedGeneration:integer}),
- route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string(),chainId:{type:'integer',enum:[1,11155111,8453]},capitalJson:string(160000),profile:{type:'string',enum:[...contractProfile.enum,'claus-native-program-v1','claus-capital-v1']}},['projectId','buildId','repoUrl','baseCommit','idempotencyKey']),
+ route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string(),chainId:{type:'integer',enum:[1,11155111,8453]},capitalJson:string(160000),partnerLaunchJson:string(16000),profile:{type:'string',enum:[...contractProfile.enum,'claus-native-program-v1','claus-capital-v1','claus-partner-launch-v1']}},['projectId','buildId','repoUrl','baseCommit','idempotencyKey']),
  route('review_pilot_get','GET','/v1/admin/review-pilots/{projectId}',{projectId:string()}),
  route('review_pilot_set','PUT','/v1/admin/review-pilots/{projectId}',{projectId:string(),enabled:boolean,expiresAt:integer,maximumPerReview:string(18),expectedRevision:integer,perProjectDay:integer,globalDay:integer},['projectId','enabled','expiresAt','maximumPerReview','expectedRevision']),
  route('review_get','GET','/v1/projects/{projectId}/reviews/{caseId}',{projectId:string(),caseId:string()}),
@@ -382,6 +382,11 @@ export const ROUTES=Object.freeze([
  route('project_import_history','GET','/v1/projects/{projectId}/import-history',{projectId:string(),page:integer},['projectId']),
  route('public_project','GET','/v1/public/projects/{slug}',{slug:string(63),view:{type:'string',enum:['full','appearance','entry']}},['slug'],true),
  route('public_source','GET','/v1/public/sources/{sourceId}',{sourceId:string()},undefined,true),
+ route('partner_launch_prepare','GET','/v1/projects/{projectId}/partner-launches/reviews/{caseId}/prepare',{projectId:string(),caseId:string()}),
+ route('partner_launch_evidence','GET','/v1/projects/{projectId}/partner-launches/reviews/{caseId}',{projectId:string(),caseId:string()}),
+ route('partner_launch_approve','POST','/v1/projects/{projectId}/partner-launches',{projectId:string(),caseId:string(),reportHash:string(),reason:string(4000),acknowledgedFindings:{type:'array',items:string(),maxItems:200},expiresAt:{type:'integer',minimum:1}}),
+ route('partner_launch_revoke','POST','/v1/projects/{projectId}/partner-launches/{receiptId}/revoke',{projectId:string(),receiptId:string()}),
+ route('public_partner_launch','GET','/v1/public/partner-launches/{receiptId}',{receiptId:string()},undefined,true),
  route('public_review','GET','/v1/public/reviews/{caseId}',{caseId:string()},undefined,true),
  route('network_graph','GET','/v1/public/graph',{after:string(),limit:{type:'integer',minimum:1,maximum:100},view:{type:'string',enum:['full','projects']}},[],true)
 ]);

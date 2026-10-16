@@ -1,0 +1,12 @@
+{
+  "kind": "claus-partner-gateway",
+  "referenceSubset": true,
+  "files": {
+    "src/index.js": "5fffc3bd2d5912e53e6774b0474aeca14d41395ca5f03dfb5e2a336c4fbf738e",
+    "src/partner-launch/profile.mjs": "17b4f021e5835399dd79f23078d78db3902f5021bcdefdd0f1213675e39b2b46",
+    "src/partner-launch/routes.mjs": "3db98d53bfbb2067e170c2a5d4c5f6e61bfb68ea585f09e6584f3cfc7745a0ab",
+    "src/partner-launch/service.mjs": "180a794a1b38ade49882ae9011b1e1b5ec995884a8d3b2137994bf8c666b4cfd"
+  },
+  "deployed": "dpl_6pDZFWAFQ2tzjQnPRgWemisU7V4r",
+  "source": "claus-partner-gateway-signer2-20261016"
+}

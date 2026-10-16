@@ -1,3 +1,4 @@
+import {partnerLaunchDefinitions,partnerLaunchEnabled,partnerLaunchTool} from './partner-launch.js';
 import {externalTool,externalOperations} from './external/service.js';
 import {capitalDefinitions,capitalEnabled,capitalTool} from './capital.js';
 import {investmentDefinitions,investmentTool} from './investment-proposals.js';
@@ -74,6 +75,7 @@ export const definitions:ReturnType<typeof tool>[]=[
   ...workWalletDefinitions,
   ...programDefinitions,
   ...capitalDefinitions,
+  ...partnerLaunchDefinitions,
   ...networkWorkDefinitions,
   ...networkCareDefinitions,
   ...surfaceDefinitions,...operationsDefinitions,
@@ -141,6 +143,7 @@ export function toolEnabled(config:Configuration,name:string) {
   if(name==='investment_proposal')return networkOperationsEnabled(config)&&config.policy.capabilities.networkBuild===true;
   if(name==='trade_program')return programEnabled(config);
   if(name==='capital_execution')return capitalEnabled(config);
+  if(name==='partner_launch')return partnerLaunchEnabled(config);
   if(name==='work_wallet')return workWalletEnabled(config);
   if(name==='read_operational_code'||name==='change_operational_code'||name==='rollback_operational_code')return operationsEnabled(config);
   if(name==='read_network_code'||name==='change_network_code')return surfaceEnabled(config);
@@ -172,6 +175,7 @@ export async function executeTool(id:string,name:string,args:Record<string,any>,
   if(name==='investment_proposal')return investmentTool(args);
   if(name==='trade_program')return programTool(args);
   if(name==='capital_execution')return capitalTool(args);
+  if(name==='partner_launch')return partnerLaunchTool(args);
   if(name==='work_wallet')return workWallet.tool(args);
   if(name==='read_operational_code'||name==='change_operational_code'||name==='rollback_operational_code')return operationsTool(id,name,args);
   if(name==='read_network_code'||name==='change_network_code')return surfaceTool(id,name,args);

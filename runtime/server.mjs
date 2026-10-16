@@ -1,3 +1,5 @@
+import {PROFILE as PARTNER_PROFILE} from '../src/partner-launch/policy.mjs';
+import {createPartnerLaunches} from '../src/partner-launch/index.mjs';
 import {PROFILE as CAPITAL_PROFILE} from '../src/capital/policy.mjs';
 import {selectCapitalReview,validateCapitalBuild} from '../src/capital/review.mjs';
 import { NATIVE_PROGRAM_PROFILE, selectNativeProgramReview, validateNativeProgramBuild } from '../src/review-flow/native-program.mjs';
@@ -63,7 +65,7 @@ import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {createPublicAppearances} from '../src/releases/appearance.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
@@ -106,7 +108,8 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   await intake.onCancel(tx,job);
  }});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
- reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,validatePublicBuild:(artifact,profile)=>profile===CAPITAL_PROFILE?validateCapitalBuild(artifact):profile===NATIVE_PROGRAM_PROFILE?validateNativeProgramBuild(artifact):chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>input.profile===CAPITAL_PROFILE?selectCapitalReview({reader,identity,projectId,...input}):input.profile===NATIVE_PROGRAM_PROFILE?selectNativeProgramReview({reader,identity,projectId,...input}):deployments.reviewProfile(reader,projectId,input),...reviewPorts});
+ const partnerLaunches=createPartnerLaunches({store,identity,builds,artifacts,pins:partnerLaunchAssignment,now});
+ reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,partnerLaunches,validatePublicBuild:(artifact,profile)=>[CAPITAL_PROFILE,PARTNER_PROFILE].includes(profile)?validateCapitalBuild(artifact):profile===NATIVE_PROGRAM_PROFILE?validateNativeProgramBuild(artifact):chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>input.profile===PARTNER_PROFILE?partnerLaunches.select(reader,projectId,input):input.profile===CAPITAL_PROFILE?selectCapitalReview({reader,identity,projectId,...input}):input.profile===NATIVE_PROGRAM_PROFILE?selectNativeProgramReview({reader,identity,projectId,...input}):deployments.reviewProfile(reader,projectId,input),...reviewPorts});
  const chain=chainPorts.chain??createReadonlyChainRouter({
   sepolia:createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})}),
   mainnet:chainPorts.mainnetClient?createChainRead({client:chainPorts.mainnetClient,chainId:1}):null,
@@ -156,7 +159,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const workPlanning=createWorkPlanning({store,identity,apps,collaboration,services,projects,visible:contentAdmin.visible,admit:access.collaboration,validateAction:(name,input,path)=>validate(ROUTES.find(r=>r.name===name).inputSchema,input,path),now});
  const webhooks=createWebhooks({store,identity,apps,admit:access.collaboration,now,deriveSecret:id=>createHmac('sha256',rateSalt).update('claus-webhook/v1:'+id).digest('hex'),deliver:deliverWebhook});
  const runtimes=createRuntimes({store,identity,workers,readWeb:publicWebRead,now,route:name=>ROUTES.find(r=>r.name===name),execute:(name,input,actor)=>service.executeAs(name,input,actor)});
- const service=createService({runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const service=createService({partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   const at=now(),window=Math.floor(at/300000);
   try {
@@ -179,7 +182,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
   }
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{
