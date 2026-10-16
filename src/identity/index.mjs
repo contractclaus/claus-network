@@ -12,7 +12,7 @@ export const PROJECT_SCOPES = Object.freeze([
   'contract.read', 'contract.request', 'contract.revoke',
   'signal.read', 'signal.manage', 'signal.publish', 'signal.grant.revoke'
 ]);
-export const APP_SESSION_ACTIONS=Object.freeze(['app_service_get','app_service_call','app_task_review_request','app_task_review_submit','app_task_review_challenge','app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']);
+export const APP_SESSION_ACTIONS=Object.freeze(['app_service_get','app_service_call','app_task_messages','app_task_message','app_task_review_request','app_task_review_submit','app_task_review_challenge','app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']);
 const FENCED_ACTIONS = new Set(['deal.exit','worker.read','worker.cancel','workflow.cancel','project.read', 'artifact.read', 'review.read', 'proposal.read', 'project.export',
   'budget.read', 'events.read', 'service.read', 'service.provide', 'service.settle', 'wallet.read', 'wallet.revoke',
   'resource.read', 'vault.read', 'job.cancel', 'inference.read', 'contract.read', 'contract.revoke', 'signal.read', 'signal.grant.revoke']);
