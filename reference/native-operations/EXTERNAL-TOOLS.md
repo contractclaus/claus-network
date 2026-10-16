@@ -83,3 +83,19 @@ Invocations use the existing provider gateway. Current allowlists, fixed resourc
 Long current-topic bodies can reference an immutable memory by ID, SHA-256 and character count. The fixed configuration retains each summary, visibility and source metadata; owner rules remain in configuration. Exact `read_knowledge` requests and full-text searches load the pinned body. Catalogue reads do not load every full body. Pagination uses the same configuration/publication snapshot before and after loading.
 
 A missing source, changed hash or wrong visibility fails explicitly. Private Network bodies cannot be read through the Club channel. The original topic ID stays stable, so callers do not need to learn a new retrieval tool. Memory contents remain evidence, never permission.
+
+
+## Browser load diagnostics
+
+For a specific loading problem, add `diagnostics: true` to the existing browser input:
+
+```js
+const observation = await tools('observe-network-load-001', {
+  provider: 'browserbase', operation: 'browser_open',
+  input: JSON.stringify({ url: 'https://claus.si/Network', diagnostics: true })
+});
+```
+
+This measures only the top-level document, with embedded frame URLs listed separately. It does not inspect child-frame content or navigate unapproved frame origins. This adds a dated snapshot of navigation and paint timings, up to 60 slow resource requests, and readiness of up to 100 HTML images. SVG image elements are counted; their requests and CSS images may appear in resource timings. The optional observation waits at most 2.5 seconds for network idle. A pending lazy image is not necessarily broken; null timing, size or HTTP status is not evidence of a zero-byte request or failure. Cross-origin detail and older performance entries may be unavailable. This is one observation of the current page, not a universal benchmark or proof every part has rendered.
+
+Diagnostic URLs omit query strings, fragments and credentials. The same authorized origins, original-action receipt and single-request session closure apply. Optional diagnostic failure leaves the successful page read available. Recovery reads the original receipt; it does not create another browser session. `status.browser.diagnostics` advertises availability. No new provider, paid plan, linked account or wallet authority is added.

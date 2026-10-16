@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_8ocASSTwpL9pLKuaCaPeLVA5ggFA",
-  "source": "claus-tool-adapters-native-20261016",
+  "deployed": "dpl_BWypFR3m9Db7QByH4CVdsymLamwU",
+  "source": "claus-browser-diagnostics-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -24,7 +24,7 @@
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "db308eeede576309e8dffbf6eeddd27f4dc8bef033383421724e5a3fd974ae21",
     "src/tool-visibility.ts": "dc54f3d4323e64bd853f28280993f15ebdcb09e84396d333a7de1f5a1d62cf38",
-    "src/tools.ts": "f901256df4203f0953152e7abf6f1ad959c159e2f0a5ac7000af59d7f04289c4",
+    "src/tools.ts": "115582154d47e7c3840adc36b6ab585755750a7103e8ec3ebb7096a0e0bc3ad9",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
@@ -99,10 +99,11 @@
     "package.json": "e1a33f0b06e3e174a142e40df681dc758905e24d8cd8e2ba72e8aeb0a3f5071f",
     "src/external/development-bridge.ts": "3d68f95e159d7f2e4bb68f643b02bf1d19d8e583c3a24146d7fe69c9030b6c5e",
     "src/external/development-grant.ts": "2bfe6f06d4a960d24b7bc59f7b84e02102481f01162a93add710390f777cb43f",
-    "src/external/providers.ts": "0207f016cfa70e4fa0f6c16a63b8645f7f3167f2e3d5a0cb015983dd0ffb1286",
+    "src/external/providers.ts": "174bd4a5e5011acbabeef8c163947aad72b3e1ad315725f0c284c4f50b983687",
     "src/external/service.ts": "84ea7fafdc84a8b8ecdfb9b4b04088e8a77c07ee770e891265af3ce33b09f544",
     "src/index.ts": "76e195f371c3f6ca83e04caae3f6811afa5d1a7dc615eaf1ce369f3bbbf7ccb1",
-    "src/external/adapters.ts": "9a07a65cd96233659098dfdf83a2833bb8bb6129e6537db41e2d08429b454777"
+    "src/external/adapters.ts": "9a07a65cd96233659098dfdf83a2833bb8bb6129e6537db41e2d08429b454777",
+    "src/external/browser-diagnostics.ts": "8ae656bb85eeb010ffe5d8dfd014f73e56026ef5542416e9490821fbec742f36"
   },
   "referenceSubset": true
 }

@@ -2,6 +2,7 @@ import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import {chromium} from 'playwright-core';
 import {readPublicUrl} from '../research.js';
+import {browserDiagnostics} from './browser-diagnostics.js';
 
 export type ToolRule={toolkit:string;account?:string;effect:'read'|'write';fixed?:Record<string,unknown>};
 export type ExternalPolicy={version:1;composio?:{sessionId:string;userId:string;tools:Record<string,ToolRule>;connectToolkits?:string[]};browser?:{projectId:string;origins:string[];contextId?:string;seconds:number;mode?:'single-request'|'persistent'}};
@@ -18,7 +19,7 @@ export function externalPolicy(env:NodeJS.ProcessEnv=process.env):ExternalPolicy
 export const externalStatus=(p=externalPolicy(),env:NodeJS.ProcessEnv=process.env)=>({
  profile:'claus-external-tools/2',adapters:{available:true,immutable:true,permissions:'current-provider-policy',scope:'claus-library-and-own-project'},development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,bazaar:{discovery:true,payments:false},
  composio:{configured:!!env.COMPOSIO_API_KEY&&!!p.composio,tools:Object.keys(p.composio?.tools??{}),missing:env.COMPOSIO_API_KEY&&p.composio?[]:['connected-provider-session']},
- browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
+ browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',diagnostics:true,missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
  secretsExposed:false,instructionAuthority:false
 });
 export function boundedObject(value:any,max=24000):Record<string,any>{if(!object(value)||Buffer.byteLength(JSON.stringify(value))>max)throw new ProviderFailure('external_input_invalid',true);return value;}
@@ -111,7 +112,11 @@ export async function browserRequest(p:ExternalPolicy,operation:string,input:any
   if(page.url()!=='about:blank')browserUrl(p,page.url());
   const text=(await page.locator('body').innerText()).slice(0,24000);
   const controls=await page.locator('a,button,input,textarea,select,[role="button"]').evaluateAll(nodes=>nodes.slice(0,80).map((n:any)=>({tag:n.tagName.toLowerCase(),role:n.getAttribute('role'),text:(n.innerText||n.getAttribute('aria-label')||n.getAttribute('placeholder')||'').slice(0,180),label:n.labels?.[0]?.innerText??null,type:n.type??null,href:n.tagName==='A'?n.getAttribute('href'):undefined})));
-  return {sessionId:input.sessionId,...(opened?{sessionMode:'single-request',closedAfterRead:true}:{}),url:page.url(),title:await page.title(),text,controls,instructionAuthority:false};
+  // Diagnostics must never discard a successfully read page or cause a second
+  // session to be purchased merely because optional measurements were missing.
+  let diagnostics;
+  if(input.diagnostics===true){try{diagnostics=await browserDiagnostics(page);}catch{diagnostics={available:false,error:'browser_diagnostics_unavailable',instructionAuthority:false};}}
+  return {sessionId:input.sessionId,...(opened?{sessionMode:'single-request',closedAfterRead:true}:{}),url:page.url(),title:await page.title(),text,controls,...(diagnostics?{diagnostics}:{}),instructionAuthority:false};
  }catch(e){if(e instanceof ProviderFailure)throw e;throw new ProviderFailure('browser_action_outcome_unavailable',operation==='browser_read');}
  finally{
   let disconnected=false;
