@@ -120,7 +120,7 @@ export function createFundingService({role,env=process.env,config,request=fetch}
      const original=await x.readStore.step(cycle,step);
      return {receipt:await x.readReceipt(body.id,original.transaction,{cycleId:cycle,step,readOnly:true})};
     }
-    admission();const original=await x.localStore.step(cycle,step);
+    await admission();const original=await x.localStore.step(cycle,step);
     // Check the fixed route contracts on the chain before any signature.
     await x.ports.verifyPins();
     return {receipt:await x.execute(body.id,original.transaction,{cycleId:cycle,step,l1GasCap:P.l1GasPerCycleWei,baseGasCap:P.baseGasPerCycleWei})};
