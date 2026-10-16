@@ -60,6 +60,7 @@ import {readonlyPorts} from './readonly-ports.mjs';
 import {createSignals} from '../src/signals/index.mjs';
 import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
 import {contractIntakeHealth} from './contract-intake-config.mjs';
+import {createPublicAppearances} from '../src/releases/appearance.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
 export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true}){
@@ -85,7 +86,7 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const deals=createDeals({store,identity,ports:dealPorts});
  const taskPayments=createTaskPayments({identity,store,ports:dealPorts,deals,evidence:arbitration.evidence,now});
  const apps=createApps({serviceProgram:()=>serviceProgram,taskPayments,storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
- const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,publicConnections:createWorkConnections({store,apps,visible:contentAdmin.visible}),limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicEntry:async projectId=>{
+ const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,publicAppearances:createPublicAppearances({store,visibleMany:contentAdmin.visibleMany,now}),publicConnections:createWorkConnections({store,apps,visible:contentAdmin.visible}),limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicEntry:async projectId=>{
   const [application,publicReleases]=await Promise.all([
     appStorage?apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,
     releases.publicForProject(projectId)
