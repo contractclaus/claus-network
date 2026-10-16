@@ -17,7 +17,7 @@ test('task message app sessions retain party, action and membership restrictions
  await bob.call('app_task_claim',{projectId,taskId:task.id,expectedRevision:task.revision,idempotencyKey:'claim'});
  const scoped=async(actor,actions)=>{
   const s=await actor.call('app_session_create',{projectId,actions,expiresAt:Date.now()+600000});
-  return createClient({origin:'https://claus.test',token:s.token,fetch:(u,o)=>app.fetch(new Request(u,o),{peer:'session'})});
+  return createClient({origin:'https://claus.test',token:s.token,fetch:async(u,o)=>{const headers=new Headers(o.headers);headers.set('origin','https://claus.si');const response=await app.fetch(new Request(u,{...o,headers}),{peer:'session'});assert.equal(response.headers.get('access-control-allow-origin'),'https://claus.si');return response;}});
  };
  const writer=await scoped(bob,['app_task_message','app_task_messages']);
  const reader=await scoped(owner,['app_task_messages']);
@@ -31,4 +31,19 @@ test('task message app sessions retain party, action and membership restrictions
  await owner.call('app_membership',{projectId,principalId:sent.authorId,active:false,expectedRevision:1,idempotencyKey:'revoke'});
  await assert.rejects(writer.call('app_task_messages',{projectId,taskId:task.id}),e=>e.code==='app_membership_required');
  await assert.rejects(writer.call('app_task_message',{...input,idempotencyKey:'revoked'}),e=>e.code==='app_membership_required');
+});
+
+
+test('task messages permit only Claus browser preflights and retain authentication',async t=>{
+ const {app,project}=await fixture(t);
+ const url='https://claus.test/v1/apps/'+project.id+'/tasks/task/messages';
+ for(const method of ['GET','POST']){
+  for(const origin of ['https://claus.si','https://other.example','null']){
+   const r=await app.fetch(new Request(url,{method:'OPTIONS',headers:{origin,'access-control-request-method':method,'access-control-request-headers':'authorization, content-type'}}),{peer:'cors'});
+   assert.equal(r.status,origin==='https://claus.si'?204:403);
+   assert.equal(r.headers.get('access-control-allow-credentials'),null);
+  }
+ }
+ const r=await app.fetch(new Request(url,{headers:{origin:'https://claus.si'}}),{peer:'cors'});
+ assert.equal(r.status,401);assert.equal(r.headers.get('access-control-allow-origin'),'https://claus.si');
 });
