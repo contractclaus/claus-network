@@ -1,6 +1,7 @@
 import { sql } from './store.js';
 import { digest } from './config.js';
 import { pageRecord,searchPage } from './context.js';
+import { networkFailure } from './network-failure.js';
 
 // These records are private, fallible evidence. They never grant authority.
 export type MemoryInput = {title:string; body:string; sources?:string[]; supersedes?:string};
@@ -58,6 +59,19 @@ export async function projectCheckpoint(id:string,version:number,snapshotId:stri
   return rows[0];
 }
 
+
+// Only the main Network context may recover its own original tool input.
+// Preserve the historical result; current classification is separate evidence.
+export function journalOperatingContext(row:any) {
+  if(row?.visibility!=='private_network'||row.kind!=='tool'||row.summary!=='build_network'||!row.request||typeof row.request!=='object')return {};
+  const extra:any={originalRequest:row.request};
+  if(row.success===false&&row.request.describe!==true&&typeof row.request.operation==='string'){
+    const current=networkFailure({code:row.result?.error,status:row.result?.status},true,row.request.operation);
+    if(current.recovery.outcome==='rejected')extra.recoveryAssessment={basis:'Current fixed-host rejection semantics; historical result unchanged. Not a new receipt or authorization to replay.',...current};
+  }
+  return extra;
+}
+
 export async function recall(input:{query?:string; id?:string; includeSuperseded?:boolean;offset?:number;limit?:number}={},includePrivate=false,db=sql()) {
   if(input.id) {
     const page=(value:unknown)=>({...pageRecord(value,input.offset,input.limit) as Record<string,unknown>,sourceArchiveId:input.id});
@@ -71,8 +85,9 @@ export async function recall(input:{query?:string; id?:string; includeSuperseded
       return page({kind:'memory',record:rows[0]??null,instructionAuthority:false});
     }
     if(/^j_[0-9]+$/.test(input.id)) {
-      const rows=await db`SELECT id,kind,summary,visibility,created_at,data->>'memory' AS memory,data->>'agenda' AS agenda,data->'continuation' AS continuation,data->'result' AS result FROM claus_journal WHERE id=${input.id.slice(2)} AND (visibility='public' OR visibility='private_club' AND ${includePrivate} OR visibility='private_network' AND NOT ${includePrivate})`;
-      const result=page({kind:'journal',record:rows[0]??null,instructionAuthority:false});
+      const rows=await db`SELECT id,kind,summary,visibility,created_at,data->>'memory' AS memory,data->>'agenda' AS agenda,data->'continuation' AS continuation,data->'result' AS result,CASE WHEN visibility='private_network' AND kind='tool' AND summary='build_network' THEN data->'request' END AS request,data->'success' AS success FROM claus_journal WHERE id=${input.id.slice(2)} AND (visibility='public' OR visibility='private_club' AND ${includePrivate} OR visibility='private_network' AND NOT ${includePrivate})`;
+      const row=rows[0],record=row?(({request,success,...rest}:any)=>({...rest,...journalOperatingContext(row)}))(row):null;
+      const result=page({kind:'journal',record,instructionAuthority:false});
       return rows[0]?.visibility==='private_network'?{...result,visibility:'private_network',sharing:'Internal network operating evidence. Keep private task messages, finances and unpublished work out of public posts and Club.'}:result;
     }
     throw new Error('archive_id_must_be_p_m_j_or_action_reference_use_projectId_for_snapshot_files');
