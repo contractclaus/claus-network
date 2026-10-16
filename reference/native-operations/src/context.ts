@@ -72,13 +72,14 @@ export function workProgress(messages:any[]) {
       }
       if(['read_network','build_network'].includes(call.function.name))try{
         const input=JSON.parse(args.input??'{}');
-        for(const key of ['projectId','slug','releaseId','snapshotId','taskId','serviceId','expectedSourceHash','filePath'])if(typeof input[key]==='string')request[key]=textPrefix(input[key],180);
+        for(const key of ['projectId','slug','releaseId','snapshotId','taskId','serviceId','expectedSourceHash','filePath','workerId','runtimeId','profileId','requestId','idempotencyKey'])if(typeof input[key]==='string'){if(input[key].length<=512)request[key]=input[key];else request[key+'Archived']=true;}
         // Cursor bytes are opaque: a prefix is not a usable continuation.
+        for(const key of ['workerRevision','expectedRevision','enabled','maxCycles','intervalSeconds'])if(['number','boolean'].includes(typeof input[key]))request[key]=input[key];
         if(typeof input.after==='string'){if(input.after.length<=2048)request.after=input.after;else request.afterArchived=true;}
         if(typeof input.request?.action==='string')request.serviceAction=textPrefix(input.request.action,80);
       }catch{}
       const actual=result?.result??result;
-      const outcome:any={};for(const key of ['error','status','published','id','revision','sourceRevision','sourceHash','releaseId','snapshotId','collection','contentVersion','available','observedAt'])if(['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
+      const outcome:any={};for(const key of ['error','status','published','id','revision','sourceRevision','sourceHash','releaseId','snapshotId','collection','contentVersion','available','observedAt','projectId','workerId','runtimeId','profileId','requestId','workerRevision','cycle','state','enabled','nextAt'])if(['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
       if(Object.hasOwn(actual??{},'nextOffset')&&(actual.nextOffset===null||Number.isSafeInteger(actual.nextOffset)))outcome.nextOffset=actual.nextOffset;
       if(Object.hasOwn(actual??{},'nextCursor')){if(actual.nextCursor===null||typeof actual.nextCursor==='string'&&actual.nextCursor.length<=2048)outcome.nextCursor=actual.nextCursor;else outcome.nextCursorArchived=true;}
       if(Array.isArray(actual?.items)){outcome.itemCount=actual.items.length;outcome.itemIds=actual.items.slice(0,4).flatMap((item:any)=>typeof item?.id==='string'?[textPrefix(item.id,160)]:[]);}

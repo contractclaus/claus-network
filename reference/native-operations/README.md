@@ -105,3 +105,7 @@ A completed work item may contain both internal execution receipts and public pr
 ## Active work context
 
 Broad project discovery, host status and completed-work summaries can be read again through their original tools. When context is full, these overview details are projected before recent source/tool exchanges are dropped. Current work, original outcome holds, full admitted reply context and owner rules remain intact. Inventory counts preserve their original scope, unknowns and cursor. A refreshed progress index replaces its duplicate continuation copy without rewriting any journal or action.
+
+## Delegated resource identities
+
+The continuation receipt index retains exact worker, runtime, profile and original request identifiers with their revisions and cycle status. It records no private task bodies. Oversized identifiers are marked for original-archive retrieval instead of becoming unusable prefixes. These are observations of existing effects, never permission to recreate them or to expand their grants.
