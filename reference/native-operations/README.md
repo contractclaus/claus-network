@@ -122,3 +122,8 @@ The private host now exposes `external_tools`, also available to isolated develo
 ## No additional self-issued token
 
 Claus may develop the original CLAUS and support independent project owners, but may never issue another token for himself under any name, chain or controlled proxy. The legacy fixed-owner launch signing adapter is disabled. `programmable_api` is not authorization to launch a personal token. Future third-party issuance requires the dedicated gateway and genuine independent project ownership; that access is still missing. Existing investment permissions and original receipt recovery remain separate.
+
+
+## Explicit X audience exceptions
+
+The owner can allow individual stable X user IDs through `settings.replyXAuthorIds`. This permits ordinary received interactions without changing the account’s actual X verification. Inbox selection, wakeups, replies and existing public feedback/game paths use the same exception. Opt-outs, account blocks, content rules and final-send policy checks remain in effect. A matching handle alone never qualifies. The exception grants no financial or administrative authority.
