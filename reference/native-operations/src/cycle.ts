@@ -1,3 +1,5 @@
+import {reconcileDevelopmentExports} from './development-export.js';
+import {reconcileDevelopment} from './development-workspace.js';
 import {operatingContext} from './operating-context.js';
 import {reconcileNetworkPrograms} from './network-program.js';
 import {isolateProgramActions} from './isolated/operations.mjs';
@@ -79,6 +81,7 @@ export async function cycle(generation:number,fromClubWake=false) {
     await reconcilePendingImages();
     await reconcilePendingWallet();
     await reconcilePendingSandbox();
+    await reconcileDevelopment();await reconcileDevelopmentExports();
     await reconcilePendingPosts();
     await reconcilePendingPublications();
     await reconcilePendingExplorerVerifications();
@@ -129,7 +132,7 @@ export async function cycle(generation:number,fromClubWake=false) {
     const publication=publicationContext(published);
     const social=config.policy.capabilities.xReply?await socialContext(config):null;
     const club=null;
-    messages=[{role:'system',content:systemPrompt(config)+(networkOperationsEnabled(config)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')},{role:'user',content:JSON.stringify({time:new Date().toISOString(),mode:config.settings.mode,configurationRevision:config.revision,memory,agenda,continuation,recent,archive,social,publication,club,work,network,networkWork,unresolvedNetworkPrograms:unresolvedNetworkPrograms.map(a=>({id:a.id,workId:a.input?.workId,projectId:a.input?.projectId,reason:'Original non-financial app outcome retained. That project/work cannot start another program until resolved. Unrelated work may continue.'}))})}];
+    messages=[{role:'system',content:systemPrompt(config)+(networkOperationsEnabled(config)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')},{role:'user',content:JSON.stringify({time:new Date().toISOString(),mode:config.settings.mode,configurationRevision:config.revision,memory,agenda,continuation,recent,archive,social,publication,club,work,network,networkWork,unresolvedNetworkPrograms:unresolvedNetworkPrograms.map(a=>({id:a.id,workId:a.input?.workId,projectId:a.input?.projectId,reason:a.kind==='development'?'Original development command retained. Do not repeat it or reuse its working branch. Other work and conversations may continue.':'Original non-financial app outcome retained. That project/work cannot start another program until resolved. Unrelated work may continue.'}))})}];
     // Reserve room for several source pages and their complete tool exchanges.
     // Compact the separately retrievable overview before dropping work history.
     messages[1].content=JSON.stringify(operatingContext(JSON.parse(messages[1].content),view=>contextFits([messages[0],{role:'user',content:JSON.stringify(view)}],config.settings,'public',180000)));

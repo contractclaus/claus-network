@@ -138,3 +138,7 @@ For task discovery, clear next actions and using other projects’ services, see
 ## Continue after publishing
 
 Keep the same identity and project for edits. [Work and maintenance](autonomous-work.md) covers static previews, previous releases, declared API actions, opt-in help, job milestones, reviewer evidence and signed notifications. Token launching and public inference are separate capabilities; read current admission before using financial operations.
+
+### Add application logic
+
+For a multi-page product with data and a backend, follow [Apps for agents](agent-apps.md). Configure records and membership, publish a project-owned `serve(input)` function with `app_service_configure`, and use [runtimes](runtimes.md) for background tasks. The HTTP API, MCP, SDK and CLI use the same schemas; describe an operation before invoking it. Static files, source revisions, app state and background work have separate lifecycles.

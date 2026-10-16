@@ -1,3 +1,5 @@
+import {validateConversation} from './compute-conversation.js';
+import {installFundingRoutes} from './compute-funding/service.mjs';
 import {Hono} from 'hono';
 import {createHash} from 'node:crypto';
 import {retainCompletion} from './retain-completion.js';
@@ -61,9 +63,11 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   funding=inferenceFunding,outcome=paymentOutcome,exactScheme=ExactEvmScheme,uptoScheme=UptoEvmScheme,
   reserve=reservePayment,reconcile=reconcilePayment,pending=reconcilePending,retain=retainCompletion}={}) {
   const app=new Hono();
+  const computeFunding=installFundingRoutes(app,'payer',env);
   const sql=database??(()=>neon(env.PAYMENT_DATABASE_URL));
   const enabled=()=>env.PAYMENT_RELAY_ENABLED==='true';
-  const resources=createOperatingResources({env,db:(strings,...values)=>sql()(strings,...values),request:fetcher});
+  const resources=createOperatingResources({env,db:(strings,...values)=>sql()(strings,...values),request:fetcher,
+    computeFunding:()=>computeFunding.handle({action:'status'})});
   const creditLedgerEnabled=()=>!!env.SURPLUS_CREDIT_KEY_ID;
   const credit=createCreditCompletion({env,sql,fetcher,paidFetch});
   const independentCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:true,transportProfile:env.BUILDER_CREDIT_PROFILE});
@@ -83,7 +87,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     privateKeyToAccount:key=>paymentAccount(key,deriveAccount),address:payer,quoteWithinBudget,inferencePaymentSchemes:isImage=>inferencePaymentSchemes(isImage,'upto_only'),fetch:fetcher,
     inferenceFunding:requirement=>funding(requirement,undefined,payer),validateChallenge,UptoEvmScheme:uptoScheme,ExactEvmScheme:exactScheme,
     inferenceFetch:paidFetch,providerFailure,responseShape,responseMetadata,normalizeImage,normalizeResponse});
-  app.get('/health',c=>c.json({ready:enabled()&&configured(env),payer,inferencePaymentScheme:'upto_only',supportedLifetimeLimitsMicroUsdc:['100000000','500000000','600000000'],
+  app.get('/health',c=>c.json({ready:enabled()&&configured(env),payer,inferencePaymentScheme:'upto_only',supportedLifetimeLimitsMicroUsdc:['100000000','500000000','600000000'],earnedFundingCeilingRangeMicroUsdc:['600000000','1200000000'],
     configPresence:{enabled:enabled(),database:!!env.PAYMENT_DATABASE_URL,signing:!!env.SIGNER_PRIVATE_KEY,
       inference:!!env.INFERENCE_SECRET,operator:!!env.OPERATOR_SECRET,legacy:!!env.LEGACY_STATUS_SECRET&&env.LEGACY_OPERATOR_URL===operatorOrigin,
       billing:configured(env)}}));
@@ -106,7 +110,8 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     if(compute&&payment){
       if(path!=='/api/completion'||env.NETWORK_COMPUTE_ENABLED!=='true')return c.json({error:'compute_disabled',payment:'not_signed'},403);
       const b=await c.req.json().catch(()=>null);
-      if(!b||b.model!==env.NETWORK_COMPUTE_MODEL||b.provider!=='openai'||b.tools?.length||b.max_output_tokens>4096||c.req.header('x-inference-purpose'))return c.json({error:'compute_profile_refused',payment:'not_signed'},400);
+      if(!b||b.model!==env.NETWORK_COMPUTE_MODEL||b.provider!=='openai'||b.max_output_tokens>4096||c.req.header('x-inference-purpose'))return c.json({error:'compute_profile_refused',payment:'not_signed'},400);
+      try{validateConversation(b.input,b.tools);}catch{return c.json({error:'compute_profile_refused',payment:'not_signed'},400);}
     }
     if(payment&&!enabled())return c.json({error:'payment_relay_disabled',payment:'not_signed'},503);
     if(payment||setup||recovery) {

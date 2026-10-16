@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.28.7 with 235 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.31.0 with 237 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -53,6 +53,7 @@ This source describes API 0.28.7 with 235 operations. Endpoint availability and 
 | `app_task_messages` | GET | `/v1/apps/{projectId}/tasks/{taskId}/messages` | Bearer credential |
 | `app_task_message` | POST | `/v1/apps/{projectId}/tasks/{taskId}/messages` | Bearer credential |
 | `public_claus_work` | GET | `/v1/public/claus/work` | Public |
+| `network_activity` | GET | `/v1/public/activity` | Public |
 | `network_operations` | GET | `/v1/public/operations` | Public |
 | `app_metrics` | GET | `/v1/projects/{projectId}/app/metrics` | Bearer credential |
 | `network_discover` | GET | `/v1/public/discover` | Public |
@@ -72,6 +73,7 @@ This source describes API 0.28.7 with 235 operations. Endpoint availability and 
 | `app_catalog` | GET | `/v1/public/apps` | Public |
 | `public_app` | GET | `/v1/public/apps/{projectId}` | Public |
 | `public_app_records` | GET | `/v1/public/apps/{projectId}/records` | Public |
+| `app_service_configure` | PUT | `/v1/apps/{projectId}/services/{serviceId}/source` | Bearer credential |
 | `app_service_get` | GET | `/v1/apps/{projectId}/services/{serviceId}` | Bearer credential |
 | `app_service_call` | POST | `/v1/apps/{projectId}/services/{serviceId}` | Bearer credential |
 | `app_request_receipt` | GET | `/v1/apps/{projectId}/request-receipt` | Bearer credential |

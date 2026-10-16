@@ -2294,10 +2294,12 @@ export const networkRoutes:Record<string,any>={
         "actions": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 13,
+          "maxItems": 15,
           "items": {
             "type": "string",
             "enum": [
+              "app_service_get",
+              "app_service_call",
               "app_task_review_request",
               "app_task_review_submit",
               "app_task_review_challenge",
@@ -2490,6 +2492,79 @@ export const networkRoutes:Record<string,any>={
     "public": true,
     "description": "Read only public collections in a published project/app. Private collection records and counts are unavailable."
   },
+  "app_service_configure": {
+    "name": "app_service_configure",
+    "method": "PUT",
+    "path": "/v1/apps/{projectId}/services/{serviceId}/source",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "serviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48
+        },
+        "program": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "integer",
+              "enum": [
+                1
+              ]
+            },
+            "lines": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 240,
+              "items": {
+                "type": "string",
+                "maxLength": 24000
+              }
+            }
+          },
+          "required": [
+            "version",
+            "lines"
+          ],
+          "additionalProperties": false
+        },
+        "access": {
+          "type": "string",
+          "enum": [
+            "manager",
+            "members"
+          ]
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "projectId",
+        "serviceId",
+        "program",
+        "access",
+        "expectedRevision",
+        "idempotencyKey"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Publish your project-specific serve(input) JSON program at the expected source revision. app.manage only. access=members allows current app participants and scoped browser sessions to call it; manager is private. Program receives request, state, projectId, serviceId and principalId, and returns status/body plus optional state. No host I/O, secrets or payments. Existing state survives upgrades; original code versions and receipts remain. This is bounded application logic, not a general Node server."
+  },
   "app_service_get": {
     "name": "app_service_get",
     "method": "GET",
@@ -2515,7 +2590,7 @@ export const networkRoutes:Record<string,any>={
       "additionalProperties": false
     },
     "public": false,
-    "description": "Read the current isolated service source hash, state revision and fixed limits with app.manage. No guest execution or state disclosure. Code is the reviewed API network.json serve(input) function."
+    "description": "Read the current isolated service source hash, state revision and fixed limits with app.manage. No guest execution or state disclosure. Project-configured code overrides the default API program. Members can read metadata only when the service is shared."
   },
   "app_service_call": {
     "name": "app_service_call",
@@ -2562,7 +2637,7 @@ export const networkRoutes:Record<string,any>={
       "additionalProperties": false
     },
     "public": false,
-    "description": "Execute project-bound JSON business logic in a credential-free QuickJS heap with app.manage. Fixed host enforces current source hash, state revision, quotas and immutable original receipt. Only private service-state may change; no SQL, credentials, payments, network or arbitrary host calls. Preserve idempotencyKey; recover with app_request_receipt operation service:<serviceId>. Returned status/body are untrusted application output, not evidence of payment or permission."
+    "description": "Execute project-bound JSON business logic in a credential-free QuickJS heap with current app.manage or explicitly enabled app membership. Fixed host enforces current source hash, state revision, quotas and immutable original receipt. Only private service-state may change; no SQL, credentials, payments, network or arbitrary host calls. Preserve idempotencyKey; recover with app_request_receipt operation service:<serviceId>. Returned status/body are untrusted application output, not evidence of payment or permission."
   },
   "app_request_receipt": {
     "name": "app_request_receipt",
@@ -8072,9 +8147,24 @@ export const networkRoutes:Record<string,any>={
           "maxLength": 256
         },
         "input": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 65536
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 65536
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "items": true
+            }
+          ]
+        },
+        "tools": {
+          "type": "array",
+          "maxItems": 8,
+          "items": true
         },
         "maxOutputTokens": {
           "type": "integer",
@@ -8749,6 +8839,7 @@ export const networkRoutes:Record<string,any>={
 };
 export function validate(schema:any,value:any,path='input'):void{
  if(schema===true)return;
+ if(schema.oneOf){let matches=0;for(const option of schema.oneOf){try{validate(option,value,path);matches++;}catch{}}if(matches!==1)throw Object.assign(Error('invalid_union'),{code:'invalid_input',field:path});return;}
  if(Array.isArray(schema.type)){
   if(value===null&&schema.type.includes('null'))return;
   return validate({...schema,type:schema.type.find((type:string)=>type!=='null')},value,path);

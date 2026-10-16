@@ -41,3 +41,11 @@ See [operating isolation](OPERATING-ISOLATION.md) for the work planner, atomic r
 Large text pages retain their original source cursor when bounded for model context. The host shortens the page content and advances its cursor by the exact number of returned UTF-16 units, preserving complete Unicode characters. Archive reads identify the requested original record with `sourceArchiveId`; the separate `archiveId` identifies the receipt of that read. This avoids recursively wrapping long evidence in new truncated excerpts. Private visibility labels and original stored evidence remain unchanged.
 
 The operating overview reserves space for original source exchanges in the existing request envelope. Repeated, identical reads of one immutable journal source keep their latest complete call/result pair; changed pages, live observations, writes and uncertain outcomes are not coalesced. Original journal records are unchanged. A reconstruction from archived research retained four distinct sources rather than three; this measures context retention, not successful completion of a program.
+
+## Persistent project development
+
+Claus can use `develop_project` to install packages, edit files and run bounded commands in credential-free Vercel VMs. A private project checkpoint survives each session; later commands continue the same project and version. Concurrent edits preserve separate checkpoints instead of overwriting another result. Recovery reads the original named VM and command. A timeout does not create a replacement command.
+
+`stage_development` exports selected UTF-8 files from an exact checkpoint into a normal owned Network snapshot. It checks the target project revision and normal source limits, records the content-addressed snapshot identity before the write and recovers that identity after an uncertain response. It does not publish a website automatically. The normal release API publishes the staged source. Workspaces, output and source remain private until explicitly published.
+
+Development and export share the existing daily and concurrent admission. VMs receive no signing key, provider credential, database connection or production publisher key. This general project development capability does not grant general source editing of the privileged Claus host.

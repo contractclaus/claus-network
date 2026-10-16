@@ -54,7 +54,7 @@ async function runNetworkCare(args:any){
 
  if(args.action==='experiments'){
   const [experiments,builds]=await Promise.all([
-   sql()`SELECT id,status,result->>'exitCode' AS exit_code,result->>'projectId' AS project_id,result->>'projectVersion' AS project_version,created_at,completed_at FROM claus_actions WHERE kind='sandbox' ORDER BY created_at DESC LIMIT 20`,
+   sql()`SELECT id,status,result->>'exitCode' AS exit_code,result->>'projectId' AS project_id,result->>'projectVersion' AS project_version,created_at,completed_at FROM claus_actions WHERE kind IN ('sandbox','development') ORDER BY created_at DESC LIMIT 20`,
    sql()`SELECT id,title,status,revision,summary,updated_at FROM claus_builds WHERE owner_scope='claus' ORDER BY updated_at DESC LIMIT 20`
   ]);
   return {observedAt:new Date().toISOString(),experiments,builds,scope:'Latest 20 recorded sandbox experiments and latest 20 own build records. Status is a stored execution record, not continuous activity. Completed experiments and registered agent profiles are not independently running children, public token launches or production deployments. Read the exact original record before making claims.'};

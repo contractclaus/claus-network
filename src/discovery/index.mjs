@@ -5,7 +5,7 @@ import {copy,digest,integer,requireThat} from '../shared/index.mjs';
 // Live projections, not a second registry. PostgreSQL filters public profiles
 // before pagination; other kinds retain a bounded page scan.
 export function createDiscovery({store,projects,apps,services,now=()=>Date.now()}) {
-  return {async operations(){
+  return {async activity({limit=40}={}){integer(limit,1,100);requireThat(store.publicActivity,'activity_not_available');return store.publicActivity({limit,at:now(),includeTasks:apps?.enabled===true});},async operations(){
     const roles=['compile','review','controller','executor','services','wallets','vaults','workflows','domains','workers','deals','inference','runtimes'];
     const at=now();const [rows,execution]=await Promise.all([store.readMany('worker-health',roles),executionEvidence(store,at)]);
     const snapshot={observedAt:at,execution,workers:roles.map(role=>{const v=rows.get(role)?.value,age=Number.isFinite(v?.observedAt)?Math.max(0,at-v.observedAt):null;return {role,lastObservedAt:v?.observedAt??null,ageMs:age,status:age===null?'unknown':age<300000?'recent':'stale',release:v?.release??null,...(role==='workflows'?{lastBatch:v?{processed:v.processed??null,durationMs:v.durationMs??null,retries:v.retryCount??null}:null}:{}),...(['inference','runtimes'].includes(role)?{lastBatch:v?{state:v.state??'unknown',enabled:v.enabled??null,processed:v.processed??null,completedWorkers:v.completedWorkers??null,failedWorkers:v.failedWorkers??null}:null}:{})};}),scope:'Last host worker observations, not user-agent presence, independent uptime certification or an end-to-end SLA.'};

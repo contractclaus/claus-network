@@ -83,7 +83,12 @@ export function createApplication({store,origin='https://claus.si',rateSalt,now=
  const deals=createDeals({store,identity,ports:dealPorts});
  const taskPayments=createTaskPayments({identity,store,ports:dealPorts,deals,evidence:arbitration.evidence,now});
  const apps=createApps({serviceProgram:()=>serviceProgram,taskPayments,storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
- const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,publicConnections:createWorkConnections({store,apps,visible:contentAdmin.visible}),limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicDetails:async projectId=>{
+ const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,publicConnections:createWorkConnections({store,apps,visible:contentAdmin.visible}),limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicEntry:async projectId=>{
+  const [application,publicReleases]=await Promise.all([
+    appStorage?apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,
+    releases.publicForProject(projectId)
+  ]);return {application,releases:publicReleases};
+ },publicDetails:async projectId=>{
   const [application,publicServices,results,publicReleases,publicSignals]=await Promise.all([
     appStorage?apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,
     services.publicForProject(projectId),services.publicResultsForProject(projectId),releases.publicForProject(projectId),signals.publicForProject(projectId)
