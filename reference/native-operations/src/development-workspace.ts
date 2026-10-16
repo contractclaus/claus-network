@@ -2,6 +2,9 @@ import {developmentInput,DevelopmentExecution,DEVELOPMENT_LIMITS} from './develo
 import {sql,once,actionProgress,settleAction,ConfirmedFailure,journal} from './store.js';
 import {projectById,saveProject,projectCheckpoint} from './archive.js';
 import {digest} from './config.js';
+import {createNetworkAccess} from './network-access.js';
+import {importRelease} from './development-source.js';
+const access=createNetworkAccess();
 
 const execution=new DevelopmentExecution();
 async function applyCheckpoint(action:any,result:any){
@@ -24,7 +27,9 @@ export async function developProject(id:string,args:any){
   const project=input.projectId?await projectById(input.projectId):await saveProject(id,{title:input.title!,summary:input.purpose!});
   if(!project||input.projectId&&project.version!==input.expectedVersion)throw new ConfirmedFailure('development_project_version_changed');
   const progress:any={project};await actionProgress(id,progress);
-  const result=await execution.run(id,input,project.snapshot_id??base,async value=>{progress.execution=value;await actionProgress(id,progress);});
+  let importedFiles:{path:string;content:string}[]=[];
+  if(input.source){let release:any;try{release=await access.call('release_preview',{projectId:input.source.projectId,releaseId:input.source.releaseId});importedFiles=importRelease(input.source,release);}catch{throw new ConfirmedFailure('development_source_unavailable_or_invalid');}progress.source={...input.source,contentHash:release.contentHash,files:importedFiles.length};await actionProgress(id,progress);}
+  const result=await execution.run(id,input,project.snapshot_id??base,async value=>{progress.execution=value;await actionProgress(id,progress);},importedFiles);
   const saved=await applyCheckpoint({id,progress},result);
   await journal('development','Development command completed; checkpoint outcome recorded',{visibility:'private_network',projectId:project.id,actionId:id,result:saved});
   return saved;

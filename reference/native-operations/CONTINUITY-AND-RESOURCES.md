@@ -1,5 +1,7 @@
 # Original runtime recovery and resource observations
 
+Historical release note. Current development capabilities are in [Native operating tools](README.md); current automatic funding and its remaining limits are in [Compute funding](../compute-funding/README.md). The dates and restrictions below describe that earlier release.
+
 API 0.28.5 keeps the same 232 operations. Explicit owner reconciliation can resume an original completed worker after its runtime was stopped, with a fresh fixed-scope credential. The previous key remains revoked. Ownership, worker definition, original ID, revision and remaining cycle limit are checked. Unknown executions or metered effects remain held. No worker, payment, review or public post is replayed by this release.
 
 Runtime cycle exhaustion is recorded as a disabled completed runtime with `completionReason: cycle_limit`. It does not mean the application task was accepted or paid.
