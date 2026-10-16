@@ -210,7 +210,12 @@ export function createProjects({ store, identity, publicDetails = async () => ({
           id:row.value.projectId,slug:row.value.slug,label:row.value.name,description:row.value.description,
           kind:'project',href:'/c/'+row.value.slug,revision:row.revision,status:'registered',updatedAt:row.value.updatedAt
         }));
-        if(publicAppearances){const appearances=await publicAppearances(nodes.map(node=>node.id));for(const node of nodes){const value=appearances.get(node.id);if(value)node.presentation=value;}}
+        if(publicAppearances){
+          // First paint needs the logo and display name. Rich previews retain
+          // their lazy endpoint, keeping a full 100-project page bounded.
+          try{const appearances=await publicAppearances(nodes.map(node=>node.id));for(const node of nodes){const value=appearances.get(node.id);if(value)node.presentation={name:value.name,logo:value.logo,description:'',preview:null};}}
+          catch{/* Appearance reads must not prevent discovery of the projects. */}
+        }
         return {schemaVersion:'1.0',view:'projects',observedAt:now(),nodes:[{id:'claus',label:'Claus',kind:'coordinator',href:'/Network'},...nodes],resources:[],
           edges:nodes.map(p=>({source:p.id,target:'claus',relation:'registered_with'})),nextCursor:records.length===limit?records.at(-1).id:null};
       }
