@@ -16153,7 +16153,7 @@
     "/v1/projects/{projectId}/agents/{agentId}/publication": {
       "put": {
         "operationId": "agent_publish",
-        "description": "Explicitly publish or withdraw one agent name. Requires project.publish and expectedRevision; other identities stay private.",
+        "description": "Explicitly publish or withdraw one existing agent name. Requires project.publish and expectedRevision. The owner of both projects may display an owned agent on another project without publishing its private source project or changing its rights; the association expires on ownership changes. Other identities stay private.",
         "security": [
           {
             "bearerAuth": []

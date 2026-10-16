@@ -26,7 +26,8 @@ export function normalizeGraph(pages) {
       if (!['service', 'agent', 'interface', 'contract', 'result', 'signal'].includes(item.kind) ||
         typeof item.id !== 'string' || item.id.length > 200 || typeof item.projectId !== 'string' ||
         typeof item.label !== 'string' || item.label.length > 80) throw Error('invalid_resource');
-      resources.set(item.id, { id: item.id, projectId: item.projectId, kind: item.kind, label: item.label });
+      resources.set(item.projectId+':'+item.id, { id: item.id, projectId: item.projectId, kind: item.kind, label: item.label,
+        ...(item.kind==='agent'&&item.relationship==='owned'?{relationship:'owned'}:{}) });
     }
   }
   const projects = [...nodes.values()].sort((a, b) => a.slug.localeCompare(b.slug, 'en'));
@@ -48,7 +49,7 @@ export function mergeGraphConnections(projects,pages) {
   const registry={schemaVersion:'1.0',nodes:projects.map(p=>({...p,kind:'project'})),edges:[]};
   const graph=normalizeGraph([...pages.map(p=>({...p,nodes:[]})),registry]);
   const details=new Map(graph.projects.map(p=>[p.id,p]));
-  return projects.map(p=>({...p,providers:details.get(p.id)?.providers??[],collaborators:details.get(p.id)?.collaborators??[]}));
+  return projects.map(p=>({...p,providers:details.get(p.id)?.providers??[],collaborators:details.get(p.id)?.collaborators??[],resources:details.get(p.id)?.resources??[]}));
 }
 export function visibleProjects(projects, capacity = 8) {
   if (projects.length <= capacity) return { individual: projects, grouped: [] };

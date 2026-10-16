@@ -21,7 +21,7 @@ export function createConnectionLoader({request,onChange,visible=()=>!document.h
           seen.add(node.id);
           const coverage=data.connectionCoverage?.find(c=>c.projectId===node.id);
           if(coverage?.state==='unavailable')continue;
-          records.set(node.id,{at:now(),page:{schemaVersion:'1.0',nodes:[],edges:data.edges.filter(e=>e.source===node.id)}});
+          records.set(node.id,{at:now(),page:{schemaVersion:'1.0',nodes:[],edges:data.edges.filter(e=>e.source===node.id),resources:(data.resources??[]).filter(r=>r.projectId===node.id)}});
         }
         if(next)cursors.add(next);cursor=next;
         if(!cursor){for(const id of records.keys())if(!seen.has(id))records.delete(id);seen=new Set();cursors=new Set();complete=true;}

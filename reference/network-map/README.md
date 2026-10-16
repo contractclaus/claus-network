@@ -6,7 +6,7 @@ The connection loader retains the original cursor on a failed read, permits one 
 
 The Activity endpoint returns real registry events with bounded supplementary public detail reads. Its 3.5-second collection budget can produce partial coverage; successful records survive a slow sibling. It does not promise complete event history or a universal response time.
 
-This directory contains the changed website implementation and its fixed read helpers. The active surface carries the same bundled map code and styles. The manifest binds the deployed source. API, SDK, CLI and MCP versions are unchanged.
+This directory contains the changed website implementation and its fixed read helpers. The surface has its own exact-source bundle; the manifest identifies it separately from the website fallback. The manifest binds the deployed source. API, SDK, CLI and MCP versions are unchanged.
 
 ## Activity and entry reads, 16 October 2026
 
@@ -15,3 +15,9 @@ The website now uses the bounded public Activity query instead of fetching task 
 ## Clean project subpages
 
 Project entry metadata includes the paths of the selected public release. The website and native link reader use those published paths to resolve flat pages and directory indexes after clean-URL redirects. An extensionless path prefers its matching HTML file, then its directory index. Unknown pages show a return link; private source paths are never used. Projects without a published website retain their full registration and evidence view.
+
+## Owned specialists on a product
+
+An explicitly published agent can be associated with another project under the same owner. The API checks both owners and publication access; the source project and runtime state stay private. Existing agents and permissions are reused. Graph normalization and detail merging retain these resources, and the product card labels them as owned agents. A withdrawn or no-longer-valid association disappears from fresh public reads. Owned workers are not presented as independent reviewers.
+
+The production Project Check card was inspected in the browser with both original specialist names. This release changes their public association and display, not their completed work, invoices or runtime permissions.

@@ -1,17 +1,22 @@
 {
-  "websiteDeployment": "dpl_8BRrTsd2Y81a1FzfHS4BBrQzJ4tg",
-  "surfaceDeployment": "dpl_Geyxfq8AEK5TxQ9gcZnt5nK14ZuT",
-  "surfaceRelease": "sr_owner_connections_20261015",
-  "surfaceSourceHash": "4c1ac78e6ea80bbda479023d8c2c5e6ec12b667a269e4ab322a1d960110f245f",
+  "websiteDeployment": "dpl_DhXcvyU4vGLvL2hxofqtWpNnQhNy",
+  "surfaceDeployment": "dpl_BhcD3QfLsHo6e7TsdxumYw5E3Xhq",
+  "surfaceRelease": "sr_96285f3b40942cbada9d0e0d",
+  "surfaceSourceHash": "d31451201496f0beacd190562554e02808b70198748e20391f78fd6cf4d07a9f",
   "files": {
     "api/network-activity.mjs": "82f9c0c6112e51a4a15f4e3382d6284aa68cf92f9bef6580b8050e1cf9e284ff",
     "api/network-surface-data.mjs": "6cb549676c203d30ed8d8e3536a48643c2fb1aa5829b7eb1ca58abb427c84616",
-    "network/graph-connections.js": "13d720e05540a4d03777feb4654ba789153a062e8d5cd800d136d019ff674c7a",
-    "network/graph-model.js": "c453d5448634405bc5268cd1a372d252733fcced59f024e0c1976d073f4f2727",
-    "network/home-map.js": "720595e002bdc28ac267f7ecbab7ed5e9c25ff64b6f9932df3eda51e670a4a69",
+    "network/graph-connections.js": "ed216d405fed85285ca031d39a8b87421b2fbc6867b9230afddb05474a85416f",
+    "network/graph-model.js": "c5cf19130e742d79f941cbb6b128236f7e65419ca84993b25007cee9960393d5",
+    "network/home-map.js": "66119ece48b445e4449246cc30c57224af33f9c37f815edd6a1aaeead920216d",
     "network/live.css": "0052d93eb0b28e682079866ec6863a69dd12ed952fcea2959406b4bf481edda3",
     "network/map-groups.js": "afe364e7caa8b49bca5f13fbe37c8f51d191532aabc0952a7d7c8bb5998d87bc",
     "lib/network-surface-read.mjs": "d2769b675f0ee06c39c945bdcadae4b25bf5854b8c062c1e49be637f64aeddf4",
-    "lib/network-surface-program.mjs": "6b994c85cfe5afb2546060a7ce92d00cf57139b222e013a6d441026c7af471a7"
+    "lib/network-surface-program.mjs": "6b994c85cfe5afb2546060a7ce92d00cf57139b222e013a6d441026c7af471a7",
+    "network/project-card.js": "a2f9e14318b23bfa5a1eb820471313b6657ceec067a6607d8d1b12c32c1c0285"
+  },
+  "surfaceMap": {
+    "file": "network/surface-home-map.js",
+    "sha256": "aac2c4351d161f65596e363006034a36f2ffc33e0d5fe98779143108cb4c8672"
   }
 }
