@@ -1,3 +1,4 @@
+import {installCapitalRoutes} from './capital/routes.mjs';
 import {capitalSnapshot,refreshCapitalCash} from './capital/budget.js';
 import {validateConversation} from './compute-conversation.js';
 import {installFundingRoutes} from './compute-funding/service.mjs';
@@ -64,6 +65,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   funding=inferenceFunding,outcome=paymentOutcome,exactScheme=ExactEvmScheme,uptoScheme=UptoEvmScheme,
   reserve=reservePayment,reconcile=reconcilePayment,pending=reconcilePending,retain=retainCompletion}={}) {
   const app=new Hono();
+  installCapitalRoutes(app,{env});
   const computeFunding=installFundingRoutes(app,'payer',env);
   const sql=database??(()=>neon(env.PAYMENT_DATABASE_URL));
   const enabled=()=>env.PAYMENT_RELAY_ENABLED==='true';

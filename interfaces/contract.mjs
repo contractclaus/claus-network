@@ -1,5 +1,5 @@
 import {workPlanningRoutes} from './work-planning-routes.mjs';
-export const API_VERSION='0.31.0';
+export const API_VERSION='0.32.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -267,7 +267,7 @@ export const ROUTES=Object.freeze([
  route('review_admission_get','GET','/v1/admin/review-admission'),
  route('review_admission_publish','POST','/v1/admin/review-admission/versions',{version:string(64),config:object({enabled:boolean,expiresAt:operatingDeadline,maximumPerReview:string(18),maximumLifetime:string(30),perOwnerDay:integer,perProjectDay:integer,globalDay:integer,activeGlobal:integer})}),
  route('review_admission_activate','PUT','/v1/admin/review-admission/active',{version:string(64),expectedGeneration:integer}),
- route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string(),chainId:readonlyChain,profile:{type:'string',enum:[...contractProfile.enum,'claus-native-program-v1']}},['projectId','buildId','repoUrl','baseCommit','idempotencyKey']),
+ route('review_create','POST','/v1/projects/{projectId}/reviews',{projectId:string(),buildId:string(),repoUrl:string(240),baseCommit:string(40),idempotencyKey:string(),chainId:{type:'integer',enum:[1,11155111,8453]},capitalJson:string(160000),profile:{type:'string',enum:[...contractProfile.enum,'claus-native-program-v1','claus-capital-v1']}},['projectId','buildId','repoUrl','baseCommit','idempotencyKey']),
  route('review_pilot_get','GET','/v1/admin/review-pilots/{projectId}',{projectId:string()}),
  route('review_pilot_set','PUT','/v1/admin/review-pilots/{projectId}',{projectId:string(),enabled:boolean,expiresAt:integer,maximumPerReview:string(18),expectedRevision:integer,perProjectDay:integer,globalDay:integer},['projectId','enabled','expiresAt','maximumPerReview','expectedRevision']),
  route('review_get','GET','/v1/projects/{projectId}/reviews/{caseId}',{projectId:string(),caseId:string()}),

@@ -139,7 +139,8 @@
       "path": "src/review-flow/",
       "imports": [
         "shared",
-        "policies"
+        "policies",
+        "capital"
       ],
       "builtins": []
     },
@@ -329,6 +330,14 @@
       "imports": [
         "shared"
       ],
+      "builtins": [
+        "node:crypto"
+      ]
+    },
+    {
+      "id": "capital",
+      "path": "src/capital/",
+      "imports": [],
       "builtins": [
         "node:crypto"
       ]

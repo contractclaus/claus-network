@@ -4967,15 +4967,22 @@ export const networkRoutes:Record<string,any>={
           "type": "integer",
           "enum": [
             1,
-            11155111
+            11155111,
+            8453
           ]
+        },
+        "capitalJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160000
         },
         "profile": {
           "type": "string",
           "enum": [
             "claus-readonly-v1",
             "claus-managed-v1",
-            "claus-native-program-v1"
+            "claus-native-program-v1",
+            "claus-capital-v1"
           ]
         }
       },

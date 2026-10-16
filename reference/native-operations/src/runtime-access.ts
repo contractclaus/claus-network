@@ -1,6 +1,6 @@
 import type {Configuration} from './config.js';
 const groups:Record<string,string[]>={
- business:['investment_proposal','programmable_api'],
+ business:['capital_execution','investment_proposal','programmable_api'],
  development:['develop_project','stage_development','run_experiment'],
  network:['read_network','build_network','network_work','network_care','run_network_program','resume_network_operation'],
  publishing:['read_network_code','change_network_code','read_operational_code','change_operational_code','rollback_operational_code'],

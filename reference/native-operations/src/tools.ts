@@ -1,3 +1,4 @@
+import {capitalDefinitions,capitalEnabled,capitalTool} from './capital.js';
 import {investmentDefinitions,investmentTool} from './investment-proposals.js';
 import {stageDevelopment} from './development-export.js';
 import {developProject} from './development-workspace.js';
@@ -70,6 +71,7 @@ export const definitions:ReturnType<typeof tool>[]=[
   ...networkDefinitions,
   ...workWalletDefinitions,
   ...programDefinitions,
+  ...capitalDefinitions,
   ...networkWorkDefinitions,
   ...networkCareDefinitions,
   ...surfaceDefinitions,...operationsDefinitions,
@@ -135,6 +137,7 @@ export function toolEnabled(config:Configuration,name:string) {
   if(name==='run_network_program'||name==='resume_network_operation')return operationsEnabled(config)&&config.policy.capabilities.networkBuild===true&&custodyConfigured();
   if(name==='investment_proposal')return networkOperationsEnabled(config)&&config.policy.capabilities.networkBuild===true;
   if(name==='trade_program')return programEnabled(config);
+  if(name==='capital_execution')return capitalEnabled(config);
   if(name==='work_wallet')return workWalletEnabled(config);
   if(name==='read_operational_code'||name==='change_operational_code'||name==='rollback_operational_code')return operationsEnabled(config);
   if(name==='read_network_code'||name==='change_network_code')return surfaceEnabled(config);
@@ -164,6 +167,7 @@ export async function executeTool(id:string,name:string,args:Record<string,any>,
   if(name==='resume_network_operation')return resumeNetworkOperation(args);
   if(name==='investment_proposal')return investmentTool(args);
   if(name==='trade_program')return programTool(args);
+  if(name==='capital_execution')return capitalTool(args);
   if(name==='work_wallet')return workWallet.tool(args);
   if(name==='read_operational_code'||name==='change_operational_code'||name==='rollback_operational_code')return operationsTool(id,name,args);
   if(name==='read_network_code'||name==='change_network_code')return surfaceTool(id,name,args);
