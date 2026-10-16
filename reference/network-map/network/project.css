@@ -1,0 +1,68 @@
+@font-face{font-family:Claus UI;src:url('/assets/bricolage-grotesque-latin.woff2') format('woff2');font-weight:200 800;font-display:swap}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#fff;color:#181818;font-family:Claus UI,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.project-skip{position:fixed;top:12px;left:12px;z-index:60;padding:12px;background:#181818;color:#fff;translate:0 -160%}
+.project-skip:focus{translate:0}
+#project-header{padding:100px 28px 12px;max-width:1000px;margin:auto}
+#project-name{font-size:clamp(32px,4vw,52px);font-weight:550;line-height:1.1;letter-spacing:-.04em;margin:0;overflow-wrap:anywhere}
+.atlas-brand{position:fixed;z-index:40;top:max(4px,env(safe-area-inset-top));left:max(4px,env(safe-area-inset-left));display:block;width:80px;height:80px;color:#181818;filter:drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)}
+.atlas-brand svg{display:block;width:100%;height:100%}
+#project-main{max-width:1000px;margin:auto;padding:18px 28px 56px}
+#project-main:focus{outline:none}
+.project-stage{font-size:14px;color:#666}
+.project-description{font-size:clamp(18px,2vw,24px);line-height:1.5;max-width:42em;margin:24px 0 36px;white-space:pre-wrap;overflow-wrap:anywhere}
+.network-profile section{margin:32px 0}
+.network-profile h2{font-size:20px;font-weight:600;letter-spacing:-.02em;margin:0 0 16px}
+.project-evidence{display:flex;align-items:center;flex-wrap:wrap;gap:12px 24px;padding:14px 0}
+.project-evidence a{color:inherit;overflow-wrap:anywhere;text-underline-offset:4px;min-height:24px}
+#project-content[aria-busy=true]{min-height:160px}
+#project-status{font-size:15px;line-height:1.5}
+.project-feed{padding:24px 0;display:grid;gap:20px}
+.project-feed-state{margin:0;font-size:14px;font-weight:600}
+.project-feed-state::before{content:'●';margin-inline-end:8px}
+.project-feed[data-state=withdrawn] .project-feed-state::before,.project-feed[data-state=superseded] .project-feed-state::before,.project-feed[data-state=stale] .project-feed-state::before,.project-feed[data-state=unavailable] .project-feed-state::before{content:'○'}
+.project-feed-value{font-size:clamp(30px,6vw,56px);line-height:1.1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.project-feed-value:empty,.project-feed-details:empty{display:none}
+.project-feed-details{display:flex;flex-wrap:wrap;gap:20px 36px;margin:0}
+.project-feed-details div{display:grid;gap:6px}.project-feed-details dt{font-size:13px}.project-feed-details dd{margin:0;font-size:16px;font-variant-numeric:tabular-nums}
+.project-feed a{color:inherit;min-height:44px;display:flex;align-items:center;justify-self:start;text-underline-offset:4px}
+.network-profile a:focus-visible{outline:2px solid currentColor;outline-offset:4px}
+.project-media{display:flex;align-items:center;gap:24px;margin-top:24px;flex-wrap:wrap}
+.project-logo{width:88px;height:88px;object-fit:contain}
+.project-preview{width:min(100%,440px);max-height:240px;object-fit:contain}
+/* Published sites own the entire viewport. Only the home mark floats above them. */
+html:has(.has-project-site),body:has(.has-project-site){height:100%;overflow:hidden;overscroll-behavior:none}
+body:has(.has-project-site) #project-header{padding:0;height:0}
+body:has(.has-project-site) #project-name{display:none}
+#project-main.has-project-site{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;margin:0;padding:0;overflow:hidden}
+.has-project-site #project-content{width:100%;height:100%;min-height:0}
+.network-project-site{display:block;width:100%;height:100%;border:0;background:#fff}
+.has-project-site #project-status{position:fixed;inset:auto 16px max(16px,env(safe-area-inset-bottom));z-index:41;width:fit-content;max-width:calc(100% - 32px);margin:0;padding:8px 12px;border-radius:10px;background:#fff;color:#181818;box-shadow:0 2px 12px #0002}
+.has-project-site #project-status:empty{display:none}
+.network-app-account{position:fixed;z-index:42;inset-inline-end:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));min-height:44px;padding:10px 16px;background:#181818;border:0;border-radius:12px;color:#fff;font:500 15px 'Claus UI',Arial,sans-serif;cursor:pointer}
+.network-app-account[hidden]{display:none}
+.network-app-account:active,.network-app-consent button:active{transform:scale(.97)}
+.network-app-account:focus-visible{outline:2px solid #fff;outline-offset:3px;box-shadow:0 0 0 5px #181818}
+@media(max-width:600px){#project-header{padding:88px 20px 12px}#project-main{padding:16px 20px 40px}.atlas-brand{width:72px;height:72px;left:max(4px,env(safe-area-inset-left))}.project-evidence{display:grid;gap:9px}}
+.network-app-consent{border:0;border-radius:24px;padding:28px;max-width:440px;width:calc(100vw - 32px);background:#fff2d8;color:#181818;font:16px/1.5 'Claus UI',Arial,sans-serif}
+.network-app-consent::backdrop{background:#0006;backdrop-filter:blur(5px)}.network-app-consent h2{font-size:25px;line-height:1.15;margin:0 0 16px}.network-app-consent p{margin:12px 0 20px}.network-app-consent div{display:grid;gap:10px}
+.network-app-consent button{font:inherit;cursor:pointer;border:0;background:#181818;color:#fff2d8;min-height:44px;border-radius:12px;padding:10px 16px;transition:transform 120ms}.network-app-consent>button:last-child{background:none;color:#181818}
+@media(prefers-reduced-motion:reduce){.network-app-consent button{transition:none}}
+
+/* Keep the network surface until the isolated website has painted. */
+body.project-loading,html:has(body.project-loading){background:#ec673a}
+#project-loading{position:fixed;inset:0;z-index:35;display:grid;place-content:center;justify-items:center;gap:14px;background:#ec673a;pointer-events:none}
+#project-loading[hidden]{display:none}
+.project-progress{width:40px;height:3px;border-radius:3px;background:#171710;opacity:0;animation:project-wait 1.3s ease-in-out .4s infinite}
+@keyframes project-wait{0%,100%{opacity:.15;transform:scaleX(.55)}50%{opacity:.6;transform:scaleX(1)}}
+.project-loading-text{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#project-loading-retry{pointer-events:auto;border:0;border-radius:22px;padding:12px 20px;background:#171710;color:#fff2d8;font:inherit;cursor:pointer}
+body.project-loading #project-status{position:fixed;z-index:36;bottom:30px;left:16px;right:16px;text-align:center;background:none;box-shadow:none}
+.network-project-site{position:absolute;inset:0;opacity:1;transition:opacity 180ms ease-out;background:transparent}
+.network-project-site.is-loading{opacity:0;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.network-project-site{transition:none}}
+
+.network-project-site.is-initial{transition:none}
+#claus-ink-transition{z-index:1000}
+html[data-page-arrival]::after{content:'';position:fixed;inset:0;background:#000;z-index:999;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.project-progress{animation:none;opacity:.4}html[data-page-arrival]::after{content:none}}

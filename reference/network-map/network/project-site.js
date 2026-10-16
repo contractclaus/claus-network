@@ -3,7 +3,7 @@ import {projectPagePath} from '../lib/project-path.mjs';
 export function createProjectSite(root){
  let current=null,frame=null,dispose=null,pending=null,sequence=0;
  const mask=document.getElementById('project-loading');
- const loading=value=>{document.body.classList.toggle('project-loading',value);if(mask)mask.hidden=!value;root.setAttribute('aria-busy',String(value));};
+ const loading=value=>{document.body.classList.toggle('project-loading',value);if(mask)mask.hidden=!value;root.setAttribute('aria-busy',String(value));if(!value)dispatchEvent(new Event('claus-page-ready'));};
  return {
   show(project,slug,requestedPath='index.html'){
    const release=(project.releases??[]).filter(r=>/^sha256:[a-f0-9]{64}$/.test(r.id??'')&&(r.expiresAt===null||r.expiresAt>Date.now())).sort((a,b)=>b.createdAt-a.createdAt||b.id.localeCompare(a.id))[0];
@@ -27,7 +27,10 @@ export function createProjectSite(root){
    next.addEventListener('load',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
     if(own!==sequence||pending?.frame!==next)return;
     const old=frame;dispose?.();frame=next;dispose=pending.dispose;current=key;pending=null;
-    next.classList.remove('is-loading');next.inert=false;loading(false);old?.remove();
+    // The first frame must be opaque before removing its loading background.
+    // Later releases can crossfade over the existing, fully rendered page.
+    if(!old)next.classList.add('is-initial');
+    next.classList.remove('is-loading');next.inert=false;loading(false);if(old){old.inert=true;setTimeout(()=>old.remove(),200);}
    })),{once:true});
    next.src='https://claus-network-sites.vercel.app/r/'+release.id.slice(7)+'/'+path+fragment;
    pending={key,frame:next,dispose:attachAppBridge(next,project)};

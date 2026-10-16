@@ -171,9 +171,9 @@ async function loadPresentation(project,signal){
   }catch{/* Branding is optional; the verified project entry already rendered. */}
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(timer); controller?.abort(); } else load(); });
-addEventListener('pagehide', () => {site.clear();rendered=''; clearTimeout(timer); controller?.abort(); });
+addEventListener('pagehide', event => {if(!event.persisted){site.clear();rendered='';} clearTimeout(timer); controller?.abort(); });
 if(slug&&['#services','#interfaces','#agents','#signals','#results','#reviews','#decisions','#contracts'].includes(location.hash)){location.replace('/read/network/'+slug+location.hash);}
-else if(!slug){heading.textContent='Project unavailable';root.removeAttribute('aria-busy');}else load();
+else if(!slug){site.clear();heading.textContent='Project unavailable';root.removeAttribute('aria-busy');}else load();
 
 addEventListener('pageshow',load);
 

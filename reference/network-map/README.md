@@ -27,3 +27,11 @@ The production Project Check card was inspected in the browser with both origina
 The isolated map retains the sanitized artwork from the initial public registry response. It no longer waits for a second per-project request before loading that artwork. Rich descriptions and previews load on pointer or keyboard intent; projects without registry artwork keep their existing appearance lookup. Current graph artwork takes precedence over stale cache, while matching cached detail remains usable. Circles still become visible only after their artwork is decoded.
 
 The initial camera fit now respects narrow viewport geometry instead of enforcing a 0.55 minimum zoom. Existing stable positions, pan, zoom, clipping and reset behavior are retained. The 342-pixel regression previously hid all projects; browser verification showed 18 nearby visible projects after the fix. Desktop and Activity-to-project navigation were also checked. These observations are not a universal timing guarantee.
+
+## Direct entry and document transitions
+
+The host no longer displays a separate Claus splash before the isolated map. Surface discovery starts in the head, and unused fallback graph/activity/module preloads are removed. A bounded fallback remains if the active surface cannot load. Only messages from the current frame and its exact origin can mark it ready or request allowed navigation. Late responses cannot replace an already selected fallback.
+
+Document entry waits for the destination surface or project frame before opening the ink transition. Project pages retain their small home mark and show a minimal loading indicator, without a second full-size character. The first website frame is fully opaque before its loading background disappears; later versions can crossfade over the previous page. Back/forward cache navigation retains the rendered project frame.
+
+The fixed paths were exercised on the live origin in desktop and narrow viewports. This is not a guarantee about the loading time or correctness of independently published websites.
