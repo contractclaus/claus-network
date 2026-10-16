@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_HvJkQfUJkxvx22XcS6u5XXtCt2u2",
+  "deployed": "dpl_DDoby8CVvDoqJxQnDHZ7zzhJCyZa",
   "source": "claus-capital-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
@@ -22,16 +22,16 @@
     "src/network-care.ts": "dbe170fa9d41cca5f8d3ba20c86310650cfed345af987db711832cf542097d5c",
     "src/network-operations.ts": "51b5a41ff56136682c139f716356231e4f0110e06d37e10407586aa3e7ac7183",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
-    "src/runtime-access.ts": "0ad80308d986b0a89a35d83e23186348742173e41e1f04768454a9902fe63be4",
-    "src/tool-visibility.ts": "1dce425ff62ad35dd435b2686b74a9d1a2df9369607e562c2cfb68d523d119bf",
-    "src/tools.ts": "7794f39ccb44b9d28b862c7f38838e1d81d01e08cbc48d737e780dfcc97818f4",
+    "src/runtime-access.ts": "f35dd69c371066be7ae354b78b7bf2cd1661d4af6263ed2b78856da8697c7e24",
+    "src/tool-visibility.ts": "4252917c58b21adcfec769d06816e25d27c004156d037054ef91a8757729d5c1",
+    "src/tools.ts": "5c7d07cf0f000fe69085b4caf309a211f80b77f77de1c2de02a793b9632ea670",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "d0aaab3a67ee00b7747552512f73df7d6b4e58dc573f867a69c4525f223a9a6e",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
     "src/isolated/runner.mjs": "28b3392b74bf64070d379b3815dca7b9e73c22140f9deee191eef8898702c048",
     "src/network-products.ts": "dcb85e4593f5282e36ac2f4aa2a808fc23ede38adaef9beb5deaf318ab1b96e3",
-    "src/network-routes.ts": "721a28db01de567aab48e5e2277f57316d0f32b203f08024ce6c22f336c7df21",
+    "src/network-routes.ts": "92f4d4849e92743412cc6ddae4d7f0e5c1ea92d5189e93c4b4496bfc445df262",
     "src/operational-capabilities.ts": "92e313a216c8b57a0dc286db26fe9aa5e947623b9b360d8825033e980fc1dd70",
     "src/cycle.ts": "53b7e5e8daa342bb6f1b5a1f27fb071903b9aec7b84d83d69e81a8b9f3f56e27",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
@@ -84,7 +84,7 @@
     "src/development-export.ts": "4723c0be3e84dacda691ee7694e1440ade8249a205eada09949325c0982da077",
     "src/twitter-policy.ts": "690435c8a189afd487a2e19f9a3f7dc03b16fcb2fe1f7bae2a0d0b650b7fbc8d",
     "src/development-source.ts": "83c6ea53ec2c0d577cb875cef57483d792c0feb0062cfd97750968daa8e43356",
-    "src/investment-proposals.ts": "76855282e9870e50942d1374284c59f4b62fbc8d404b1471c55107d037c66f0b",
+    "src/investment-proposals.ts": "277eee7a82c204644bf6d35125e95be3d862a29bd962cf6c5290cd6bb111e695",
     "src/programmable.ts": "848831a898f8330c878765881dc38ec4696312337e1d986117c34b0dc2b0e493",
     "src/development-output.ts": "1a849965f29569417f22a7c68ef1410b77b563f17d4a360a31611d88f52265b6",
     "src/club-context.ts": "bc44d25e2023ba32576f59c5920a9382beb433fb647c793eff34198161859119",
@@ -93,7 +93,8 @@
     "src/network-observation.ts": "6d297a04102900c0a5b1dd4f38d7c337f8728c4b426d88b405ca68623a781b0e",
     "reference/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
     "reference/project-path.d.mts": "94ebeb9579b13cb885ea0810e40cb73a3a79dbf4ef96e6728e5352d65fb07195",
-    "src/network-readiness.ts": "3ae9a655736ef06d9a8cb74b9fcc1d343a5da464deb60402bd175ba31c51c135"
+    "src/network-readiness.ts": "3ae9a655736ef06d9a8cb74b9fcc1d343a5da464deb60402bd175ba31c51c135",
+    "src/capital.ts": "c3377b1b65d061ab99a7e377225845601d35c15c1b2ccf2d60f2743fbe847ce5"
   },
   "referenceSubset": true
 }

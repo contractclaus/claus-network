@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_Hi6351bgbqfG7p6Xbwk4HkK9gm72",
+  "deployed": "dpl_Fr4DZUerZ7tXgSvX2Vf2Y8KiA4ew",
   "source": "claus-capital-payer-20261016",
   "files": {
-    "src/index.js": "f0361c45bf6b6149e918e1ff6641b6cb39310542bbd3555e3a061133086bb62a",
+    "src/index.js": "db1398a5d708ca0660f4a3f0eaa425759fa6dd8c2d722ae5deafbc396c17ffc5",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
     "src/credit-work-store.js": "274409e275e0f493f4f6ffc0178573048990391c9a602891936355f3d797cfe7",
     "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
@@ -28,7 +28,13 @@
     "src/compute-funding/ports.mjs": "0692b5a489994a13bc44a2db9cc6f3fa01d3d340227e22cc0feab57982f1f818",
     "src/compute-funding/recovery.mjs": "2c0f3a005efada2a602fc600729bb72d62981e5cb3839a405df10dbda197aebf",
     "src/compute-funding/repository.mjs": "c153db8597f682287e4691f5800e5026fc13c03c1feffb7e31f8b5b12874da61",
-    "src/compute-funding/service.mjs": "816abb89aa6b1c818b38661397279db31f25b50225085778c731be790c1c6fde"
+    "src/compute-funding/service.mjs": "816abb89aa6b1c818b38661397279db31f25b50225085778c731be790c1c6fde",
+    "src/capital/escrow.json": "8b7580a027fd147d4dec57b3e88962053a2c1bb24a40849b2f739d9973c5ff2f",
+    "src/capital/investment.mjs": "9cdff93baffd00d52777c26095abc61b00bea747d1811fe638d3e79f26a6bdff",
+    "src/capital/policy.mjs": "84f7fc1c3ad48c2b0418077bdb812373b64e1f864f3cdce8cf66f9904291c613",
+    "src/capital/routes.mjs": "83d76257e5b003ab7c2b5121d8fb52da91f3f6c69e0d07c184b520714003eebc",
+    "src/capital/service.mjs": "ca3035e571cea6e62615ffe425ebd9d441a3b5d4a57d413a78a7ff015928025b",
+    "src/capital/store.mjs": "0b43fd729641235801d227af51bf4da014b9a20d445e114c213574448d2a5879"
   },
   "referenceSubset": true
 }
