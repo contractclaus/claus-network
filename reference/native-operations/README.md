@@ -97,3 +97,7 @@ The retained work receipt index preserves opaque continuation cursors exactly wi
 ## Scoped operating memories
 
 Operating memories default to the private Network scope. Club memories retain their separate scope. Explicitly public memory cannot cite private or missing internal sources. Main-context recall may recover its private records, while Club recall cannot read them. Original content and identifiers remain unchanged when correcting an older visibility classification; private tool outputs are also kept out of public journals.
+
+## Public work evidence
+
+A completed work item may contain both internal execution receipts and public product observations. The public Work document preserves only successful public references; all internal evidence stays on the original work. Missing or unsuccessful support still rejects publication, and at least one public observation is required. Exact local validation errors are classified before the document write; transport and database failures remain uncertain. The same work identity/revision and existing announcement queue preserve continuity without a replacement job or duplicate post.

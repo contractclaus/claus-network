@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_5smknpM9VhRouDq47Exse5WMcq87",
-  "source": "claus-phase3-memory-scope-native-20261016",
+  "deployed": "dpl_YLqaP3JeN3AWZHBE539hdzorRuQW",
+  "source": "claus-phase3-public-outcome-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -19,7 +19,7 @@
     "src/network-access.ts": "04d988f6370c42e387e97bb4fe334df2e60c516c2d3eaa269b556b184fe7ffde",
     "src/context.ts": "0367b6d9772f3e12c56aa558a14e430cb7721e1df1ca3f1c9817cddbe11be601",
     "src/knowledge.ts": "5f234a429088dc2dcb385c85a83f2eb0bfcaf4312120862309628c7a422f21d8",
-    "src/network-care.ts": "7d8180a17dd0046af1a508643ef9bde3731ab76af66fb0a2a993f53d39ea0670",
+    "src/network-care.ts": "40334d8f89ea5099746968f69f01c45e1d86a1f07a3a8b093efa0610d179a5cc",
     "src/network-operations.ts": "51b5a41ff56136682c139f716356231e4f0110e06d37e10407586aa3e7ac7183",
     "src/operation-result.ts": "0af76246787a64b125d5aed8a02aea99a7c8f8c0415f6ec15824b08c8b1469ef",
     "src/runtime-access.ts": "34b516d513ec3646a6ef2298144b4640d0c1c1349918efeec997f3c0fa2c50e1",
@@ -89,10 +89,11 @@
     "src/development-output.ts": "1a849965f29569417f22a7c68ef1410b77b563f17d4a360a31611d88f52265b6",
     "src/club-context.ts": "bc44d25e2023ba32576f59c5920a9382beb433fb647c793eff34198161859119",
     "src/club-cycle.ts": "861f87b32f518db05ba5e12325ef59c49aa939a928e1952f66091f5b903b57d0",
-    "src/network-failure.ts": "4a39862ff37f64aaf6dd4cf47ab887d87835a7d66f6b751851aadc84f6fc7ce1",
+    "src/network-failure.ts": "9801d522ff1736f3861f2b8fb9aed77049034290e6f415b311dc9798415f1b1d",
     "src/network-observation.ts": "6d297a04102900c0a5b1dd4f38d7c337f8728c4b426d88b405ca68623a781b0e",
     "reference/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
-    "reference/project-path.d.mts": "94ebeb9579b13cb885ea0810e40cb73a3a79dbf4ef96e6728e5352d65fb07195"
+    "reference/project-path.d.mts": "94ebeb9579b13cb885ea0810e40cb73a3a79dbf4ef96e6728e5352d65fb07195",
+    "src/network-readiness.ts": "3ae9a655736ef06d9a8cb74b9fcc1d343a5da464deb60402bd175ba31c51c135"
   },
   "referenceSubset": true
 }
