@@ -13,7 +13,7 @@ export async function advanceFunding({store,ports,approval,binding,now=Date.now}
  let cycle=await store.active();
  if(!cycle){
   if(!walletOnly&&BigInt(resources.prepaid.pending)!==0n)return {state:'waiting_existing_provider_deposit',automaticTransferMade:false};
-  if(walletOnly?BigInt(resources.walletUsdcMicro)>=BigInt(resources.cashThresholdMicroUsdc):BigInt(resources.prepaid.available)>=BigInt(P.prepaidLowMicroUsdc))return {state:'not_needed',automaticTransferMade:false,...(walletOnly?{fundingRail:'base-usdc-wallet',walletAddress:P.payer,chainId:8453,walletUsdcMicro:resources.walletUsdcMicro,remainingAuthorityMicroUsdc:resources.remainingAuthorityMicroUsdc}:{})};
+  if(walletOnly?BigInt(resources.walletUsdcMicro)>=BigInt(resources.cashThresholdMicroUsdc):BigInt(resources.prepaid.available)>=BigInt(P.prepaidLowMicroUsdc))return {state:'not_needed',automaticTransferMade:false,...(walletOnly?{fundingRail:'base-usdc-wallet',walletAddress:P.payer,chainId:8453,walletUsdcMicro:resources.walletUsdcMicro,authorityBasis:'rolling_cash_windows'}:{})};
   if(resources.sourceFinalized===false)return {state:'waiting_initial_source_finality',automaticTransferMade:false};
   if(BigInt(resources.claimableActiveWei)<BigInt(P.claimPerCycleWei))return {state:'insufficient_earned_revenue',automaticTransferMade:false};
   cycle=await store.reserve({approval,policyHash:fundingHash(P),claimWei:P.claimPerCycleWei,now:now(),providerAddress:binding.address});

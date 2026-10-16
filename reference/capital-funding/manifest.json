@@ -1,7 +1,7 @@
 {
   "kind": "compute-capital-source-reference",
-  "deployed": "dpl_6vHcg5WTjB1xCQg5H1h5oThVJZyd",
-  "payer": "dpl_8v8WYoiqyxkdWEanwrsyj4EZbDBS",
+  "deployed": "dpl_Grv2vV1aHcXHjmZFAWuaEN2FMX6S",
+  "payer": "dpl_EWyHsU7rASEjEdm2j68bm7vL7B3n",
   "referenceSubset": true,
   "files": {
     "src/compute-funding-legacy/cycle.mjs": "7e1ca25a472e0ed7fa1c1a18b54f70293f484584b98b44e207aa20ad93d77025",
@@ -15,7 +15,7 @@
     "src/compute-funding-legacy/service.mjs": "6ba52191253ec4c4cb77f6e4ea876bebf1e1d545d7804fa0fc5158f9c84e8c62",
     "src/compute-funding-legacy/transactions.mjs": "c146431165dc693ef4f0b2977bfe80575abfa9b3a03eb3757538ed776797769c",
     "src/compute-funding-legacy/wallet-repository.mjs": "5fbe14a5bad0e5ddb9f7a17d287f0f7402857047724b4fdc19473c52012e308f",
-    "src/compute-funding/cycle.mjs": "5f0c8cf56d7081480668def5f6b55325d1757395cc0d09581acbda162660f4b5",
+    "src/compute-funding/cycle.mjs": "bf9f29814b1fa72c08a63843990917957c2d0a8f6cfd22336d3c000488f7ddb3",
     "src/compute-funding/policy.mjs": "ec0568afa0783605b24d272f8bfa23a414ec54c12704cabfc0e99ba1362987e7",
     "src/compute-funding/ports.mjs": "0692b5a489994a13bc44a2db9cc6f3fa01d3d340227e22cc0feab57982f1f818",
     "src/compute-funding/recovery.mjs": "2c0f3a005efada2a602fc600729bb72d62981e5cb3839a405df10dbda197aebf",
