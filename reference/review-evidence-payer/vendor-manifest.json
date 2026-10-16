@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "source": "signer/src/policy.js",
+      "target": "payments/vendor/src/policy.js",
+      "sourceSha256": "d18c1417064258b663558ed729000fc66fee8f338641fcf2fcd712815ad6d1da",
+      "sha256": "d18c1417064258b663558ed729000fc66fee8f338641fcf2fcd712815ad6d1da"
+    },
+    {
+      "source": "signer/src/request-budget.js",
+      "target": "payments/vendor/src/request-budget.js",
+      "sourceSha256": "6d0979e183dc9f797f8243a8d5acef8809ee999c8dedcaeb16485c135f117043",
+      "sha256": "6d0979e183dc9f797f8243a8d5acef8809ee999c8dedcaeb16485c135f117043"
+    },
+    {
+      "source": "signer/src/quote.js",
+      "target": "payments/vendor/src/quote.js",
+      "sourceSha256": "637bf9fb37e260348592272f4212d213fedf3905a640d78b45bf786709ddda0c",
+      "sha256": "637bf9fb37e260348592272f4212d213fedf3905a640d78b45bf786709ddda0c"
+    },
+    {
+      "source": "signer/src/images.js",
+      "target": "payments/vendor/src/images.js",
+      "sourceSha256": "61f9ba90b9f4658945d0a0166e8c1bd41025c772c82ac582e53076b738172351",
+      "sha256": "61f9ba90b9f4658945d0a0166e8c1bd41025c772c82ac582e53076b738172351"
+    },
+    {
+      "source": "signer/src/nft-image-reference.js",
+      "target": "payments/vendor/src/nft-image-reference.js",
+      "sourceSha256": "26957e8b528a033aa3d1bd0f5ce138a1e5ec1e3b805eb3360b1569c80dfa2d45",
+      "sha256": "26957e8b528a033aa3d1bd0f5ce138a1e5ec1e3b805eb3360b1569c80dfa2d45"
+    },
+    {
+      "source": "signer/src/outcomes.js",
+      "target": "payments/vendor/src/outcomes.js",
+      "sourceSha256": "f8006f8c1259d61d79b81ed9ca00d6408b748f764d671f858ad15e6094fd84ca",
+      "sha256": "eeab785b68adbcd9d4d2fe051a62b3c343c9cd334792c6da3558f851e75bf8c8",
+      "localPatch": "claus-inference-recovery-20261016: recent-history bracket; original upstream sourceSha256 retained"
+    },
+    {
+      "source": "signer/src/funding.js",
+      "target": "payments/vendor/src/funding.js",
+      "sourceSha256": "5ed79229c377a73cea5e5f915008eac02d048eb1f0f497516d11a82f1c3dc31b",
+      "sha256": "5ed79229c377a73cea5e5f915008eac02d048eb1f0f497516d11a82f1c3dc31b"
+    },
+    {
+      "source": "signer/src/response.js",
+      "target": "payments/vendor/src/response.js",
+      "sourceSha256": "43ca13f5a1f0415d763a27a05a47b1ca4fd622faf348da523646672dc26a587a",
+      "sha256": "43ca13f5a1f0415d763a27a05a47b1ca4fd622faf348da523646672dc26a587a"
+    },
+    {
+      "source": "signer/src/inference-rpc.js",
+      "target": "payments/vendor/src/inference-rpc.js",
+      "sourceSha256": "130f1a650799742162e4ac51376b37b1270f0963bc38f3aeb03a79e99562e4a2",
+      "sha256": "130f1a650799742162e4ac51376b37b1270f0963bc38f3aeb03a79e99562e4a2"
+    },
+    {
+      "source": "signer/src/inference-transport.js",
+      "target": "payments/vendor/src/inference-transport.js",
+      "sourceSha256": "d5acc0c7d88b39ec2144f91026b942078bf7c6c91a494917f104395f718d051f",
+      "sha256": "d5acc0c7d88b39ec2144f91026b942078bf7c6c91a494917f104395f718d051f"
+    },
+    {
+      "source": "signer/src/settlement-cost.js",
+      "target": "payments/vendor/src/settlement-cost.js",
+      "sourceSha256": "ee2599eea6622d4eba3765b7c2e0d17ec0ea3c2c8392feb05400f85b44859623",
+      "sha256": "ee2599eea6622d4eba3765b7c2e0d17ec0ea3c2c8392feb05400f85b44859623"
+    },
+    {
+      "source": "signer/assets/claus-profile.png",
+      "target": "payments/vendor/assets/claus-profile.png",
+      "sourceSha256": "544ad0af5eab54ff9dad619b6f2c10996eb31fe4ac30b1dd11f5fe3f4e88a19d",
+      "sha256": "544ad0af5eab54ff9dad619b6f2c10996eb31fe4ac30b1dd11f5fe3f4e88a19d"
+    },
+    {
+      "source": "signer/assets/nft-visual-manifest.json",
+      "target": "payments/vendor/assets/nft-visual-manifest.json",
+      "sourceSha256": "6beb55632049c334980d00d8935ee2f1ead606634dba5645e996b5896fe9462e",
+      "sha256": "6beb55632049c334980d00d8935ee2f1ead606634dba5645e996b5896fe9462e"
+    },
+    {
+      "source": "signer/src/index.js",
+      "target": "payments/vendor/completion.js",
+      "sourceSha256": "20ac2465e2ca24b1809b167cce69b21ff71bac7498947a91109d1a837e8819e0",
+      "sectionSha256": "bb3f59cd27b5079910a1368145a4f88a662cce75612d0caa7af6ef080b411468",
+      "sha256": "47d2c004a6412fe636b474b794cab229b8f0dff84492cd2b7ceff81ee37efd1a"
+    }
+  ]
+}
