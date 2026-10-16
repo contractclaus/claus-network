@@ -40,7 +40,7 @@ export async function stageDevelopment(id:string,value:any){
   await actionProgress(id,progress);
   const result=await network.call('snapshot_create',{projectId:input.networkProjectId,files,expectedProjectRevision:input.expectedProjectRevision});
   if(result.id!==snapshotId)throw Error('development_snapshot_identity_mismatch');
-  return {projectId:input.networkProjectId,snapshotId,workspaceSnapshotId:project.snapshot_id,paths:input.paths,staged:true,published:false,next:'Use release_create and release_publish for selected static files, or build/review this exact private snapshot. The project publication remains separate.'};
+  return {projectId:input.networkProjectId,snapshotId,workspaceSnapshotId:project.snapshot_id,paths:input.paths,staged:true,published:false,next:'This is a private source snapshot, including build inputs. For release_create select only intended website files ending .html, .css, .js, .json or .svg and include index.html. Keep README.md, .cjs scripts, tests and package/lock inputs private unless intentionally publishing an eligible file. Then release_publish selects the website; project publication remains separate.'};
  },db,admit);
 }
 export async function reconcileDevelopmentExports(){

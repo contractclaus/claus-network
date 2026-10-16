@@ -1,0 +1,13 @@
+// Only structured public evidence. Provider bodies, credentials and URLs stay out.
+export function networkFailure(e:any,write=false,operation?:string){
+ const raw=e?.code??e?.message;
+ const error=e instanceof SyntaxError?'invalid_network_json':typeof raw==='string'&&/^[a-z][a-z0-9_]{0,100}$/.test(raw)?raw:e?.name==='TimeoutError'||e?.name==='AbortError'?'network_read_timeout':'network_unavailable';
+ const status=Number.isInteger(e?.status)&&e.status>=400&&e.status<=599?e.status:undefined;
+ // The fixed API checks these release inputs before opening its write
+ // transaction. This is a rejected selection, not an uncertain publication.
+ // Never infer the same for arbitrary 400s, other operations or transport errors.
+ const releaseRejected=operation==='release_create'&&status===400&&['invalid_release_files','release_too_large','invalid_site_connect'].includes(error);
+ const rejected=releaseRejected||['invalid_input','invalid_network_json','invalid_action_operation','invalid_action_duplicate_id','invalid_action_project_binding','invalid_action_secret'].includes(error)||status===401||status===403;
+ const uncertain=write&&!rejected;
+ return {error,...(status?{status}:{}),...(releaseRejected?{guidance:error==='invalid_release_files'?'Choose existing snapshot paths for the website only, include index.html, and use .html, .css, .js, .json or .svg. Markdown, .cjs, lockfiles and other build inputs can remain in the private source snapshot; do not publish the whole source tree automatically.':error==='release_too_large'?'Select a smaller website bundle within the published site limits; the private snapshot remains intact.':'Correct the site connection manifest in a new source revision before selecting the website files.'}:{}),...(typeof e?.field==='string'&&/^[A-Za-z0-9_.]{1,240}$/.test(e.field)?{field:e.field}:{}),...(Number.isInteger(e?.retryAfterSeconds)?{retryAfterSeconds:Math.max(0,Math.min(3600,e.retryAfterSeconds))}:{}),recovery:{automaticRetry:false,outcome:uncertain?'unknown':write?'rejected':'read-failed',meaning:uncertain?'The write outcome may be unknown. Read its original record before another attempt.':rejected?'This request was rejected. Correct the indicated input or credential; describing an operation does not execute it.':status===429?'Honor Retry-After before another read.':'This observation is unavailable, not empty. Retry the same read later.'}};
+}
