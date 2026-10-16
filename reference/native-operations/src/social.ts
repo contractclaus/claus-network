@@ -69,9 +69,9 @@ export async function skipOwnerBlockedReplies(accounts:BlockedXAccount[],db:Soci
           AND (a.input->>'replyTo'=i.post_id OR a.input->>'replyAuthorId'=i.author_id OR source.author_id=i.author_id))
     RETURNING i.post_id`;
 }
-export async function filterTwitterInbox() {
-  const db=sql();
-  await skipOwnerBlockedReplies((await configuration()).settings.blockedXAccounts??[],db);
+export async function filterTwitterInbox(config:Configuration|undefined=undefined,db:SocialQuery=sql()) {
+  config??=await configuration();
+  await skipOwnerBlockedReplies(config.settings.blockedXAccounts??[],db);
   const rows=await db`SELECT post_id,post FROM claus_x_inbox WHERE status='pending' AND (deferred_until IS NULL OR deferred_until<=now()) ORDER BY observed_at LIMIT 100`;
   let refreshed=0;
   for(const row of rows) {
@@ -83,25 +83,26 @@ export async function filterTwitterInbox() {
       try {post=await getXPost(row.post_id);await db`UPDATE claus_x_inbox SET post=${JSON.stringify(post)}::jsonb WHERE post_id=${row.post_id}`;}
       catch {await db`UPDATE claus_x_inbox SET deferred_until=now()+interval '5 minutes',reason='awaiting_current_profile' WHERE post_id=${row.post_id} AND status='pending'`;continue;}
     }
-    const reason=!receivedClausInteraction(post)?'not_addressed_to_claus':replyExclusion(post);
+    const reason=!receivedClausInteraction(post)?'not_addressed_to_claus':replyExclusion(post,config.settings.replyXAuthorIds);
     if(reason)await db`UPDATE claus_x_inbox SET status='skipped',reason=${reason} WHERE post_id=${row.post_id} AND status='pending'
       AND NOT EXISTS(SELECT 1 FROM claus_actions a WHERE a.kind='x_post' AND a.input->>'replyTo'=${row.post_id} AND a.status NOT IN ('completed','failed'))`;
   }
+  return config;
 }
 export function inboxMessage(row:any) {
   const revision=['reply_cashtag_limit','reply_context_changed'].includes(row.reason);
   return {...row.post,postId:row.post_id,replyStatus:'pending',observedAt:row.observed_at,...messageAge(row.post,row.observed_at),
     ...(revision?{deliveryReview:{state:'revision_required',reason:row.reason}}:row.reason?{deferredReason:row.reason}:{}),instructionAuthority:false};
 }
-export async function inboxMessages(priorityAuthorIds:string[]=[],onlyTwitter=false,db:SocialQuery=sql()) {
-  if(onlyTwitter)await filterTwitterInbox();
+export async function inboxMessages(priorityAuthorIds:string[]=[],onlyTwitter=false,db:SocialQuery=sql(),config?:Configuration) {
+  const audience=onlyTwitter?await filterTwitterInbox(config,db):null;
   // One current question per author prevents a burst from occupying the entire
   // view. Familiar authors receive a small head start, never permanent priority.
   // Merely constructing context must not acknowledge delivery to the model.
   const rows=await db`WITH ready AS (
     SELECT i.*,row_number() OVER(PARTITION BY i.author_id ORDER BY CASE WHEN i.observed_at>=now()-interval '24 hours' THEN 0 ELSE 1 END,i.post_id::numeric) AS author_position
     FROM claus_x_inbox i WHERE i.status='pending' AND (i.deferred_until IS NULL OR i.deferred_until<=now())
-    AND (${!onlyTwitter} OR (i.post->'authorVerification'->>'verified'='true' AND i.post->'authorVerification'->>'verified_type'=ANY(${replyVerificationTypes}::text[])))
+    AND (${!onlyTwitter} OR (i.post->'authorVerification'->>'verified'='true' AND i.post->'authorVerification'->>'verified_type'=ANY(${replyVerificationTypes}::text[])) OR (i.author_id=ANY(${audience?.settings.replyXAuthorIds??[]}::text[]) AND i.post->'authorVerification'->>'id'=i.author_id))
     AND NOT EXISTS(SELECT 1 FROM claus_x_optouts o WHERE o.author_id=i.author_id AND o.enabled)
     AND NOT EXISTS(SELECT 1 FROM claus_actions a JOIN claus_x_inbox source ON source.post_id=a.input->>'replyTo'
       WHERE a.kind='x_post' AND a.status NOT IN ('completed','failed')
@@ -297,7 +298,7 @@ export async function publishReply(text:string,replyTo:string,attributions:Attri
   const current=await services.configuration();
   if(!current.settings.enabled||!repliesAvailable(current))throw new ConfirmedFailure('publication_disabled');
   if(blockedAccountReason(target,current.settings.blockedXAccounts))return skipBlocked();
-  const excluded=twitterOnly(current)?replyExclusion(target):null;
+  const excluded=twitterOnly(current)?replyExclusion(target,current.settings.replyXAuthorIds):null;
   if(excluded){await db`UPDATE claus_x_inbox SET status='skipped',reason=${excluded} WHERE post_id=${replyTo} AND status IN ('pending','retrying')`;return {published:false,skipped:true,reason:excluded};}
   if(twitterOnly(current)&&!validReplyContext(decisionContext?.replyContexts,target)) {
     await db`UPDATE claus_x_inbox SET post=${JSON.stringify(target)}::jsonb WHERE post_id=${replyTo}`;
@@ -313,12 +314,16 @@ export async function publishReply(text:string,replyTo:string,attributions:Attri
     const live=await services.configuration();
     if(!live.settings.enabled||!repliesAvailable(live))throw new ConfirmedFailure('publication_disabled');
     if(blockedAccountReason(target,live.settings.blockedXAccounts))throw new ConfirmedFailure(ownerAccountBlocked);
+    const liveAudience=twitterOnly(live)?replyExclusion(target,live.settings.replyXAuthorIds):null;
+    if(liveAudience)throw new ConfirmedFailure(liveAudience);
     if(decisionContext)assertFreshPublicDecision(decisionContext,live.revision,await services.publicState());
     const media=gif?.media??await mediaForX(imageId);
     const facts=decisionContext?await services.publicState():null;
     const latest=await services.configuration();
     if(!latest.settings.enabled||!repliesAvailable(latest))throw new ConfirmedFailure('publication_disabled');
     if(blockedAccountReason(target,latest.settings.blockedXAccounts))throw new ConfirmedFailure(ownerAccountBlocked);
+    const latestAudience=twitterOnly(latest)?replyExclusion(target,latest.settings.replyXAuthorIds):null;
+    if(latestAudience)throw new ConfirmedFailure(latestAudience);
     if(decisionContext)assertFreshPublicDecision(decisionContext,latest.revision,facts!);
     const r=await services.xRequest('tweets','POST',{text,reply:{in_reply_to_tweet_id:replyTo},...(media?{media}:{})},undefined,id);
     if(!/^\d{1,19}$/.test(r.data?.id??''))throw Error('x_reply_response_missing');
@@ -371,8 +376,8 @@ export async function wakeDecision(generation:number) {
   if(config.policy.capabilities.xRead&&xReady()) {
     await pollMentions();
     if(repliesAvailable(config)) {
-      if(twitterOnly(config))await filterTwitterInbox();
-      newMessage=await pendingReplyDue(twitterOnly(config))||(await replyRetryCandidates()).length>0;
+      if(twitterOnly(config))await filterTwitterInbox(config);
+      newMessage=await pendingReplyDue(twitterOnly(config),config.settings.replyXAuthorIds)||(await replyRetryCandidates()).length>0;
     }
   }
   if(twitterOnly(config)&&config.policy.capabilities.xPublish&&!publicChannelBlocked(config.policy,'publish_post')) {
@@ -382,10 +387,10 @@ export async function wakeDecision(generation:number) {
   const networkDue=networkOperationsEnabled(config)&&current.status==='waiting'?await networkOperations.inspect().catch(()=>false):false;
   return scheduledWake(current,newMessage||await clubDue(config)||networkDue);
 }
-export async function pendingReplyDue(onlyTwitter=false) {
-  const [row]=await sql()`SELECT post_id FROM claus_x_inbox i WHERE status='pending'
+export async function pendingReplyDue(onlyTwitter=false,replyAuthorIds:string[]=[],db:SocialQuery=sql()) {
+  const [row]=await db`SELECT post_id FROM claus_x_inbox i WHERE status='pending'
     AND (deferred_until IS NULL OR deferred_until<=now()) AND (seen_at IS NULL OR seen_at<=now()-interval '2 minutes')
-    AND (${!onlyTwitter} OR (i.post->'authorVerification'->>'verified'='true' AND i.post->'authorVerification'->>'verified_type'=ANY(${replyVerificationTypes}::text[])))
+    AND (${!onlyTwitter} OR (i.post->'authorVerification'->>'verified'='true' AND i.post->'authorVerification'->>'verified_type'=ANY(${replyVerificationTypes}::text[])) OR (i.author_id=ANY(${replyAuthorIds}::text[]) AND i.post->'authorVerification'->>'id'=i.author_id))
     AND NOT EXISTS(SELECT 1 FROM claus_x_optouts o WHERE o.author_id=i.author_id AND o.enabled)
     AND NOT EXISTS(SELECT 1 FROM claus_actions a JOIN claus_x_inbox source ON source.post_id=a.input->>'replyTo'
       WHERE a.kind='x_post' AND a.status NOT IN ('completed','failed') AND (source.author_id=i.author_id OR source.conversation_id=i.conversation_id)) LIMIT 1`;

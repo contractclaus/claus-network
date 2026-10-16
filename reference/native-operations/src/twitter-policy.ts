@@ -26,8 +26,13 @@ export function conversationExclusion(post:any):string|null {
   return null;
 }
 
-export function replyExclusion(post:any):string|null {
-  return !eligibleBadge(post?.authorVerification)?'verified_audience_required':conversationExclusion(post);
+export function replyExclusion(post:any,replyAuthorIds:readonly string[]=[]):string|null {
+  // An owner exception changes audience eligibility, never X's badge metadata.
+  // Bind it to the fetched stable author ID, not a mutable handle or display name.
+  const authorId=post?.author_id;
+  const excepted=typeof authorId==='string'&&/^[1-9][0-9]{0,18}$/.test(authorId)&&
+    post?.authorVerification?.id===authorId&&replyAuthorIds.includes(authorId);
+  return !eligibleBadge(post?.authorVerification)&&!excepted?'verified_audience_required':conversationExclusion(post);
 }
 
 export function originalPostSchedule(startedAt:string,lastPostAt:string|null,now=Date.now()) {

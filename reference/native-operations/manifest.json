@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_C6XbSfsBwwBaCNCP5Wxe7w3vaVDD",
-  "source": "claus-no-self-token-native-20261016",
+  "deployed": "dpl_63cmXJ93kyPbuqe6gNafirSMo47e",
+  "source": "claus-x-audience-exception-native-20261016",
   "files": {
     "src/operations/policy.ts": "e58939c775c907733b2b7b5237a6c53c3b9528dc777d8d8a0cba905f1219204a",
     "src/operations/host.ts": "2a21ffe4135b08016430446f12848a4836172d21fb1063eb0e5931b82850f5e9",
@@ -35,7 +35,7 @@
     "src/operational-capabilities.ts": "92e313a216c8b57a0dc286db26fe9aa5e947623b9b360d8825033e980fc1dd70",
     "src/cycle.ts": "5a555af558de22084aaa280130e281a9ed198fca1df9b472e639b3ca9422e070",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
-    "src/social.ts": "14f1cbfc2a91b13b5ed862f1402d0767d1c547c6195c0c0c8310fc5969575f9d",
+    "src/social.ts": "259e21231a49ede2225651207b213613f19faaacfd9c5592f0b8d92169e26c3f",
     "src/store.ts": "a097356686d79305f54eaa994863ba457c16dcdaf99b219a857240920540f4e9",
     "src/isolated/work.json": "2cd86bd1fe86823e8578e466b4750df1979aa9a2741ac62782034f5f14546b32",
     "src/isolated/work.ts": "64f6c8087bd8a367012a4b38c1b488496bbc065b5c7c2f64724530cfe5d76b21",
@@ -82,7 +82,7 @@
     "src/development-execution.ts": "f6d7a8655de535a0f4c67d9304623f91de41eb4d4f12e42d739838b5a185001e",
     "src/development-workspace.ts": "80787bf62c9a6816bdc0216e81b05d9e469273241a4830d43295ae4e72eba047",
     "src/development-export.ts": "4723c0be3e84dacda691ee7694e1440ade8249a205eada09949325c0982da077",
-    "src/twitter-policy.ts": "30e51f7e9b381dc668916c3cf0a23981f171293f3689a09b10038f50d102a2b8",
+    "src/twitter-policy.ts": "fe6a3c0fa28fc78f94aeca7747786be18062cac11749ff34e464f62e69d5bc8b",
     "src/development-source.ts": "83c6ea53ec2c0d577cb875cef57483d792c0feb0062cfd97750968daa8e43356",
     "src/investment-proposals.ts": "277eee7a82c204644bf6d35125e95be3d862a29bd962cf6c5290cd6bb111e695",
     "src/programmable.ts": "848831a898f8330c878765881dc38ec4696312337e1d986117c34b0dc2b0e493",
@@ -103,7 +103,12 @@
     "src/external/service.ts": "84ea7fafdc84a8b8ecdfb9b4b04088e8a77c07ee770e891265af3ce33b09f544",
     "src/index.ts": "76e195f371c3f6ca83e04caae3f6811afa5d1a7dc615eaf1ce369f3bbbf7ccb1",
     "src/external/adapters.ts": "9a07a65cd96233659098dfdf83a2833bb8bb6129e6537db41e2d08429b454777",
-    "src/external/browser-diagnostics.ts": "8ae656bb85eeb010ffe5d8dfd014f73e56026ef5542416e9490821fbec742f36"
+    "src/external/browser-diagnostics.ts": "8ae656bb85eeb010ffe5d8dfd014f73e56026ef5542416e9490821fbec742f36",
+    "src/config.ts": "511425803ca723893a93775c3f7f26f67eab6087c11bf95bcab0ad90368b15ef",
+    "src/feedback-source.ts": "134e25a2ef9569bb0e97d2e91966ed52950447d1cd75285e64e4f47ac93cc27c",
+    "src/gotchi/service.ts": "3b630d19628dee5f20149a14242e14b8eabea15106af2d322e1a05201dd1d526",
+    "src/lab-service.ts": "09e800a2f57abab13b269025260f4b3dded6190be71b9fe28f97bb3ed9881d4b",
+    "src/lab-social.ts": "c795c5041800806a930aed7a0f68553c5790cd1c99c4f23dee7d05659ee50416"
   },
   "referenceSubset": true
 }
