@@ -1,5 +1,5 @@
 {
-  "websiteDeployment": "dpl_6R889TGahTnEaexUUkF9nFSTFJPP",
+  "websiteDeployment": "dpl_4AnvfnsVpJ8h6efR7WPEpsHfYZ9h",
   "surfaceDeployment": "dpl_21UxtrVzGNtHh3Y85tJDnMf82J2S",
   "surfaceRelease": "sr_40a0c8f999b45697b49a2342",
   "surfaceSourceHash": "5f9b4fe837565e3b90b4cb61c294f66b9516fe87cbcd3f7f440414df78f9f759",
@@ -15,14 +15,14 @@
     "lib/network-surface-program.mjs": "6b994c85cfe5afb2546060a7ce92d00cf57139b222e013a6d441026c7af471a7",
     "network/project-card.js": "a2f9e14318b23bfa5a1eb820471313b6657ceec067a6607d8d1b12c32c1c0285",
     "network-shell.html": "4b9657a53a33ae3a9ea4bd9a5277d86130dc66a833322fca88460156f1b14b21",
-    "network/project-page.js": "2b4992d0a097dcda3fe57d12c6aa4800c9dabb5e67434b2183bc859f2df1a1e8",
-    "network/project-site.js": "28ee7e927980d284b14279078820c5f7c0f895e47a399284505f7209e41d5e01",
+    "network/project-page.js": "8b8e56fd5d21bab9729970cb2d32ab53e77523f83060854e52c75931a6bf6964",
+    "network/project-site.js": "a9512237e8980789002936df6910f9c68389a6a88406b87a3a43a4ae99624195",
     "network/project.css": "61a1ed2aaf33ddf30929cd2846208c8d584d2fde84994191d1a8aff99abe286a",
-    "network/project.js": "f786efa4e416263eb4d591a0ff2e7758a95a6e868f856ccad46d41cafbf62b38",
+    "network/project.js": "a147c6a9afac920635db92abe881e6b1363e35b3b89df60876057ff41b48ac28",
     "network/surface-shell.css": "519fb738443e644d8d84efc9be409ca2b3fc5707fb4a80be030c0d9989a8315b",
     "network/surface-shell.js": "aebe5e60292e819d46d7ae3c4024faf6aba2890a6ec2a935b2e54a1378673f54",
     "page-transition.js": "856587ac99ab4ed1ec1d69469c17ada627e56ad700e3b54152b9ec5551f30533",
-    "project.html": "db61ad0b7e02dafaf65c6b292f9803013873db0c08401456af45930ab280ca08"
+    "project.html": "43304208b9aec2269b62c386d245e92ecbc38940cd4eb338785278c7368e5c80"
   },
   "surfaceMap": {
     "file": "network/surface-home-map.js",

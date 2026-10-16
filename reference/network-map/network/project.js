@@ -23,7 +23,7 @@ function display(project) {
   if(project.presentation)lastPresentation={releaseId,value:project.presentation};
   else if(releaseId&&lastPresentation?.releaseId===releaseId)project={...project,presentation:lastPresentation.value};
   else lastPresentation=null;
-  const signature = JSON.stringify(project);
+  const signature = JSON.stringify([project,releaseId,location.hash]);
   if (signature === rendered) { status.textContent = ''; return; }
   rendered = signature;
   const brand=publicPresentation(project.presentation),name=brand?.name||project.name;
@@ -126,36 +126,42 @@ async function loadFeeds(signal){
   try{
    const r=await fetch('/network.json?signal='+encodeURIComponent(row.dataset.signal),{signal,cache:'no-store'});
    if(!r.ok)throw Error('unavailable');const data=await r.json();
+   if(signal.aborted)return;
    if(data.projectId!==row.dataset.signal)throw Error('invalid_feed');
    feedCache.set(row.dataset.signal,data);if(row.isConnected)displayFeed(row,data);
-  }catch{feedCache.delete(row.dataset.signal);if(row.isConnected)displayFeed(row,{state:'unavailable'});}
+  }catch{if(signal.aborted)return;feedCache.delete(row.dataset.signal);if(row.isConnected)displayFeed(row,{state:'unavailable'});}
  }));
 }
 setInterval(()=>{if(document.hidden)return;for(const row of root.querySelectorAll('[data-signal]')){
  const data=feedCache.get(row.dataset.signal);if(data)displayFeed(row,data);
 }},10000);
 let controller, timer;
+function pauseLoad(){
+ clearTimeout(timer);const previous=controller;controller=null;previous?.abort();
+}
 async function load() {
   if (!slug || controller || document.hidden) return;
   controller = new AbortController(); const active=controller; const timeout = setTimeout(() => active.abort(), 12000);
   try {
-    const r = await fetch('/network.json?project=' + encodeURIComponent(slug)+'&view=entry', { signal: controller.signal });
+    const r = await fetch('/network.json?project=' + encodeURIComponent(slug)+'&view=entry', { signal: active.signal });
+    if(active!==controller||active.signal.aborted)return;
     if (r.status === 404) {
       site.clear();rendered = ''; document.title='Project unavailable | Claus';document.querySelector('link[rel=icon]').href='/assets/favicon-ec673a.png';heading.textContent = 'Project unavailable'; root.replaceChildren(); root.removeAttribute('aria-busy'); status.textContent = ''; return;
     }
     if (!r.ok) throw Error('unavailable');
-    let project = await r.json(); if (project.slug !== slug || typeof project.name !== 'string') throw Error('invalid_project');
+    let project = await r.json(); if(active!==controller||active.signal.aborted)return; if (project.slug !== slug || typeof project.name !== 'string') throw Error('invalid_project');
     // Preserve the full evidence view for registered projects without a site.
     if(!(project.releases??[]).some(release=>release.expiresAt===null||release.expiresAt>Date.now())){
       const details=await fetch('/network.json?project='+encodeURIComponent(slug),{signal:active.signal});
       if(!details.ok)throw Error('unavailable');const full=await details.json();
+      if(active!==controller||active.signal.aborted)return;
       if(full.projectId!==project.projectId||full.slug!==slug)throw Error('invalid_project');project=full;
     }
     // Start the actual website immediately. Optional branding must not hold it up.
     display(project);
     await Promise.all([loadFeeds(active.signal),loadPresentation(project,active.signal)]);
-  } catch { if(!rendered)document.getElementById('project-loading-retry').hidden=false; status.textContent = rendered ? 'Update unavailable. Showing last loaded version.' : 'Could not load this project. Retrying shortly.'; }
-  finally { clearTimeout(timeout); controller = null; clearTimeout(timer); if (!document.hidden) timer = setTimeout(load, 30000); }
+  } catch { if(active!==controller)return; if(!rendered)document.getElementById('project-loading-retry').hidden=false; status.textContent = rendered ? 'Update unavailable. Showing last loaded version.' : 'Could not load this project. Retrying shortly.'; }
+  finally { clearTimeout(timeout); if(controller===active){controller=null;clearTimeout(timer);if(!document.hidden)timer=setTimeout(load,30000);} }
 }
 async function loadPresentation(project,signal){
   const release=(project.releases??[]).filter(r=>/^sha256:[a-f0-9]{64}$/.test(r.id??'')&&(r.expiresAt===null||r.expiresAt>Date.now())).sort((a,b)=>b.createdAt-a.createdAt||b.id.localeCompare(a.id))[0];
@@ -170,14 +176,14 @@ async function loadPresentation(project,signal){
     for(const row of root.querySelectorAll('[data-signal]')){const data=feedCache.get(row.dataset.signal);if(data)displayFeed(row,data);}
   }catch{/* Branding is optional; the verified project entry already rendered. */}
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(timer); controller?.abort(); } else load(); });
-addEventListener('pagehide', event => {if(!event.persisted){site.clear();rendered='';} clearTimeout(timer); controller?.abort(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseLoad(); else load(); });
+addEventListener('pagehide', event => {if(!event.persisted){site.clear();rendered='';} pauseLoad(); });
 if(slug&&['#services','#interfaces','#agents','#signals','#results','#reviews','#decisions','#contracts'].includes(location.hash)){location.replace('/read/network/'+slug+location.hash);}
 else if(!slug){site.clear();heading.textContent='Project unavailable';root.removeAttribute('aria-busy');}else load();
 
 addEventListener('pageshow',load);
 
-addEventListener('hashchange',load);
+addEventListener('hashchange',()=>{pauseLoad();void load();});
 
 const loadingRetry=document.getElementById('project-loading-retry');loadingRetry?.addEventListener('click',()=>location.reload());
 setTimeout(()=>{if(document.body.classList.contains('project-loading')&&loadingRetry)loadingRetry.hidden=false;},12000);
