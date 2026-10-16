@@ -11,3 +11,7 @@ This directory contains the changed website implementation and its fixed read he
 ## Activity and entry reads, 16 October 2026
 
 The website now uses the bounded public Activity query instead of fetching task details across every project. Current project and publication permissions are applied before events are returned. A successful response marks the requested window complete and the historical coverage bounded (`historyComplete: false`); upstream failures remain unavailable. Activity links navigate to their actual project or task destination. The entry path loads its immediate project summary separately from deeper details. These changes do not generate demonstration activity or claim that all historical events fit one response.
+
+## Clean project subpages
+
+Project entry metadata includes the paths of the selected public release. The website and native link reader use those published paths to resolve flat pages and directory indexes after clean-URL redirects. An extensionless path prefers its matching HTML file, then its directory index. Unknown pages show a return link; private source paths are never used. Projects without a published website retain their full registration and evidence view.

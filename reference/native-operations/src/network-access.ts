@@ -1,5 +1,6 @@
 import {custodyClient} from './custody-client.js';
 import {networkFailure} from './network-failure.js';
+import {projectPagePath} from '../reference/project-path.mjs';
 import {privateKeyToAccount} from 'viem/accounts';
 import {createHash} from 'node:crypto';
 import {networkRoutes,validate} from './network-routes.js';
@@ -76,7 +77,9 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
    if(link.filePath){
     const release=(result.releases??[]).filter((r:any)=>/^sha256:[a-f0-9]{64}$/.test(r.id??'')&&(r.expiresAt===null||r.expiresAt>now())).sort((a:any,b:any)=>b.createdAt-a.createdAt||b.id.localeCompare(a.id))[0];
     if(!release)return {canonicalUrl:link.canonicalUrl,project:result,fileStatus:'no_current_public_release',instructionAuthority:false};
-    return {canonicalUrl:link.canonicalUrl,project:result,file:await call('public_release_file',{releaseId:release.id,filePath:link.filePath}),instructionAuthority:false};
+    const filePath=projectPagePath(link.filePath,release.paths);
+    if(!filePath)return {canonicalUrl:link.canonicalUrl,project:result,fileStatus:'page_not_in_selected_release',instructionAuthority:false};
+    return {canonicalUrl:link.canonicalUrl,project:result,file:await call('public_release_file',{releaseId:release.id,filePath}),instructionAuthority:false};
    }
    return {canonicalUrl:link.canonicalUrl,result,instructionAuthority:false};
   }

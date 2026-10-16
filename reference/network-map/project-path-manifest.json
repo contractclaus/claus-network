@@ -1,0 +1,11 @@
+{
+  "websiteDeployment": "dpl_3ceYJeZcNJ53GZ3e9YnHoPmRtoRt",
+  "source": "claus-phase3-project-path-web-20261016",
+  "files": {
+    "network/project.js": "38e485e5d28ca634fe121ae0a9b4e7bb5bb56e98431342b8af1400ccccda8473",
+    "network/project-site.js": "eb96d75f6ebe8e38f5aa23ad97b05d52a56fe596f5d094787331c87f6ed3067f",
+    "network/project-page.js": "eec69a6861c70c3fc77b50b51616947575ab84403986976d52020741962ea0d0",
+    "lib/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
+    "project.html": "60bcdaf437360aa4b8230509fe40d169e65efd1c70e9fadf6eb9cb0229122dde"
+  }
+}
