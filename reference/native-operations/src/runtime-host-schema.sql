@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS public.claus_native_hosts(
  updated_at timestamptz NOT NULL DEFAULT now()
 );
 INSERT INTO public.claus_native_hosts(id) VALUES(true) ON CONFLICT DO NOTHING;
+ALTER TABLE public.claus_native_hosts ADD COLUMN IF NOT EXISTS handoff_id text;
+ALTER TABLE public.claus_native_hosts ADD COLUMN IF NOT EXISTS handoff_until timestamptz;
 CREATE TABLE IF NOT EXISTS public.claus_native_host_events(
  id bigserial PRIMARY KEY,
  kind text NOT NULL,
@@ -26,7 +28,7 @@ CREATE OR REPLACE FUNCTION public.claus_native_host_permit(p_role text,p_executo
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
  SELECT EXISTS(SELECT 1 FROM public.claus_state s CROSS JOIN public.claus_native_hosts h
   WHERE s.id=1 AND h.id AND s.generation=p_generation AND (
-   (p_role='primary' AND (NOT h.enabled OR h.mode='primary')) OR
+   (p_role='primary' AND (NOT h.enabled OR h.mode='primary' AND (h.handoff_until IS NULL OR h.handoff_until<=now()))) OR
    (p_role='standby' AND h.enabled AND h.mode='standby' AND h.executor=p_executor
      AND h.epoch=p_epoch AND h.generation=p_generation AND h.lease_until>now() AND h.deadline>now()
      AND EXISTS(SELECT 1 FROM public.claus_operations_control c WHERE c.scope='native' AND c.enabled AND c.deployment=h.execution_deployment))
@@ -50,24 +52,26 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.claus_native_host_claim(p_executor text,p_deployment text,p_primary_failed boolean)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
-DECLARE h public.claus_native_hosts%ROWTYPE;s public.claus_state%ROWTYPE;t timestamptz:=clock_timestamp();new_generation integer;
+DECLARE h public.claus_native_hosts%ROWTYPE;s public.claus_state%ROWTYPE;t timestamptz:=clock_timestamp();new_generation integer;planned boolean;
 BEGIN
- IF p_executor IS NULL OR p_executor!~'^[A-Za-z0-9:_-]{1,120}$' OR NOT p_primary_failed THEN RETURN jsonb_build_object('status','not_eligible'); END IF;
+ IF p_executor IS NULL OR p_executor!~'^[A-Za-z0-9:_-]{1,120}$' THEN RETURN jsonb_build_object('status','not_eligible'); END IF;
  PERFORM pg_advisory_xact_lock(7540317);
  SELECT * INTO h FROM public.claus_native_hosts WHERE id FOR UPDATE;
  SELECT * INTO s FROM public.claus_state WHERE id=1 FOR UPDATE;
+ planned:=h.handoff_id IS NOT NULL AND h.handoff_until>t AND h.mode='primary';
+ IF p_primary_failed IS NOT TRUE AND planned IS NOT TRUE THEN RETURN jsonb_build_object('status','not_eligible'); END IF;
  IF s.id IS NULL OR NOT h.enabled OR h.primary_deployment IS NULL OR h.primary_seen_at IS NULL OR h.primary_deployment<>p_deployment
   OR NOT EXISTS(SELECT 1 FROM public.claus_operations_control c WHERE c.scope='native' AND c.enabled AND c.deployment=p_deployment)
   OR NOT EXISTS(SELECT 1 FROM public.claus_config c WHERE c.revision=(SELECT max(revision) FROM public.claus_config) AND c.content->'settings'->>'enabled'='true')
  THEN RETURN jsonb_build_object('status','not_armed'); END IF;
  IF s.status NOT IN ('working','waiting','waiting_for_effect','retrying') OR s.lease_until>t
-  OR s.updated_at>t-interval '5 minutes' OR h.primary_seen_at>t-interval '5 minutes'
+  OR (planned IS NOT TRUE AND (s.updated_at>t-interval '5 minutes' OR h.primary_seen_at>t-interval '5 minutes'))
   OR h.mode='returning' OR (h.mode='standby' AND h.lease_until>t)
  THEN RETURN jsonb_build_object('status','healthy_or_busy'); END IF;
  UPDATE public.claus_state SET generation=generation+1,updated_at=t WHERE id=1 AND generation=s.generation RETURNING generation INTO new_generation;
  UPDATE public.claus_native_hosts SET mode='standby',epoch=epoch+1,executor=p_executor,generation=new_generation,execution_deployment=p_deployment,
-  lease_until=t+interval '5 minutes',deadline=t+interval '20 minutes',updated_at=t WHERE id RETURNING * INTO h;
- INSERT INTO public.claus_native_host_events(kind,epoch,generation,executor) VALUES('takeover',h.epoch,new_generation,p_executor);
+  lease_until=t+interval '5 minutes',deadline=t+interval '20 minutes',handoff_id=NULL,handoff_until=NULL,updated_at=t WHERE id RETURNING * INTO h;
+ INSERT INTO public.claus_native_host_events(kind,epoch,generation,executor) VALUES(CASE WHEN planned THEN 'planned_takeover' ELSE 'takeover' END,h.epoch,new_generation,p_executor);
  RETURN jsonb_build_object('status','claimed','generation',new_generation,'epoch',h.epoch,'deadline',h.deadline);
 END;
 $$;
@@ -90,6 +94,7 @@ DECLARE h public.claus_native_hosts%ROWTYPE;s public.claus_state%ROWTYPE;t times
 BEGIN
  PERFORM pg_advisory_xact_lock(7540317);
  SELECT * INTO h FROM public.claus_native_hosts WHERE id FOR UPDATE;
+ IF h.enabled AND h.mode='primary' AND h.handoff_until>t THEN RETURN jsonb_build_object('status','handoff_waiting'); END IF;
  IF NOT h.enabled OR h.mode='primary' THEN RETURN jsonb_build_object('status','primary'); END IF;
  IF h.mode='standby' AND h.lease_until>t THEN RETURN jsonb_build_object('status','standby_active'); END IF;
  SELECT * INTO s FROM public.claus_state WHERE id=1 FOR UPDATE;
@@ -100,7 +105,7 @@ BEGIN
  THEN RETURN jsonb_build_object('status','paused'); END IF;
  UPDATE public.claus_state SET generation=generation+1,updated_at=t WHERE id=1 AND generation=s.generation RETURNING generation INTO new_generation;
  UPDATE public.claus_native_hosts SET mode='primary',epoch=epoch+1,executor=NULL,generation=NULL,execution_deployment=NULL,lease_until=NULL,deadline=NULL,
-  primary_seen_at=t,primary_deployment=p_deployment,updated_at=t WHERE id RETURNING * INTO h;
+  primary_seen_at=t,primary_deployment=p_deployment,handoff_id=NULL,handoff_until=NULL,updated_at=t WHERE id RETURNING * INTO h;
  INSERT INTO public.claus_native_host_events(kind,epoch,generation) VALUES('primary_resumed',h.epoch,new_generation);
  RETURN jsonb_build_object('status','resume','generation',new_generation,'epoch',h.epoch);
 END;
@@ -118,3 +123,13 @@ GRANT EXECUTE ON FUNCTION public.claus_native_host_permit(text,text,integer,bigi
  public.claus_native_host_claim(text,text,boolean),
  public.claus_native_host_return(text,integer,bigint),
  public.claus_native_host_resume_primary(text) TO claus_native_runtime;
+DO $$
+DECLARE role_name text;
+BEGIN
+ FOREACH role_name IN ARRAY ARRAY['claus_native_backup','claus_backup_agent'] LOOP
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname=role_name) THEN
+   EXECUTE format('GRANT SELECT ON public.claus_native_hosts,public.claus_native_host_events,public.claus_native_host_events_id_seq TO %I',role_name);
+  END IF;
+ END LOOP;
+END;
+$$;

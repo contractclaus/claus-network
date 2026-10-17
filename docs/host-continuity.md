@@ -17,3 +17,7 @@ This protects the Native worker against a primary host outage. It relies on the 
 The standby is bounded to twenty minutes per claim and existing execution schedules. It receives the restricted Native runtime account and the existing fixed-purpose service credentials, not owner database access, recovery decryption keys, raw wallet keys or a new spending allowance.
 
 Read-only external readiness checks and isolated lease tests are separate from an actual production outage. The records distinguish those outcomes; installation alone is not reported as a successful live takeover.
+
+## Release continuity and planned handoff
+
+The fixed publisher retains and verifies the complete private Native source before promoting a new runtime. Missing or changed archives block promotion. A bounded operator-requested handoff can drain the current turn, move original work to the standby and return without inventing a production outage. The runtime cannot request that handoff for itself.

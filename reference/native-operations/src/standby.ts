@@ -6,6 +6,7 @@ import {runtimeHostPulse} from './runtime-host.js';
 import {configuration} from './store.js';
 import {wakeDecision} from './social.js';
 import {cycle} from './cycle.js';
+import {journal} from './store.js';
 
 const primary='https://claus-agent.vercel.app/health';
 const pause=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -24,13 +25,16 @@ export async function standbyProbe(){
  return {status:'ready',configurationRevision:config.revision,generation:state.generation,workItems:work.length,unresolvedActions:pending.length,
   originalStateHash:createHash('sha256').update(JSON.stringify({state,work,pending})).digest('hex'),hostControl:control,readOnly:true,coverage:'native-social-and-network-worker'};
 }
-export async function runStandby(){
+export async function runStandby(planned=false){
  await managedSchemaReady();
- if(await primaryHealthy())return {status:'primary_healthy',claimed:false};
- await pause(15000);if(await primaryHealthy())return {status:'primary_recovered',claimed:false};
+ if(!planned){if(await primaryHealthy())return {status:'primary_healthy',claimed:false};
+ await pause(15000);if(await primaryHealthy())return {status:'primary_recovered',claimed:false};}
  const db=productionLabDatabase(),executor=process.env.CLAUS_RUNTIME_EXECUTOR,deployment=process.env.VERCEL_DEPLOYMENT_ID;
  if(!executor||!deployment)throw Error('standby_identity_missing');
- const claim=(await db.query('SELECT public.claus_native_host_claim($1,$2,true) AS result',[executor,deployment])).rows[0]?.result;
+ let claim:any;const until=Date.now()+8*60_000;
+ do{claim=(await db.query('SELECT public.claus_native_host_claim($1,$2,$3) AS result',[executor,deployment,!planned])).rows[0]?.result;
+  if(!planned||claim?.status!=='healthy_or_busy'||Date.now()>=until)break;await pause(5000);
+ }while(true);
  if(claim?.status!=='claimed')return {...claim,claimed:false};
  const generation=Number(claim.generation),epoch=Number(claim.epoch),deadline=Date.parse(claim.deadline);
  process.env.CLAUS_RUNTIME_HOST='standby';process.env.CLAUS_RUNTIME_EPOCH=String(epoch);
@@ -39,12 +43,12 @@ export async function runStandby(){
  const timer=setInterval(async()=>{if(pulsing)return;pulsing=true;try{permitted=await runtimeHostPulse(generation);}catch{permitted=false;}finally{pulsing=false;}},25000);timer.unref();
  try{
   while(!stopping&&permitted&&Date.now()<deadline-14*60_000){
-   if(await primaryHealthy()){
+   if((!planned||turns>0)&&await primaryHealthy()){
     returned=(await db.query('SELECT public.claus_native_host_return($1,$2,$3) AS returned',[executor,generation,epoch])).rows[0]?.returned===true;
     if(returned)break;
    }
    const wake=await wakeDecision(generation);if(!wake.nextAt)break;
-   if(wake.run){await cycle(generation);turns++;}
+   if(wake.run){const result=await cycle(generation);turns++;await journal('standby_turn','Standby completed an original runtime turn',{executor,generation,epoch,planned,status:result.status,nextAt:result.nextAt??null});}
    else await pause(Math.max(1000,Math.min(30000,Date.parse(wake.nextAt)-Date.now())));
   }
   if(!returned&&await primaryHealthy())returned=(await db.query('SELECT public.claus_native_host_return($1,$2,$3) AS returned',[executor,generation,epoch])).rows[0]?.returned===true;
@@ -52,6 +56,6 @@ export async function runStandby(){
  }finally{clearInterval(timer);process.removeListener('SIGTERM',stop);process.removeListener('SIGINT',stop);}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- const mode=process.argv[2];if(!['probe','run'].includes(mode))throw Error('invalid_standby_mode');
- (mode==='probe'?standbyProbe():runStandby()).then(v=>console.log(JSON.stringify(v))).catch(()=>{console.error(JSON.stringify({status:'standby_unavailable'}));process.exitCode=1;});
+ const mode=process.argv[2];if(!['probe','run','handoff'].includes(mode))throw Error('invalid_standby_mode');
+ (mode==='probe'?standbyProbe():runStandby(mode==='handoff')).then(v=>console.log(JSON.stringify(v))).catch(()=>{console.error(JSON.stringify({status:'standby_unavailable'}));process.exitCode=1;});
 }
