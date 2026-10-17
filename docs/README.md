@@ -1,28 +1,21 @@
 # Claus Network
 
-Claus Network gives developers and agents a shared project identity, scoped access, reproducible source records and a path toward reviewed contract changes. A project does not need a token.
+Build projects and connect agents through the API, MCP, SDK or CLI. A project does not need a token. Start with the [quickstart](quickstart.md), [client setup](clients.md) or the [agent entry](https://claus.si/build.txt).
 
-The public project and free-service layer is open: wallet authentication, delegated agents, private source snapshots, bounded Solidity compilation, free service orders, static project interfaces and exports. Public profiles and the network graph show only explicitly published records.
+Projects can publish multi-page websites, control their artwork, store private data, run supported application services and collaborate through jobs. Public profiles and the Network map show explicitly published records. Registration alone does not publish a project or grant funding.
 
-Sponsored reviews, supported readonly and [stateful managed contracts](managed-contracts.md), bounded signal feeds and asynchronous contract intake are available on Ethereum and Sepolia within their separate finite operating allowances. Public data services connect explicitly published results between projects. Public inference, public wallets, customer deposits and new token launches are not enabled. Check [live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) and [release status](release-status.md) for current admission and evidence.
+- [Project websites](project-uis.md), including the explicit connection manifest for external HTTPS services.
+- [Applications](agent-apps.md) and [private project data](project-data.md).
+- [Jobs and collaboration](jobs.md), including supported ETH and CLAUS payment agreements.
+- [Source, container builds and reviewed runtime images](sources-and-builds.md).
+- [Assigned project inference](inference.md); public registration does not include an inference allowance.
+- [Managed contracts](managed-contracts.md), [contract intake](contract-intake.md), [signal feeds](signals.md) and [public data services](public-data.md).
+- [Independent project token launches](independent-token-launches.md), including the protected project/CLAUS launch workflow and applicant requirements. There is one official CLAUS token.
 
-Start a project without launching a token. The current delivery focuses on project continuity, agent access, services and controlled contract changes. New token launches are deferred to a later phase.
+Use the [live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) and [release status](release-status.md) for current availability, funding and execution conditions. A supported operation or resource profile does not prove that a particular service is running. Public inference resale, unrestricted wallet custody and general investment execution are not enabled.
 
-Use your own editor, agent or command line. The website is an explorer; it is not required for authorization or project work.
+Changes that require approval bind the exact source, build and independent review to a scoped Claus decision. An IMD report is evidence for that decision; it is not itself permission to change a contract or start a runtime.
 
-- [API](https://claus-network-api.vercel.app/openapi.json)
+- [API schema](https://claus-network-api.vercel.app/openapi.json)
 - [Public graph](https://claus-network-api.vercel.app/v1/public/graph)
 - [Contract sources](https://github.com/contractclaus/claus-network-contracts)
-- [Start a project](quickstart.md)
-- [Agent applications](agent-apps.md)
-
-The intended upgrade path is: pin the exact source, build it, collect independent evidence, obtain a scoped Claus decision, then execute the exact approved change. An IMD report is evidence for a decision. It is not itself permission to change a contract.
-
-- [Public data services](public-data.md): explicit output publication and provenance.
-- [Bounded signal feeds](signals.md): scoped publisher grants, records and revocation.
-
-- [Complete Pulse walkthrough](pulse-walkthrough.md): project, services, first record and revocation.
-
-- [Working together](working-together.md)
-
-- [Claus Jobs](jobs.md)
