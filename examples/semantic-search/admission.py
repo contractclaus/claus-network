@@ -89,7 +89,7 @@ class Admission:
 
     def charge(self, claims, cost):
         # begin already charged one unit. Each additional unit represents up
-        # to 64 actual, truncated model tokens, shared by all of an owner's
+        # to 64 padded, truncated batch positions, shared by all of an owner's
         # projects. Expensive requests cannot bypass the sustainable budget.
         if type(cost) is not int or not 1 <= cost <= 64:
             raise ValueError('inference_cost_invalid')

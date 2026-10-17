@@ -77,7 +77,9 @@ class Engine:
             # Busy callers spend only the admission unit. Reserve the model
             # cost only once the worker is ours, and return it on failure.
             if meter is not None:
-                refund = meter(max(1, (sum(sum(v.attention_mask) for v in encoded) + 63) // 64))
+                # ONNX computes padded positions too. Mixed-length batches
+                # must pay for the full tensor, not only non-padding tokens.
+                refund = meter(max(1, (sum(len(v.ids) for v in encoded) + 63) // 64))
             with self.state_lock:
                 self.inference_started = time.monotonic()
             # Reuse is confined to this request; another caller's input cannot
@@ -124,6 +126,9 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
         self.admission = Admission()
         self.headers = selectors.DefaultSelector()
         self.pending_headers = {}
+        self.pending_claims = {}
+        self.pending_owners = {}
+        self.pending_nonces = set()
         self.request_prefixes = {}
         self.request_expiry = {}
         self.request_pools = {}
@@ -190,7 +195,23 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
 
     def remove_pending(self, request):
         self.headers.unregister(request)
+        claims = self.pending_claims.pop(request, None)
+        if claims is not None:
+            self.pending_owners.pop(claims['owner'], None)
+            self.pending_nonces.discard((claims['owner'], claims['nonce']))
         return self.pending_headers.pop(request)
+
+    def reserve_body(self, request, claims):
+        # This is a temporary receive reservation, not nonce consumption.
+        # Half the queue remains available for new headers and health probes.
+        key = (claims['owner'], claims['nonce'])
+        if claims['owner'] in self.pending_owners or key in self.pending_nonces:
+            raise AdmissionError(429, 'caller_pending')
+        if len(self.pending_claims) >= self.max_pending_headers // 2:
+            raise AdmissionError(503, 'pending_body_capacity')
+        self.pending_claims[request] = claims
+        self.pending_owners[claims['owner']] = request
+        self.pending_nonces.add(key)
 
     def service_actions(self):
         for key, _ in self.headers.select(timeout=0):
@@ -244,8 +265,9 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                             raise ValueError(413)
                         body_size = int(lengths[0])
                         authorizations = headers.get_all('Authorization', [])
-                        self.admission.verify_header(authorizations[0] if len(authorizations) == 1 else None,
-                                                     parts[1].decode('ascii'))
+                        claims = self.admission.verify_header(authorizations[0] if len(authorizations) == 1 else None,
+                                                              parts[1].decode('ascii'))
+                        self.reserve_body(request, claims)
                     target = boundary + 4 + body_size
                 except (ValueError, HTTPException, AdmissionError) as error:
                     status = error.status if isinstance(error, AdmissionError) else error.args[0] if isinstance(error, ValueError) and error.args and isinstance(error.args[0], int) else 400
