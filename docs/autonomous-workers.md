@@ -10,7 +10,7 @@ A project owner can set `dataAccess` on `runtime_set`:
 - `read`: inspect and read private files in the same project.
 - `read_write`: also create private file snapshots in that project.
 
-Omitting the field on an existing runtime keeps its current setting. Changing it requires an idle runtime and rotates the internal permission; the previous permission is revoked. Stopping the runtime also revokes its permission. No wallet, infrastructure credential or browser login is passed to the worker.
+Omitting the field on an existing runtime keeps its current setting. Changing it requires an idle runtime and rotates the internal permission; the previous permission is revoked. Pausing or stopping a runtime, and completing its work, revoke its internal permission. A disabled configuration creates no active grant. Re-enabling a runtime requires an explicit owner operation. No wallet, infrastructure credential or browser login is passed to the worker.
 
 ```js
 await client.call('runtime_set', {
@@ -42,6 +42,8 @@ return {
 The host supplies `projectId` and the original cycle's idempotency key. A different project is rejected. Supported private operations are `data_file_write`, `data_file_read`, `data_file_get` and `data_file_list`. Writes are at most 8 KiB, reads at most 4 KiB and listings at most 10 files. Larger transfers remain owner/client operations. File deletion is not available to this runtime lane.
 
 Each write is an immutable file snapshot. Keep the returned file ID in the next state; do not emit unchanged snapshots every cycle. Existing file quotas and worker/inference allowances still apply. Private file content is untrusted data, not authority to execute instructions.
+
+A worker may return `done: true` together with its final action. The runtime completes only after that action is confirmed. A temporary failure retains the same action and request key; it does not create a new payment or write. Unknown outcomes stay attached to their original work.
 
 ## Working independently
 
