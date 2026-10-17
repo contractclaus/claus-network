@@ -5003,6 +5003,11 @@ export const networkRoutes:Record<string,any>={
           "minLength": 1,
           "maxLength": 16000
         },
+        "runtimeReleaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
         "profile": {
           "type": "string",
           "enum": [
@@ -5010,7 +5015,8 @@ export const networkRoutes:Record<string,any>={
             "claus-managed-v1",
             "claus-native-program-v1",
             "claus-capital-v1",
-            "claus-partner-launch-v1"
+            "claus-partner-launch-v1",
+            "claus-runtime-image-v1"
           ]
         }
       },
@@ -9663,6 +9669,296 @@ export const networkRoutes:Record<string,any>={
     },
     "public": false,
     "description": "Publish or withdraw the exact compiled OCI image for an already-public source build. Requires build.compile, publishImage true or false and the current build revision. Publishing makes image layers public. Returns an immutable pull address; it does not approve deployment, allocate a machine or spend provider credit. Existing downloaded copies cannot be recalled."
+  },
+  "resource_release_prepare": {
+    "name": "resource_release_prepare",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/releases",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "manifest": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "http",
+                "worker",
+                "job",
+                "model"
+              ]
+            },
+            "image": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "region": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "cpu": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            "memoryMiB": {
+              "type": "integer",
+              "minimum": 256,
+              "maximum": 524288
+            },
+            "gpu": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100
+            },
+            "port": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1024,
+              "maximum": 65535
+            },
+            "healthPath": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 101
+            },
+            "command": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "storageGiB": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000
+            }
+          },
+          "required": [
+            "version",
+            "mode",
+            "image",
+            "region",
+            "cpu",
+            "memoryMiB",
+            "gpu",
+            "port",
+            "healthPath",
+            "command",
+            "storageGiB"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "projectId",
+        "buildId",
+        "manifest"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/infrastructure/releases. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "resource_release_get": {
+    "name": "resource_release_get",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/infrastructure/releases/{releaseId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "releaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "projectId",
+        "releaseId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/infrastructure/releases/{releaseId}. Requires current object read permission."
+  },
+  "resource_release_inspect": {
+    "name": "resource_release_inspect",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/infrastructure/releases/{releaseId}/review",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "releaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "caseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "projectId",
+        "releaseId",
+        "caseId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/infrastructure/releases/{releaseId}/review. Requires current object read permission."
+  },
+  "resource_release_approve": {
+    "name": "resource_release_approve",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "releaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "caseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "reportHash": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "acknowledgedFindings": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 71
+          }
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "releaseId",
+        "caseId",
+        "reportHash",
+        "reason",
+        "acknowledgedFindings",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "resource_release_revoke": {
+    "name": "resource_release_revoke",
+    "method": "DELETE",
+    "path": "/v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "releaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "releaseId",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "DELETE /v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "public_resource_release": {
+    "name": "public_resource_release",
+    "method": "GET",
+    "path": "/v1/public/infrastructure/releases/{releaseId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "releaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "releaseId"
+      ],
+      "additionalProperties": false
+    },
+    "public": true,
+    "description": "GET /v1/public/infrastructure/releases/{releaseId}. Public read."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{

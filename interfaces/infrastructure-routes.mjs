@@ -1,7 +1,15 @@
 export function infrastructureRoutes(route,string,integer,boolean,object){
   const project={projectId:string()},id={...project,resourceId:string(71)};
   const manifest=object({version:{const:1,type:'integer'},mode:{type:'string',enum:['http','worker','job','model']},image:string(256),region:string(40),cpu:{type:'integer',minimum:1,maximum:64},memoryMiB:{type:'integer',minimum:256,maximum:524288},gpu:{type:['string','null'],maxLength:100},port:{type:['integer','null'],minimum:1024,maximum:65535},healthPath:{type:['string','null'],maxLength:101},command:{type:'array',maxItems:32,items:{type:'string',maxLength:1000}},storageGiB:{type:'integer',minimum:0,maximum:2000},releaseHash:string(71)});
+  const {releaseHash,...runtimeProperties}=manifest.properties;
+  const runtimeManifest=object(runtimeProperties),release={...project,releaseId:string(71)};
   return [
+    route('resource_release_prepare','POST','/v1/projects/{projectId}/infrastructure/releases',{...project,buildId:string(71),manifest:runtimeManifest}),
+    route('resource_release_get','GET','/v1/projects/{projectId}/infrastructure/releases/{releaseId}',release),
+    route('resource_release_inspect','GET','/v1/projects/{projectId}/infrastructure/releases/{releaseId}/review',{...release,caseId:string(71)}),
+    route('resource_release_approve','POST','/v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval',{...release,caseId:string(71),reportHash:string(71),reason:string(4000),acknowledgedFindings:{type:'array',maxItems:200,items:string(71)},expectedRevision:integer}),
+    route('resource_release_revoke','DELETE','/v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval',{...release,expectedRevision:integer}),
+    route('public_resource_release','GET','/v1/public/infrastructure/releases/{releaseId}',{releaseId:string(71)},['releaseId'],true),
     route('resource_image_publish','PUT','/v1/projects/{projectId}/infrastructure/builds/{buildId}/image',{...project,buildId:string(71),publishImage:boolean,expectedRevision:integer}),
     route('resource_build','POST','/v1/projects/{projectId}/infrastructure/builds',{...project,snapshotId:string(71),dockerfile:string(200),publishSource:{type:'boolean',const:true},idempotencyKey:string(128)},['projectId','snapshotId','publishSource','idempotencyKey']),
     route('resource_build_status','GET','/v1/projects/{projectId}/infrastructure/builds/{buildId}',{...project,buildId:string(71)}),
