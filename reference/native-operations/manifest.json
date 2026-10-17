@@ -147,6 +147,5 @@
     "src/network-semantic-search.ts": "18ee47effa87c68998292008f25f82179aba1c573cda9b21c3545e56d0e4f367"
   },
   "referenceSubset": true,
-  "baselineDeployment": "dpl_3ZuA7J3HLMNnrcGAfnrF35jfcHnM",
-  "deploymentState": "Matching client prepared for this exact review; runtime approval remains required"
+  "deployed": "dpl_7anrLgYRqXnU5uiaVmtKRQDN8iok"
 }

@@ -1,0 +1,1653 @@
+{
+  "version": 1,
+  "observedAt": "2026-10-17T22:16:15.648Z",
+  "image": "claus-network-api.vercel.app/claus/997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8@sha256:0ac4b815666d2b24750fccb6422a9e86ecbb905b7f4d3cc303fb610310629e0c",
+  "indexDigest": "sha256:0ac4b815666d2b24750fccb6422a9e86ecbb905b7f4d3cc303fb610310629e0c",
+  "platformManifestDigest": "sha256:d46118ace6a15e2e715c15d26173cc526db390209b955c074d1003c46e51d927",
+  "configDigest": "sha256:dcc20f7a87ba533bd797b5a8e5129376c987f7e7a709a76af07501243004f4a0",
+  "registry": "https://claus-network-api.vercel.app/v2/claus/997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8",
+  "configuration": {
+    "User": "10001:10001",
+    "ExposedPorts": {
+      "8080/tcp": {}
+    },
+    "Env": [
+      "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "LANG=C.UTF-8",
+      "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+      "PYTHON_VERSION=3.12.15",
+      "PYTHON_SHA256=c2c4321961fab0fb999d66e0cecf521c2ab3994c7992873ea99e306c1094fd5a",
+      "PYTHONDONTWRITEBYTECODE=1",
+      "PYTHONUNBUFFERED=1",
+      "TOKENIZERS_PARALLELISM=false",
+      "OMP_NUM_THREADS=2",
+      "OPENBLAS_NUM_THREADS=1",
+      "PORT=8080",
+      "LD_LIBRARY_PATH=/usr/local/lib/claus-native"
+    ],
+    "Cmd": [
+      "python",
+      "server.py"
+    ],
+    "WorkingDir": "/app",
+    "ArgsEscaped": true
+  },
+  "history": [
+    {
+      "created": "2026-10-05T00:00:00Z",
+      "created_by": "# debian.sh --arch 'amd64' out/ 'bookworm' '@1791158400'",
+      "comment": "debuerreotype 0.17"
+    },
+    {
+      "created": "2026-10-06T01:56:04.008586639Z",
+      "created_by": "ENV PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2026-10-06T01:56:04.008586639Z",
+      "created_by": "ENV LANG=C.UTF-8",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2026-10-06T01:56:04.008586639Z",
+      "created_by": "RUN /bin/sh -c set -eux; \tapt-get update; \tapt-get install -y --no-install-recommends \t\tca-certificates \t\tnetbase \t\ttzdata \t; \trm -rf /var/lib/apt/lists/* # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "2026-10-06T01:56:04.008586639Z",
+      "created_by": "ENV GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2026-10-06T01:56:04.008586639Z",
+      "created_by": "ENV PYTHON_VERSION=3.12.15",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2026-10-06T01:56:04.008586639Z",
+      "created_by": "ENV PYTHON_SHA256=c2c4321961fab0fb999d66e0cecf521c2ab3994c7992873ea99e306c1094fd5a",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2026-10-06T02:04:51.451134365Z",
+      "created_by": "RUN /bin/sh -c set -eux; \t\tsavedAptMark=\"$(apt-mark showmanual)\"; \tapt-get update; \tapt-get install -y --no-install-recommends \t\tdpkg-dev \t\tg++ \t\tgcc \t\tgnupg \t\tlibbluetooth-dev \t\tlibbz2-dev \t\tlibc6-dev \t\tlibdb-dev \t\tlibffi-dev \t\tlibgdbm-dev \t\tliblzma-dev \t\tlibncursesw5-dev \t\tlibreadline-dev \t\tlibsqlite3-dev \t\tlibssl-dev \t\tmake \t\ttk-dev \t\tuuid-dev \t\twget \t\txz-utils \t\tzlib1g-dev \t; \t\twget -O python.tar.xz \"https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz\"; \techo \"$PYTHON_SHA256 *python.tar.xz\" | sha256sum -c -; \twget -O python.tar.xz.asc \"https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc\"; \tGNUPGHOME=\"$(mktemp -d)\"; export GNUPGHOME; \tgpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$GPG_KEY\"; \tgpg --batch --verify python.tar.xz.asc python.tar.xz; \tgpgconf --kill all; \trm -rf \"$GNUPGHOME\" python.tar.xz.asc; \tmkdir -p /usr/src/python; \ttar --extract --directory /usr/src/python --strip-components=1 --file python.tar.xz; \trm python.tar.xz; \t\tcd /usr/src/python; \tgnuArch=\"$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)\"; \t./configure \t\t--build=\"$gnuArch\" \t\t--enable-loadable-sqlite-extensions \t\t--enable-optimizations \t\t--enable-option-checking=fatal \t\t--enable-shared \t\t$(test \"${gnuArch%%-*}\" != 'riscv64' && echo '--with-lto') \t\t--with-ensurepip \t; \tnproc=\"$(nproc)\"; \tEXTRA_CFLAGS=\"$(dpkg-buildflags --get CFLAGS)\"; \tLDFLAGS=\"$(dpkg-buildflags --get LDFLAGS)\"; \tLDFLAGS=\"${LDFLAGS:-} -Wl,--strip-all\"; \tarch=\"$(dpkg --print-architecture)\"; arch=\"${arch##*-}\"; \tcase \"$arch\" in \t\tamd64|arm64) \t\t\tEXTRA_CFLAGS=\"${EXTRA_CFLAGS:-} -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer\"; \t\t\t;; \t\ti386) \t\t\t;; \t\t*) \t\t\tEXTRA_CFLAGS=\"${EXTRA_CFLAGS:-} -fno-omit-frame-pointer\"; \t\t\t;; \tesac; \tmake -j \"$nproc\" \t\t\"EXTRA_CFLAGS=${EXTRA_CFLAGS:-}\" \t\t\"LDFLAGS=${LDFLAGS:-}\" \t; \trm python; \tmake -j \"$nproc\" \t\t\"EXTRA_CFLAGS=${EXTRA_CFLAGS:-}\" \t\t\"LDFLAGS=${LDFLAGS:-} -Wl,-rpath='\\$\\$ORIGIN/../lib'\" \t\tpython \t; \tmake install; \t\tcd /; \trm -rf /usr/src/python; \t\tfind /usr/local -depth \t\t\\( \t\t\t\\( -type d -a \\( -name test -o -name tests -o -name idle_test \\) \\) \t\t\t-o \\( -type f -a \\( -name '*.pyc' -o -name '*.pyo' -o -name 'libpython*.a' \\) \\) \t\t\\) -exec rm -rf '{}' + \t; \t\tldconfig; \t\tapt-mark auto '.*' > /dev/null; \tapt-mark manual $savedAptMark; \tfind /usr/local -type f -executable -not \\( -name '*tkinter*' \\) -exec ldd '{}' ';' \t\t| awk '/=>/ { so = $(NF-1); if (index(so, \"/usr/local/\") == 1) { next }; gsub(\"^/(usr/)?\", \"\", so); printf \"*%s\\n\", so }' \t\t| sort -u \t\t| xargs -rt dpkg-query --search \t\t| awk 'sub(\":$\", \"\", $1) { print $1 }' \t\t| sort -u \t\t| xargs -r apt-mark manual \t; \tapt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \trm -rf /var/lib/apt/lists/*; \t\texport PYTHONDONTWRITEBYTECODE=1; \tpython3 --version; \tpip3 --version # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "2026-10-06T02:04:51.549801942Z",
+      "created_by": "RUN /bin/sh -c set -eux; \tfor src in idle3 pip3 pydoc3 python3 python3-config; do \t\tdst=\"$(echo \"$src\" | tr -d 3)\"; \t\t[ -s \"/usr/local/bin/$src\" ]; \t\t[ ! -e \"/usr/local/bin/$dst\" ]; \t\tln -svT \"$src\" \"/usr/local/bin/$dst\"; \tdone # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "2026-10-06T02:04:51.549801942Z",
+      "created_by": "CMD [\"python3\"]",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 TOKENIZERS_PARALLELISM=false OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 PORT=8080 LD_LIBRARY_PATH=/usr/local/lib/claus-native",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "WORKDIR /app",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "COPY /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "COPY /native/usr/lib/x86_64-linux-gnu /usr/local/lib/claus-native # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "COPY /app/model /app/model # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "COPY examples/semantic-search/model-lock.json examples/semantic-search/server.py examples/semantic-search/admission.py examples/semantic-search/admission-key.json examples/semantic-search/LICENSE ./ # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "USER 10001:10001",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "RUN /bin/sh -c python -c \"from server import Engine; Engine()\" # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "EXPOSE [8080/tcp]",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "1970-01-01T00:00:00Z",
+      "created_by": "CMD [\"python\" \"server.py\"]",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    }
+  ],
+  "rootfs": {
+    "type": "layers",
+    "diff_ids": [
+      "sha256:e58989146fcec76699871403b9897b5c014af1ccd85f5a9300a215e7975525d7",
+      "sha256:916eda96356f5280ba200349e111e70c46d7ec98a4a3dd2c38e88f7b133c17ba",
+      "sha256:694fd645f7c3f2166f87f2929facc4eccb7e1cfda9bfb5d1373f77e6c9c57ea6",
+      "sha256:742affd58633b3e2b85ef86583f2775486468b1317f7214d12e193d948421098",
+      "sha256:8b6da3bd28008659e694315022ffb9c31aa31b5840b77e8f6197872538b9473a",
+      "sha256:faee971f77acfeb627f7d8109ca7a52d1f363c17f4f0aaa2812fb4113cc3fe2a",
+      "sha256:ebf9bcc32c32dfe8cc363e69b4efd9c0f9873c9ab4a9fd4bd16215dd6f34fc31",
+      "sha256:1e61aa81fb36e3cc63c83bb075e6979db9898a0ff01534ddeaf113b9f4bfc1ee",
+      "sha256:5ee32ff10c7d4cd2474bc13be4ec758195d0e24541b589d2966441feb57cbb51",
+      "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+    ]
+  },
+  "layers": [
+    {
+      "digest": "sha256:7fd1ebe418b5079d4aa36f416af9b143d127bc75b0155d71cb5fd559b5e04d39",
+      "bytes": 28249323,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 5
+    },
+    {
+      "digest": "sha256:6e0ba8ba048777f5354b5a7cb497ae5261116fac8246160c06fc045c8300c582",
+      "bytes": 3342298,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 1
+    },
+    {
+      "digest": "sha256:86a9e13e035d8e44ae37bfebc52c7fc68898fde19b4b26dd0585f2231fcfaf2c",
+      "bytes": 15966608,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 3
+    },
+    {
+      "digest": "sha256:f9d2fb07d6f062d06ddc7aa58191cc5359c728f54af6cebe69a37d2c89e72a0d",
+      "bytes": 249,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 0
+    },
+    {
+      "digest": "sha256:b67246d5d21a1e5208d87db10a035e60592ce32fc1bd322536cd6248ad3f3ea1",
+      "bytes": 79,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 0
+    },
+    {
+      "digest": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644",
+      "bytes": 48770435,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 34
+    },
+    {
+      "digest": "sha256:edc39c5d0297449b69ba4f4211799871638f883117e56d573a18e1d2589aa0a5",
+      "bytes": 916435,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 4
+    },
+    {
+      "digest": "sha256:a3d1b003a62f2ff5c881d3ce76feea466513125d2598c53791fbf65c9f339d7c",
+      "bytes": 15878080,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 4
+    },
+    {
+      "digest": "sha256:64742a9c04c1ac7d7df160164b39e5bcd6edf1e99deb531e743a7b9923f1a544",
+      "bytes": 14456,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 5
+    },
+    {
+      "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+      "bytes": 32,
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "selectedEntries": 0
+    }
+  ],
+  "files": [
+    {
+      "path": "app/admission-key.json",
+      "bytes": 163,
+      "sha256": "cc398827eead0852e3ef4d8a17b00f47a912fb565f3148d596151ae3e30e6dfb",
+      "layer": "sha256:64742a9c04c1ac7d7df160164b39e5bcd6edf1e99deb531e743a7b9923f1a544"
+    },
+    {
+      "path": "app/admission.py",
+      "bytes": 5534,
+      "sha256": "900d1670e31efe06e0a9244656e19cde87d180b3918d37320c2981f2eb945ee1",
+      "layer": "sha256:64742a9c04c1ac7d7df160164b39e5bcd6edf1e99deb531e743a7b9923f1a544"
+    },
+    {
+      "path": "app/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "layer": "sha256:64742a9c04c1ac7d7df160164b39e5bcd6edf1e99deb531e743a7b9923f1a544"
+    },
+    {
+      "path": "app/model-lock.json",
+      "bytes": 4559,
+      "sha256": "3ea22af0a27600e6293b32a3acc5d23dec704e6b0cb13b96f46fbd9ec6c082ba",
+      "layer": "sha256:64742a9c04c1ac7d7df160164b39e5bcd6edf1e99deb531e743a7b9923f1a544"
+    },
+    {
+      "path": "app/model/config.json",
+      "bytes": 650,
+      "sha256": "7135149f7cffa1a573466c6e4d8423ed73b62fd2332c575bf738a0d033f70df7",
+      "layer": "sha256:a3d1b003a62f2ff5c881d3ce76feea466513125d2598c53791fbf65c9f339d7c"
+    },
+    {
+      "path": "app/model/onnx/model_quantized.onnx",
+      "bytes": 22972370,
+      "sha256": "afdb6f1a0e45b715d0bb9b11772f032c399babd23bfc31fed1c170afc848bdb1",
+      "layer": "sha256:a3d1b003a62f2ff5c881d3ce76feea466513125d2598c53791fbf65c9f339d7c"
+    },
+    {
+      "path": "app/model/tokenizer_config.json",
+      "bytes": 366,
+      "sha256": "9261e7d79b44c8195c1cada2b453e55b00aeb81e907a6664974b4d7776172ab3",
+      "layer": "sha256:a3d1b003a62f2ff5c881d3ce76feea466513125d2598c53791fbf65c9f339d7c"
+    },
+    {
+      "path": "app/model/tokenizer.json",
+      "bytes": 711661,
+      "sha256": "da0e79933b9ed51798a3ae27893d3c5fa4a201126cef75586296df9b4d2c62a0",
+      "layer": "sha256:a3d1b003a62f2ff5c881d3ce76feea466513125d2598c53791fbf65c9f339d7c"
+    },
+    {
+      "path": "app/server.py",
+      "bytes": 24008,
+      "sha256": "5e9aba6a605187ddb3bac0ffe8a284ef953bd28c1f8d1f9271dddd4c6d1a536f",
+      "layer": "sha256:64742a9c04c1ac7d7df160164b39e5bcd6edf1e99deb531e743a7b9923f1a544"
+    },
+    {
+      "path": "etc/os-release",
+      "bytes": 0,
+      "link": "../usr/lib/os-release",
+      "layer": "sha256:7fd1ebe418b5079d4aa36f416af9b143d127bc75b0155d71cb5fd559b5e04d39"
+    },
+    {
+      "path": "usr/lib/os-release",
+      "bytes": 267,
+      "sha256": "59a77b5f2666d9c85c489bd1911a6eebbd91ef22fe48b90a3b75f1b21f3844d4",
+      "text": "PRETTY_NAME=\"Debian GNU/Linux 12 (bookworm)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"12\"\nVERSION=\"12 (bookworm)\"\nVERSION_CODENAME=bookworm\nID=debian\nHOME_URL=\"https://www.debian.org/\"\nSUPPORT_URL=\"https://www.debian.org/support\"\nBUG_REPORT_URL=\"https://bugs.debian.org/\"\n",
+      "layer": "sha256:7fd1ebe418b5079d4aa36f416af9b143d127bc75b0155d71cb5fd559b5e04d39"
+    },
+    {
+      "path": "usr/lib/x86_64-linux-gnu/libstdc++.so.6",
+      "bytes": 0,
+      "link": "libstdc++.so.6.0.30",
+      "layer": "sha256:7fd1ebe418b5079d4aa36f416af9b143d127bc75b0155d71cb5fd559b5e04d39"
+    },
+    {
+      "path": "usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30",
+      "bytes": 2190440,
+      "sha256": "e7848e32af4932840ba775169041759a2a8dd5a008af360e5c55bce506eebcf4",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2",
+          "libgcc_s.so.1"
+        ],
+        "rpath": []
+      },
+      "symbolVersions": [
+        "CXXABI_1.3",
+        "CXXABI_1.3.1",
+        "CXXABI_1.3.10",
+        "CXXABI_1.3.11",
+        "CXXABI_1.3.12",
+        "CXXABI_1.3.13",
+        "CXXABI_1.3.2",
+        "CXXABI_1.3.3",
+        "CXXABI_1.3.4",
+        "CXXABI_1.3.5",
+        "CXXABI_1.3.6",
+        "CXXABI_1.3.7",
+        "CXXABI_1.3.8",
+        "CXXABI_1.3.9",
+        "GLIBCXX_3.4",
+        "GLIBCXX_3.4.1",
+        "GLIBCXX_3.4.10",
+        "GLIBCXX_3.4.11",
+        "GLIBCXX_3.4.12",
+        "GLIBCXX_3.4.13",
+        "GLIBCXX_3.4.14",
+        "GLIBCXX_3.4.15",
+        "GLIBCXX_3.4.16",
+        "GLIBCXX_3.4.17",
+        "GLIBCXX_3.4.18",
+        "GLIBCXX_3.4.19",
+        "GLIBCXX_3.4.2",
+        "GLIBCXX_3.4.20",
+        "GLIBCXX_3.4.21",
+        "GLIBCXX_3.4.22",
+        "GLIBCXX_3.4.23",
+        "GLIBCXX_3.4.24",
+        "GLIBCXX_3.4.25",
+        "GLIBCXX_3.4.26",
+        "GLIBCXX_3.4.27",
+        "GLIBCXX_3.4.28",
+        "GLIBCXX_3.4.29",
+        "GLIBCXX_3.4.3",
+        "GLIBCXX_3.4.30",
+        "GLIBCXX_3.4.4",
+        "GLIBCXX_3.4.5",
+        "GLIBCXX_3.4.6",
+        "GLIBCXX_3.4.7",
+        "GLIBCXX_3.4.8",
+        "GLIBCXX_3.4.9",
+        "GLIBC_2.14",
+        "GLIBC_2.16",
+        "GLIBC_2.17",
+        "GLIBC_2.18",
+        "GLIBC_2.2.5",
+        "GLIBC_2.25",
+        "GLIBC_2.3",
+        "GLIBC_2.3.2",
+        "GLIBC_2.32",
+        "GLIBC_2.33",
+        "GLIBC_2.34",
+        "GLIBC_2.36",
+        "GLIBC_2.4",
+        "GLIBC_2.6"
+      ],
+      "layer": "sha256:7fd1ebe418b5079d4aa36f416af9b143d127bc75b0155d71cb5fd559b5e04d39"
+    },
+    {
+      "path": "usr/local/bin/python3.12",
+      "bytes": 14480,
+      "sha256": "4dbf3143240288fb2170257ffaa7bd030cdda5d2703d1f5f30b627042267e2e3",
+      "elf": {
+        "needed": [
+          "libpython3.12.so.1.0",
+          "libc.so.6"
+        ],
+        "rpath": [
+          "$ORIGIN/../lib"
+        ]
+      },
+      "layer": "sha256:86a9e13e035d8e44ae37bfebc52c7fc68898fde19b4b26dd0585f2231fcfaf2c"
+    },
+    {
+      "path": "usr/local/lib/claus-native/libgomp.so.1",
+      "bytes": 0,
+      "link": "libgomp.so.1.0.0",
+      "layer": "sha256:edc39c5d0297449b69ba4f4211799871638f883117e56d573a18e1d2589aa0a5"
+    },
+    {
+      "path": "usr/local/lib/claus-native/libgomp.so.1.0.0",
+      "bytes": 290392,
+      "sha256": "f9a9ad78a8dc39c0e90a265ffa551fae6c92a40f360889b44a7e141f9a2adfb1",
+      "elf": {
+        "needed": [
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "symbolVersions": [
+        "GLIBC_2.14",
+        "GLIBC_2.17",
+        "GLIBC_2.2.5",
+        "GLIBC_2.3",
+        "GLIBC_2.32",
+        "GLIBC_2.34",
+        "GLIBC_2.6",
+        "GOMP_1.0",
+        "GOMP_2.0",
+        "GOMP_3.0",
+        "GOMP_4.0",
+        "GOMP_4.0.1",
+        "GOMP_4.5",
+        "GOMP_5.0",
+        "GOMP_5.0.1",
+        "GOMP_5.1"
+      ],
+      "layer": "sha256:edc39c5d0297449b69ba4f4211799871638f883117e56d573a18e1d2589aa0a5"
+    },
+    {
+      "path": "usr/local/lib/claus-native/libstdc++.so.6",
+      "bytes": 0,
+      "link": "libstdc++.so.6.0.30",
+      "layer": "sha256:edc39c5d0297449b69ba4f4211799871638f883117e56d573a18e1d2589aa0a5"
+    },
+    {
+      "path": "usr/local/lib/claus-native/libstdc++.so.6.0.30",
+      "bytes": 2190440,
+      "sha256": "e7848e32af4932840ba775169041759a2a8dd5a008af360e5c55bce506eebcf4",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2",
+          "libgcc_s.so.1"
+        ],
+        "rpath": []
+      },
+      "symbolVersions": [
+        "CXXABI_1.3",
+        "CXXABI_1.3.1",
+        "CXXABI_1.3.10",
+        "CXXABI_1.3.11",
+        "CXXABI_1.3.12",
+        "CXXABI_1.3.13",
+        "CXXABI_1.3.2",
+        "CXXABI_1.3.3",
+        "CXXABI_1.3.4",
+        "CXXABI_1.3.5",
+        "CXXABI_1.3.6",
+        "CXXABI_1.3.7",
+        "CXXABI_1.3.8",
+        "CXXABI_1.3.9",
+        "GLIBCXX_3.4",
+        "GLIBCXX_3.4.1",
+        "GLIBCXX_3.4.10",
+        "GLIBCXX_3.4.11",
+        "GLIBCXX_3.4.12",
+        "GLIBCXX_3.4.13",
+        "GLIBCXX_3.4.14",
+        "GLIBCXX_3.4.15",
+        "GLIBCXX_3.4.16",
+        "GLIBCXX_3.4.17",
+        "GLIBCXX_3.4.18",
+        "GLIBCXX_3.4.19",
+        "GLIBCXX_3.4.2",
+        "GLIBCXX_3.4.20",
+        "GLIBCXX_3.4.21",
+        "GLIBCXX_3.4.22",
+        "GLIBCXX_3.4.23",
+        "GLIBCXX_3.4.24",
+        "GLIBCXX_3.4.25",
+        "GLIBCXX_3.4.26",
+        "GLIBCXX_3.4.27",
+        "GLIBCXX_3.4.28",
+        "GLIBCXX_3.4.29",
+        "GLIBCXX_3.4.3",
+        "GLIBCXX_3.4.30",
+        "GLIBCXX_3.4.4",
+        "GLIBCXX_3.4.5",
+        "GLIBCXX_3.4.6",
+        "GLIBCXX_3.4.7",
+        "GLIBCXX_3.4.8",
+        "GLIBCXX_3.4.9",
+        "GLIBC_2.14",
+        "GLIBC_2.16",
+        "GLIBC_2.17",
+        "GLIBC_2.18",
+        "GLIBC_2.2.5",
+        "GLIBC_2.25",
+        "GLIBC_2.3",
+        "GLIBC_2.3.2",
+        "GLIBC_2.32",
+        "GLIBC_2.33",
+        "GLIBC_2.34",
+        "GLIBC_2.36",
+        "GLIBC_2.4",
+        "GLIBC_2.6"
+      ],
+      "layer": "sha256:edc39c5d0297449b69ba4f4211799871638f883117e56d573a18e1d2589aa0a5"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/_cffi_backend.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 348856,
+      "sha256": "9bc1d08072255a5ec2db10fc75df1dd9e73097a75cd9150cfe875ebd6712f17c",
+      "elf": {
+        "needed": [
+          "libpthread.so.0",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/cffi-2.1.1.dist-info/METADATA",
+      "bytes": 2527,
+      "sha256": "558bafb9093a8e790175d9ecff9688382981d744877dad86fd6770db0f4dc918",
+      "distribution": {
+        "name": "cffi",
+        "version": "2.1.1",
+        "requires": [
+          "pycparser; implementation_name != \"PyPy\""
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/cryptography-50.0.2.dist-info/METADATA",
+      "bytes": 4394,
+      "sha256": "047cfc71226409de4318b360aef15c63a2adf609731e3dcf7fe932f14ea042ee",
+      "distribution": {
+        "name": "cryptography",
+        "version": "50.0.2",
+        "requires": [
+          "cffi>=2.0.0 ; platform_python_implementation != 'PyPy'",
+          "typing-extensions>=4.13.2 ; python_full_version < '3.11'",
+          "bcrypt>=3.1.5 ; extra == 'ssh'"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so",
+      "bytes": 14436232,
+      "sha256": "f28d787117880abb13cc08822d1a0704d27e0fb33155d353f10a0a67efa6c4c1",
+      "elf": {
+        "needed": [
+          "libgcc_s.so.1",
+          "libpthread.so.0",
+          "libdl.so.2",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy-2.2.6.dist-info/METADATA",
+      "bytes": 62026,
+      "sha256": "22d648f53848429464ca643b40d73b49a920d47876fc77c395d4dca4e834904a",
+      "distribution": {
+        "name": "numpy",
+        "version": "2.2.6",
+        "requires": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy.libs/libgfortran-040039e1-0352e75f.so.5.0.0",
+      "bytes": 2833617,
+      "sha256": "c6090048eccc763522c12ef016f81da6b627cb3a044f55cf0479a839c41c0980",
+      "elf": {
+        "needed": [
+          "libquadmath-96973f99-934c22de.so.0.0.0",
+          "libz.so.1",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ],
+        "rpath": [
+          "$ORIGIN"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy.libs/libquadmath-96973f99-934c22de.so.0.0.0",
+      "bytes": 250985,
+      "sha256": "6ed5137f412781ad7863439fb543613f620b43c32b63292a0029246162f5bbc6",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-56d6093b.so",
+      "bytes": 25021457,
+      "sha256": "0bd815d04b6b54990e3cccc7528fbb696456d09569f533d0390c13f0cdc4dd4a",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libpthread.so.0",
+          "libgfortran-040039e1-0352e75f.so.5.0.0",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "rpath": [
+          "$ORIGIN"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/_core/_multiarray_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 178888,
+      "sha256": "b167d67f2925053a273915bfba272f05ce114699dabb3310bb860f9d4c8619dc",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/_core/_multiarray_umath.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 10510625,
+      "sha256": "e6241082eaab01d0f68b2b661522ecb9d5d2160915104df8b112cc161dfa18b4",
+      "elf": {
+        "needed": [
+          "libscipy_openblas64_-56d6093b.so",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "rpath": [
+          "$ORIGIN/../../numpy.libs"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/_core/_operand_flag_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 16984,
+      "sha256": "e13a51c775c895385f62bd84c807c507bcd1c4877c88e2bf1d8a55130b1ab17f",
+      "elf": {
+        "needed": [],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/_core/_rational_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 59832,
+      "sha256": "e3b166cefd55e6e1d5a1c943c64c8e62bd82ded78baf72ba52ede0758de36358",
+      "elf": {
+        "needed": [
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/_core/_simd.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 3042312,
+      "sha256": "9888bb2a927432dd090f426b043652dd687692db6c3a6af3486d3cefd50ee2ef",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/_core/_struct_ufunc_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 17120,
+      "sha256": "7221148456141cbd67e40570b92466935c29becc48ef466721efdf7c491a8c76",
+      "elf": {
+        "needed": [],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/_core/_umath_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 50512,
+      "sha256": "748682e30aca23d832e0571235ebbcced53a4a83163cb122314c1b6d746aae65",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/fft/_pocketfft_umath.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 649272,
+      "sha256": "18caba329ca56282504877dd05d2d3f695ac92deb044c406db1cc50f75091894",
+      "elf": {
+        "needed": [
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/linalg/_umath_linalg.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 227657,
+      "sha256": "cc26f067e35c99248f354652fb7a941fd6c60823bb100524d245f6a54fbceba6",
+      "elf": {
+        "needed": [
+          "libscipy_openblas64_-56d6093b.so",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ],
+        "rpath": [
+          "$ORIGIN/../../numpy.libs"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/linalg/lapack_lite.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 30009,
+      "sha256": "00b0f883636367e47297a79024ac517d4f959004434476abfc2f483a1e7e690c",
+      "elf": {
+        "needed": [
+          "libscipy_openblas64_-56d6093b.so"
+        ],
+        "rpath": [
+          "$ORIGIN/../../numpy.libs"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/_bounded_integers.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 319560,
+      "sha256": "26cf7b75e1d56d55575f111da21942a3f24c04e044d0d4be53746312e168f815",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/_common.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 238304,
+      "sha256": "3ad9b1890b8f2a7f3f8de0c2d52c179ddf333b7a1a6d51972cc407748c900339",
+      "elf": {
+        "needed": [
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/_generator.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 988680,
+      "sha256": "16eb02f2ebc5b4d1e26dedfa18b65aede9f2a8a095a07d3cd2c257008a25d24c",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/_mt19937.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 137616,
+      "sha256": "acefbf04c22e4b674b9c0c2ac792e4be1201ff6ea010eb1b5154b25ba53dd1c6",
+      "elf": {
+        "needed": [
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/_pcg64.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 147744,
+      "sha256": "f5d9a4164344d1180404de6dbb7d0951e77b5b2437ea5089aa3af2d1d38206c9",
+      "elf": {
+        "needed": [
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/_philox.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 120360,
+      "sha256": "b11e1768ba1d8c96de1213f1ef8db1dccac95e69866ede511fa8dd043d3fc495",
+      "elf": {
+        "needed": [
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/_sfc64.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 89456,
+      "sha256": "64f12f308bea1252f284056af2d98e781942b5c5089b05b958966abf687ce163",
+      "elf": {
+        "needed": [
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/bit_generator.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 234720,
+      "sha256": "e580315a2cd8803c90f87ed63d999c0d32c7a4f21881f2b5fcca13a959f49e2c",
+      "elf": {
+        "needed": [
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/numpy/random/mtrand.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 781008,
+      "sha256": "bb95b388fbfc1f87a332b5c08dd6b0f565c7c9a7c5a4a7e18e9dac2a884a4eb5",
+      "elf": {
+        "needed": [
+          "libm.so.6",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/onnxruntime-1.22.1.dist-info/METADATA",
+      "bytes": 4863,
+      "sha256": "f4475afdf465a311a080833c06f646f8e032e4d9d363a5b6385269ecc62f732f",
+      "distribution": {
+        "name": "onnxruntime",
+        "version": "1.22.1",
+        "requires": [
+          "coloredlogs",
+          "flatbuffers",
+          "numpy>=1.21.6",
+          "packaging",
+          "protobuf",
+          "sympy"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/onnxruntime/capi/libonnxruntime_providers_shared.so",
+      "bytes": 14632,
+      "sha256": "e4706ea02be3999167f000bb1ff7391c86e95d2d96f78eb33225c14b172a8451",
+      "elf": {
+        "needed": [
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/onnxruntime/capi/libonnxruntime.so.1.22.1",
+      "bytes": 21091568,
+      "sha256": "ad9665887025474170d3e71cd28021e7e811c5bf201bc365f953e34a2c4989cc",
+      "elf": {
+        "needed": [
+          "libdl.so.2",
+          "librt.so.1",
+          "libpthread.so.0",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "rpath": [
+          "$ORIGIN"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 22005232,
+      "sha256": "d8849a48e9ff656f862a5b65029f20b2ab48d000267f9f392805e30f2f035478",
+      "elf": {
+        "needed": [
+          "libdl.so.2",
+          "librt.so.1",
+          "libpthread.so.0",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "rpath": [
+          "$ORIGIN"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/pip-25.0.1.dist-info/METADATA",
+      "bytes": 3677,
+      "sha256": "4fa7318cf30f979db7cec45c12cbbc2b4f88a15f12eefbf59a6291d0a03af926",
+      "distribution": {
+        "name": "pip",
+        "version": "25.0.1",
+        "requires": []
+      },
+      "layer": "sha256:86a9e13e035d8e44ae37bfebc52c7fc68898fde19b4b26dd0585f2231fcfaf2c"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/pycparser-3.11.dist-info/METADATA",
+      "bytes": 8238,
+      "sha256": "e3a74c846648bb55f4f907284b745e2003b87b96d9c9d17a8a50cf37804541c9",
+      "distribution": {
+        "name": "pycparser",
+        "version": "3.11",
+        "requires": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/tokenizers-0.21.4.dist-info/METADATA",
+      "bytes": 6728,
+      "sha256": "ef1cc38a5ceceb768e2963515069bc1a6f539408fb0262443765caa8773e7123",
+      "distribution": {
+        "name": "tokenizers",
+        "version": "0.21.4",
+        "requires": [
+          "huggingface-hub>=0.16.4,<1.0",
+          "pytest ; extra == 'testing'",
+          "requests ; extra == 'testing'",
+          "numpy ; extra == 'testing'",
+          "datasets ; extra == 'testing'",
+          "black==22.3 ; extra == 'testing'",
+          "ruff ; extra == 'testing'",
+          "sphinx ; extra == 'docs'",
+          "sphinx-rtd-theme ; extra == 'docs'",
+          "setuptools-rust ; extra == 'docs'",
+          "tokenizers[testing] ; extra == 'dev'"
+        ]
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "usr/local/lib/python3.12/site-packages/tokenizers/tokenizers.abi3.so",
+      "bytes": 9361352,
+      "sha256": "ceb9ccd6aaa1223b1345827064142aaf9d35a1786ac44c3277bf0a72ff32ea49",
+      "elf": {
+        "needed": [
+          "libstdc++.so.6",
+          "libgcc_s.so.1",
+          "librt.so.1",
+          "libpthread.so.0",
+          "libm.so.6",
+          "libdl.so.2",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "rpath": []
+      },
+      "layer": "sha256:303b8f77c3f986144b2a768d175ffb512c076f5cdf00585ab8c2272636b1a644"
+    },
+    {
+      "path": "var/lib/dpkg/status",
+      "bytes": 90392,
+      "sha256": "1cbb44b75c6da9ec6698d9495dc8fa371b9fdc68edb4661eb81957b8c19c10be",
+      "packages": [
+        {
+          "Package": "adduser",
+          "Version": "3.134",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "apt",
+          "Version": "2.6.1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "base-files",
+          "Version": "12.4+deb12u15",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "base-passwd",
+          "Version": "3.6.1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "bash",
+          "Version": "5.2.15-2+b13",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "bsdutils",
+          "Version": "1:2.38.1-5+deb12u3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "ca-certificates",
+          "Version": "20250419~deb12u1",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "coreutils",
+          "Version": "9.1-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "dash",
+          "Version": "0.5.12-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "debconf",
+          "Version": "1.5.82",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "debian-archive-keyring",
+          "Version": "2023.3+deb12u2",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "debianutils",
+          "Version": "5.7-0.5~deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "diffutils",
+          "Version": "1:3.8-4",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "dpkg",
+          "Version": "1.21.23",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "e2fsprogs",
+          "Version": "1.47.0-2+b2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "findutils",
+          "Version": "4.9.0-4",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "gcc-12-base",
+          "Version": "12.2.0-14+deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "gpgv",
+          "Version": "2.2.40-1.1+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "grep",
+          "Version": "3.8-5",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "gzip",
+          "Version": "1.12-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "hostname",
+          "Version": "3.23+nmu1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "init-system-helpers",
+          "Version": "1.65.2+deb12u1",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libacl1",
+          "Version": "2.3.1-3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libapt-pkg6.0",
+          "Version": "2.6.1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libattr1",
+          "Version": "1:2.5.1-4",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libaudit-common",
+          "Version": "1:3.0.9-1",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libaudit1",
+          "Version": "1:3.0.9-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libblkid1",
+          "Version": "2.38.1-5+deb12u3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libbz2-1.0",
+          "Version": "1.0.8-5+b1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libc-bin",
+          "Version": "2.36-9+deb12u14",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libc6",
+          "Version": "2.36-9+deb12u14",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libcap-ng0",
+          "Version": "0.8.3-1+b3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libcap2",
+          "Version": "1:2.66-4+deb12u3+b1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libcom-err2",
+          "Version": "1.47.0-2+b2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libcrypt1",
+          "Version": "1:4.4.33-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libdb5.3",
+          "Version": "5.3.28+dfsg2-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libdebconfclient0",
+          "Version": "0.270",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libext2fs2",
+          "Version": "1.47.0-2+b2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libffi8",
+          "Version": "3.4.4-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libgcc-s1",
+          "Version": "12.2.0-14+deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libgcrypt20",
+          "Version": "1.10.1-3+deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libgdbm6",
+          "Version": "1.23-3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libgmp10",
+          "Version": "2:6.2.1+dfsg1-1.1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libgnutls30",
+          "Version": "3.7.9-2+deb12u7",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libgpg-error0",
+          "Version": "1.46-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libgssapi-krb5-2",
+          "Version": "1.20.1-2+deb12u5",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libhogweed6",
+          "Version": "3.8.1-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libidn2-0",
+          "Version": "2.3.3-1+b1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libk5crypto3",
+          "Version": "1.20.1-2+deb12u5",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libkeyutils1",
+          "Version": "1.6.3-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libkrb5-3",
+          "Version": "1.20.1-2+deb12u5",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libkrb5support0",
+          "Version": "1.20.1-2+deb12u5",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "liblz4-1",
+          "Version": "1.9.4-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "liblzma5",
+          "Version": "5.4.1-1+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libmd0",
+          "Version": "1.0.4-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libmount1",
+          "Version": "2.38.1-5+deb12u3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libncursesw6",
+          "Version": "6.4-4",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libnettle8",
+          "Version": "3.8.1-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libnsl2",
+          "Version": "1.3.0-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libp11-kit0",
+          "Version": "0.24.1-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libpam-modules",
+          "Version": "1.5.2-6+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libpam-modules-bin",
+          "Version": "1.5.2-6+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libpam-runtime",
+          "Version": "1.5.2-6+deb12u2",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libpam0g",
+          "Version": "1.5.2-6+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libpcre2-8-0",
+          "Version": "10.42-1+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libreadline8",
+          "Version": "8.2-1.3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libseccomp2",
+          "Version": "2.5.4-1+deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libselinux1",
+          "Version": "3.4-1+b6",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libsemanage-common",
+          "Version": "3.4-1",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libsemanage2",
+          "Version": "3.4-1+b5",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libsepol2",
+          "Version": "3.4-2.1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libsmartcols1",
+          "Version": "2.38.1-5+deb12u3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libsqlite3-0",
+          "Version": "3.40.1-2+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libss2",
+          "Version": "1.47.0-2+b2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libssl3",
+          "Version": "3.0.22-1~deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libstdc++6",
+          "Version": "12.2.0-14+deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libsystemd0",
+          "Version": "252.39-1~deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libtasn1-6",
+          "Version": "4.19.0-2+deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libtinfo6",
+          "Version": "6.4-4",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libtirpc-common",
+          "Version": "1.3.3+ds-1",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libtirpc3",
+          "Version": "1.3.3+ds-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libudev1",
+          "Version": "252.39-1~deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libunistring2",
+          "Version": "1.0-2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libuuid1",
+          "Version": "2.38.1-5+deb12u3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libxxhash0",
+          "Version": "0.8.1-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "libzstd1",
+          "Version": "1.5.4+dfsg2-5",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "login",
+          "Version": "1:4.13+dfsg1-1+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "logsave",
+          "Version": "1.47.0-2+b2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "mawk",
+          "Version": "1.3.4.20200120-3.1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "mount",
+          "Version": "2.38.1-5+deb12u3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "ncurses-base",
+          "Version": "6.4-4",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "ncurses-bin",
+          "Version": "6.4-4",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "netbase",
+          "Version": "6.4",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "openssl",
+          "Version": "3.0.22-1~deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "passwd",
+          "Version": "1:4.13+dfsg1-1+deb12u2",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "perl-base",
+          "Version": "5.36.0-7+deb12u4",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "readline-common",
+          "Version": "8.2-1.3",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "sed",
+          "Version": "4.9-1+deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "sysvinit-utils",
+          "Version": "3.06-4",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "tar",
+          "Version": "1.34+dfsg-1.2+deb12u1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "tzdata",
+          "Version": "2026c-0+deb12u1",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "usr-is-merged",
+          "Version": "37~deb12u1",
+          "Architecture": "all",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "util-linux",
+          "Version": "2.38.1-5+deb12u3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "util-linux-extra",
+          "Version": "2.38.1-5+deb12u3",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        },
+        {
+          "Package": "zlib1g",
+          "Version": "1:1.2.13.dfsg-1",
+          "Architecture": "amd64",
+          "Status": "install ok installed"
+        }
+      ],
+      "layer": "sha256:86a9e13e035d8e44ae37bfebc52c7fc68898fde19b4b26dd0585f2231fcfaf2c"
+    }
+  ],
+  "sourceFilesMatch": true,
+  "limits": "Digest-verified registry bytes and static filesystem inventory. This is not an independent security review or a live endpoint test; startup execution is evidenced by the original final-stage build and remains reproducible by the reviewer."
+}

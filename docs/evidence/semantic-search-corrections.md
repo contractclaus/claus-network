@@ -27,3 +27,7 @@ The model's immutable build, source and manifest are in semantic-search-release.
 11. The actual private-runner source at c3ae7e469c5aa72cbea77ef25cb10c055f9973d6 is included, rather than the older reference revision. Its authenticated build receipt names run 39072928811. All published OCI layers can be checked against the registry's digest graph. The expired real issuer signature in semantic-search-admission-key.json verifies with the image's public key. Base-image package/CVE assessment is still an independent review responsibility; an operator statement is not an audit.
 
 Focused validation reused the existing model and environment: five focused cases for owner/nonce limits, health headroom, cleanup, padded tensor costs and deduplication; prior budget and protocol regression evidence is retained. Previously completed model/protocol and provider checks remain evidence for unchanged behavior. No unrelated full suite was repeated. A new immutable image and exact-source review are required because the runtime source changed; all prior paid reviews remain retained.
+
+## Exact image and issuer coverage
+
+The same compiled image now has a digest-verified filesystem inventory and a portable registry inspection command in [the image evidence guide](semantic-search-image-coverage.md). The prior final report remains bound to its original image. This supplement changes no executable model bytes and grants no approval.
