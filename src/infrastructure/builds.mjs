@@ -16,7 +16,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
   }
   async function authorized(reader,v){return identity.allowed(v.actor,'build.compile',{projectId:v.projectId},reader);}
   return {
-    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:1,globalBuildsPerWindow:2,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
+    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:2,projectConcurrentBuilds:1,globalBuildsPerWindow:2,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
     async submit(actor,projectId,{snapshotId,dockerfile='Dockerfile',publishSource,idempotencyKey}){
       await identity.authorize(actor,'build.compile',{projectId});
       text(idempotencyKey);requireThat(idempotencyKey.length<=128,'invalid_identifier');
@@ -34,12 +34,14 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
         const old=await tx.read('oci-builds',id);if(old){requireThat(old.value.requestHash===requestHash,'idempotency_conflict');return visible(tx,old);}
         // Small, rolling admission for the initial standard-runner export lane.
         // Unknown executions retain a slot; they never become a free retry.
-        const row=await tx.read('oci-capacity','standard'),active=[];
+        const row=await tx.read('oci-capacity','standard'),active=[],busy=[];
         for(const entry of row?.value.entries??[]){
           const b=await tx.read('oci-builds',entry.id),j=await tx.read('workflow-jobs',entry.id);
-          if(entry.at>now()-90000000||b&&!complete.has(b.value.state)&&j?.value.state!=='cancelled')active.push(entry);
+          const pending=b&&!complete.has(b.value.state)&&j?.value.state!=='cancelled';
+          if(entry.at>now()-90000000||pending)active.push(entry);
+          if(pending)busy.push(entry);
         }
-        if(active.length>=2||active.some(x=>x.projectId===projectId)){
+        if(active.length>=2||busy.some(x=>x.projectId===projectId)){
           const relevant=active.some(x=>x.projectId===projectId)?active.filter(x=>x.projectId===projectId):active;
           const retryAt=Math.max(now()+60000,Math.min(...relevant.map(x=>x.at+90000000)));
           throw Object.assign(Error('oci_build_capacity_reached'),{code:'oci_build_capacity_reached',retryAt});
