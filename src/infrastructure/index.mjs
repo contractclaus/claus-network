@@ -1,4 +1,5 @@
 import {maintenancePolicy,maintenanceDue} from './maintenance.mjs';
+import {createFundingReconciler} from './funding.mjs';
 import {createResourceControl} from './control.mjs';
 import {randomUUID} from 'node:crypto';
 import {amount,copy,digest,integer,requireThat,text} from '../shared/index.mjs';
@@ -119,6 +120,7 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
       return {items,nextProjectCursor:projects.nextCursor,resourceCursors,unavailable,complete:projects.nextCursor===null&&resourceCursors.length===0&&unavailable.length===0,observedAt:now()};
     },
     async discovery(){return {profile:INFRASTRUCTURE_VERSION,enabled,automaticMaintenance:true,providerExecution:enabled&&['quote','verifyRelease','create','inspect','stop','logs','verifyReceipt'].every(name=>typeof ports[name]==='function'),reconciliation:typeof ports.inspect==='function'&&typeof ports.stop==='function',sourcePlans:true,buildExecution:false,renewableLeases:typeof ports.extend==='function',independentProviderGuard:true,readiness:'/v1/projects/{projectId}/infrastructure/readiness',funding:'explicit-project-allowance',images:'immutable-reviewed-digest',unknownOutcomes:'original-resource-reconciliation',updates:'stop-settle-then-create-new-release',resources:'/v1/projects/{projectId}/infrastructure'};},
+    reconcileFunding:createFundingReconciler({store,ports,now}),
     async readiness(actor,projectId){await auth(actor,projectId);return typeof ports.readiness==='function'?await ports.readiness():{enabled:false,configured:false,profiles:[]};},
     async buildPlan(actor,projectId,{snapshotId,dockerfile}){
       await auth(actor,projectId,'build.compile');
