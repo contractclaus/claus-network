@@ -1,3 +1,4 @@
+import {databaseOrder} from '../apps/database-backup.mjs';
 import { canonical, copy, integer, requireThat, text } from '../shared/index.mjs';
 
 // Separate application tables and app-local locks. Financial/network transitions
@@ -24,6 +25,17 @@ export async function openAppPostgres({ pool, schema = 'claus_network', migrate 
         const { rows } = await client.query(`SELECT revision,body FROM ${network} WHERE collection=$1 AND id=$2${lockRow ? ' FOR SHARE' : ''}`, [collection,id]);
         return rows[0] ? { revision:Number(rows[0].revision),value:rows[0].body } : null;
       } },
+      async databaseMetadata(limit) {
+        integer(limit,1,100001);
+        const {rows}=await client.query(`SELECT collection,id,revision,octet_length(body::text) AS bytes FROM ${docs} WHERE app_id=$1 ORDER BY collection COLLATE "C",id COLLATE "C" LIMIT $2`,[appId,limit]);
+        return rows.map(r=>({collection:r.collection,id:r.id,revision:Number(r.revision),bytes:Number(r.bytes)}));
+      },
+      async databaseRows({after=null,limit=51}={}) {
+        integer(limit,1,51);const values=[appId,limit];let cursor='';
+        if(after){values.push(after.collection,after.id);cursor=' AND (collection COLLATE "C",id COLLATE "C") > ($3 COLLATE "C",$4 COLLATE "C")';}
+        const {rows}=await client.query(`SELECT collection,id,revision,body FROM ${docs} WHERE app_id=$1${cursor} ORDER BY collection COLLATE "C",id COLLATE "C" LIMIT $2`,values);
+        return rows.map(r=>({collection:r.collection,id:r.id,revision:Number(r.revision),value:r.body}));
+      },
       async read(collection,id) {
         const { rows } = await client.query(`SELECT revision,body FROM ${docs} WHERE app_id=$1 AND collection=$2 AND id=$3`,[appId,collection,id]);
         return rows[0] ? { revision:Number(rows[0].revision),value:rows[0].body } : null;
@@ -87,7 +99,11 @@ export async function openAppPostgres({ pool, schema = 'claus_network', migrate 
 // Deterministic isolated adapter for tests. Production always uses PostgreSQL.
 export function memoryAppStore(network) {
   const states=new Map(),queues=new Map();
-  const reader=rows=>({network,read:async(c,id)=>copy(rows.get(c+'\0'+id)??null),list:async(c,{after='',limit=50,authorId,state,parentId,assigneeId}={})=>
+  const entries=rows=>[...rows].map(([key,row])=>{const i=key.indexOf('\0');return{collection:key.slice(0,i),id:key.slice(i+1),revision:row.revision,value:copy(row.value)};}).sort(databaseOrder);
+  const reader=rows=>({network,
+    databaseMetadata:async limit=>entries(rows).slice(0,limit).map(({collection,id,revision,value})=>({collection,id,revision,bytes:Buffer.byteLength(canonical(value))})),
+    databaseRows:async({after=null,limit=51}={})=>entries(rows).filter(r=>!after||databaseOrder(r,after)>0).slice(0,limit),
+    read:async(c,id)=>copy(rows.get(c+'\0'+id)??null),list:async(c,{after='',limit=50,authorId,state,parentId,assigneeId}={})=>
     [...rows].filter(([k,r])=>k.startsWith(c+'\0')&&k.slice(c.length+1)>after&&(authorId===undefined||r.value.authorId===authorId)&&(state===undefined||r.value.state===state)&&(parentId===undefined||r.value.parentId===parentId)&&(assigneeId===undefined||r.value.assigneeId===assigneeId))
       .sort(([a],[b])=>a<b?-1:1).slice(0,limit).map(([k,r])=>({id:k.slice(c.length+1),...copy(r)}))});
   return {reader:id=>reader(states.get(id)??new Map()),catalog:async({after='',limit=50}={})=>[...states.keys()].filter(id=>id>after&&states.get(id).has('meta\0app')).sort().slice(0,limit),

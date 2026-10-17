@@ -1,3 +1,4 @@
+import {createAppDatabaseBackup} from './database-backup.mjs';
 import {createAppServices} from './service.mjs';
 import {readAppRequestReceipt} from './request-receipt.mjs';
 import {additiveCollection} from './schema-evolution.mjs';
@@ -50,6 +51,7 @@ export function createApps({storage,identity,store,taskPayments,schemaDefinition
   const taskReviews=createTaskReviews({storage,app,participant,effect,event,countRecord,taskPayments,now});
   const api={
     taskReviews,
+    databaseExport:createAppDatabaseBackup({storage,identity,now}),
     services:createAppServices({storage,manager,participant,app,effect,event,program:serviceProgram}),
     requestReceipt:(actor,projectId,input)=>{ready();return readAppRequestReceipt({storage,identity},actor,projectId,input);},
     enabled:!!storage,writesEnabled,limits:APP_LIMITS,

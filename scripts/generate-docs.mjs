@@ -4,6 +4,7 @@ import { API_VERSION, ROUTES, openapi } from '../interfaces/contract.mjs';
 const docs = new URL('../docs/', import.meta.url);
 const origin = 'https://claus-network-api.vercel.app';
 const access = {
+  app_database_export: 'Project owner session only; private application database',
   resource_control_set: 'Network owner session', resource_profile_set: 'Network owner session',
   resource_allowance_set: 'Network owner session',
   resource_control: 'Assigned infrastructure operator or network owner session',

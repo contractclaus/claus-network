@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_7CRaYuMdMyxkMkgGRs8TPTqWkSRV",
-  "source": "2026-10-17-private-builds",
+  "deployed": "dpl_6XviLSLa5PeArQTua37ssqtMy6Kn",
+  "source": "2026-10-17-app-database-recovery",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -16,7 +16,7 @@
     "src/work-wallet.ts": "c4434dd0c2363044ffeb0a19c0620a4ee5acea928bf2c8fa4a89ee1e3b8f6dd1",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "9b2abec045c6f422cfea6354aeff9463a297f4613af62800a05228a8a72ff597",
+    "src/network-access.ts": "1c2a10bd0fb8cb5f03236c4f63fb84c4e089f1a0a57cfdec5d662dca32552cff",
     "src/context.ts": "3192fe2e5b49eb1725ba78cb80cb00da492f9a97e4a3580b31585130bfff386f",
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "fb5b6e2813c5c8d9760c025766667c4babe596248d1b46deb4476ce57c9c3777",
@@ -31,7 +31,7 @@
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
     "src/isolated/runner.mjs": "664b14555698224c02880e743535873e08e6a82e5f64629ba6461edd8b217df9",
     "src/network-products.ts": "b6d829c3ce9b8ced6c1c4ca2b488d1bef809481d39416e473ae196fc1ea2bc94",
-    "src/network-routes.ts": "a1b5f148ea937ba87686489a47cac40072cea5601acc7eaf1a58fd7c1196a3c5",
+    "src/network-routes.ts": "7850e76971c60f9f16c29591dcfb5671771b8f8393fc96dcf70f0f0b9ed1196c",
     "src/operational-capabilities.ts": "1da5f353b4f5ddb22b212aa948dcee33fea56736d30424f3ed15416621962770",
     "src/cycle.ts": "2b9370e3d81d3122f61c8975c6f2ca10a5727d3fc996f98e906ee0cd885a693f",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
