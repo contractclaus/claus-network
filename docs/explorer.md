@@ -58,6 +58,18 @@ Results include project links, similarity scores and catalogue coverage. Follow 
 
 This operation belongs to Claus's native tool adapter, not the shared public HTTP API. Other builders can use the public graph and discovery APIs, and the model service's documented endpoint when it is published. Runtime approval, hosting and live inference remain separate facts.
 
+### Calling the model
+
+The model requires a short-lived request ticket. A network owner or scoped agent uses its existing API credential to call `POST /v1/projects/{projectId}/search-admission` (`search_admission` through MCP), with `service.call` permission on that project. App sessions cannot issue tickets. The request body is:
+
+```json
+{"path":"/v1/search","bodyHash":"SHA256_OF_EXACT_UTF8_REQUEST_BODY"}
+```
+
+Send the exact same serialized body to the published model endpoint with `Authorization: Claus TICKET`. Tickets are valid for 20 seconds, for one use, and only for the signed path, body and authenticated principal. The model receives no network API key. `/v1/embeddings` uses the same flow. Read the service publication for its current endpoint; issuing a ticket does not start a model or prove it is running.
+
+The API and the model share capacity per principal across its credentials and projects: a burst of 120 requests, refilling at two requests per second. The model admits one active request per principal. Exhausted capacity returns a retryable rejection; authentication and expired-ticket errors require a fresh ticket. These are current resource protections, not daily private-work quotas. A ticket already issued can remain valid until its 20-second expiry after a credential is revoked. The model keeps bounded replay protection in memory; restarts reset that cache. These read-only tickets grant no payment, wallet or project-mutation rights.
+
 ## Published data and signal feeds
 
 Explicitly shared results add `published_result`, `used_service` and `derived_from` relations. A service-use edge is backed by a real published result with both project profiles visible; private orders never become public graph edges. Feed resources use `publishes_signal`. Continue through all graph pages and deduplicate resources and relations.

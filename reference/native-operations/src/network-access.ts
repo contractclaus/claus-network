@@ -1,4 +1,4 @@
-import {semanticNetworkSearch} from './network-semantic-search.js';
+import {semanticSearchRelease,semanticNetworkSearch} from './network-semantic-search.js';
 import {loadRuntimeResourceView} from './runtime-resource-view.js';
 import {custodyClient} from './custody-client.js';
 import {networkFailure} from './network-failure.js';
@@ -28,8 +28,8 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
  let login:Promise<string>|null=null;
  let rejectedSession:string|undefined;
  const publicReads=new Map<string,Promise<any>>();
- async function json(path:string,method='GET',body?:any,token?:string,base=origin,timeoutMs=base===origin?30000:15000,signal?:AbortSignal){
-  const response=await request(base+path,{method,redirect:'error',signal:signal??AbortSignal.timeout(timeoutMs),headers:{accept:'application/json',...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
+ async function json(path:string,method='GET',body?:any,token?:string,base=origin,timeoutMs=base===origin?30000:15000,signal?:AbortSignal,authScheme:'Bearer'|'Claus'='Bearer'){
+  const response=await request(base+path,{method,redirect:'error',signal:signal??AbortSignal.timeout(timeoutMs),headers:{accept:'application/json',...(body?{'content-type':'application/json'}:{}),...(token?{authorization:authScheme+' '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
   const reader=response.body?.getReader();if(!reader)throw Error('network_response_empty');
   const chunks:Uint8Array[]=[];let size=0;
   try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>3200000){await reader.cancel();throw Error('network_response_too_large');}chunks.push(part.value);}}finally{reader.releaseLock();}
@@ -71,7 +71,13 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
    if(name==='coin_hook_history')return json('/hook-history.json','GET',undefined,undefined,'https://claus.si');
    if(name==='coin_hook_state')return json('/fee-state.json','GET',undefined,undefined,'https://claus.si');
    if(name==='network_overview')return selectObservation(await json('/api/network-context'+(args.after?'?after='+encodeURIComponent(args.after):''),'GET',undefined,undefined,'https://claus.si'),args.query);
-   if(name==='network_semantic_search')return semanticNetworkSearch(args,{call,now,post:(endpoint,body,signal)=>json('/v1/search','POST',body,undefined,endpoint,20000,signal)});
+   if(name==='network_semantic_search')return semanticNetworkSearch(args,{call,now,post:async(endpoint,body,signal)=>{
+    const bodyHash=createHash('sha256').update(JSON.stringify(body)).digest('hex');
+    const ticket=await call('search_admission',{projectId:semanticSearchRelease.projectId,path:'/v1/search',bodyHash});
+    signal.throwIfAborted();
+    if(ticket.service!==semanticSearchRelease.projectId||typeof ticket.ticket!=='string'||ticket.ticket.length>1800||!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(ticket.ticket)||!Number.isSafeInteger(ticket.expiresAt)||ticket.expiresAt<=now()||ticket.expiresAt>now()+21000)throw Error('semantic_search_admission_invalid');
+    return json('/v1/search','POST',body,ticket.ticket,endpoint,20000,signal,'Claus');
+   }});
    const link=resolveNetworkLink(args.url);
    if(link.operation==='read_url')return {canonicalUrl:link.canonicalUrl,nextTool:'read_url',input:link.input,note:'Read this public page before describing it; no content has been inspected yet.'};
    if(link.operation==='linked_task'){const project=await call('public_project',{slug:link.input.slug});return {canonicalUrl:link.canonicalUrl,projectId:project.projectId,task:await call('public_task',{projectId:project.projectId,taskId:link.input.taskId}),instructionAuthority:false};}
