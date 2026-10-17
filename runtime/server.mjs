@@ -34,7 +34,7 @@ import {createIdentity} from '../src/identity/index.mjs';
 import {createProjects} from '../src/projects/index.mjs';
 import {createWorkConnections} from '../src/collaboration/connections.mjs';
 import {createJobs} from '../src/jobs/index.mjs';
-import {createArtifactStore} from '../src/artifact-store/index.mjs';
+import {createArtifactStore,createSourceFiles} from '../src/artifact-store/index.mjs';
 import {createBuilds} from '../src/builds/index.mjs';
 import {openStore} from '../src/storage/index.mjs';
 import {openPostgresStore} from '../src/postgres/index.mjs';
@@ -64,9 +64,10 @@ import {createSignals} from '../src/signals/index.mjs';
 import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
 import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {createPublicAppearances} from '../src/releases/appearance.mjs';
+import {sourceObjects as configuredSourceObjects} from './source-objects.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({infrastructurePorts={},infrastructureEnabled=false,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
+export function createApplication({infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
@@ -83,13 +84,13 @@ export function createApplication({infrastructurePorts={},infrastructureEnabled=
    state:await contractIntakeHealth(store,intakePorts,now(),chainId)}))),
   chainAdmission:reader=>deployments.admission.admitted(reader),mainnetAdmission:reader=>deployments.admission.forChain(1).admitted(reader),reviewEligibility:(reader,projectId)=>reviewSystem.flow.admission.eligible(reader,projectId)});
  let services,releases,workflows;
- const artifacts=createArtifactStore({store});
- const contentAdmin=createContentAdmin({store,identity,artifacts,now,origin:operatorPorts.siteOrigin});
+ const artifacts=createArtifactStore({store}),sourceFiles=createSourceFiles({store,objects:sourceObjects,now});
+ const contentAdmin=createContentAdmin({store,identity,artifacts,sourceFiles,now,origin:operatorPorts.siteOrigin});
  const arbitration=createArbitration({store,identity,dealPorts,now,enabled:arbitrationEnabled});
  const deals=createDeals({store,identity,ports:dealPorts});
  const taskPayments=createTaskPayments({identity,store,ports:dealPorts,deals,evidence:arbitration.evidence,now});
  const apps=createApps({serviceProgram:()=>serviceProgram,taskPayments,storage:appStorage,identity,store,schemaDefinition,schemaValue,now,visible:contentAdmin.visible,admit:access.collaboration,authorizeOperator:contentAdmin.authorize,workflowAuthority:(reader,ref,appId,input)=>workflows.postingAuthority(reader,ref,appId,input),writesEnabled:appWritesEnabled});
- const projects=createProjects({store,identity,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,publicAppearances:createPublicAppearances({store,visibleMany:contentAdmin.visibleMany,now}),publicConnections:createWorkConnections({store,apps,visible:contentAdmin.visible}),limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicEntry:async projectId=>{
+ const projects=createProjects({store,identity,sourceFiles,now,visible:contentAdmin.visible,visibleMany:contentAdmin.visibleMany,publicAppearances:createPublicAppearances({store,sourceFiles,visibleMany:contentAdmin.visibleMany,now}),publicConnections:createWorkConnections({store,apps,visible:contentAdmin.visible}),limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,publicAppearance:async projectId=>({releases:await releases.publicForProject(projectId)}),publicEntry:async projectId=>{
   const [application,publicReleases]=await Promise.all([
     appStorage?apps.describe(projectId).catch(e=>{if(['not_found','project_unavailable'].includes(e.code))return null;throw e;}):null,
     releases.publicForProject(projectId)
@@ -109,7 +110,7 @@ export function createApplication({infrastructurePorts={},infrastructureEnabled=
   await intake.onCancel(tx,job);
  }});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
- const partnerLaunches=createPartnerLaunches({store,identity,builds,artifacts,pins:partnerLaunchAssignment,now});
+ const partnerLaunches=createPartnerLaunches({store,identity,builds,artifacts,sourceFiles,pins:partnerLaunchAssignment,now});
  reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,partnerLaunches,validatePublicBuild:(artifact,profile)=>[CAPITAL_PROFILE,PARTNER_PROFILE].includes(profile)?validateCapitalBuild(artifact):profile===NATIVE_PROGRAM_PROFILE?validateNativeProgramBuild(artifact):chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>input.profile===PARTNER_PROFILE?partnerLaunches.select(reader,projectId,input):input.profile===CAPITAL_PROFILE?selectCapitalReview({reader,identity,projectId,...input}):input.profile===NATIVE_PROGRAM_PROFILE?selectNativeProgramReview({reader,identity,projectId,...input}):deployments.reviewProfile(reader,projectId,input),...reviewPorts});
  const chain=chainPorts.chain??createReadonlyChainRouter({
   sepolia:createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})}),
@@ -128,10 +129,10 @@ export function createApplication({infrastructurePorts={},infrastructureEnabled=
  wallets=createWallets({store,identity,jobs,services,now,chain:chainPorts.wallet??createWalletRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})}),now})});
  requireThat(!operatorPorts.siteOrigin || operatorPorts.siteOrigin !== origin, 'release_origin_not_isolated');
- releases=createReleases({appSchema:async(projectId)=>{if(!appStorage)return null;const a=(await appStorage.reader(projectId).read('meta','app'))?.value;return a?digest(a.manifest):null;},store,identity,projects,artifacts,visible:contentAdmin.visible,limit:access.limit,admit:collaborationAdmission,now,origin:operatorPorts.siteOrigin});
+ releases=createReleases({sourceFiles,appSchema:async(projectId)=>{if(!appStorage)return null;const a=(await appStorage.reader(projectId).read('meta','app'))?.value;return a?digest(a.manifest):null;},store,identity,projects,artifacts,visible:contentAdmin.visible,limit:access.limit,admit:collaborationAdmission,now,origin:operatorPorts.siteOrigin});
  vaults=createVaults({store,identity,jobs,now,chain:chainPorts.vault??createVaultRead({
   client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})})});
- const archives=operatorPorts.signingKey?createProjectArchives({store,identity,now,...operatorPorts}):null;
+ const archives=operatorPorts.signingKey?createProjectArchives({store,identity,sourceFiles,now,...operatorPorts}):null;
  const portabilityAdmission=async reader=>requireThat((await reader.read('network-capabilities','portability'))?.value.enabled===true,'portability_not_enabled');
  const transfers=createProjectTransfers({store,identity,artifacts,archives,now,limit:access.limit,consumeSnapshotBytes:access.consumeSnapshotBytes,admitImport:portabilityAdmission,
   admit:async(projectId,reader)=>{await portabilityAdmission(reader);await collaborationAdmission(projectId,reader);},...operatorPorts});
@@ -184,7 +185,7 @@ export function createApplication({infrastructurePorts={},infrastructureEnabled=
   }
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {infrastructure,partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
+ return {sourceFiles,infrastructure,partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:(request,context)=>new URL(request.url).pathname==='/mcp'?mcp(request,context):http(request,context)};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{
@@ -209,7 +210,7 @@ async function main(){
   requireThat(process.env.CLAUS_NETWORK_LOCAL==='1','database_required');
   store=openStore(process.env.CLAUS_NETWORK_LOCAL_FILE??'network-local.sqlite');
  }
- const application=createApplication({arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig(),chainPorts:readonlyPorts(),dealPorts:configuredDealPorts()});
+ const application=createApplication({sourceObjects:await configuredSourceObjects(),arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig(),chainPorts:readonlyPorts(),dealPorts:configuredDealPorts()});
  const server=await listen(application,{port:Number(process.env.PORT??8787)});
  console.log('Claus Network listening on '+server.address().address+':'+server.address().port);
  for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(async()=>{await store.close();process.exit(0);}));

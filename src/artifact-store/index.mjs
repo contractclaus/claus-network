@@ -1,3 +1,5 @@
+export {createSourceFiles, SOURCE_INLINE_BYTES} from './sources.mjs';
+
 import { canonical, digest, requireThat, text } from '../shared/index.mjs';
 
 // Private content-addressed artifacts. Each document stays below the store's

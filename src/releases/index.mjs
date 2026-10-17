@@ -1,7 +1,8 @@
+import {createSourceFiles} from '../artifact-store/index.mjs';
 import { manifestConnections, SITE_LIMITS, sitePublicationActive, sourcePath, canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
 
 
-export function createReleases({ store, identity, projects, artifacts, admit = async () => {}, limit = async () => undefined, now = () => Date.now(),
+export function createReleases({ store, identity, projects, artifacts, sourceFiles = createSourceFiles({store}), admit = async () => {}, limit = async () => undefined, now = () => Date.now(),
   visible = async () => true, appSchema = async () => null, origin = 'https://claus-network-sites.vercel.app' }) {
   requireThat(new URL(origin).origin === origin && new URL(origin).protocol === 'https:', 'invalid_release_origin');
   async function owned(actor,projectId,id,reader=store){
@@ -88,7 +89,7 @@ export function createReleases({ store, identity, projects, artifacts, admit = a
       if(release.snapshotId){
         const snapshot=(await store.read('snapshots',digest({projectId:release.projectId,id:release.snapshotId})))?.value;
         const entry=snapshot?.files.find(f=>f.path===path);requireThat(entry,'not_found');
-        const artifact=(await store.read('artifacts',digest({projectId:release.projectId,id:entry.hash})))?.value;
+        const artifact=await sourceFiles.get(release.projectId,entry.hash);
         requireThat(artifact?.projectId===release.projectId&&artifact.path===path&&artifact.hash===entry.hash,'not_found');
         file={path:artifact.path,content:artifact.content,hash:artifact.hash};
       }else file=(await artifacts.get(release.projectId,release.contentHash)).find(f=>f.path===path);

@@ -1,9 +1,10 @@
+import {createSourceFiles} from '../artifact-store/index.mjs';
 import {digest, sitePublicationActive} from '../shared/index.mjs';
 import {presentation} from './presentation.mjs';
 
 // Resolve the selected public manifests in fixed batches. Map discovery must
 // not issue one HTTP request (and a full release lookup) for every project.
-export function createPublicAppearances({store, visibleMany, now = Date.now}) {
+export function createPublicAppearances({store, sourceFiles = createSourceFiles({store}), visibleMany, now = Date.now}) {
   const many = async (collection, ids) => {
     const unique = [...new Set(ids)];
     if (!unique.length) return new Map();
@@ -41,7 +42,10 @@ export function createPublicAppearances({store, visibleMany, now = Date.now}) {
     const artifacts = await many('artifacts', candidates.map(x => x.artifactKey));
     const result = new Map();
     for (const item of candidates) {
-      const file = artifacts.get(item.artifactKey)?.value;
+      const stored = artifacts.get(item.artifactKey)?.value;
+      let file;
+      try { file = stored ? await sourceFiles.resolve(stored) : null; }
+      catch { continue; }
       if (file?.projectId !== item.projectId || file.path !== 'claus.json' || file.hash !== item.file.hash ||
         typeof file.content !== 'string' || Buffer.byteLength(file.content) > 4096 ||
         !sitePublicationActive(item.publication.expiresAt, now())) continue;

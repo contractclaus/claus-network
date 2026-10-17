@@ -1,10 +1,11 @@
+import {createSourceFiles} from '../artifact-store/index.mjs';
 import { SITE_LIMITS, canonical, copy, digest, integer, requireThat, text, sourcePath, sourceText } from '../shared/index.mjs';
 import { agentPublicationVisible } from './agent-publication.mjs';
 
 const projectRef = (projectId, id) => digest({ projectId, id });
 const filePath = sourcePath, prose = sourceText;
 
-export function createProjects({ store, identity, publicDetails = async () => ({}), publicAppearance = async () => ({}), publicAppearances, publicEntry, publicConnections = async () => ({state:'not_configured',edges:[],nextCursor:null}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
+export function createProjects({ store, identity, sourceFiles = createSourceFiles({store}), publicDetails = async () => ({}), publicAppearance = async () => ({}), publicAppearances, publicEntry, publicConnections = async () => ({state:'not_configured',edges:[],nextCursor:null}), now = () => Date.now(), limit = async () => undefined, consumeSnapshotBytes = async () => {}, visible = async () => true, visibleMany }) {
   async function snapshot(reader, projectId, id) {
     const value = (await reader.read('snapshots', projectRef(projectId, id)))?.value;
     requireThat(value && value.projectId === projectId, 'not_found');
@@ -88,6 +89,22 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       requireThat(new Set(clean.map(x => x.path)).size === clean.length, 'duplicate_file');
       requireThat(Buffer.byteLength(canonical(clean)) <= SITE_LIMITS.totalBytes, 'snapshot_too_large');
       const id = digest(clean.map(({ path, hash }) => ({ path, hash })));
+      // No external IO under the database write lock. Recheck all authority,
+      // version and quota conditions in the publication transaction below.
+      await identity.authorize(actor, 'snapshot.create', {projectId});
+      const current = await store.read('projects', projectId);
+      requireThat(current?.revision === expectedProjectRevision, 'revision_conflict');
+      const existing = (await store.read('snapshots', projectRef(projectId, id)))?.value;
+      if (existing) return existing;
+      const capacity = await store.read('snapshot-capacity', projectId);
+      requireThat((capacity?.value.count ?? 0) < (await limit('snapshotsPerProject', store) ?? 64) &&
+        (capacity?.value.bytes ?? 0) + Buffer.byteLength(canonical(clean)) <=
+        (await limit('snapshotBytesPerProject', store) ?? 8000000), 'capacity_reached');
+      const prepared = new Map();
+      for (let i = 0; i < clean.length; i += 4) await Promise.all(clean.slice(i, i + 4).map(async file => {
+        const key = projectRef(projectId, file.hash), old = await store.read('artifacts', key);
+        if (!old) prepared.set(key, await sourceFiles.prepare(projectId, file));
+      }));
       return store.transaction(async tx => {
         await identity.authorize(actor, 'snapshot.create', { projectId }, tx);
         const project = await tx.read('projects', projectId);
@@ -101,7 +118,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
         await consumeSnapshotBytes(tx, bytes);
         for (const file of clean) {
           const key = projectRef(projectId, file.hash);
-          if (!await tx.read('artifacts', key)) await tx.write('artifacts', key, { projectId, ...file }, 0);
+          if (!await tx.read('artifacts', key)) await tx.write('artifacts', key, prepared.get(key), 0);
         }
         const value = { id, projectId, files: clean.map(({ path, hash }) => ({ path, hash })), createdAt: now() };
         await tx.write('snapshots', projectRef(projectId, id), value, 0);
@@ -125,7 +142,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       await identity.authorize(actor, 'artifact.read', { projectId });
       const version = await snapshot(store, projectId, snapshotId);
       const result = [];
-      for (let i=0;i<version.files.length;i+=8) result.push(...await Promise.all(version.files.slice(i,i+8).map(async entry=>(await store.read('artifacts',projectRef(projectId,entry.hash))).value)));
+      for (let i=0;i<version.files.length;i+=8) result.push(...await Promise.all(version.files.slice(i,i+8).map(async entry=>await sourceFiles.get(projectId,entry.hash))));
       return result;
     },
     async publishSource(actor, projectId, { snapshotId, expectedRevision, published }) {
@@ -145,7 +162,7 @@ export function createProjects({ store, identity, publicDetails = async () => ({
       requireThat(publication?.published === true && await visible(publication.projectId), 'not_found');
       const files = [];
       for (const entry of publication.files) {
-        const artifact = (await store.read('artifacts', projectRef(publication.projectId, entry.hash))).value;
+        const artifact = await sourceFiles.get(publication.projectId, entry.hash);
         files.push({ path: artifact.path, content: artifact.content, hash: artifact.hash });
       }
       return { projectId: publication.projectId, snapshotId: publication.snapshotId, files };

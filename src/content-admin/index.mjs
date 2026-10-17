@@ -1,7 +1,8 @@
+import {createSourceFiles} from '../artifact-store/index.mjs';
 import { manifestConnections, SITE_LIMITS, sitePublicationActive, canonical, copy, digest, integer, requireThat, sourcePath, sourceText, text } from '../shared/index.mjs';
 
 
-export function createContentAdmin({store,identity,artifacts,now=()=>Date.now(),origin='https://claus-network-sites.vercel.app'}) {
+export function createContentAdmin({store,identity,artifacts,sourceFiles=createSourceFiles({store}),now=()=>Date.now(),origin='https://claus-network-sites.vercel.app'}) {
   async function operator(actor,reader=store,action='inspect',ownerOnly=false){
     const who=await identity.credential(actor,reader),p=(await reader.read('principals',who.principalId))?.value,a=(await reader.read('network','authority'))?.value;
     if(who.kind==='owner'&&p?.chainId===1&&p.address===a?.ownerAddress)return who.principalId;
@@ -39,7 +40,7 @@ export function createContentAdmin({store,identity,artifacts,now=()=>Date.now(),
       if(kind==='audit')return tx.list('content-audit',{projectId,after,limit:50});
       const value=(await tx.read(kind==='release'?'project-releases':'snapshots',kind==='release'?text(id):digest({projectId,id:text(id)})))?.value;requireThat(value?.projectId===projectId,'not_found');
       if(kind==='release')return {...value,files:await artifacts.get(projectId,value.contentHash,tx)};
-      const files=[];for(const entry of value.files)files.push((await tx.read('artifacts',digest({projectId,id:entry.hash}))).value);return {...value,files};
+      const files=[];for(const entry of value.files)files.push(await sourceFiles.get(projectId,entry.hash,tx));return {...value,files};
     });},
     async correct(actor,projectId,{files,reason,expectedRevision,idempotencyKey}){reasonCheck(reason);text(idempotencyKey);integer(expectedRevision);requireThat(Array.isArray(files)&&files.length>0&&files.length<=SITE_LIMITS.files,'invalid_files');
       const clean=files.map(f=>{requireThat(Object.keys(f).length===2,'invalid_file');const path=sourcePath(f.path),content=sourceText(f.content,SITE_LIMITS.fileBytes);requireThat(/\.(html|css|js|json|svg)$/.test(path)&&Buffer.byteLength(content)<=SITE_LIMITS.fileBytes,'invalid_file');return {path,content,hash:digest({path,content})};}).sort((a,b)=>a.path.localeCompare(b.path,'en'));

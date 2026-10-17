@@ -41,7 +41,7 @@ test('UI files need separate publication and expire without publishing other sna
   const publicData=await app.releases.public(release.id);assert.equal(publicData.files.length,1);
   assert.equal((await app.projects.graph()).nodes.length,1,'publishing UI does not publish the project profile');
   const response=await render(new Request(release.url),{fetcher:async()=>Response.json(publicData)});
-  assert.equal(response.status,200);assert.match(response.headers.get('content-security-policy'),/sandbox allow-scripts;/);
+  assert.equal(response.status,200);assert.match(response.headers.get('content-security-policy'),/sandbox allow-scripts allow-forms;/);
   assert.ok(!response.headers.get('content-security-policy').includes('allow-same-origin'));
   assert.match(response.headers.get('content-security-policy'),/connect-src 'none'/);
   assert.equal(response.headers.get('cache-control'),'no-store');
