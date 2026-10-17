@@ -5,7 +5,7 @@ import {digest,requireThat} from '../shared/index.mjs';
 export function createImageRegistry({store,identity,projects,artifacts,images,origin,now=()=>Date.now()}){
  const host=new URL(origin).host;
  async function source(v,reader=store){
-  requireThat(v?.publishSource===true&&await identity.allowed(v.actor,'build.compile',{projectId:v.projectId},reader),'not_found');
+  requireThat(v?.publishSource===true&&await (identity.publishedBuildAllowed?identity.publishedBuildAllowed(v.actor,v.projectId,reader):identity.allowed(v.actor,'build.compile',{projectId:v.projectId},reader)),'not_found');
   const job=(await reader.read('workflow-jobs',v.id))?.value;
   requireThat(job&&!['blocked','cancelled'].includes(job.state),'not_found');
   const published=await projects.publicSource(digest({projectId:v.projectId,id:v.snapshotId}));

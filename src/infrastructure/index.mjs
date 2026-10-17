@@ -15,8 +15,9 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
     const c=await identity.credential(actor,reader),p=(await reader.read('principals',c.principalId))?.value,a=(await reader.read('network','authority'))?.value;
     requireThat(c.kind==='owner'&&p?.chainId===1&&p.address===a?.ownerAddress,'scope_denied');
   }
-  async function admission(reader,actor,projectId,profileId){
-    await auth(actor,projectId,'infrastructure.manage',reader);
+  async function admission(reader,actor,projectId,profileId,retained=false){
+    if(retained&&identity.ongoingInfrastructureAllowed)requireThat(await identity.ongoingInfrastructureAllowed(actor,projectId,reader),'scope_denied');
+    else await auth(actor,projectId,'infrastructure.manage',reader);
     requireThat(enabled,'infrastructure_not_enabled');
     const row=await reader.read('infrastructure-profiles',profileId),profile=validateProfile(row?.value);
     requireThat(profile.enabled&&await control.active(reader,profileId),'infrastructure_profile_disabled');
@@ -155,7 +156,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
       if(!work)return {processed:false};
       const update=async(fn)=>store.transaction(async tx=>{const r=await resource(tx,work.projectId,id);requireThat(r.value.controllerLease?.token===leaseToken&&r.value.controllerLease.until>now(),'stale_resource_controller');const changes=await fn(tx,r);return tx.write('infrastructure-resources',id,{...r.value,...changes},r.revision);});
       try{
-        const stillAllowed=async()=>{try{const a=await admission(store,work.actor,work.projectId,work.profile.id);return digest(a.profile)===digest(work.profile);}catch(e){if(!['unauthenticated','not_found','scope_denied','infrastructure_not_enabled','infrastructure_profile_disabled','infrastructure_allowance_unavailable'].includes(e.code))throw e;return false;}};
+        const stillAllowed=async()=>{try{const a=await admission(store,work.actor,work.projectId,work.profile.id,work.attempted===true);return digest(a.profile)===digest(work.profile);}catch(e){if(!['unauthenticated','not_found','scope_denied','infrastructure_not_enabled','infrastructure_profile_disabled','infrastructure_allowance_unavailable'].includes(e.code))throw e;return false;}};
         const allowed=await stillAllowed();
         const shouldStop=work.desired!=='running'||work.leaseUntil<=now()||!allowed||!work.attempted&&work.quote.expiresAt<=now();
         if(!work.attempted&&shouldStop){await update(async(tx,r)=>{const s=await settle(tx,r,{id:'unsent:'+id,resourceId:id,accountId:work.profile.accountId,asset:work.profile.asset,final:true,actual:'0'});return {...s,state:'cancelled',controllerLease:null};});}

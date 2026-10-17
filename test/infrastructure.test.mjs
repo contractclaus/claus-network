@@ -121,3 +121,14 @@ test('zero-cost rejected provisioning stays visible after billing settles',async
  f.ports.create=async w=>({operationId:w.id,accountId:'account',state:'rejected',terminal:true,ready:false,error:'infrastructure_provider_400',errorDetails:{detail:'CPU field is invalid'},receipt:{id:'rejection:'+w.id,resourceId:w.id,accountId:'account',asset:'USDC',final:true,actual:'0'}});
  await f.api.reconcile(r.id);const status=await f.api.get('owner','project',r.id);assert.equal(status.cost.state,'settled');assert.equal(status.cost.actual,'0');assert.equal(status.error,'infrastructure_provider_400');assert.equal(status.errorDetails.detail,'CPU field is invalid');assert.equal((await f.balance()).available,'500');
 });
+
+test('an admitted owner runtime survives login expiry but still stops on explicit revocation',async t=>{
+ const f=await fixture(t),q=await f.quote(),r=await f.api.request('owner','project',{quoteId:q.id,idempotencyKey:'owner-runtime'});
+ await f.api.reconcile(r.id);
+ f.identity.authorize=async()=>{throw Object.assign(Error('unauthenticated'),{code:'unauthenticated'});};
+ f.identity.ongoingInfrastructureAllowed=async()=>true;
+ await f.api.reconcile(r.id);assert.equal(f.calls(),1);
+ assert.equal((await f.store.read('infrastructure-resources',r.id)).value.state,'running');assert.equal((await f.balance()).reserved,'100');
+ f.identity.ongoingInfrastructureAllowed=async()=>false;
+ await f.api.reconcile(r.id);assert.equal((await f.store.read('infrastructure-resources',r.id)).value.state,'settled');assert.equal((await f.balance()).spent,'30');
+});
