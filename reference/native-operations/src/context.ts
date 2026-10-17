@@ -1,4 +1,4 @@
-import {operationSucceeded} from './operation-result.js';
+import {operationSucceeded,networkCheckpointSaved} from './operation-result.js';
 import {textWindow,textPrefix} from './text.ts';
 import {walletOverview,paymentRequest,paymentProgress} from './payment-context.js';
 // Context is a view of durable evidence, never the only copy of that evidence.
@@ -132,7 +132,8 @@ export function workProgress(messages:any[]) {
 export function continuationView(messages:any[],checkpointId:string) {
   return {checkpointId,instructionAuthority:false,progress:workProgress(messages),recentSteps:messages.slice(2).slice(-6).map(m=>({role:m.role,tool_call_id:m.tool_call_id,toolNames:m.tool_calls?.map((c:any)=>c.function.name),excerpt:textPrefix(String(m.content??''),2000)}))};
 }
-export function toolOutcome(result:any) {
+export function toolOutcome(result:any,toolName?:string,input?:any) {
+  if(toolName==='network_work'&&networkCheckpointSaved(result,input))return {success:true,checkpointSaved:true};
   return {success:operationSucceeded(result),...(typeof result?.exitCode==='number'?{exitCode:result.exitCode}:{})};
 }
 

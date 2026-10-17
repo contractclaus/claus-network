@@ -1,4 +1,16 @@
 const incomplete=new Set(['running','preparing','deploying','waiting','blocked','stopped','cancelled','canceled','in_progress','pending','uncertain','failed','queued','unavailable','unknown','requires_reconciliation','reverted','rejected','postcondition_failed']);
+// Saving a work checkpoint can succeed while its external dependency is pending.
+// This receipt never certifies the underlying task and is excluded from work evidence.
+export function networkCheckpointSaved(value:any,input:any){
+ return input?.action==='update'&&typeof input.id==='string'&&/^nw_[A-Za-z0-9_-]+$/.test(input.id)&&
+  Number.isSafeInteger(input.expectedRevision)&&input.expectedRevision>=1&&
+  ['ready','working','waiting','completed','cancelled'].includes(input.status)&&
+  value?.id===input.id&&value.revision===input.expectedRevision+1&&value.status===input.status&&
+  !value.error&&!value.observationError&&value.success!==false&&value.ok!==false&&
+  Number.isFinite(Date.parse(value.updated_at))&&Number.isFinite(Date.parse(value.next_at))&&
+  typeof value.next_step==='string'&&typeof value.summary==='string'&&Array.isArray(value.evidence)&&
+  (value.status!=='waiting'||typeof value.blocker==='string'&&value.blocker.trim().length>0);
+}
 // The synchronous status reader has finished even though the server it read
 // must keep running. This proves only that observation, never settled costs or
 // a completed create/renew action. Keep the exception to this exact envelope.
