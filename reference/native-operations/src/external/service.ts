@@ -1,4 +1,5 @@
 import {connectedReadPolicy} from './connected-read.js';
+import {runpodRequest} from './runpod.js';
 import {paidServiceRequest,paidServiceIdentity} from './paid.js';
 import {externalHealth} from './health.js';
 import {browserContext,browserWorkflow,workflowInput} from './browser-workflow.js';
@@ -12,7 +13,7 @@ export const externalOperations=['status','health','quote','connections','toolki
 type Call={operation:string;provider?:string;input?:string;actionId?:string;offset?:number};
 export function externalInput(raw:any):Call {
  const value=boundedObject(raw,32000);
- if(Object.keys(value).some(k=>!['operation','provider','input','actionId','offset'].includes(k))||!externalOperations.includes(value.operation)||value.provider!==undefined&&!['web','bazaar','composio','browserbase','github','paid'].includes(value.provider)||value.input!==undefined&&typeof value.input!=='string'||value.actionId!==undefined&&(typeof value.actionId!=='string'||value.actionId.length>300)||value.offset!==undefined&&(!Number.isSafeInteger(value.offset)||value.offset<0))throw new ProviderFailure('external_request_invalid',true);
+ if(Object.keys(value).some(k=>!['operation','provider','input','actionId','offset'].includes(k))||!externalOperations.includes(value.operation)||value.provider!==undefined&&!['web','bazaar','composio','browserbase','github','paid','runpod'].includes(value.provider)||value.input!==undefined&&typeof value.input!=='string'||value.actionId!==undefined&&(typeof value.actionId!=='string'||value.actionId.length>300)||value.offset!==undefined&&(!Number.isSafeInteger(value.offset)||value.offset<0))throw new ProviderFailure('external_request_invalid',true);
  return value as Call;
 }
 export function resultPage(actionId:string,value:unknown,offset=0){
@@ -37,6 +38,7 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
  let input:any;try{input=boundedObject(JSON.parse(call.input??'{}'));}catch{throw new ConfirmedFailure('external_input_invalid');}
  if(call.provider==='paid'&&principal!=='claus')throw new ConfirmedFailure('paid_service_owner_scope_required');
  if(call.provider==='github'&&principal!=='claus')throw new ConfirmedFailure('github_owner_scope_required');
+ if(call.provider==='runpod'&&principal!=='claus')throw new ConfirmedFailure('runpod_owner_scope_required');
  if(call.provider==='composio'&&principal!=='claus'&&['connections','toolkits','connect'].includes(call.operation))throw new ConfirmedFailure('external_account_owner_scope_required');
  if(call.provider==='browserbase'&&call.operation==='browser_workflow'){workflowInput(policy,input);if(input.contextId){const own=(await db`SELECT id FROM claus_actions WHERE kind='external_tools' AND status='completed' AND input->>'principal'=${principal} AND input->>'operation'='browser_context_create' AND result->>'contextId'=${input.contextId}`)[0];if(!own)throw new ConfirmedFailure('browser_context_not_owned');}}
  if(call.operation==='adapter_save')return resultPage(id,await saveAdapter(id,input,principal,libraryOwner,db),call.offset);
@@ -52,7 +54,7 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
   input=JSON.parse(call.input!);
  }
  if(principal==='claus'&&call.provider==='composio'&&call.operation==='call')policy=await connectedReadPolicy(policy,input.tool);
- const readOnly=call.provider==='paid'&&['quote','read','describe'].includes(call.operation)||call.provider==='github'&&['status','tree','file','pulls','recover','continuity_status'].includes(input.operation)||call.provider==='web'||call.provider==='bazaar'||call.provider==='browserbase'&&call.operation==='browser_read'||call.provider==='composio'&&(['connections','toolkits','search','describe'].includes(call.operation)||call.operation==='call'&&selectTool(policy,input.tool,input.arguments??{}).rule.effect==='read');
+ const readOnly=call.provider==='runpod'&&['read','describe'].includes(call.operation)||call.provider==='paid'&&['quote','read','describe'].includes(call.operation)||call.provider==='github'&&['status','tree','file','pulls','recover','continuity_status'].includes(input.operation)||call.provider==='web'||call.provider==='bazaar'||call.provider==='browserbase'&&call.operation==='browser_read'||call.provider==='composio'&&(['connections','toolkits','search','describe'].includes(call.operation)||call.operation==='call'&&selectTool(policy,input.tool,input.arguments??{}).rule.effect==='read');
  const original={...call,principal,readOnly,...(adapterTrace?{adapter:adapterTrace}:{})};
  const admit=async()=>{
   const [,rows]=await db.transaction([db`SELECT pg_advisory_xact_lock(746201605)`,db`INSERT INTO claus_actions(id,kind,input_hash,status,input,visibility) SELECT ${id},'external_tools',${digest(original)},'pending',${JSON.stringify(original)}::jsonb,'private_network' WHERE ${readOnly} OR NOT EXISTS(SELECT 1 FROM claus_actions WHERE kind='external_tools' AND status NOT IN ('completed','failed') AND input->>'provider'=${call.provider??''} AND input->>'readOnly'='false') ON CONFLICT DO NOTHING RETURNING id`]);
@@ -67,6 +69,7 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
     if(call.operation==='read'&&input.actionId&&['completed','failed'].includes(result.status)&&result.paymentId===paidServiceIdentity(input.actionId))await settleAction(input.actionId,result,'completed',db);
    }
    else if(call.provider==='github')result=await githubRequest({...input,...(input.operation==='publish'?{id}: {})});
+   else if(call.provider==='runpod')result=await runpodRequest(call.operation,input);
    else if(call.provider==='web'&&call.operation==='read')result=await publicWeb(input);
    else if(call.provider==='bazaar')result=await bazaarRequest(call.operation,input);
    else if(call.provider==='composio')result=await composioRequest(policy,call.operation,input);

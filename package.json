@@ -1,7 +1,7 @@
 {
   "name": "@claus/network-core",
   "private": true,
-  "version": "0.35.0",
+  "version": "0.36.0",
   "type": "module",
   "engines": {
     "node": ">=24.14.0 <25"
@@ -14,6 +14,7 @@
     "test:contracts": "cd contracts && forge test"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1152.0",
     "@jitl/quickjs-singlefile-cjs-release-sync": "0.31.0",
     "@neondatabase/serverless": "1.2.0",
     "@x402/evm": "2.28.0",

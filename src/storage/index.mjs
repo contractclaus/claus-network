@@ -46,6 +46,11 @@ export function openStore(path) {
       return new Map(ids.map(id => [id,read(collection,id)]).filter(([,row]) => row));
     }),
     list: (...args) => enqueue(() => list(...args)),
+    pendingInfrastructure: ({after='',limit=20}={}) => enqueue(() => {
+      requireThat(typeof after==='string','invalid_cursor');integer(limit,1,100);
+      return db.prepare("SELECT id,revision,body FROM documents WHERE collection='infrastructure-resources' AND id>? AND json_extract(body,'$.billing')='reserved' ORDER BY id LIMIT ?")
+        .all(after,limit).map(r=>({id:r.id,revision:r.revision,value:JSON.parse(r.body)}));
+    }),
     dueWorkflows: ({at,limit=4}) => enqueue(() => {integer(at);integer(limit,1,4);return db.prepare("SELECT id,revision,body FROM documents WHERE collection='app-workflows' AND json_extract(body,'$.state')='active' AND json_extract(body,'$.nextAt')<=? ORDER BY json_extract(body,'$.nextAt'),id LIMIT ?").all(at,limit).map(r=>({id:r.id,revision:r.revision,value:JSON.parse(r.body)}));}),
     events: options => enqueue(() => events(options)),
     pruneEphemeral: (now = Date.now()) => enqueue(() => {
