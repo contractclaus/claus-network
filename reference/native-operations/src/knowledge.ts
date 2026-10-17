@@ -119,7 +119,9 @@ export function knowledgeAudit(config:Configuration,published:any,now=Date.now()
     for(const s of t.sources)if(s.kind==='reference'&&s.sha256&&referenceSourceHash(s.ref)!==s.sha256)issues.push({code:'reference_version_mismatch',record:'topic:'+t.id,action:'Reconcile '+s.ref+' with the verified knowledge source version.'});
     if(t.reviewAfter&&Date.parse(t.reviewAfter)<=now)issues.push({code:'review_due',record:'topic:'+t.id,action:'Verify the named source before asserting its current status. Keep the dated evidence until then.'});
     for(const id of t.relatedRules)if(!activeRules.has(id))issues.push({code:'missing_active_rule',record:'topic:'+t.id,action:'Reconcile linked rule '+id});
-    if(t.body){const key=hash(t.body);if(bodies.has(key))issues.push({code:'duplicate_fact_body',record:'topic:'+t.id,action:'Use one source; same body as '+bodies.get(key)});bodies.set(key,t.id);}
+    // A pinned topic's inline text is only its preview. Historical topics may
+    // share that preview while retaining different immutable full bodies.
+    if(t.body){const key=t.bodyRef?.sha256??createHash('sha256').update(t.body).digest('hex');if(bodies.has(key))issues.push({code:'duplicate_fact_body',record:'topic:'+t.id,action:'Use one source; same full body as '+bodies.get(key)});bodies.set(key,t.id);}
     if(t.status==='current'&&t.hookStatus!=='retired')for(const p of t.hookPaths)if(!(published.functions??[]).some((f:any)=>pathOf(f.href)===p))issues.push({code:'hook_not_in_publication',record:'topic:'+t.id,action:'Reconcile '+p+' with the current publication; do not assume it is live.'});
   }
   for(const f of published.functions??[])if(!topics.some(t=>t.status==='current'&&t.hookStatus!=='retired'&&t.hookPaths.includes(pathOf(f.href)??'')))issues.push({code:'hook_without_topic',record:'hook:'+(pathOf(f.href)??f.name),action:'Add its facts, sources, limits and related rules to a current topic.'});

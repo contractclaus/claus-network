@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_5Qa1ogJRogpVVQVWSiwWXuDnwvwa",
-  "source": "claus-search-body-admission-20261017",
+  "deployed": "dpl_2WcZvEbZ3MVeVcSzbU4zdaT5NTgQ",
+  "source": "claus-successor-continuation-20261017",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -17,8 +17,8 @@
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
     "src/network-access.ts": "e587d1d541d5d0332b8e8ebd7f7d7ca3d66c48576a4867ce5ec96cd8fbdd71ed",
-    "src/context.ts": "4b8c140fb1a6f8cf4aa864a4a8d807a3863880e59231b691af2ee3b0c165ced2",
-    "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
+    "src/context.ts": "33ee111f17b3a7c820b46b44aa5026cb2eaa2f7976654f5c860de4094e08ade2",
+    "src/knowledge.ts": "f98d7fdee97c2af6ac6b06d5229199a565b5836f218c7a8728c29ab7aa0cf581",
     "src/network-care.ts": "fb5b6e2813c5c8d9760c025766667c4babe596248d1b46deb4476ce57c9c3777",
     "src/network-operations.ts": "79c8c0c6a95b0b17ded9234a0861ee1d1ddf53089001147256bec422dce695dc",
     "src/operation-result.ts": "3f21601d8a920f26170d234391f05c018c210d047acd4d607922881e6aa204aa",

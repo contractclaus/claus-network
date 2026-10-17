@@ -1,6 +1,7 @@
 import {operationSucceeded,networkCheckpointSaved} from './operation-result.js';
 import {textWindow,textPrefix} from './text.ts';
 import {walletOverview,paymentRequest,paymentProgress} from './payment-context.js';
+import {createHash} from 'node:crypto';
 // Context is a view of durable evidence, never the only copy of that evidence.
 // Keep search pages below the tool-result envelope so their cursor is visible.
 export function searchPage<T>(rows:T[],offset:number,maxRecords:number) {
@@ -120,12 +121,23 @@ export function workProgress(messages:any[]) {
       if(actual?.recovery?.outcome)outcome.recoveryOutcome=actual.recovery.outcome;
       if(['develop_project','stage_development'].includes(call.function.name))for(const key of ['actionId','projectId','projectVersion','exitCode','checkpointApplied','checkpointSnapshotId','reason','outputLimited','stdoutTruncated','stderrTruncated'])if(actual?.[key]===null||['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
       if(result?.truncated)outcome.truncated=true;
-      records.set(call.id,{callId:call.id,tool:call.function.name,request,outcome,archiveId:typeof result.archiveId==='string'?result.archiveId:null});
+      // Keep an evidence fingerprint, not another full copy of the payload.
+      // Recall wrappers and live work timestamps change without adding facts.
+      // This only diagnoses repeated reads; it never blocks a fresh read or
+      // suppresses a write, an unknown outcome, or a changed source page.
+      let readEvidence:string|undefined;
+      if(call.function.name==='recall'&&/^j_[0-9]+$/.test(args.id??'')&&result.sourceArchiveId===args.id&&result.record&&!result.error&&!result.truncated){
+        readEvidence=createHash('sha256').update(JSON.stringify([args.id,result.record])).digest('hex');
+      }else if(call.function.name==='network_work'&&(!args.action||args.action==='read')&&Array.isArray(actual?.items)&&actual.items.every((item:any)=>typeof item.id==='string'&&Number.isSafeInteger(item.revision))){
+        const state={requestedId:actual.requestedId,focus:actual.focus,items:actual.items.map((item:any)=>({id:item.id,revision:item.revision,status:item.status,summary:item.summary,blocker:item.blocker,nextStep:item.next_step??item.nextStep,evidence:item.evidence})),capabilitiesHash:actual.watch?.capabilities_hash,pending:actual.watch?.pending};
+        readEvidence=createHash('sha256').update(JSON.stringify(state)).digest('hex');
+      }
+      records.set(call.id,{callId:call.id,tool:call.function.name,request,outcome,...(readEvidence?{readEvidence}:{}),archiveId:typeof result.archiveId==='string'?result.archiveId:null});
     }
   }
   const operations=[...records.values()].slice(-24);
-  const groups=new Map<string,any[]>();for(const r of operations){if(r.request.describe===true||['read_url','recall'].includes(r.tool)||r.tool==='work_wallet'&&r.request.operation==='status'){const k=JSON.stringify([r.tool,r.request]);groups.set(k,[...(groups.get(k)??[]),r]);}}
-  const repeatedReads=[...groups.values()].filter(rows=>rows.length>=3).map(rows=>({tool:rows[0].tool,request:rows[0].request,count:rows.length,lastReceipt:rows.at(-1).archiveId,hint:'This read repeats within the retained receipt window. Reuse its evidence if unchanged; verify fresh state when needed. A schema description is not an executed action.'}));
+  const groups=new Map<string,any[]>();for(const r of operations){if(r.readEvidence||r.request.describe===true||['read_url','recall'].includes(r.tool)||r.tool==='work_wallet'&&r.request.operation==='status'){const k=JSON.stringify([r.tool,r.readEvidence??r.request]);groups.set(k,[...(groups.get(k)??[]),r]);}}
+  const repeatedReads=[...groups.values()].filter(rows=>rows.length>=3).map(rows=>({tool:rows[0].tool,request:rows[0].request,count:rows.length,lastReceipt:rows.at(-1).archiveId,...(rows[0].readEvidence?{evidenceUnchanged:true}:{}),hint:rows[0].readEvidence?'The same evidence was read repeatedly without a changed work revision or source body. Use it for the pending decision or save the concrete blocker and next check on the original work. Fresh state remains readable; this observation grants no action or acceptance.':'This read repeats within the retained receipt window. Reuse its evidence if unchanged; verify fresh state when needed. A schema description is not an executed action.'}));
   return {operations,payments:[...payments.values()].slice(-12),repeatedReads,instructionAuthority:false,meaning:'Receipt index of your recent operations across context boundaries. Payments retain the last observed original action, task and transaction; they are historical evidence, not a fresh wallet observation or execution permission. Reconcile an unresolved payment by its original id. Reuse the archived result for unchanged source; a failed read is not proof of absence. Follow its file/cursor rather than rereading its first page. Reread live state when freshness matters. These entries prove only the recorded operation, not completion of your goal. If research has established the next step, implement it or checkpoint the concrete missing capability.'};
 }
 

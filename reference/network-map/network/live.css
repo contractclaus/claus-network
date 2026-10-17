@@ -64,7 +64,8 @@ body[data-ui=network] .world.core:active:not(:disabled){transform:translate(-50%
 .network-activity-detail a{display:inline-flex;align-items:center;min-height:24px;font-size:11px;line-height:1.5;color:#4f2b1d;text-decoration:underline;text-underline-offset:3px}
 .network-activity-note{font-size:12px;line-height:1.5;margin:0 0 18px;color:#4f2b1d;text-align:center}
 .network-activity-toggle,.network-activity-close{display:none}
-.network-activity button:focus-visible,.network-activity a:focus-visible{outline:2px solid #211911;outline-offset:3px;border-radius:3px}
+.network-activity-detail summary{min-height:24px;cursor:pointer}
+.network-activity button:focus-visible,.network-activity a:focus-visible,.network-activity summary:focus-visible{outline:2px solid #211911;outline-offset:3px;border-radius:3px}
 .network-ping .object,.network-ping .network-orb-face{animation:network-ping 1s ease-out}
 .network-activity-list .is-new{animation:network-arrive 300ms ease-out}
 @keyframes network-ping{0%,100%{filter:none}35%{filter:drop-shadow(0 0 14px #fff2d8)}}
