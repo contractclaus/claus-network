@@ -4,6 +4,13 @@ import { API_VERSION, ROUTES, openapi } from '../interfaces/contract.mjs';
 const docs = new URL('../docs/', import.meta.url);
 const origin = 'https://claus-network-api.vercel.app';
 const access = {
+  resource_control_set: 'Network owner session', resource_profile_set: 'Network owner session',
+  resource_allowance_set: 'Network owner session',
+  resource_control: 'Assigned infrastructure operator or network owner session',
+  resource_grants: 'Assigned infrastructure operator or network owner session',
+  resource_grant_set: 'Assigned infrastructure operator or network owner session',
+  resource_release_inspect: 'Claus owner session', resource_release_approve: 'Claus owner session',
+  resource_release_revoke: 'Project infrastructure.manage or Claus owner session',
   partner_launch_prepare: 'Claus owner session', partner_launch_evidence: 'Claus owner session',
   partner_launch_approve: 'Claus owner session', partner_launch_revoke: 'Project owner or Claus owner session',
   ...Object.fromEntries(['access_policy_get','access_policy_publish','access_policy_activate','project_access_set','review_admission_get','review_admission_publish','review_admission_activate','chain_admission_get','chain_admission_publish','chain_admission_activate'].map(name => [name, 'Network owner session'])),
