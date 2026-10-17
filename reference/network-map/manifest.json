@@ -1,19 +1,19 @@
 {
-  "surfaceDeployment": "dpl_21UxtrVzGNtHh3Y85tJDnMf82J2S",
-  "surfaceRelease": "sr_40a0c8f999b45697b49a2342",
-  "surfaceSourceHash": "5f9b4fe837565e3b90b4cb61c294f66b9516fe87cbcd3f7f440414df78f9f759",
+  "surfaceDeployment": "dpl_7xeL28DFkkjHA7e3LYfMMTPDADpy",
+  "surfaceRelease": "sr_721e3549cbc4bc39fa79e3ff",
+  "surfaceSourceHash": "61638f064a0ea4e6075e8c281b1deefe4ce9a0413e5b5917fef678078aaa22cb",
   "files": {
     "api/network-activity.mjs": "82f9c0c6112e51a4a15f4e3382d6284aa68cf92f9bef6580b8050e1cf9e284ff",
     "api/network-surface-data.mjs": "6cb549676c203d30ed8d8e3536a48643c2fb1aa5829b7eb1ca58abb427c84616",
     "network/graph-connections.js": "ed216d405fed85285ca031d39a8b87421b2fbc6867b9230afddb05474a85416f",
     "network/graph-model.js": "c5cf19130e742d79f941cbb6b128236f7e65419ca84993b25007cee9960393d5",
-    "network/home-map.js": "27b3028fd5aa7eacf528e21c4c99dd3a4bbe19b6f7de672e70cb8b27cf82a4f8",
-    "network/live.css": "ed0382cb1477b20c4527854c51b6337a16c24b1860afdc66fdd142210be399c5",
+    "network/home-map.js": "81ed6f7dd4dfbf4a66dbd8efe299f9a974e4fc61b43b65430ba99b4360e33b09",
+    "network/live.css": "d78e6949c2e9adc7d0bdb885a84b5546ff9d6a296a642d3ddf5b59a03b1b137e",
     "network/map-groups.js": "afe364e7caa8b49bca5f13fbe37c8f51d191532aabc0952a7d7c8bb5998d87bc",
     "lib/network-surface-read.mjs": "d2769b675f0ee06c39c945bdcadae4b25bf5854b8c062c1e49be637f64aeddf4",
     "lib/network-surface-program.mjs": "6b994c85cfe5afb2546060a7ce92d00cf57139b222e013a6d441026c7af471a7",
     "network/project-card.js": "a2f9e14318b23bfa5a1eb820471313b6657ceec067a6607d8d1b12c32c1c0285",
-    "network-shell.html": "344052c28588a12f83e5a569a2fe012d52c2d518895fe889d7f871191dd413e4",
+    "network-shell.html": "5e047dcc8eda5ab26eb0b468de9db659b12dc431d632f5d7306b3443c732d62e",
     "network/project-page.js": "2e261ba62d6c6f226f854f1544c461765a40b7792304398d6118d2f6f1833f0a",
     "network/project-site.js": "6d5e9afe70386f45214fdbce1c954ed51961693e19456284a921a6b1f621dfd9",
     "network/project.css": "61a1ed2aaf33ddf30929cd2846208c8d584d2fde84994191d1a8aff99abe286a",
@@ -25,13 +25,28 @@
     "build.txt": "504aa7ff0755acf45f76c9df8c1d017c70343c2d3525de740085617d2a814963",
     "docs/agent-guide.html": "7b529941f6f5f1c356dacdff7bbdeb40cf0fef1e0b4d918cb91f6f1e69a5489b",
     "network/site-navigation.js": "0cc86365522a2ae0924a7f6f9a837a27b5d0d8f463dc6dbe8977a90ee413f8f7",
-    "network/activity.js": "42f004c0129d12811acba210a07ee91d581280baf472bffda86576d496f59941"
+    "network/activity.js": "ab472459c1e348d20d9156ec9d8d2305707c5f76024cb79791dd8e0e73095bcf"
   },
   "surfaceMap": {
     "file": "network/surface-home-map.js",
-    "sha256": "292541dbd5ee8797775d9da99af5e7204bc95327d4c4b09224ef24ecbb7d7b84"
+    "sha256": "f71298950af61cef16aac10abec0fc7fca7cce58da86822c99db3fb1cba643ce"
   },
-  "baselineWebsiteDeployment": "dpl_GgXDRpMffUwKUHJJ2BHp4dehMoRK",
+  "baselineWebsiteDeployment": "dpl_HJPRdFLfi5Goa5HNp3EWT8bUENP6",
   "source": "claus-successor-continuation-20261017",
-  "deploymentMeaning": "Source reference; live website deployment is tracked separately. Surface runtime is unchanged."
+  "deploymentMeaning": "Exact active Surface source with its deployment proof; fallback website source is tracked separately.",
+  "surfaceFiles": {
+    "network/home-map.js": "f71298950af61cef16aac10abec0fc7fca7cce58da86822c99db3fb1cba643ce",
+    "site/network.css": "4003c8d6347ac2742e63493c2e4ccfd3cf0e10563142585bb0aeee3abbcedcc9",
+    "club-footer.css": "7d3759a81ea314e026e2c1d08ee4e18245f530592e029837d4dc7bcd0740bafe",
+    "eyes.js": "faeafab06b494fb457747aefcb22b3d8adf1f33921dcacf2b02b29b5c017689b",
+    "club-footer.js": "bb3810b823ce9cd0255233521062d5a22119a80800700513466e61d8fa83888c",
+    "site/ink.js": "a5bba0d79379aa6f5a8006fc25433e8813efc0d1a4ec6cfad5ed96c067ee6456",
+    "page-transition.js": "04bc43e612c6355ecbf35154226c8dbd8dc5bce4cb05c04b5152ea5129baf6c2",
+    "ui.css": "e0b1795f6481dc4017d01059f381e889c281ec42af19da479cbd419be0304d56",
+    "ui.js": "9320fa7812b29680ef06d9bf4e4a69455d4dc1d1be85d4ed68d6f7c03fee426d",
+    "site/network.js": "e18d59d8d3a685bec0642af233dd30d95e0585f55849d08e1b2d1d2a008d65a8",
+    "network/live.css": "d78e6949c2e9adc7d0bdb885a84b5546ff9d6a296a642d3ddf5b59a03b1b137e",
+    "index.html": "b9c28091ba6a2c49652fb7c8042d7ad1e121a7593281f0a7a6646321882caf62",
+    "server/network-data.js": "5fe145c6785e8f9f34aeba664f5f54f86de805826671098a745e25a65741b676"
+  }
 }

@@ -1,0 +1,1040 @@
+/* CLAUS interface primitives. Loaded last by every interactive page. */
+@font-face{font-family:Claus UI;src:url('/assets/bricolage-grotesque-latin.woff2') format('woff2');font-weight:200 800;font-display:swap}
+:root{--ui-orange:#ec673a;--ui-canvas:radial-gradient(ellipse at 48% 41%,#f68859 0%,#ee7144 39%,#e96436 78%);--ui-paper:#fff2d8;--ui-ink:#11110e;--ui-muted:#5c5143;--ui-line:#11110e26;--ui-radius:20px;--ui-ease:cubic-bezier(.22,1,.36,1);--ui-title:clamp(32px,4vw,52px);--ui-footer:clamp(180px,calc(100dvh - 420px),300px);--paper:var(--ui-paper);--orange:var(--ui-orange);--ink:var(--ui-ink)}
+html:has(body[data-ui]){height:100%;overflow:hidden;overscroll-behavior:none;scrollbar-gutter:auto}
+body[data-ui]{width:100%;height:100dvh;min-height:0;max-height:100dvh;margin:0;overflow:hidden;overscroll-behavior:none;background:var(--ui-canvas);isolation:isolate;color:var(--ui-ink);font-family:Claus UI,Arial,sans-serif;font-optical-sizing:auto;-webkit-font-smoothing:antialiased}
+body[data-ui] :is(button,input,textarea,select){font-family:inherit}
+body[data-ui] :is(h1,h2,h3){text-wrap:balance}
+body[data-ui] :is(input,textarea){font-size:16px}
+body[data-ui] :is(button,a){-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body[data-ui] :is(button,a):focus-visible{outline:2px solid currentColor;outline-offset:4px}
+body[data-ui] :is(dialog,[popover]){background:var(--ui-paper);color:var(--ui-ink);border:1px solid var(--ui-line);border-radius:var(--ui-radius);box-shadow:0 18px 64px #0002;font-family:inherit;overscroll-behavior:contain}
+body[data-ui] dialog{max-height:calc(100dvh - 32px);padding:28px;font-size:17px;line-height:1.5}
+body[data-ui] dialog h2{font-size:28px;font-weight:550;line-height:1.2;letter-spacing:-.035em}
+body[data-ui] dialog::backdrop{background:#0005;backdrop-filter:blur(5px)}
+body[data-ui] :is(.solid,.solid-button,.primary,#enter,#connect){background:var(--ui-ink);color:var(--ui-paper)!important;border:1px solid var(--ui-ink);border-radius:12px;min-height:46px;padding:12px 22px;font-size:17px;font-weight:500;line-height:1.3}
+body[data-ui] :is(.solid,.solid-button,.primary,#enter,#connect):active:not(:disabled){scale:.96}
+body[data-ui] :is(.wallet-options button,.dialog-stack>button){min-height:52px;border:1px solid var(--ui-line);border-radius:12px;padding:12px 16px;font-size:17px;background:transparent;color:var(--ui-ink);gap:14px}
+body[data-ui] :is(.wallet-options button,.dialog-stack>button):hover{background:#00000006}
+body[data-ui] :is(.metric-number,.personal-reward-amount,.stats strong,.pool-stats strong,.nft-stat strong,.nft-reward-stat strong){font-variant-numeric:tabular-nums;letter-spacing:-.035em;line-height:1.2;overflow-wrap:normal}
+body[data-ui] :is(.stats section,.pool-stats>div,.nft-reward-stat,.personal-reward-metric,.personal-reward-history,.project-item,.project-form){background:var(--ui-paper);border:1px solid var(--ui-line);border-radius:var(--ui-radius);box-shadow:none}
+body[data-ui] :is(.feed,.panel-content,.claus-page-body,.ui-scroll){overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#1113 transparent;overflow-anchor:none}
+
+/* The canvas stays still. Only a bounded content pane can scroll. */
+body[data-ui]:not([data-ui=site]):not([data-ui=club]){display:flex;flex-direction:column;padding:0;max-width:none}
+body[data-ui]:not([data-ui=site]):not([data-ui=club])>header{flex:none;min-height:76px;width:min(100%,1180px);margin:0 auto;padding:12px 28px;gap:16px}
+body[data-ui]:not([data-ui=site]):not([data-ui=club])>main{flex:1 1 0;min-height:0;width:min(100%,1080px);max-width:1080px;margin:0 auto;padding:16px 28px 28px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#1113 transparent;overflow-anchor:none}
+body[data-ui]:not([data-ui=site]):not([data-ui=club])>footer:not(.club-footer){flex:none;min-height:52px;margin:0;padding:8px 24px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 24px;font-size:15px}
+body[data-ui] :is(.nft-title h1,.dashboard-heading h1,.builder-intro h1,.atlas-heading h1,.hero h1,.arena-heading h1,.privacy-title h1){font-size:var(--ui-title);font-weight:550;letter-spacing:-.045em;line-height:1.1;text-align:center}
+body[data-ui] .club-footer{--claus-footer-height:var(--ui-footer);height:var(--ui-footer);min-height:var(--ui-footer);margin:0;flex:none;contain:layout}
+body[data-ui] .club-footer-claus{height:calc(var(--ui-footer) + 30px)}
+body[data-ui] .claus-socials{gap:20px;bottom:max(12px,env(safe-area-inset-bottom));align-items:center}
+
+/* Home: one centered tree with a quiet, short introduction. */
+body[data-ui=site] #stage{height:100dvh}
+body[data-ui=site] #stage[data-page=home] .claus-home{inset:20px 20px 110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:0;overflow:hidden;--copy-size:18px;--copy-leading:1.45}
+body[data-ui=site] .claus-home .home-visual{width:min(100%,580px);max-width:580px;flex:none;margin:0}
+body[data-ui=site] .claus-home .contract-claus{width:clamp(100px,17dvh,184px);height:clamp(100px,17dvh,184px);margin:0 auto}
+body[data-ui=site] .claus-home .contract-hook-bay h2{font-size:25px;letter-spacing:-.03em;font-weight:500}
+body[data-ui=site] .claus-home .contract-modules{gap:10px 100px;padding-top:18px}
+body[data-ui=site] .claus-home .contract-module{height:48px;min-height:48px;padding:10px 16px;grid-template-columns:22px minmax(0,1fr);gap:10px;font-size:16px;background:var(--ui-paper);border-color:var(--ui-line);border-radius:11px;box-shadow:none;color:var(--ui-ink)}
+body[data-ui=site] .claus-home .contract-module:is(:hover,[data-active=true]){background:#ffe4b3;border-color:#1116}
+body[data-ui=site] .claus-home .contract-pool{background:transparent;color:var(--ui-ink);font-size:14px;border-color:#1113;padding:6px 12px;border-radius:8px}
+body[data-ui=site] .claus-home .home-main{flex:none;width:min(100%,660px);max-width:660px;margin:0;padding:0;overflow:visible}
+body[data-ui=site] .claus-home .home-copy :is(h1,p){text-align:center;text-align-last:auto;text-wrap:pretty;margin:0 auto 10px}
+body[data-ui=site] .claus-home .home-copy h1{font-size:34px;font-weight:550;letter-spacing:-.035em;line-height:1.1}
+body[data-ui=site] .claus-home .home-copy>p:not(.home-conversation){max-width:46ch;font-size:18px;line-height:1.45}
+body[data-ui=site] .claus-home .home-copy .home-conversation{font-size:16px;margin:14px 0 0}
+body[data-ui=site] .home-entry-links{margin-top:12px}
+body[data-ui=site] .claus-home .home-lab-link{min-height:40px;font-size:15px;border-radius:10px;padding:8px 16px}
+body[data-ui=site] .contract-popover{font-size:16px;border-radius:16px;padding:22px}
+body[data-ui=site] .contract-popover h3{font-size:23px}
+body[data-ui=site] .claus-page-body{left:50%;translate:-50% 0;width:min(880px,calc(100% - 48px));top:104px;bottom:calc(var(--ui-footer) + 12px);padding:28px 32px;background:var(--ui-paper);border:1px solid var(--ui-line);border-radius:var(--ui-radius);font-size:18px}
+body[data-ui=site] .page-heading{text-align:center}
+body[data-ui=site] .page-heading h1{font-size:var(--ui-title)}
+body[data-ui=site] .hook-index{gap:16px}
+body[data-ui=site] .hook-index li{border:1px solid var(--ui-line);border-radius:14px}
+body[data-ui=site] .hook-index-link{padding:20px 16px}
+
+/* Splash: values above, action and account history beside each other. */
+body[data-ui=splash]>main{max-width:1080px}
+body[data-ui=splash] main:has(#entry:not([hidden])){display:flex;justify-content:center;overflow:hidden}
+body[data-ui=splash] #entry{gap:20px;padding:0;flex:1;min-height:0}
+body[data-ui=splash] #entry .splash-mark{width:clamp(112px,16dvh,180px);height:clamp(140px,21dvh,230px);margin:0}
+body[data-ui=splash] #entry h1{font-size:clamp(48px,7vw,72px)}
+body[data-ui=splash] #entry button{margin:4px 0 0}
+body[data-ui=splash] #dashboard{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 22px;animation:none}
+body[data-ui=splash] :is(.dashboard-heading,.stats,.payout-note,.network-notice,.notice){grid-column:1/-1;margin:0}
+body[data-ui=splash] .dashboard-heading{gap:12px;margin:0 0 6px}
+body[data-ui=splash] .stats{border:0;padding:0;gap:14px;align-items:stretch}
+body[data-ui=splash] .stats section{padding:20px 12px;min-width:0;display:flex;flex-direction:column;justify-content:center}
+body[data-ui=splash] .stats h2{font-size:16px;margin:0 0 12px;line-height:1.3}
+body[data-ui=splash] .stats strong{font-size:clamp(23px,2.5vw,32px);min-height:1.25em}
+body[data-ui=splash] .stats p{font-size:14px;line-height:1.3;margin:6px 0 0;opacity:1;color:var(--ui-muted)}
+body[data-ui=splash] #liquidity-claus{min-height:1.3em}
+body[data-ui=splash] .payout-note{font-size:16px;padding:0 0 2px}
+body[data-ui=splash] .liquidity-card{grid-column:1;grid-row:4 / span 3;width:100%;max-width:none;margin:0;align-self:start;padding:8px 24px 22px;background:var(--ui-paper);border:1px solid var(--ui-line);border-radius:var(--ui-radius)}
+body[data-ui=splash] #dashboard:has(.network-notice:not([hidden]),.notice:not([hidden])) .liquidity-card{grid-row:auto / span 3}
+body[data-ui=splash] .tabs button{font-size:17px;min-height:56px}
+body[data-ui=splash] .field-heading{font-size:16px}
+body[data-ui=splash] .field-heading span,body[data-ui=splash] .eth-balance{font-size:14px}
+body[data-ui=splash] .fractions button{font-size:14px;min-height:36px;padding:6px 10px}
+body[data-ui=splash] .eth-row{font-size:16px}
+body[data-ui=splash] .input-feedback{font-size:14px;min-height:20px}
+body[data-ui=splash] .field-note{font-size:13px;opacity:1;color:var(--ui-muted)}
+body[data-ui=splash] .pool-stats{grid-column:2;gap:12px;margin:0;padding:0;width:100%;border:0;align-self:start}
+body[data-ui=splash] .pool-stats>div{padding:20px 12px;min-width:0}
+body[data-ui=splash] .pool-stats h2{font-size:15px;line-height:1.4;margin:0 0 10px}
+body[data-ui=splash] .pool-stats strong{font-size:clamp(20px,2vw,27px);min-height:1.2em}
+body[data-ui=splash] .personal-rewards{grid-column:2;margin:0;min-width:0;align-self:start}
+body[data-ui] .personal-reward-history{padding:20px}
+body[data-ui] .personal-reward-history-top{gap:12px;flex-wrap:wrap}
+body[data-ui] .personal-reward-payment{font-size:16px}
+body[data-ui] .personal-reward-status{font-size:16px}
+
+/* Collection: the reward totals are the same cards as Splash. */
+body[data-ui=nfts] .nft-title h1{margin:0 0 8px}
+body[data-ui=nfts] .nft-characters{width:min(100%,390px);margin:0 auto 12px}
+body[data-ui=nfts] .nft-explain{font-size:18px;line-height:1.4;max-width:680px;margin:0 auto 22px}
+body[data-ui=nfts] .nft-explain p+p{margin-top:6px}
+body[data-ui=nfts] .nft-rewards{max-width:880px;margin:0 auto;padding:0;border:0}
+body[data-ui=nfts] .nft-reward-grid{gap:16px}
+body[data-ui=nfts] .nft-reward-stat{padding:22px 16px}
+body[data-ui=nfts] .nft-reward-stat h2{font-size:17px;margin-bottom:12px}
+body[data-ui=nfts] .nft-reward-stat strong{font-size:clamp(32px,4vw,46px);min-height:1.2em}
+body[data-ui=nfts] .nft-reward-stat>span{font-size:15px;min-height:1.4em;color:var(--ui-muted)}
+body[data-ui=nfts] .nft-reward-timing{font-size:15px;margin:14px 0 0;line-height:1.5}
+body[data-ui=nfts] .nft-stats{max-width:540px;margin:18px auto;gap:20px}
+body[data-ui=nfts] .nft-stat{display:flex;justify-content:center;align-items:baseline;gap:10px;flex-wrap:wrap}
+body[data-ui=nfts] .nft-stat strong{font-size:23px}
+body[data-ui=nfts] .nft-stat span{font-size:15px}
+body[data-ui=nfts] .nft-navigation{margin:0 auto 18px;gap:20px}
+body[data-ui=nfts] .nft-tabs{gap:4px;background:#0000000b;border-radius:12px;padding:4px}
+body[data-ui=nfts] .nft-tabs button{font-size:17px;padding:8px 18px;border-radius:9px;min-height:42px}
+body[data-ui=nfts] .nft-tabs button[aria-selected=true]{background:var(--ui-paper)}
+body[data-ui=nfts] .nft-tabs button::after{content:none}
+body[data-ui=nfts] .nft-opensea{font-size:17px}
+body[data-ui=nfts] .nft-panel{padding:22px;border-radius:var(--ui-radius);background:var(--ui-paper);border:1px solid var(--ui-line);min-height:0;max-width:880px;margin:0 auto;font-size:17px}
+body[data-ui=nfts] .nft-panel>p{font-size:17px;line-height:1.5;max-width:560px;margin:0 auto 16px;text-align:center}
+body[data-ui=nfts] .module-details{margin:14px auto 0;font-size:17px}
+body[data-ui=nfts] .personal-rewards{margin:0 auto 20px}
+
+/* Club: identical rooms, stable composer and one font hierarchy. */
+body[data-ui=club]{--room-paper:var(--ui-paper);--room-line:var(--ui-line);--room-secondary:var(--ui-muted);--room-divider:#11110e18}
+body[data-ui=club] .club-shell,body[data-ui=club].club-connected .club-shell{width:100%;max-width:1440px;height:auto;min-height:0;flex:1 1 0;padding:12px 28px 16px;display:flex;flex-direction:column;overflow:hidden}
+body[data-ui=club] .club-header{flex:none;margin:0;gap:12px}
+body[data-ui=club].club-connected .club-brand .home svg{width:72px;height:72px}
+body[data-ui=club].club-connected .club-header h1{font-size:36px;line-height:1.1;letter-spacing:-.04em;font-weight:550}
+body[data-ui=club].club-connected .account-controls{margin-top:12px}
+body[data-ui=club].club-connected .club-brand>.club-online{font-size:14px;margin-top:6px}
+body[data-ui=club] #inside{flex:1 1 0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+body[data-ui=club] .club-context{flex:none;height:44px;font-size:15px}
+body[data-ui=club] .club-panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);gap:18px;flex:1 1 0;min-height:0;margin-top:12px}
+body[data-ui=club] .club-panel{height:auto;min-height:0;max-height:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--ui-line);border-radius:var(--ui-radius);background:var(--ui-paper);box-shadow:none}
+body[data-ui=club] .panel-heading{min-height:64px;height:64px;flex:none;padding:0 16px}
+body[data-ui=club] .panel-heading h2{font-size:20px;font-weight:550;letter-spacing:-.025em}
+body[data-ui=club] .community-tabs{background:#11110e09;border-radius:11px;padding:4px;gap:2px}
+body[data-ui=club] .community-tabs::before{background:var(--ui-paper);border:1px solid #1111;box-shadow:0 1px 3px #00000006;border-radius:8px;top:4px;bottom:4px;left:4px;width:calc((100% - 10px)/2)}
+body[data-ui=club] .community-tabs button{font-size:16px;padding:8px 12px;min-height:36px}
+body[data-ui=club] :is(.chat-content,.community-view){flex:1 1 0;min-height:0}
+body[data-ui=club] :is(.feed,.panel-content){flex:1 1 0;min-height:0;overflow:auto}
+body[data-ui=club] :is(#polls,#topics-list,#ideas,#update-feed){padding:14px;gap:14px}
+body[data-ui=club] :is(.poll-card,.topic-card,.club-update,.idea-card){padding:18px;border:1px solid var(--ui-line);border-radius:13px;background:#fff2d8;box-shadow:none}
+body[data-ui=club] :is(.poll-card,.topic-card,.club-update,.idea-card) h3{font-size:18px;line-height:1.35;font-weight:550;letter-spacing:-.02em}
+body[data-ui=club] :is(.message-text,.idea-preview,.poll-description,.update-body){font-size:16px;line-height:1.5;letter-spacing:0}
+body[data-ui=club] :is(.card-meta,.update-author,.poll-close,.read-more){font-size:13px}
+body[data-ui=club] .message{padding:9px 10px;margin-bottom:8px}
+body[data-ui=club] .message.message-own{background:#00000006;border-color:#00000009;box-shadow:none}
+body[data-ui=club] .message-bar .message-time{font-size:12px}
+body[data-ui=club] .club-panel .composer-wrap{margin:8px 12px 12px;padding:8px 10px;background:var(--ui-paper);border-radius:13px;box-shadow:none}
+body[data-ui=club] #message{font-size:16px;line-height:22px;min-height:38px;padding:8px 2px}
+body[data-ui=club] .send{width:36px;height:36px;min-height:36px;padding:8px;border-radius:9px}
+body[data-ui=club] #club-site-slot:not([hidden]){flex:0 1 auto;min-height:0;max-height:22dvh;overflow:auto}
+body[data-ui=club] #gate,body[data-ui=club] #x-gate{height:auto;min-height:0;flex:1;gap:24px;padding:20px 0;overflow:auto}
+body[data-ui=club] .gate-art{width:clamp(150px,25dvh,250px);height:clamp(150px,25dvh,250px);margin:0}
+body[data-ui=club] .gate h1{font-size:clamp(30px,4vw,46px);line-height:1.15;font-weight:500;letter-spacing:-.04em;margin:0;max-width:650px}
+body[data-ui=club] .gate #gate-note{font-size:19px;margin:0}
+
+/* Research, Builder and interactive hooks use the same surfaces. */
+body[data-ui=build] .builder-shell{display:flex;flex-direction:column}
+body[data-ui=build] .builder-intro{margin:0 0 24px}
+body[data-ui=build] .builder-tabs{margin:0 auto 24px;padding:4px;border-radius:13px;background:#00000009;flex-wrap:wrap}
+body[data-ui=build] .builder-tabs button{min-height:42px;font-size:17px;border:0}
+body[data-ui=build] .builder-tabs button[aria-pressed=true]{background:var(--ui-paper);color:var(--ui-ink)}
+body[data-ui=build] :is(.project-form label,.project-item strong){font-size:17px}
+body[data-ui=build] :is(.quiet,.project-item small){font-size:15px;line-height:1.5}
+body[data-ui=lab] .atlas-heading{margin:0 0 24px}
+body[data-ui=lab] :is(.work-now>article,.work-stream,.map-node,.map-research,.map-journal,.runtime-strip button){background:var(--ui-paper);border:1px solid var(--ui-line);border-radius:var(--ui-radius);color:var(--ui-ink);box-shadow:none}
+body[data-ui=lab] .work-now>article{padding:24px}
+body[data-ui=lab] :is(.work-eyebrow,.node-meta,.note-meta,.work-meta){font-size:14px!important;line-height:1.4}
+body[data-ui] :is(.market-card,.privacy-card,.arena-scoreboard,.arb-card){border-radius:var(--ui-radius);background:var(--ui-paper);color:var(--ui-ink);border-color:var(--ui-line)}
+
+@media(max-width:1000px){
+ body[data-ui=club] .club-panels{grid-template-columns:minmax(0,1fr)}
+ body[data-ui=club] #club-tabs{display:grid;flex:none;margin:12px 0 0}
+ body[data-ui=club] .club-panel[hidden]{display:none}
+ body[data-ui=club] .club-panel:not([hidden]){display:flex}
+ body[data-ui=club] .club-panel .community-tabs button{font-size:17px}
+ body[data-ui=club] .club-shell{max-width:800px}
+}
+@media(max-width:700px){
+ :root{--ui-footer:clamp(180px,calc(100dvh - 460px),270px);--ui-title:34px;--ui-radius:16px}
+ body[data-ui]:not([data-ui=site]):not([data-ui=club])>header{min-height:64px;padding:8px 18px}
+ body[data-ui]:not([data-ui=site]):not([data-ui=club])>main{padding:12px 18px 22px}
+ body[data-ui] dialog{padding:22px}
+ body[data-ui=site] #stage[data-page=home] .claus-home{inset:14px 18px 92px;gap:20px}
+ body[data-ui=site] .claus-home .contract-claus{width:clamp(88px,15dvh,140px);height:clamp(88px,15dvh,140px)}
+ body[data-ui=site] .claus-home .contract-modules{gap:9px 38px;padding-top:15px}
+ body[data-ui=site] .claus-home .contract-module{font-size:14px;padding:9px;gap:8px;height:46px;min-height:46px;grid-template-columns:18px minmax(0,1fr)}
+ body[data-ui=site] .claus-home .contract-module svg{width:18px;height:18px}
+ body[data-ui=site] .claus-home .contract-hook-bay h2{font-size:22px}
+ body[data-ui=site] .claus-home .home-copy h1{font-size:28px}
+ body[data-ui=site] .claus-home .home-copy>p:not(.home-conversation){font-size:16px;max-width:38ch}
+ body[data-ui=site] .claus-home .home-copy .home-conversation{font-size:14px;line-height:1.5;margin-top:10px}
+ body[data-ui=site] .claus-page-body{width:calc(100% - 32px);top:88px;bottom:calc(var(--ui-footer) + 12px);padding:22px}
+ body[data-ui=site] .hook-index{grid-template-columns:1fr}
+ body[data-ui=splash] #dashboard{display:flex;flex-direction:column;gap:16px}
+ body[data-ui=splash] .stats{gap:8px}
+ body[data-ui=splash] .stats section{padding:16px 8px}
+ body[data-ui=splash] .stats h2{font-size:14px;min-height:2.6em;margin-bottom:8px}
+ body[data-ui=splash] .stats strong{font-size:18px}
+ body[data-ui=splash] .stats p{font-size:12px}
+ body[data-ui=splash] .liquidity-card{padding:4px 20px 20px;align-self:stretch}
+ body[data-ui=splash] .pool-stats strong{font-size:24px}
+ body[data-ui=nfts] .nft-header nav{gap:14px;font-size:16px}
+ body[data-ui=nfts] .nft-header .header-socials{display:none}
+ body[data-ui=nfts] .nft-characters{max-width:300px}
+ body[data-ui=nfts] .nft-explain{font-size:16px;margin-bottom:18px}
+ body[data-ui=nfts] .nft-reward-grid{gap:10px}
+ body[data-ui=nfts] .nft-reward-stat{padding:18px 10px}
+ body[data-ui=nfts] .nft-reward-stat h2{font-size:15px}
+ body[data-ui=nfts] .nft-reward-stat strong{font-size:30px}
+ body[data-ui=nfts] .nft-stat strong{font-size:20px}
+ body[data-ui=nfts] .nft-navigation{gap:8px}
+ body[data-ui=nfts] .nft-tabs button{font-size:16px;padding-inline:12px}
+ body[data-ui=club] .club-shell,body[data-ui=club].club-connected .club-shell{padding:8px 14px 10px}
+ body[data-ui=club].club-connected .club-brand .home svg{width:46px;height:46px}
+ body[data-ui=club].club-connected .club-header h1{font-size:28px}
+ body[data-ui=club].club-connected .club-brand>.club-online{font-size:13px;margin-top:4px}
+ body[data-ui=club] .club-header{gap:8px}
+ body[data-ui=club] .club-context{height:36px}
+ body[data-ui=club] .club-panels{margin-top:8px}
+ body[data-ui=club] #club-tabs button{font-size:16px;height:42px}
+ body[data-ui=club] .panel-heading{min-height:56px;height:56px}
+}
+@media(max-height:800px){
+ body[data-ui=site] #stage[data-page=home] .claus-home{gap:16px;inset-block:12px 90px}
+ body[data-ui=site] .claus-home .contract-claus{width:92px;height:92px}
+ body[data-ui=site] .claus-home .contract-modules{row-gap:8px;padding-top:12px}
+ body[data-ui=site] .claus-home .contract-module{height:42px;min-height:42px;padding-block:7px}
+ body[data-ui=site] .claus-home .home-copy h1{font-size:28px}
+ body[data-ui=site] .claus-home .home-copy :is(h1,p){margin-bottom:6px}
+ body[data-ui=site] .home-entry-links{margin-top:8px}
+ body[data-ui=club].club-connected .club-brand .home svg{width:46px;height:46px}
+ body[data-ui=club].club-connected .club-header h1{font-size:28px}
+ body[data-ui=club].club-connected .account-controls{margin-top:4px}
+}
+@media(max-height:600px) and (min-width:700px){
+ body[data-ui=site] #stage[data-page=home] .claus-home{inset:8px 18px 68px;flex-direction:row;gap:32px}
+ body[data-ui=site] .claus-home .home-visual{width:54%;max-width:520px}
+ body[data-ui=site] .claus-home .home-main{width:40%;max-width:400px}
+ body[data-ui=site] .claus-home .contract-claus{width:64px;height:64px}
+ body[data-ui=site] .claus-home .contract-modules{gap:6px 34px;padding-top:10px}
+ body[data-ui=site] .claus-home .contract-module{height:40px;min-height:40px;font-size:14px}
+ body[data-ui=site] .claus-home .contract-hook-bay h2{font-size:20px}
+ body[data-ui=site] .claus-home .contract-link{height:6px}
+}
+@media(prefers-reduced-motion:reduce){body[data-ui] *,body[data-ui] *::before,body[data-ui] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Honor application state even when a page uses flex or grid primitives. */
+body[data-ui] [hidden]{display:none!important}
+
+/* Keep the primary NFT actions visible on ordinary laptop heights. */
+@media(min-width:701px) and (max-height:950px){
+ body[data-ui=nfts] .nft-title h1{font-size:42px}
+ body[data-ui=nfts] .nft-characters{width:260px;margin-bottom:6px}
+ body[data-ui=nfts] .nft-explain{font-size:17px;margin-bottom:16px}
+ body[data-ui=nfts] .nft-reward-stat{padding:18px 16px}
+ body[data-ui=nfts] .nft-reward-stat h2{margin-bottom:8px}
+ body[data-ui=nfts] .nft-reward-stat strong{font-size:38px}
+ body[data-ui=nfts] .nft-stats{margin:12px auto}
+ body[data-ui=nfts] .nft-navigation{margin-bottom:12px}
+}
+body[data-ui=splash] .pool-stats strong{white-space:nowrap;font-size:clamp(19px,1.65vw,24px)}
+body[data-ui=splash] .stats strong{white-space:nowrap}
+body[data-ui=splash] .pool-stats>div{min-height:112px;display:flex;flex-direction:column;justify-content:center}
+body[data-ui=splash] .liquidity-card{padding-bottom:18px}
+@media(max-width:700px){body[data-ui=splash] .pool-stats strong{font-size:19px}}
+
+@media(max-width:700px){
+ body[data-ui]{height:var(--ui-visible-height,100dvh);max-height:var(--ui-visible-height,100dvh)}
+ body[data-ui=site] #stage{height:100%}
+}
+/* Compact portrait phones keep the entire Home tree and its action in view. */
+@media(max-width:700px) and (max-height:700px){
+ body[data-ui=site] #stage[data-page=home] .claus-home{inset:8px 14px 70px;gap:12px}
+ body[data-ui=site] .claus-home .contract-claus{width:54px;height:54px;min-width:0;min-height:0}
+ body[data-ui=site] .claus-home .contract-link{height:5px}
+ body[data-ui=site] .claus-home .contract-pool{font-size:12px;padding:4px 10px;min-height:0}
+ body[data-ui=site] .claus-home .contract-hook-bay h2{font-size:18px}
+ body[data-ui=site] .claus-home .contract-modules{gap:6px 24px;padding-top:10px}
+ body[data-ui=site] .claus-home .contract-module{height:38px;min-height:38px;font-size:12px;gap:6px;padding:6px;grid-template-columns:16px minmax(0,1fr)}
+ body[data-ui=site] .claus-home .contract-module svg{width:16px;height:16px}
+ body[data-ui=site] .claus-home .home-copy h1{font-size:25px;margin-bottom:6px}
+ body[data-ui=site] .claus-home .home-copy>p:not(.home-conversation){font-size:14px;line-height:1.35;margin-bottom:6px}
+ body[data-ui=site] .claus-home .home-copy .home-conversation{font-size:13px;margin-top:6px}
+ body[data-ui=site] .claus-home .home-entry-links{margin-top:8px}
+ body[data-ui=site] .claus-home .home-lab-link{font-size:14px;min-height:36px;padding:6px 12px}
+}
+/* Shared baselines and deliberate separation between linked cards. */
+body[data-ui=splash] .stats section{justify-content:flex-start}
+body[data-ui=splash] .stats h2{min-height:1.3em}
+body[data-ui=site] .hook-index li{margin-bottom:14px}
+body[data-ui] .club-footer-links{z-index:1}
+@media(max-width:700px){body[data-ui=splash] .stats h2{min-height:2.6em}}
+
+/* One Lab canvas: current work, connected network and activity stay together. */
+body[data-ui=lab]>#atlas-main{display:flex;flex-direction:column;overflow:hidden;justify-content:center;padding-top:0;padding-bottom:20px;width:min(100%,1240px);max-width:1240px}
+body[data-ui=lab] .atlas-heading{padding:8px 0 20px;margin:0}
+body[data-ui=lab] .atlas-heading h1{font-size:clamp(36px,4vw,52px)}
+body[data-ui=lab] .atlas-workspace{min-height:0;flex:0 1 auto;display:flex;align-items:center}
+body[data-ui=lab] .lab-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:auto auto;gap:20px 24px;padding:0;width:100%;max-width:none;margin:0 auto;max-height:100%}
+body[data-ui=lab] .work-now{grid-area:1/1;grid-template-columns:1fr 1fr;gap:16px;order:0}
+body[data-ui=lab] .work-now>article{padding:18px 20px;min-height:0}
+body[data-ui=lab] .work-eyebrow{margin-bottom:8px}
+body[data-ui=lab] .work-now h2{font-size:23px;line-height:1.15;margin-bottom:8px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+body[data-ui=lab] .work-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+body[data-ui=lab] .work-meta{display:none}
+body[data-ui=lab] .work-now .atlas-text-button{padding:6px 0 0;min-height:32px}
+body[data-ui=lab] .architecture{grid-area:2/1;order:0}
+body[data-ui=lab] .map-board{grid-template-rows:clamp(116px,18dvh,168px) clamp(116px,18dvh,168px);row-gap:22px}
+body[data-ui=lab] :is(.map-node,.map-research,.map-journal,.build-area){padding:12px}
+body[data-ui=lab] .map-board :is(.node-title,.research-title,.journal-label strong){font-size:20px}
+body[data-ui=lab] .node-feature,body[data-ui=lab] .recent-entry,body[data-ui=lab] .journal-empty{display:none}
+body[data-ui=lab] .node-heading,body[data-ui=lab] .journal-label{gap:8px}
+body[data-ui=lab] .node-meta{margin-top:6px}
+body[data-ui=lab] .map-claus{padding:8px;border-radius:var(--ui-radius)}
+body[data-ui=lab] .map-claus>svg{height:76px;width:76px}
+body[data-ui=lab] .map-claus strong{font-size:23px}
+body[data-ui=lab] .research-feature{display:none}
+body[data-ui=lab] .research-tools{gap:8px;margin-top:10px}
+body[data-ui=lab] .runtime-strip{margin-top:14px;gap:16px}
+body[data-ui=lab] .runtime-strip button{min-height:58px;padding:8px}
+body[data-ui=lab] .runtime-wallet-address{display:none}
+body[data-ui=lab] .work-stream{grid-area:1/2/3/3;order:0;align-self:stretch;display:flex;flex-direction:column;margin:0;padding:20px;min-height:0}
+body[data-ui=lab] .work-stream .activity-list{grid-template-columns:1fr;gap:0;margin-top:8px}
+body[data-ui=lab] .work-stream .activity-entry:nth-child(n+3){display:none}
+body[data-ui=lab] .activity-entry{border-bottom:1px solid var(--ui-line);padding:16px 0}
+body[data-ui=lab] .activity-entry h3{font-size:20px;line-height:1.25;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+body[data-ui=lab] .activity-entry p{font-size:16px;-webkit-line-clamp:3}
+body[data-ui=lab] .activity-meta{font-size:12px}
+body[data-ui=lab] .activity-entry :is(button,a){font-size:14px}
+body[data-ui=lab] .activity-grouped{display:none}
+body[data-ui=lab] .stream-more{margin-top:auto;padding-top:14px}
+body[data-ui=lab] .stream-tabs button{font-size:14px}
+body[data-ui=lab] .stream-tabs button[aria-pressed=true]{color:var(--ui-paper)}
+body[data-ui=lab] .atlas-dialog{padding:0;width:min(580px,calc(100% - 32px));max-height:min(700px,calc(100dvh - 32px));overflow:hidden}
+body[data-ui=lab] .atlas-dialog[data-view=activity]{max-height:min(530px,calc(100dvh - 32px))}
+body[data-ui=lab] .atlas-dialog[data-view=activity] .dialog-activity p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.activity-pages{display:flex;justify-content:space-between;gap:20px;margin-top:20px}
+.activity-pages button{border:1px solid var(--ui-line);background:transparent;border-radius:10px;padding:8px 16px;font-size:16px;min-height:42px}
+body[data-ui=lab] .journal-view{max-height:100%;overflow:auto;overscroll-behavior:contain;padding-top:0}
+body[data-ui=lab] .build-area{background:var(--ui-paper);border:1px solid var(--ui-line);border-radius:var(--ui-radius)}
+@media(max-height:800px){
+ body[data-ui=lab] .work-now .work-summary{display:none}
+ body[data-ui=lab] .work-now>article{padding:14px 18px}
+ body[data-ui=lab] .activity-entry p{-webkit-line-clamp:2}
+ body[data-ui=lab] .activity-entry{padding:12px 0}
+}
+@media(min-width:641px) and (max-width:1000px){
+ body[data-ui=lab] .lab-layout{grid-template-columns:minmax(0,1fr) 250px;gap:16px}
+ body[data-ui=lab] .work-stream{padding:16px}
+ body[data-ui=lab] .map-board{grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr) 18px minmax(0,1fr)}
+ body[data-ui=lab] .map-board :is(.node-title,.research-title,.journal-label strong){font-size:17px}
+ body[data-ui=lab] .map-board .node-meta{font-size:12px!important}
+ body[data-ui=lab] .research-tools{gap:3px}
+ body[data-ui=lab] .research-tools button{min-width:28px}
+ body[data-ui=lab] .work-now h2{font-size:20px}
+ body[data-ui=lab] .work-now .work-summary{display:none}
+}
+@media(max-width:640px){
+ body.lab-atlas[data-ui=lab]>header.atlas-header{height:64px;min-height:64px;padding:8px 16px}
+ body[data-ui=lab]>#atlas-main{padding:0 16px 12px}
+ body[data-ui=lab] .atlas-heading{padding:4px 0 12px}
+ body[data-ui=lab] .atlas-heading h1{font-size:32px}
+ body[data-ui=lab] .lab-layout{grid-template-columns:1fr;grid-template-rows:auto auto auto;gap:12px;max-width:480px}
+ body[data-ui=lab] .work-now{grid-area:1/1;gap:10px}
+ body[data-ui=lab] .work-now>article{padding:10px 12px}
+ body[data-ui=lab] .work-now h2{font-size:17px;-webkit-line-clamp:2;margin-bottom:0}
+ body[data-ui=lab] .work-now .work-summary{display:none}
+ body[data-ui=lab] .work-eyebrow{font-size:12px!important;margin-bottom:4px!important}
+ body[data-ui=lab] .work-now .atlas-text-button{font-size:12px!important;padding:3px 0 0;min-height:28px}
+ body[data-ui=lab] .architecture{grid-area:2/1}
+ body[data-ui=lab] .map-board{grid-template-rows:repeat(3,clamp(66px,10.5dvh,94px));row-gap:10px}
+ body[data-ui=lab] :is(.map-node,.map-research,.map-journal,.build-area,.map-claus){padding:5px 10px;border-radius:14px}
+ body[data-ui=lab] .map-board :is(.node-title,.research-title,.journal-label strong){font-size:17px}
+ body[data-ui=lab] :is(.runtime-strip,#work-state,.community-x,.journal-label>.atlas-icon,.node-approval>.atlas-icon,.node-build>.atlas-icon){display:none}
+ body[data-ui=lab] .node-meta{font-size:12px!important;margin-top:4px}
+ body[data-ui=lab] .map-claus>svg{height:42px;width:42px}
+ body[data-ui=lab] .map-claus strong{font-size:16px}
+ body[data-ui=lab] .journal-label{gap:0}
+ body[data-ui=lab] .active-hooks{padding:2px 0 0;min-height:28px}
+ body[data-ui=lab] .work-stream{grid-area:3/1;padding:10px 14px;border-radius:14px}
+ body[data-ui=lab] .stream-heading h2{font-size:21px}
+ body[data-ui=lab] .stream-tabs{margin:0;gap:0;position:absolute;right:52px;top:9px}
+ body[data-ui=lab] .work-stream{position:relative}
+ body[data-ui=lab] .stream-tabs button{padding:5px 8px;font-size:12px;min-height:30px}
+ body[data-ui=lab] .work-stream .activity-list{margin-top:2px}
+ body[data-ui=lab] .work-stream .activity-entry:nth-child(n+2){display:none}
+ body[data-ui=lab] .work-stream .activity-entry{padding:4px 0 0;border:0}
+ body[data-ui=lab] .work-stream .activity-entry h3{font-size:16px;-webkit-line-clamp:1;margin-top:3px}
+ body[data-ui=lab] .work-stream .activity-entry p{-webkit-line-clamp:1;font-size:14px;margin-top:3px}
+ body[data-ui=lab] .work-stream .activity-entry h3+p{display:none}
+ body[data-ui=lab] .work-stream .activity-meta{font-size:11px}
+ body[data-ui=lab] .work-stream .activity-entry :is(button,a){padding-top:2px;min-height:28px;font-size:12px}
+ body[data-ui=lab] .stream-more{display:none}
+ body[data-ui=lab] .stream-status{font-size:11px;padding-top:4px}
+}
+/* Staking shares a stable shell while each asset keeps its own transaction flow. */
+body[data-ui].staking-page>header.staking-header{width:min(100%,1180px);max-width:1180px;height:76px;min-height:76px;flex:none;align-items:center;padding:12px 28px}
+body[data-ui].staking-page>header.staking-header>a{display:flex;align-items:center;justify-content:center;width:48px;height:48px;margin:0}
+body[data-ui].staking-page>header.staking-header>a svg{width:48px;height:48px}
+body[data-ui].staking-page>header.staking-header nav{display:flex;align-items:center;gap:22px;line-height:1.3}
+body[data-ui].staking-page>header.staking-header nav>a{color:inherit;font-size:16px;font-weight:500;letter-spacing:0;text-decoration:none;display:inline-flex;align-items:center;min-height:44px;padding:0;margin:0;opacity:1}
+body[data-ui].staking-page>header.staking-header :is(#connect,#header-connect,#disconnect){display:inline-flex;align-items:center;justify-content:center;gap:10px;flex-direction:row;min-height:46px;height:46px;min-width:198px;margin:0;padding:10px 16px;border:1px solid var(--ui-ink);border-radius:12px;background:var(--ui-ink);color:var(--ui-paper);font-size:16px;font-weight:500;line-height:1.3;letter-spacing:0;opacity:1}
+body[data-ui].staking-page>header.staking-header #disconnect{font-size:13px;background:transparent;color:var(--ui-ink);border-color:var(--ui-line);font-variant-numeric:tabular-nums}
+body[data-ui].staking-page>header.staking-header #wallet-address{font-size:13px}
+body[data-ui].staking-page>header.staking-header .wallet-icon{width:22px;height:22px;flex:none}
+body.staking-page .staking-heading{flex:none;text-align:center;padding:8px 24px 16px}
+body.staking-page .staking-heading h1{font-size:clamp(36px,5vw,48px);font-weight:500;line-height:1.05;margin:0 0 16px;letter-spacing:-.04em}
+body.staking-page .staking-switch{position:relative;isolation:isolate;display:inline-grid;grid-template-columns:.85fr .65fr 1.5fr;gap:4px;width:min(100%,400px);height:54px;padding:4px;border:1px solid var(--ui-line);border-radius:14px;background:#00000008;vertical-align:top}
+body.staking-page .staking-switch a{display:flex;align-items:center;justify-content:center;min-width:0;min-height:40px;padding:0 16px;border-radius:10px;color:var(--ui-ink);text-decoration:none;font-size:16px;font-weight:600;line-height:1;letter-spacing:0;transition:background 150ms ease}
+body.staking-page .staking-indicator{position:relative;grid-row:1;grid-column:1;z-index:-1;inset:auto;width:auto;border-radius:10px;background:var(--ui-paper);box-shadow:0 1px 2px #11110e0a;pointer-events:none}
+body.staking-page[data-ui=nfts] .staking-indicator{grid-column:2}
+body.staking-page[data-ui=exit] .staking-indicator{grid-column:3}
+body.staking-page .staking-switch a{grid-row:1;white-space:nowrap;padding-inline:10px;min-height:44px}
+body.staking-page .staking-switch a:nth-of-type(1){grid-column:1}
+body.staking-page .staking-switch a:nth-of-type(2){grid-column:2}
+body.staking-page .staking-switch a:nth-of-type(3){grid-column:3}
+@media(max-width:420px){body.staking-page .staking-switch a{font-size:14px;padding-inline:6px}}
+body.staking-page .staking-switch a:not([aria-current=page]):hover{background:#fff2d833}
+body.staking-page .staking-switch a:focus-visible{outline:2px solid var(--ui-ink);outline-offset:2px}
+body.staking-page>main{scrollbar-gutter:stable both-edges;overscroll-behavior-y:contain}
+body.staking-page .staking-intro{font-size:16px;line-height:1.5;margin:0;text-align:center}
+body.staking-page[data-ui=splash] main:has(#entry:not([hidden])){overflow:auto}
+body.staking-page[data-ui=splash] #entry{justify-content:flex-start;gap:12px;min-height:0;width:100%;padding:0}
+body.staking-page[data-ui=splash] #entry .splash-mark{width:34px;height:44px;flex:none}
+body.staking-page .staking-entry-action{display:flex;align-items:center;justify-content:center;width:min(100%,880px);min-height:130px;padding:28px;margin-top:8px;background:var(--ui-paper);border:1px solid var(--ui-line);border-radius:20px}
+body.staking-page[data-ui=splash] .liquidity-card{grid-row:3 / span 3}
+body.staking-page[data-ui=nfts] .nft-characters{width:220px;height:44px;margin:0 auto 12px}
+body.staking-page[data-ui=nfts] .nft-explain{font-size:16px;line-height:1.5;margin-bottom:20px}
+body.staking-page[data-ui=nfts] .nft-explain p+p{margin-top:0}
+body.staking-page[data-ui=nfts] .nft-reward-stat{padding:16px}
+body.staking-page[data-ui=nfts] .nft-reward-stat strong{font-size:32px}
+body.staking-page[data-ui=nfts] .nft-stats{grid-template-columns:repeat(2,minmax(0,1fr));max-width:660px;margin:18px auto;gap:12px}
+body.staking-page[data-ui=nfts] .nft-stat{grid-column:auto;gap:4px 10px}
+body.staking-page[data-ui=nfts] .nft-stat strong{font-size:23px}
+body.staking-page[data-ui=nfts] .nft-stat span{margin:0}
+body.staking-page .nft-source-links{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 20px;max-width:880px;margin:14px auto 0;font-size:13px}
+body.staking-page .nft-source-links a{color:var(--ui-ink);display:inline-flex;align-items:center;min-height:44px}
+body.staking-page #wallet-dialog{width:calc(100% - 32px);max-width:430px;padding:28px;border-radius:20px}
+body.staking-page #wallet-dialog h2{font-size:26px;line-height:1.2;font-weight:500;margin:0 0 20px}
+body.staking-page #wallet-dialog .wallet-options{display:grid;gap:10px;margin:0}
+body.staking-page #wallet-dialog .wallet-options button{display:flex;align-items:center;width:100%;margin:0;opacity:1}
+body.staking-page #wallet-dialog .wallet-options img{width:28px;height:28px}
+body.staking-page #wallet-message{font-size:14px;line-height:1.5;margin:16px 0 0}
+body.staking-page #wallet-message:empty{display:none}
+body.staking-page #wallet-dialog .staking-wallet-close{display:block;position:static;min-height:44px;margin:16px auto 0;padding:8px 16px;border:0;background:transparent;color:var(--ui-ink);font-size:14px;line-height:1.3;opacity:1}
+@media(max-width:700px){
+ body[data-ui].staking-page>header.staking-header{padding:10px 16px;height:68px;min-height:68px}
+ body[data-ui].staking-page>header.staking-header nav{gap:12px}
+ body[data-ui].staking-page>header.staking-header nav>a{font-size:14px}
+ body[data-ui].staking-page>header.staking-header :is(#connect,#header-connect,#disconnect){min-width:154px;padding:10px 12px;font-size:14px;gap:8px}
+ body[data-ui].staking-page>header.staking-header #disconnect{font-size:11px;gap:5px}
+ body[data-ui].staking-page>header.staking-header #wallet-address{font-size:11px}
+ body.staking-page .staking-heading{padding:4px 16px 16px}
+ body.staking-page .staking-heading h1{margin-bottom:16px}
+ body.staking-page[data-ui=nfts] .nft-explain{font-size:15px}
+ body.staking-page[data-ui=nfts] .nft-reward-stat strong{font-size:27px}
+ body.staking-page[data-ui=nfts] .nft-reward-stat h2{font-size:14px}
+ body.staking-page[data-ui=nfts] .nft-stat{flex-direction:column;align-items:center}
+ body.staking-page[data-ui=nfts] .nft-stat strong{font-size:20px}
+ body.staking-page[data-ui=nfts] .nft-stat span{font-size:13px}
+ body.staking-page .staking-intro{font-size:15px}
+}
+@media(max-width:360px){body[data-ui].staking-page>header.staking-header nav>a{display:none}}
+@media(prefers-reduced-motion:reduce){
+ body.staking-page .staking-switch a{transition:none}
+ html:has(body.staking-page)::view-transition-group(*),html:has(body.staking-page)::view-transition-old(*),html:has(body.staking-page)::view-transition-new(*){animation:none}
+}
+
+/* Ecosystem entry and shared app navigation. */
+.network-sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%);white-space:nowrap;border:0!important}
+body[data-ui=network]>#network-main{position:relative;flex:1 1 0;width:100%;max-width:none;height:auto;background:transparent;margin:0;padding:0;min-height:0;overflow:hidden;isolation:isolate}
+body[data-ui=network] #panel{padding:0;width:364px;max-width:calc(100vw - 32px);max-height:calc(var(--ui-visible-height,100dvh) - 40px);border-radius:var(--ui-radius);background:var(--ui-paper);font-size:14px;line-height:1.5}
+body[data-ui=network] #panel::backdrop{background:#4e24120d;backdrop-filter:none}
+body[data-ui=network] :is(.panel-head,#panel-footer){background:var(--ui-paper)}
+body[data-ui=network] .panel-body h2{font-size:28px;font-weight:550;line-height:1.15;letter-spacing:-.035em;margin:0 0 13px}
+body[data-ui=network] .panel-body p{font-size:14px;line-height:1.5;color:var(--ui-muted)}
+body[data-ui=network] :is(.section-title,.eyebrow,.tag,#panel-trail,.search-result-count){font-size:12px;color:#69533a}
+body[data-ui=network] .section-title{margin-top:20px;letter-spacing:.03em}
+body[data-ui=network] .item{min-height:47px}
+body[data-ui=network] .item b{font-size:14px}
+body[data-ui=network] .item small{font-size:12px;color:#6b5943}
+body[data-ui=network] .utility{bottom:max(18px,env(safe-area-inset-bottom))}
+body[data-ui=network] #panel :is(.close,#panel-back){width:44px;height:44px;min-width:44px}
+body[data-ui=network] :is(.visit,.utility button,.utility a):focus-visible{outline-color:var(--ui-ink)}
+.network-fallback{position:fixed;inset:20%;display:flex;flex-direction:column;justify-content:center;gap:16px;font-size:22px}
+body[data-ui=build]>main.builder-shell{display:flex;flex-direction:column;overflow:hidden}
+body[data-ui=build] .builder-intro{flex:none;margin:0 0 20px}
+body[data-ui=build] .builder-intro h1{margin:0}
+body[data-ui=build] #workspace-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+body[data-ui=build] .builder-tabs{flex:none;flex-wrap:wrap;margin:0 0 20px}
+body[data-ui=build] .builder-shell>section{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+body[data-ui=build] .builder-gate{padding:clamp(24px,7dvh,70px) 16px}
+@media(max-width:680px){
+ body[data-ui=network] #panel{width:calc(100vw - 32px);max-height:min(76dvh,calc(var(--ui-visible-height,100dvh) - 24px))}
+ body[data-ui=network] .panel-body h2{font-size:26px}
+ body[data-ui=network] .panel-body .item{min-height:44px}
+ body[data-ui=network] #scene{inset:8px 8px 70px}
+ body[data-ui=build] .builder-tabs{gap:2px;margin-bottom:16px}
+ body[data-ui=build] .builder-tabs button{font-size:14px;padding:10px}
+ body[data-ui=build] .builder-intro{margin-bottom:16px}
+}
+@media(max-height:500px){
+ body[data-ui=network] #scene{inset:6px 60px 55px}
+ body[data-ui=network] #panel{max-height:calc(var(--ui-visible-height,100dvh) - 24px)}
+}
+@media(prefers-reduced-motion:reduce){body[data-ui=network] *,body[data-ui=network] *::before,body[data-ui=network] *::after{transition:none!important;animation:none!important}}
+/* The Club's product navigation remains available before signing in. */
+body[data-ui=club]:not(.club-connected) .club-header{display:flex;justify-content:space-between;align-items:center;min-height:52px}
+body[data-ui=club]:not(.club-connected) .club-header .home{display:block}
+body[data-ui=club]:not(.club-connected) .club-header .home svg{width:44px;height:44px}
+body[data-ui=club]:not(.club-connected) #gate{gap:18px;padding:14px 0}
+body[data-ui=club]:not(.club-connected) .gate #gate-note{font-size:16px;line-height:1.45}
+body[data-ui=club]:not(.club-connected) .gate-art{width:clamp(110px,21dvh,210px);height:clamp(110px,21dvh,210px)}
+@media(max-height:650px){body[data-ui=club]:not(.club-connected) #gate{gap:14px}.gate h1{font-size:30px}}
+body[data-ui=club] .club-header:has(#account[hidden]){display:flex;justify-content:space-between;align-items:center}
+/* NFT workspace: controls and the selected panel stay in view; details have their own reading pane. */
+body[data-ui=nfts].staking-page.nft-page>main{display:flex;flex-direction:column;overflow:hidden;padding-top:10px;padding-bottom:12px;gap:0}
+body[data-ui=nfts].staking-page.nft-page main>.nft-characters{display:none}
+body[data-ui=nfts].staking-page.nft-page main>.nft-rewards{flex:none;width:100%;max-width:880px}
+body[data-ui=nfts].staking-page.nft-page .nft-reward-stat{padding:12px 14px}
+body[data-ui=nfts].staking-page.nft-page .nft-reward-stat h2{font-size:15px;margin:0 0 5px;line-height:1.3}
+body[data-ui=nfts].staking-page.nft-page .nft-reward-stat strong{font-size:30px;min-height:1.2em}
+body[data-ui=nfts].staking-page.nft-page .nft-reward-stat>span{font-size:13px}
+body[data-ui=nfts].staking-page.nft-page .nft-reward-timing{font-size:13px;margin:7px 0 0}
+body[data-ui=nfts].staking-page.nft-page .nft-stats{flex:none;margin:8px auto;gap:24px}
+body[data-ui=nfts].staking-page.nft-page .nft-stat{gap:7px}
+body[data-ui=nfts].staking-page.nft-page .nft-stat strong{font-size:18px}
+body[data-ui=nfts].staking-page.nft-page .nft-stat span{font-size:13px}
+body[data-ui=nfts].staking-page.nft-page .nft-navigation{flex:none;margin:2px auto 10px;gap:14px}
+body[data-ui=nfts].staking-page.nft-page .nft-tabs button{font-size:15px;min-height:40px;padding:8px 14px}
+body[data-ui=nfts].staking-page.nft-page .nft-opensea{font-size:15px}
+body[data-ui=nfts].staking-page.nft-page .nft-stake-heading{margin:0;font-size:15px;line-height:1.25;font-weight:650}
+body[data-ui=nfts].staking-page.nft-page .nft-panel{flex:1 1 auto;width:100%;min-height:76px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:18px}
+body[data-ui=nfts].staking-page.nft-page .nft-panel>p:last-child{margin-bottom:0}
+body[data-ui=nfts].staking-page.nft-page main>.module-details{flex:0 1 auto;width:100%;max-width:880px;min-height:40px;margin:8px auto 0;max-height:45%;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+body[data-ui=nfts].staking-page.nft-page .module-details summary{min-height:40px;font-size:15px;padding:10px 0}
+body[data-ui=nfts].staking-page.nft-page .module-details :is(p,.nft-explain){font-size:15px;line-height:1.5}
+body[data-ui=nfts].staking-page.nft-page .module-details .nft-source-links{font-size:13px;flex-wrap:wrap}
+body[data-ui=nfts].staking-page.nft-page main>.nft-status:not(:empty),body[data-ui=nfts].staking-page.nft-page #saved-action:not([hidden]){flex:none;max-height:25%;overflow:auto}
+@media(max-width:700px){
+ body[data-ui=nfts].staking-page.nft-page>main{padding:6px 16px 10px}
+ body[data-ui=nfts].staking-page.nft-page .nft-reward-grid{gap:10px}
+ body[data-ui=nfts].staking-page.nft-page .nft-reward-stat{padding:10px 7px}
+ body[data-ui=nfts].staking-page.nft-page .nft-reward-stat h2{font-size:13px;min-height:1.3em;margin-bottom:4px}
+ body[data-ui=nfts].staking-page.nft-page .nft-reward-stat strong{font-size:25px}
+ body[data-ui=nfts].staking-page.nft-page .nft-stats{margin:7px auto;gap:16px}
+ body[data-ui=nfts].staking-page.nft-page .nft-stat strong{font-size:16px}
+ body[data-ui=nfts].staking-page.nft-page .nft-stat span{font-size:12px}
+ body[data-ui=nfts].staking-page.nft-page .nft-navigation{gap:10px;flex-wrap:nowrap}
+ body[data-ui=nfts].staking-page.nft-page .nft-tabs button{font-size:13px;padding:8px 10px}
+ body[data-ui=nfts].staking-page.nft-page .nft-opensea{font-size:13px}
+ body[data-ui=nfts].staking-page.nft-page .nft-panel{padding:14px;min-height:66px}
+ body[data-ui=nfts].staking-page.nft-page .nft-panel>p{font-size:15px}
+}
+
+@media(max-height:520px){body[data-ui=nfts].staking-page.nft-page>main{overflow:auto}body[data-ui=nfts].staking-page.nft-page .nft-panel{flex:none;max-height:240px}body[data-ui=nfts].staking-page.nft-page main>.module-details{flex:none;max-height:240px}}
+
+/* Keep the selected NFTs and their actions ahead of historical rewards. */
+body[data-ui=nfts].staking-page.nft-page .nft-grid{gap:10px;margin:0;grid-template-columns:repeat(3,minmax(0,1fr))}
+body[data-ui=nfts].staking-page.nft-page .nft-card{display:grid;grid-template-columns:56px minmax(0,1fr);align-content:start;align-items:center;column-gap:12px;padding:12px;border:1px solid #11110e20;border-radius:14px;background:transparent}
+body[data-ui=nfts].staking-page.nft-page .nft-card>a:first-child{grid-column:1;grid-row:1 / span 3;display:block;width:56px;height:56px;margin:0}
+body[data-ui=nfts].staking-page.nft-page .nft-card img{width:56px;height:56px;object-fit:contain;margin:0;border-radius:8px}
+body[data-ui=nfts].staking-page.nft-page .nft-card h3{grid-column:2;font-size:17px;line-height:1.25;margin:0}
+body[data-ui=nfts].staking-page.nft-page .nft-card>p{grid-column:2;font-size:12px;line-height:1.4;margin:0}
+body[data-ui=nfts].staking-page.nft-page .nft-card-actions{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:0 9px;margin:8px 0 0}
+body[data-ui=nfts].staking-page.nft-page .nft-card-actions :is(button,a){font-size:13px;min-height:44px;margin:0;padding:8px 5px;line-height:1.3}
+body[data-ui=nfts].staking-page.nft-page .nft-card-actions button:first-of-type{padding:8px 12px;border-radius:10px;background:var(--ui-ink);color:var(--ui-paper)}
+body[data-ui=nfts].staking-page.nft-page .nft-card-actions button:disabled{opacity:.45}
+body[data-ui=nfts].staking-page.nft-page #nft-staking-status{margin:0 0 10px;font-size:14px;line-height:1.45;text-align:left}
+body[data-ui=nfts].staking-page.nft-page #mine-empty{margin:4px 0 12px;font-size:15px;line-height:1.5}
+body[data-ui=nfts].staking-page.nft-page #personal-rewards{margin-top:16px}
+body[data-ui=nfts].staking-page.nft-page main>#status:not(:empty){font-size:14px;line-height:1.4;margin:6px auto 8px}
+@media(max-width:760px){body[data-ui=nfts].staking-page.nft-page .nft-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){body[data-ui=nfts].staking-page.nft-page .nft-grid{grid-template-columns:1fr}body[data-ui=nfts].staking-page.nft-page .nft-card{grid-template-columns:52px minmax(0,1fr);padding:10px}body[data-ui=nfts].staking-page.nft-page .nft-card>a:first-child,body[data-ui=nfts].staking-page.nft-page .nft-card img{width:52px;height:52px}}
+@media(max-height:740px){body.staking-page .staking-heading{padding-top:0;padding-bottom:12px}body.staking-page .staking-heading h1{font-size:38px;line-height:1.15;margin-bottom:10px}}
+@media(max-height:660px){body.staking-page .staking-heading{padding-bottom:8px}body.staking-page .staking-heading h1{font-size:30px;margin-bottom:8px}body[data-ui=nfts].staking-page.nft-page .nft-reward-stat{padding:8px}body[data-ui=nfts].staking-page.nft-page .nft-reward-stat strong{font-size:25px}body[data-ui=nfts].staking-page.nft-page .nft-reward-timing{font-size:12px;margin-top:4px}body[data-ui=nfts].staking-page.nft-page .nft-panel{padding:10px}}
+
+@media(max-width:540px){body[data-ui=nfts].staking-page.nft-page .nft-card-actions{grid-column:2;margin-top:4px;gap:0 4px}body[data-ui=nfts].staking-page.nft-page .nft-card-actions button:first-of-type{padding-inline:8px}body[data-ui=nfts].staking-page.nft-page .nft-card:has(>p:nth-of-type(2))>p:first-of-type{display:none}}
+
+@media(max-width:540px){body[data-ui=nfts].staking-page.nft-page .nft-card{padding:9px}body[data-ui=nfts].staking-page.nft-page .nft-card-actions{gap:0 2px}body[data-ui=nfts].staking-page.nft-page .nft-card h3{font-size:16px}}
+@media(max-height:660px){body[data-ui=nfts].staking-page.nft-page #panel-mine:has(.nft-card) #nft-staking-status[data-state=open]{display:none}}
+
+body[data-ui=nfts].staking-page.nft-page #mine-empty:empty{display:none}
+
+@media(max-height:660px){body[data-ui=nfts].staking-page.nft-page .nft-reward-stat strong{min-height:0;line-height:1.1}body[data-ui=nfts].staking-page.nft-page .nft-reward-stat>span{min-height:0;line-height:1.35}body[data-ui=nfts].staking-page.nft-page .nft-reward-stat{padding-block:6px}}
+
+@media(max-height:660px){body[data-ui=nfts].staking-page.nft-page .nft-navigation{margin-bottom:6px}body[data-ui=nfts].staking-page.nft-page .nft-reward-stat>span{margin-top:2px}body[data-ui=nfts].staking-page.nft-page #nft-staking-status{margin-bottom:6px}}
+
+/* The Home canvas carries through the apps; the footer stays outside content panes. */
+body[data-ui]::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.075;mix-blend-mode:soft-light;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23000' d='M0 0h180v180H0z' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E")}
+body[data-ui=network] #network-main>.texture{display:none}
+body[data-ui=network] #scene{inset:64px 16px 12px}
+body[data-ui=network] .utility{top:16px;bottom:auto}
+body[data-ui=network]>.club-footer{width:100%;padding:0;max-width:none}
+@media(max-width:700px){body[data-ui=network] #scene{inset:64px 8px 8px}}
+
+body[data-ui=site]>.club-footer{position:fixed;inset:auto 0 0;z-index:2}
+
+/* Original wave and mascot proportions, shared by every app. */
+@media(max-width:600px){body[data-ui] .club-footer-claus{height:calc(var(--ui-footer) + 25px)}}
+/* Keep staking usable above the original footer, including short viewports. */
+body[data-ui=nfts].staking-page.nft-page>main{overflow:auto}
+body[data-ui=nfts].staking-page.nft-page .nft-panel{flex-shrink:0;min-height:124px}
+@media(min-width:900px) and (max-height:850px){
+ body[data-ui=nfts].staking-page.nft-page>main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(124px,1fr);align-content:start;gap:12px 24px}
+ body[data-ui=nfts].staking-page.nft-page main>.nft-rewards{grid-column:1;grid-row:1 / span 2;align-self:start}
+ body[data-ui=nfts].staking-page.nft-page main>.nft-navigation{grid-column:2;grid-row:1;margin:0;justify-content:space-between}
+ body[data-ui=nfts].staking-page.nft-page main>.nft-panel{grid-column:2;grid-row:2;height:100%}
+ body[data-ui=nfts].staking-page.nft-page main>:is(.nft-status,#saved-action,.module-details){grid-column:1 / -1}
+}
+@media(max-width:899px) and (max-height:740px){
+ body[data-ui].staking-page>header.staking-header{height:60px;min-height:60px;padding-block:6px}
+ body.staking-page .staking-heading{padding-bottom:8px}
+ body.staking-page .staking-heading h1{font-size:30px;margin-bottom:8px}
+ body[data-ui=nfts].staking-page.nft-page>main{padding-top:0}
+ body[data-ui=nfts].staking-page.nft-page .nft-reward-stat{padding-block:8px}
+ body[data-ui=nfts].staking-page.nft-page .nft-reward-timing{margin-top:5px}
+ body[data-ui=nfts].staking-page.nft-page .nft-navigation{margin-bottom:6px}
+ body[data-ui=nfts].staking-page.nft-page .nft-panel{padding:12px 14px}
+}
+
+body[data-ui=lab]>#atlas-main{overflow:auto;justify-content:flex-start}
+body[data-ui=lab] .lab-layout{flex:none;max-height:none}
+/* Public chrome: one consistent set of three footer links. */
+body[data-ui] .club-footer-links :is(.club-link,.splash-link){display:none}
+body[data-ui=network] #network-main>.utility{display:none}
+body[data-ui=network] #scene{inset:12px 16px}
+body[data-ui] :is(body>header,.claus-page-header,.club-header) a:is([href^="https://x.com/"],[href^="https://twitter.com/"]){display:none}
+@media(max-width:700px){body[data-ui=network] #scene{inset:12px 8px}}
+
+/* One page transition owns the complete document, including the footer. */
+@view-transition{navigation:none}
+#claus-ink-transition{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1000}
+#claus-ink-transition.is-active{pointer-events:auto}
+html[data-page-arrival]::after{content:'';position:fixed;inset:0;background:#000;z-index:999;pointer-events:none}
+
+/* The home mark is the only header control. Account actions stay with the mascot. */
+body[data-ui] :is(body>header,.claus-page-header,.club-header)>nav,
+body[data-ui] .club-header>.account-controls{display:none!important}
+body[data-ui] a[aria-label="Claus Network"]{position:fixed;top:10px;left:24px;z-index:8;display:grid;place-items:center;width:80px!important;height:80px!important;min-width:0;min-height:0;margin:0;padding:0;border:0;background:none}
+body[data-ui] a[aria-label="Claus Network"]>svg{display:block;width:80px!important;height:80px!important;max-width:none;max-height:none}
+body[data-ui] :is(body>header,.claus-page-header){height:90px;min-height:90px}
+body[data-ui] .club-header{height:80px;min-height:80px}
+body[data-ui] .club-header :is(h1,.club-online){position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+body[data-ui] .club-footer-links{gap:16px}
+body[data-ui] .club-footer-links>a,body[data-ui] .club-footer-links>.onchain-trigger{width:44px;height:44px}
+body[data-ui] .club-footer-links :is(a,button)>svg{height:38px;width:auto;max-width:43px;fill:currentColor}
+body[data-ui] .club-footer-links a[aria-label="Claus on OpenSea"]>svg{height:38px;width:42.12px}
+body[data-ui] .club-footer-links .onchain-trigger>svg{height:38px;width:24.43px}
+@media(max-width:700px){
+ body[data-ui] a[aria-label="Claus Network"]{top:8px;left:16px;width:64px!important;height:64px!important}
+ body[data-ui] a[aria-label="Claus Network"]>svg{width:64px!important;height:64px!important}
+ body[data-ui] :is(body>header,.claus-page-header){height:76px;min-height:76px}
+ body[data-ui] .club-header{height:68px;min-height:68px}
+ body[data-ui] .club-footer-links{left:16px;transform:none;gap:6px;bottom:max(12px,env(safe-area-inset-bottom))}
+ body[data-ui] .club-footer-links :is(a,button)>svg{height:34px;width:auto;max-width:38px}
+ body[data-ui] .club-footer-links a[aria-label="Claus on OpenSea"]>svg{height:34px;width:37.69px}
+ body[data-ui] .club-footer-links .onchain-trigger>svg{height:34px;width:21.86px}
+
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-page-arrival]::after{content:none}
+}
+
+/* One motion language: direct feedback, restrained distance, interruptible transitions. */
+body[data-ui] :is(button, a, summary):not(.world){transition:color 160ms ease,background-color 160ms ease,border-color 160ms ease,opacity 160ms ease,scale 180ms cubic-bezier(.2,.7,.2,1),translate 180ms cubic-bezier(.2,.7,.2,1)}
+body[data-ui] button:active:not(:disabled){transform:none;scale:.96}
+body[data-ui] a:not(.world):active,body[data-ui] summary:active{scale:.97}
+body[data-ui] .club-footer-links :is(a,button):hover{opacity:1;translate:0 -3px}
+body[data-ui] a[aria-label="Claus Network"]:hover{scale:1.04}
+body[data-ui] :is(.hook-index-link,.wallet-options button):hover{background-color:#11110e08}
+body[data-ui] :is(.status,.nft-status,.copy-status):not(:empty){animation:claus-status-in 180ms ease-out}
+@keyframes claus-status-in{from{opacity:0;translate:0 3px}to{opacity:1;translate:0 0}}
+/* Native top-layer dialogs retain Escape, focus trapping and light dismiss. */
+body[data-ui] :is(dialog,[popover]){animation:none;opacity:0;scale:.98;transition:opacity 180ms ease,scale 220ms cubic-bezier(.2,.7,.2,1),display 220ms allow-discrete,overlay 220ms allow-discrete}
+body[data-ui] :is(dialog[open],[popover]:popover-open){opacity:1;scale:1}
+body[data-ui] [popover]{transform-origin:bottom center}
+body[data-ui] dialog::backdrop{transition:background-color 180ms ease,display 220ms allow-discrete,overlay 220ms allow-discrete}
+body[data-ui] dialog:not([open])::backdrop{background-color:transparent}
+@starting-style{
+ body[data-ui] :is(dialog[open],[popover]:popover-open){opacity:0;scale:.98}
+ body[data-ui] dialog[open]::backdrop{background-color:transparent}
+}
+/* Scroll the reading panel, never shrink its content to a zero-height column. */
+body[data-ui=site] .claus-page{overflow:hidden}
+body[data-ui=site] .claus-page .claus-page-body{position:absolute;display:block;inset:104px auto calc(var(--ui-footer) + 12px) 50%;margin:0;padding:24px 28px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#1113 transparent;scroll-padding:24px}
+body[data-ui=site] .claus-page .guide-window{height:auto;overflow:visible;min-height:0}
+body[data-ui=site] .claus-page .page-content{height:auto;columns:auto;transform:none;transition:none}
+body[data-ui=site] .claus-page .page-heading{margin-bottom:16px}
+body[data-ui=site] .claus-page .page-summary{margin-bottom:20px}
+body[data-ui=site] .claus-page .page-summary:empty{display:none}
+body[data-ui=site] .claus-page .reader-controls{display:none}
+body[data-ui=site] .hook-index{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+body[data-ui=site] .hook-index li{margin:0}
+@media(max-width:700px){
+ body[data-ui=site] .claus-page .claus-page-body{top:88px;padding:20px}
+ body[data-ui=site] .hook-index{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-ui] :is(button,a,summary):not(.world):is(:hover,:active){scale:1;translate:0 0}
+ body[data-ui] :is(dialog,[popover]){scale:1}
+}
+body[data-ui=site] .hook-index-link{grid-template-columns:22px minmax(0,1fr) 16px;gap:10px}
+body[data-ui=site] .hook-index-number{display:block}
+body[data-ui=site] .hook-index-link>div{min-width:0}
+
+/* The six products use the same heading scale, including the Club entrance. */
+:root{--ui-title:clamp(44px,5vw,64px)}
+body[data-ui].staking-page .staking-heading h1,
+body[data-ui=build] .builder-intro h1,
+body[data-ui=lab] .atlas-heading h1,
+body[data-ui=site] .page-heading h1,
+body[data-ui=club] .product-heading{font-size:var(--ui-title);font-weight:550;line-height:1.08;letter-spacing:-.04em;text-align:center}
+body[data-ui=club] .product-heading{flex:none;margin:0 0 18px}
+body[data-ui=club] .club-header #club-title{display:none}
+body[data-ui=club] .gate h1{font-size:24px;line-height:1.25;letter-spacing:-.025em}
+body[data-ui=club]:not(.club-connected) #gate{gap:14px;justify-content:flex-start}
+body[data-ui=club] .gate-art{width:clamp(90px,17dvh,160px);height:clamp(90px,17dvh,160px);flex:none}
+/* The onchain menu grows from its trigger, positioned before its first frame. */
+body[data-ui] #club-onchain-panel{transform-origin:var(--onchain-origin-x,50%) calc(100% + 12px);translate:0 6px;scale:.96;opacity:0;transition:opacity 160ms ease,translate 200ms cubic-bezier(.2,.7,.2,1),scale 200ms cubic-bezier(.2,.7,.2,1),display 200ms allow-discrete,overlay 200ms allow-discrete}
+body[data-ui] #club-onchain-panel:popover-open{translate:0 0;scale:1;opacity:1}
+@starting-style{body[data-ui] #club-onchain-panel:popover-open{translate:0 6px;scale:.96;opacity:0}}
+@media(prefers-reduced-motion:reduce){body[data-ui] #club-onchain-panel{translate:0 0;scale:1}}
+body[data-ui=club] #gate .gate-art{width:clamp(100px,17dvh,150px);height:clamp(100px,17dvh,150px);flex:none}
+body[data-ui=club] #gate:not(.gate-denied)>h1{display:none}
+body[data-ui=club] #gate.gate-denied>h1{font-size:24px;line-height:1.25;letter-spacing:-.025em}
+body[data-ui=club] #gate #enter{flex:none}
+
+/* Reserve the footer in the layout and pin the original wave above every page. */
+html:has(body[data-ui]),body[data-ui]{overflow:clip}
+body[data-ui]:has(>.club-footer):not([data-ui=site]){box-sizing:border-box;padding-bottom:var(--ui-footer)}
+body[data-ui]>.club-footer{position:fixed;inset:auto 0 0;z-index:10;width:100%;max-width:none;pointer-events:none}
+body[data-ui] .club-footer :is(.club-footer-links,.footer-account,[popover]){pointer-events:auto}
+body[data-ui] .club-shell{overflow:clip}
+
+/* A connected address is the only account control visible beneath Claus's eyes. */
+body[data-ui] .footer-account{position:absolute;z-index:3;right:24px;bottom:max(18px,env(safe-area-inset-bottom));width:224px;max-width:calc(50% - 28px);display:flex;justify-content:center}
+body[data-ui] .footer-account-source{display:none!important}
+body[data-ui] .footer-wallet{display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:100%;padding:11px 18px;border:0;border-radius:0;background:transparent;color:#fff;font:500 14px/1.3 'Claus UI',Arial,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer}
+body[data-ui] .footer-wallet:hover{background:transparent;opacity:.75}
+body[data-ui] .footer-wallet[hidden],body[data-ui] .footer-account-panel button[hidden]{display:none}
+body[data-ui] .footer-account-panel{position:fixed;inset:auto;margin:0;width:204px;max-width:calc(100vw - 24px);padding:6px;border-radius:16px;overflow:auto;transform-origin:calc(100% - var(--account-origin-x,70px)) calc(100% + var(--account-origin-y,10px))}
+body[data-ui] .footer-account-panel button{display:block;width:100%;min-height:44px;padding:11px 14px;border:0;border-radius:10px;background:transparent;color:var(--ui-ink);font:500 15px/1.35 'Claus UI',Arial,sans-serif;text-align:left;cursor:pointer}
+body[data-ui] .footer-account-panel button:hover{background:#11110e0b}
+body[data-ui] .footer-account-panel button:focus-visible{outline-offset:-3px}
+body[data-ui] .footer-account-panel button:disabled{opacity:.45;cursor:wait}
+@media(max-width:700px){
+ body[data-ui] .footer-account{right:12px;bottom:max(12px,env(safe-area-inset-bottom));width:192px;max-width:calc(100% - 180px)}
+ body[data-ui] .footer-wallet{font-size:13px;padding:10px 13px}
+}
+
+/* Product panes retain their own space below fixed page headings. */
+body[data-ui=lab]>#atlas-main{overflow:hidden}
+body[data-ui=lab] .atlas-heading{flex:none}
+body[data-ui=lab] .atlas-workspace{flex:1 1 0;min-height:0;width:100%;align-items:flex-start;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#1113 transparent;scroll-padding:8px}
+body[data-ui=build] .builder-intro,body[data-ui=build] .builder-tabs{flex:none}
+body[data-ui=build] .builder-gate{padding:20px 16px}
+body[data-ui=build] .builder-gate p{margin:0 0 12px;line-height:1.5}
+body[data-ui=build] .builder-gate a{margin:0;min-height:46px;border-radius:12px;background:var(--ui-ink);color:var(--ui-paper);text-decoration:none}
+/* The token entry must fit before any account has been connected. */
+body.staking-page[data-ui=splash] #entry{display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-rows:auto auto;align-content:start;align-items:center;gap:14px 12px;max-width:520px;flex:none;margin-inline:auto}
+body.staking-page[data-ui=splash] #entry .splash-mark{justify-self:center}
+body.staking-page[data-ui=splash] #entry .staking-intro{text-align:left}
+body.staking-page[data-ui=splash] .staking-entry-action{grid-column:1/-1;min-height:0;width:100%;padding:18px 24px;margin:0}
+body.staking-page[data-ui=splash] #entry button{margin:0}
+/* Focus is visible against both orange and paper, including dark actions. */
+body[data-ui] :is(button,a,summary):focus-visible{outline:2px solid var(--ui-ink);outline-offset:4px}
+body[data-ui] .club-footer-links :is(a,button):focus-visible,body[data-ui] .footer-wallet:focus-visible{outline-color:var(--ui-paper)}
+body[data-ui] :is(dialog,[popover]) :is(button,a):focus-visible{outline-offset:3px}
+@media(forced-colors:active){body[data-ui] :is(button,a,summary):focus-visible{outline-color:Highlight}}
+
+body[data-ui] dialog :is(.close-dialog,#close-dialog,.atlas-icon-button){display:inline-grid;place-items:center;flex:none;min-width:44px;min-height:44px;padding:8px;line-height:1}
+
+/* On short phones, keep the staking action ahead of supporting totals. */
+@media(max-width:700px) and (max-height:620px){
+ body[data-ui=nfts].staking-page.nft-page>main{display:flex;flex-direction:column}
+ body[data-ui=nfts].staking-page.nft-page>main>*{flex:none}
+ body[data-ui=nfts].staking-page.nft-page .nft-navigation{order:0;width:100%;justify-content:space-between}
+ body[data-ui=nfts].staking-page.nft-page .nft-panel{order:1;width:100%}
+ body[data-ui=nfts].staking-page.nft-page .nft-rewards{order:2;width:100%;margin-top:14px}
+}
+
+/* Shared category title: one size, weight and viewport anchor across the apps. */
+:root{--ui-title:clamp(44px,5.625vw,72px);--ui-title-top:18px;--ui-heading-space:112px}
+body[data-ui] :is(.staking-heading,.builder-intro,.atlas-heading,.club-shell,.claus-page) h1.ui-page-title{
+ position:fixed;inset:var(--ui-title-top) 120px auto;margin:0;padding:0;z-index:7;
+ font-family:'Claus UI',Arial,sans-serif;font-size:var(--ui-title);font-weight:550;
+ line-height:1.08;letter-spacing:-.04em;text-align:center;text-wrap:balance;
+ pointer-events:none;
+}
+body[data-ui]:not([data-ui=site]):not([data-ui=club])>header:is(.staking-header,.builder-header,.atlas-header){
+ height:var(--ui-heading-space);min-height:var(--ui-heading-space);padding-block:0;
+}
+body[data-ui].club-page .club-header{height:calc(var(--ui-heading-space) - 12px);min-height:calc(var(--ui-heading-space) - 12px)}
+body[data-ui=build] .builder-intro{margin:0}
+body[data-ui=lab] .atlas-heading{margin:0;padding:0}
+body[data-ui].staking-page .staking-heading{padding:0 24px 12px}
+body[data-ui=site] .claus-page .claus-page-body{top:calc(var(--ui-heading-space) + 8px)}
+body[data-ui=site] .claus-page[data-layout=guide] .page-heading{display:none}
+@media(max-width:700px){
+ :root{--ui-title:44px;--ui-title-top:76px;--ui-heading-space:140px}
+ body[data-ui] :is(.staking-heading,.builder-intro,.atlas-heading,.club-shell,.claus-page) h1.ui-page-title{left:16px;right:16px}
+ body[data-ui].club-page .club-header{height:calc(var(--ui-heading-space) - 8px);min-height:calc(var(--ui-heading-space) - 8px)}
+ body[data-ui].club-page .club-context{position:absolute;top:12px;right:16px;max-width:calc(100% - 108px);height:44px;gap:8px}
+ body[data-ui].club-page .club-discovery{gap:8px}
+ body[data-ui].club-page .club-context button{font-size:12px;white-space:nowrap}
+}
+
+/* Keep header tools out of the animated chat container. */
+body[data-ui].club-page:not(.club-connected) .club-context{display:none}
+
+/* Intentional entry states and shared next actions. */
+body[data-ui=nfts].staking-page.nft-page #panel-mine[data-state=guest]{align-self:start;height:auto;min-height:108px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;padding:26px}
+body[data-ui=nfts].staking-page.nft-page #panel-mine[data-state=guest]>p{flex-basis:100%;margin:0;text-align:center}
+body[data-ui=nfts] .nft-grid:empty{display:none}
+body[data-ui=nfts] #panel-mine[data-state=loading] #mine-empty{min-height:48px;display:grid;place-items:center}
+body[data-ui=nfts] .nft-club-access{display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:12px;font-size:14px;text-underline-offset:3px}
+body[data-ui=build] .builder-public-links{display:flex;justify-content:center;gap:8px 24px;flex-wrap:wrap;margin-top:12px}
+body[data-ui=build] .builder-public-links a{background:transparent;color:var(--ui-ink);padding:8px 0;min-height:44px;text-decoration:underline;text-underline-offset:4px;font-size:15px}
+body[data-ui=build] .starter-intro{margin-bottom:16px}
+body[data-ui=build] .starter-intro h2{font-size:24px;line-height:1.2;margin:0 0 8px;font-weight:550;letter-spacing:-.03em}
+body[data-ui=build] .starter-intro p{margin:0}
+body[data-ui=lab] .lab-stage-nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 14px;grid-column:1/-1;width:100%}
+body[data-ui=lab] .lab-stage-nav :is(button,a){display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border:1px solid var(--ui-line);border-radius:12px;background:transparent;font:500 15px/1.2 'Claus UI',sans-serif;text-decoration:none;color:var(--ui-ink)}
+body[data-ui=lab] .lab-stage-nav :is(button,a):hover{background:var(--ui-paper)}
+/* On compact Club screens, give the conversation the space occupied by duplicate panel tabs. */
+@media(max-width:700px){
+ body[data-ui=club].club-connected #club-tabs{margin-top:0}
+ body[data-ui=club].club-connected .panel-heading{min-height:48px;height:48px}
+ body[data-ui=club].club-connected .club-panels{margin-top:6px}
+ body[data-ui=club].club-connected .member-welcome{max-height:90px;overflow:auto;padding:8px 12px}
+}
+/* During typing keep the full footer artwork visible at a compact scale. */
+body[data-ui=club].club-keyboard{height:var(--ui-visible-height);max-height:var(--ui-visible-height);--ui-footer:88px;--ui-heading-space:58px;--ui-title-top:12px;--ui-title:30px}
+body[data-ui=club].club-keyboard h1.ui-page-title{left:76px;right:16px}
+body[data-ui=club].club-keyboard .club-context{display:none}
+body[data-ui=club].club-keyboard .club-header{height:50px;min-height:50px}
+body[data-ui=club].club-keyboard .member-welcome{display:none}
+body[data-ui=club].club-keyboard>.club-footer{bottom:var(--ui-keyboard-inset,0px);height:88px}
+body[data-ui=club].club-keyboard .club-footer-claus{height:105px;width:auto;right:10px}
+body[data-ui=club].club-keyboard .club-footer-links{bottom:8px}
+body[data-ui=club].club-keyboard .footer-account{bottom:8px}
+@media(prefers-reduced-motion:reduce){body[data-ui] .lab-stage-nav :is(button,a){transition:none}}
+
+body[data-ui=club].club-keyboard #club-tabs{display:none}
+
+body[data-ui=lab] .atlas-workspace{flex-direction:column}
+body[data-ui=lab] .atlas-workspace>.lab-stage-nav,body[data-ui=lab] .atlas-workspace>.lab-layout{flex:none;width:100%}
+body[data-ui=lab] .lab-stage-nav{gap:6px;margin-bottom:10px}
+body[data-ui=lab] .lab-stage-nav :is(button,a){padding:10px 12px}
+body[data-ui=build] .starter-intro p{font-size:14px}
+@media(max-width:700px){body[data-ui=build] #template-list .project-item{padding:14px;gap:12px}body[data-ui=build] #template-list .project-item small{font-size:14px;line-height:1.4}}
+
+/* One hierarchy for product actions and content; detail belongs in its view. */
+body[data-ui=build] .builder-tabs{align-self:center;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:min(100%,480px);padding:4px;margin:0 auto 20px;gap:4px;border:1px solid var(--ui-line);border-radius:14px;background:#00000008}
+body[data-ui=build] .builder-tabs button{padding:10px 12px;min-height:44px;border-radius:10px;font-size:16px;line-height:1.2;white-space:nowrap}
+body[data-ui=build] .builder-shell>section{padding:6px;scroll-padding:12px}
+body[data-ui=build] .builder-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;padding:24px;border:1px solid var(--ui-line);border-radius:20px;background:var(--ui-paper)}
+body[data-ui=build] .builder-gate p:empty{display:none}
+body[data-ui=build] .builder-gate :is(a,button){display:inline-flex;align-items:center;justify-content:center;min-height:48px;min-width:132px;padding:12px 24px;border-radius:12px;font-size:16px}
+body[data-ui=build] .project-list{gap:0;margin:0 auto;background:var(--ui-paper);border:1px solid var(--ui-line);border-radius:20px;padding:8px 20px;overflow:hidden}
+body[data-ui=build] .project-list:empty{display:none}
+body[data-ui=build] .project-item{width:100%;min-height:68px;padding:18px 0;gap:20px;border:0;border-bottom:1px solid var(--ui-line);border-radius:0;background:transparent}
+body[data-ui=build] .project-item:last-child{border-bottom:0}
+body[data-ui=build] .project-item:hover{background:#00000004}
+body[data-ui=build] .project-item small:empty{display:none}
+body[data-ui=build] .project-item:focus-visible{outline-offset:-3px;border-radius:8px}
+body[data-ui=build] .project-form{max-width:none;margin:0 0 20px;padding:24px;border-radius:20px}
+body[data-ui=build] .form-actions{gap:16px;flex-wrap:wrap}
+body[data-ui=build] .form-actions :is(select,button){min-height:48px;font-size:15px}
+body[data-ui=build] .builder-limits{font-size:14px;line-height:1.5;margin-top:16px}
+body[data-ui=build] .builder-limits summary{width:fit-content;cursor:pointer;min-height:44px;display:list-item;align-content:center}
+body[data-ui=build] .builder-limits p{margin:4px 0 0}
+body[data-ui=build] :is(.project-toolbar,.package-actions){gap:12px;flex-wrap:wrap}
+body[data-ui=build] :is(.project-toolbar,.package-actions) :is(button,select,.file-button){min-height:44px;display:inline-flex;align-items:center;padding:10px 14px;font-size:14px;border-radius:10px}
+body[data-ui=build] #share-project{display:grid;gap:12px}
+body[data-ui=build] #share-project button{justify-self:start;min-height:44px;background:var(--ui-ink);color:var(--ui-paper)}
+body[data-ui=build] :is(#make-package-preview,#confirm-publish,#new-key button){min-height:44px;padding:12px 20px;border-radius:12px;font-size:15px}
+
+/* Lab: a single work surface with one control for each destination. */
+body[data-ui=lab] .lab-layout{grid-template-columns:minmax(0,1fr) minmax(240px,.5fr);grid-template-rows:auto 1fr;gap:20px 28px;padding:24px;max-height:none;background:var(--ui-paper);border:1px solid var(--ui-line);border-radius:20px;align-items:start}
+body[data-ui=lab] .work-now{grid-area:1/1;gap:24px}
+body[data-ui=lab] .work-now>article{padding:0;border:0;border-radius:0;background:none;box-shadow:none;min-width:0}
+body[data-ui=lab] .work-eyebrow{font-size:14px!important;line-height:1.4;margin:0 0 8px!important}
+body[data-ui=lab] .work-now h2{font-size:22px;line-height:1.2;margin:0;letter-spacing:-.03em}
+body[data-ui=lab] .work-now h2 :is(a,button){font:inherit;color:inherit;border:0;background:none;text-align:left;text-decoration:none;padding:0;min-height:44px;display:flex;align-items:center}
+body[data-ui=lab] .work-now h2 :is(a,button):hover{text-decoration:underline;text-underline-offset:4px}
+body[data-ui=lab] .architecture{grid-area:2/1;min-width:0}
+body[data-ui=lab] .map-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:minmax(44px,auto);gap:4px 12px;padding:14px 0 0;border-top:1px solid var(--ui-line)}
+body[data-ui=lab] :is(.map-research,.research-tools,.build-area){display:contents}
+body[data-ui=lab] .map-board :is(.map-node,.map-claus,.research-title,.research-tools button,.node-build,.active-hooks){grid-area:auto;position:static;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;min-width:0;width:100%;height:auto;min-height:44px;margin:0;padding:8px;border:0;border-radius:8px;background:transparent;box-shadow:none;text-align:left;font-size:16px!important;font-weight:500;line-height:1.25;letter-spacing:-.02em}
+body[data-ui=lab] .map-board :is(.map-node,.map-claus,.research-title,.research-tools button,.node-build,.active-hooks):hover{background:#00000008;text-decoration:none}
+body[data-ui=lab] .map-board :is(.node-title,.map-claus strong){font-size:16px!important;font-weight:500;line-height:1.25;letter-spacing:-.02em;text-decoration:none}
+body[data-ui=lab] .node-heading,body[data-ui=lab] .node-approval>span{display:flex;align-items:center;flex-direction:row;gap:10px;width:auto}
+body[data-ui=lab] .map-board .node-meta{display:flex;font-size:14px!important;margin:0;color:var(--ui-muted);font-variant-numeric:tabular-nums}
+body[data-ui=lab] .map-board .node-meta>span+span{display:none}
+body[data-ui=lab] .map-claus>svg{width:26px;height:26px;order:-1}
+body[data-ui=lab] .map-board .atlas-icon{display:none}
+body[data-ui=lab] :is(.map-journal,.runtime-strip,.node-feature,.research-feature,#work-state){display:none!important}
+body[data-ui=lab] .tool-count{font:inherit;font-variant-numeric:tabular-nums;color:var(--ui-muted);margin-left:6px}
+body[data-ui=lab] .lab-layout .work-stream{grid-area:1/2/3/3;contain:size;position:static;padding:0 0 0 24px;max-height:100%;min-height:0;border:0;border-left:1px solid var(--ui-line);border-radius:0;background:none;box-shadow:none;overflow:hidden}
+body[data-ui=lab] .stream-heading h2{font-size:22px}
+body[data-ui=lab] .stream-tabs{position:static;display:flex;gap:4px;margin:8px 0;padding:0}
+body[data-ui=lab] .stream-tabs button{min-height:44px;padding:8px 12px;font-size:14px;border-radius:8px}
+body[data-ui=lab] .stream-status:empty{display:none}
+body[data-ui=lab] .work-stream .activity-list{flex:1;min-height:0;max-height:none;overflow:auto;margin:0;padding:0 5px 0 0;scrollbar-width:thin}
+body[data-ui=lab] .work-stream .activity-entry{display:block;padding:12px 0;border-top:1px solid var(--ui-line)}
+body[data-ui=lab] .work-stream .activity-entry h3{font-size:17px;line-height:1.3;margin:6px 0 0}
+body[data-ui=lab] .work-stream .activity-meta{font-size:12px}
+body[data-ui=lab] .work-stream .activity-entry :is(button,a){min-height:44px;font-size:14px;padding:8px 0}
+body[data-ui=lab] .stream-more{display:none}
+body[data-ui=lab] .work-stream .stream-heading>button{min-height:44px;min-width:44px}
+body[data-ui=lab] .atlas-workspace{padding:6px;scroll-padding:12px}
+
+/* Reader indexes use names and dates; article and transaction details stay intact. */
+body[data-ui=site] .page-content .hook-index{margin:0;padding:0;gap:8px 28px}
+body[data-ui=site] .hook-index li{margin:0;border:0;border-radius:0}
+body[data-ui=site] .hook-index-link{display:grid;grid-template-columns:24px 1fr 20px;align-items:center;gap:20px;padding:20px 8px;min-height:72px}
+body[data-ui=site] .page-content .hook-index h2{margin:0;font-size:24px;line-height:1.2}
+body[data-ui=site] .page-content .journal-index h2{margin:0;font-size:23px;line-height:1.25}
+body[data-ui=site] :is(.hook-index-link,.journal-index a):hover{background:#00000004}
+body[data-ui=site] .guide-actions{display:flex;align-items:center;gap:12px 24px;flex-wrap:wrap}
+body[data-ui=site] .guide-actions :is(a,button){display:inline-flex;align-items:center;min-height:44px}
+body[data-ui=site] .page-references:empty{display:none}
+@media(max-width:760px){
+ body[data-ui=lab] .lab-layout{grid-template-columns:1fr;grid-template-rows:auto;gap:10px;padding:16px}
+ body[data-ui=lab] .work-now{grid-area:auto;gap:16px}
+ body[data-ui=lab] .work-now h2{font-size:19px}
+ body[data-ui=lab] .architecture{grid-area:auto}
+ body[data-ui=lab] .map-board{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding-top:8px}
+ body[data-ui=lab] .map-board :is(.map-node,.map-claus,.research-title,.research-tools button,.node-build,.active-hooks){padding:6px;font-size:14px!important;gap:5px}
+ body[data-ui=lab] .map-board :is(.node-title,.map-claus strong){font-size:14px!important}
+ body[data-ui=lab] .lab-layout .work-stream{grid-area:auto;contain:none;border-left:0;border-top:1px solid var(--ui-line);padding:8px 0 0}
+ body[data-ui=lab] .work-stream :is(.stream-tabs,.activity-list,.stream-status){display:none}
+ body[data-ui=lab] .stream-heading h2{font-size:18px}
+ body[data-ui=build] .builder-tabs{margin-bottom:14px}
+ body[data-ui=build] .builder-tabs button{padding:10px 6px;font-size:14px}
+ body[data-ui=build] .project-form{padding:20px}
+ body[data-ui=build] .project-item{gap:12px}
+ body[data-ui=build] .project-item span{font-size:13px}
+ body[data-ui=site] .hook-index-link{min-height:64px;padding:16px 4px;gap:14px}
+ body[data-ui=site] .page-content .hook-index h2{font-size:22px}
+}
+@media(max-width:360px){body[data-ui=lab] .map-board{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-ui=lab] .work-now{grid-template-columns:1fr}body[data-ui=lab] #current-finding{display:none}}
+
+@media(min-width:761px) and (max-height:760px){body[data-ui=lab] .lab-layout{padding:16px;gap:12px 24px}body[data-ui=lab] .map-board{padding-top:10px}body[data-ui=lab] .work-now h2{font-size:20px}}
+
+body[data-ui=lab] .work-now:has(#current-finding[hidden]){grid-template-columns:1fr}
+@media(max-width:500px){body[data-ui=lab] .map-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Keep the project action in view while longer fields scroll inside the form. */
+body[data-ui=build] .project-form{display:flex;flex-direction:column;gap:12px;max-height:calc(100dvh - var(--ui-heading-space) - var(--ui-footer) - 120px);min-height:144px;padding:16px}
+body[data-ui=build] .project-fields{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:4px;scrollbar-width:thin;scroll-padding:8px}
+body[data-ui=build] .project-fields label{font-size:15px}
+body[data-ui=build] .form-actions{flex:none;margin:0;padding-top:12px;border-top:1px solid var(--ui-line);justify-content:space-between}
+body[data-ui=build] .form-actions select{flex:1;min-width:0;max-width:none;font-size:14px;padding:10px}
+body[data-ui=build] .form-actions button{flex:none;font-size:14px;padding:10px 14px}
+
+/* Club utilities belong to the conversation area, below the shared heading. */
+body[data-ui].club-page.club-connected .club-context{position:static;order:0;display:flex;align-items:center;justify-content:flex-end;flex:none;max-width:none;width:100%;height:44px;min-height:44px;margin:0 0 8px;gap:16px}
+body[data-ui].club-page.club-connected .club-discovery{gap:12px}
+body[data-ui].club-page.club-connected .club-context button{min-height:44px;padding:8px;font-size:14px}
+body[data-ui].club-page .club-context .club-online{margin-right:auto;font-size:13px}
+body[data-ui].club-page.club-keyboard .club-context{display:none}
+
+/* Keep mobile controls usable when browser chrome or rotation reduces height. */
+body[data-ui] #wallet-message a{display:inline-flex;align-items:center;min-height:44px;font-size:16px;text-underline-offset:4px}
+body[data-ui=lab] .stream-heading{position:relative}
+body.staking-page #wallet-dialog[open]{display:flex;flex-direction:column;overflow:hidden}
+body.staking-page #wallet-dialog :is(h2,#wallet-message,.staking-wallet-close){flex:none}
+body.staking-page #wallet-dialog .wallet-options{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+@media(max-width:700px) and (max-height:700px){
+ :root{--ui-heading-space:118px;--ui-title-top:60px;--ui-title:40px;--ui-footer:clamp(120px,24dvh,160px)}
+ body[data-ui=club].club-connected:not(.club-keyboard){--ui-footer:clamp(120px,24dvh,160px)}
+ body[data-ui] a[aria-label="Claus Network"]{top:4px;width:56px!important;height:56px!important}
+ body[data-ui] a[aria-label="Claus Network"]>svg{width:56px!important;height:56px!important}
+}
+@media(orientation:landscape) and (max-height:500px){
+ :root{--ui-heading-space:64px;--ui-title-top:12px;--ui-title:34px;--ui-footer:88px}
+ body[data-ui=club].club-connected:not(.club-keyboard){--ui-footer:88px}
+ body[data-ui]:not([data-ui=network]) h1.ui-page-title{left:80px;right:80px}
+ body[data-ui] a[aria-label="Claus Network"]{top:3px;left:max(16px,env(safe-area-inset-left));width:56px!important;height:56px!important}
+ body[data-ui] a[aria-label="Claus Network"]>svg{width:56px!important;height:56px!important}
+ body[data-ui] .club-footer-claus{height:100px;right:max(8px,env(safe-area-inset-right))}
+ body[data-ui] .club-footer-links,body[data-ui] .footer-account{bottom:max(6px,env(safe-area-inset-bottom))}
+ body[data-ui] .club-footer-links{gap:12px}
+ body[data-ui] .club-footer-links :is(a,button)>svg{height:30px;max-width:34px}
+ body[data-ui] .club-footer-links a[aria-label="Claus on OpenSea"]>svg{height:30px;width:34px}
+ body[data-ui] .club-footer-links .onchain-trigger>svg{height:30px;width:20px}
+ body[data-ui] .footer-account{right:8px;width:132px}
+ body[data-ui] .footer-wallet{font-size:12px;padding:8px}
+ body[data-ui].staking-page .staking-heading{padding-bottom:8px}
+ body[data-ui=club] #gate{flex-direction:row;flex-wrap:wrap;align-content:center;justify-content:center;gap:20px}
+ body[data-ui=club] #gate .gate-art{height:100px;width:100px}
+ body[data-ui=club] #gate #gate-note:not(:empty){flex-basis:100%;text-align:center;font-size:16px}
+ body[data-ui=club].club-connected .club-shell{padding:4px 16px 8px}
+ body[data-ui=club].club-connected:not(.club-keyboard) #inside{display:grid;grid-template-columns:minmax(0,1fr) max-content;grid-template-rows:44px minmax(0,1fr);gap:6px 16px}
+ body[data-ui=club].club-connected:not(.club-keyboard) #inside:has(#member-welcome:not([hidden])){grid-template-rows:44px auto minmax(0,1fr)}
+ body[data-ui=club].club-connected:not(.club-keyboard) #member-welcome{grid-column:1/-1;grid-row:2;max-height:64px;margin:0;overflow:auto}
+ body[data-ui=club].club-connected:not(.club-keyboard) .club-context{grid-column:2;grid-row:1;width:auto;margin:0;gap:4px}
+ body[data-ui=club].club-connected:not(.club-keyboard) .club-context .club-online{display:none}
+ body[data-ui=club].club-connected:not(.club-keyboard) #club-tabs{grid-column:1;grid-row:1;margin:0;padding:2px}
+ body[data-ui=club].club-connected:not(.club-keyboard) #club-tabs button{height:40px;font-size:14px}
+ body[data-ui=club].club-connected:not(.club-keyboard) .club-panels{grid-column:1/-1;grid-row:-2/-1;height:100%;margin:0;min-height:0}
+ body[data-ui=club].club-connected .panel-heading{height:44px;min-height:44px}
+ body[data-ui=club].club-connected .club-panel .composer-wrap{margin:4px 8px 6px;padding:4px 6px}
+ body[data-ui=club].club-connected #message{max-height:66px}
+ body[data-ui=lab] .lab-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;gap:10px;padding:14px}
+ body[data-ui=lab] .lab-layout :is(.work-now,.architecture,.work-stream){grid-area:auto}
+ body[data-ui=lab] .lab-layout .work-stream{contain:none;border-left:0;border-top:1px solid var(--ui-line);padding:8px 0 0}
+ body[data-ui=lab] .work-stream :is(.stream-tabs,.activity-list,.stream-status){display:none}
+ body[data-ui=build] .builder-tabs{margin-bottom:10px}
+ body.staking-page #wallet-dialog{padding:16px 20px}
+ body.staking-page #wallet-dialog h2{font-size:24px;margin-bottom:12px}
+ body.staking-page #wallet-dialog .wallet-options{gap:8px}
+ body.staking-page #wallet-dialog .wallet-options button{min-height:44px;padding:7px 12px;font-size:16px}
+ body.staking-page #wallet-dialog .staking-wallet-close{margin-top:8px}
+}
+@media(orientation:landscape) and (max-height:500px){
+ body[data-ui]:not([data-ui=site]):not([data-ui=club])>main,
+ body[data-ui=club].club-connected .club-shell{padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right))}
+ body[data-ui=site] .claus-page .claus-page-body{left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));width:auto;translate:none}
+ body[data-ui=network] #scene{left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right))}
+ body[data-ui=club].club-connected .club-discovery{gap:2px}
+}
+@media(orientation:landscape) and (max-height:360px){
+ :root{--ui-heading-space:48px;--ui-title-top:6px;--ui-title:30px;--ui-footer:64px}
+ body[data-ui=club].club-connected:not(.club-keyboard){--ui-footer:64px}
+ body[data-ui] a[aria-label="Claus Network"],body[data-ui] a[aria-label="Claus Network"]>svg{width:44px!important;height:44px!important}
+ body[data-ui] .club-footer-claus{height:76px}
+ body[data-ui] .club-footer-links,body[data-ui] .footer-account{bottom:max(2px,env(safe-area-inset-bottom))}
+ body[data-ui=club].club-connected .club-shell{padding-top:0;padding-bottom:4px}
+ body[data-ui=club].club-connected .club-panel .composer-wrap{margin-bottom:4px}
+}
+@media(max-width:360px){
+ body[data-ui=build] .builder-tabs{display:grid;grid-template-columns:repeat(4,auto);gap:0;width:100%}
+ body[data-ui=build] .builder-tabs button{min-width:0;padding:10px 4px}
+}

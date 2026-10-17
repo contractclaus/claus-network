@@ -1,18 +1,15 @@
 import {isHomeProject} from './map-groups.js';
-const LABELS={'task.posted':'Posted a task','task.claim':'Claimed a task','task.deliver':'Delivered work','task.accept':'Accepted work','task.cancel':'Closed a task','task.agreement':'Agreed payment terms','interface.created':'Created a website','project.published':'Joined the network','project.updated':'Updated its project','update.approved':'Claus approved an update','update.rejected':'Claus declined an update','result.published':'Published a service result'};
-// Display adjacent website/project records together, without merging receipts
-// or implying that separate jobs, payments or older publications are one event.
-export function groupActivityEvents(events){
-  const result=[];
-  for(let i=0;i<events.length;i++){
-    const event=events[i],next=events[i+1];
-    const pair=next&&event.projectId===next.projectId&&event.href===next.href&&event.kind!==next.kind&&
-      [event.kind,next.kind].every(kind=>['project.updated','interface.created'].includes(kind))&&
-      Math.abs(event.at-next.at)<=15000;
-    result.push(pair?{...event,relatedEvents:[event,next]}:event);
-    if(pair)i++;
+const LABELS={'task.posted':'Posted a task','task.claim':'Claimed a task','task.deliver':'Delivered work','task.accept':'Accepted work','task.cancel':'Closed a task','task.agreement':'Agreed payment terms','interface.created':'Published a website','project.published':'Joined the network','project.updated':'Updated its project','update.approved':'Claus approved an update','update.rejected':'Claus declined an update','result.published':'Published a service result'};
+// Keep original rows and keyboard targets; share only the repeated project chrome.
+export function groupActivityEvents(input){
+  const out=input.map(event=>({...event}));
+  for(let i=1;i<out.length;i++){
+    const prior=out[i-1],event=out[i],clean=e=>!e.transaction&&!e.receipt&&!e.taskId;
+    if(!prior.relatedToPrevious&&prior.projectId===event.projectId&&prior.href===event.href&&prior.kind!==event.kind&&[prior,event].every(e=>clean(e)&&['project.updated','interface.created'].includes(e.kind))&&prior.at-event.at>=0&&prior.at-event.at<=15000){
+      prior.relatedToNext=true;event.relatedToPrevious=true;
+    }
   }
-  return result;
+  return out;
 }
 export function createActivity(scene,onChange=()=>{}){
   const el=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls??'';if(text)e.textContent=text;return e;};
@@ -45,7 +42,7 @@ export function createActivity(scene,onChange=()=>{}){
       active.add(event.id);
       const signature=JSON.stringify(event), prior=rows.get(event.id);
       if(prior?.signature===signature){prior.node.querySelector('time').textContent=age(event.at);continue;}
-      const li=el('li',loaded&&!seen.has(event.id)?'is-new':'');seen.add(event.id);
+      const li=el('li',[loaded&&!seen.has(event.id)?'is-new':'',event.relatedToPrevious?'is-related':'',event.relatedToNext?'has-related-next':''].filter(Boolean).join(' '));seen.add(event.id);
       const link=el('a','network-activity-entry');link.href=event.href.replace(/^\/p\//,'/c/');if(/^[A-Za-z0-9:_-]{1,120}$/.test(event.taskId??''))link.setAttribute('href',link.getAttribute('href')+'#task='+encodeURIComponent(event.taskId));link.dataset.eventId=event.id;
       const avatar=el('span','network-activity-avatar'),initials=el('span'),image=el('img');avatar.setAttribute('aria-hidden','true');
       image.alt='';image.decoding='async';image.loading='eager';image.referrerPolicy='no-referrer';image.hidden=true;
@@ -53,19 +50,9 @@ export function createActivity(scene,onChange=()=>{}){
       const text=el('span','network-activity-copy'),name=el('span','network-activity-project',event.project);
       const time=el('time','',age(event.at));time.dateTime=new Date(event.at).toISOString();time.title=new Date(event.at).toLocaleString();
       const receipt=event.kind==='result.published'&&/^\/read\/work\/sha256:[0-9a-f]{64}$/.test(event.receipt??'');
-      const label=el('span','network-activity-description',event.relatedEvents?'Website and project updated':receipt?(event.provider?'Accepted work from '+event.provider:'Accepted delivered work'):LABELS[event.kind]);
+      const label=el('span','network-activity-description',receipt?(event.provider?'Accepted work from '+event.provider:'Accepted delivered work'):LABELS[event.kind]);
       text.append(name,label);link.append(avatar,text,time);li.append(link);
       const detail=el('div','network-activity-detail');
-      if(event.relatedEvents){
-        const disclosure=el('details'),summary=el('summary','','2 events');summary.dataset.eventId=event.id+':details';
-        disclosure.open=prior?.node.querySelector('details')?.open??false;disclosure.append(summary);
-        for(const original of event.relatedEvents){
-          const item=el('div'),source=el('a','',LABELS[original.kind]);source.href=original.href.replace(/^\/p\//,'/c/');source.dataset.eventId=original.id+':source';source.dataset.sourceEventId=original.id;
-          const at=el('time','',new Date(original.at).toLocaleTimeString());at.dateTime=new Date(original.at).toISOString();at.title=original.id;
-          item.append(source,document.createTextNode(' · '),at);disclosure.append(item);
-        }
-        detail.append(disclosure);
-      }
       if(receipt){const proof=el('a','','View receipt');proof.href=event.receipt;detail.append(proof);}
       if(event.transaction&&/^https:\/\/(?:sepolia\.)?etherscan\.io\/tx\/0x[0-9a-f]{64}$/i.test(event.transaction)){
         const tx=el('a','network-activity-tx',event.chain+' execution');tx.href=event.transaction;tx.target='_blank';tx.rel='noopener noreferrer';detail.append(tx);
@@ -77,7 +64,7 @@ export function createActivity(scene,onChange=()=>{}){
     let position=0;for(const event of events){const row=rows.get(event.id);if(!row)continue;if(list.children[position]!==row.node)list.insertBefore(row.node,list.children[position]??null);position++;}
     seen=new Set(active);
     list.scrollTop=scroll;
-    if(focused){const links=[...list.querySelectorAll('[data-event-id]')];(links.find(b=>b.dataset.eventId===focused)??links.find(b=>b.dataset.sourceEventId===focused))?.focus({preventScroll:true});}
+    if(focused)[...list.querySelectorAll('[data-event-id]')].find(b=>b.dataset.eventId===focused)?.focus({preventScroll:true});
     loaded=true;lastObserved=data.observedAt;state.textContent=data.complete?'Activity updated':'Partial activity';state.title='Updated '+new Date(data.observedAt).toLocaleTimeString();
     aside.classList.remove('is-stale');
     note.hidden=data.complete&&events.length>0;note.textContent=!data.complete?'Showing available public activity':events.length?'':'No public project updates yet';
