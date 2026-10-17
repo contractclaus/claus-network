@@ -34,7 +34,7 @@ class Admission:
         self.clock, self.monotonic = clock, monotonic
         self.lock = threading.Lock()
         self.wall, self.tick = self.clock(), self.monotonic()
-        self.used, self.callers = {}, {}
+        self.callers = {}
 
     def now_ms(self):
         # Anchor to the synchronized wall clock once; measure elapsed time with
@@ -65,19 +65,21 @@ class Admission:
             raise AdmissionError(401, 'admission_required') from None
         with self.lock:
             tick = self.monotonic()
-            self.used = {k: v for k, v in self.used.items() if v > tick}
             self.callers = {k: v for k, v in self.callers.items() if v['active'] or tick - v['at'] < 60}
-            if claims['nonce'] in self.used:
-                raise AdmissionError(401, 'admission_used')
             previous = self.callers.get(claims['owner'])
-            if len(self.used) >= 4096 or (previous is None and len(self.callers) >= 2048):
+            if previous is None and len(self.callers) >= 2048:
                 raise AdmissionError(503, 'admission_capacity')
-            previous = previous or {'tokens': 120, 'at': tick, 'active': False}
+            previous = previous or {'tokens': 120, 'at': tick, 'active': False, 'used': {}}
+            used = {k: v for k, v in previous['used'].items() if v > tick}
+            if claims['nonce'] in used:
+                raise AdmissionError(401, 'admission_used')
             tokens = min(120, previous['tokens'] + max(0, tick - previous['at']) * 2)
-            if previous['active'] or tokens < 1:
+            # 120 initial tokens + 2/s through the maximum 22-second window.
+            # Replay storage is reserved per owner, never borrowed from peers.
+            if previous['active'] or tokens < 1 or len(used) >= 164:
                 raise AdmissionError(429, 'caller_busy')
-            self.used[claims['nonce']] = tick + (claims['exp'] - now) / 1000
-            self.callers[claims['owner']] = {'tokens': tokens - 1, 'at': tick, 'active': True}
+            used[claims['nonce']] = tick + (claims['exp'] - now) / 1000
+            self.callers[claims['owner']] = {'tokens': tokens - 1, 'at': tick, 'active': True, 'used': used}
         return claims
 
     def verify_body(self, claims, body):

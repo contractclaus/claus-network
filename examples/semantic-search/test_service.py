@@ -190,6 +190,36 @@ class ServiceTest(unittest.TestCase):
         finally:
             for sock in sockets: sock.close()
 
+    def test_slow_authenticated_bodies_leave_model_capacity_free(self):
+        sockets=[]
+        body=b'{"input":"slow caller"}'
+        try:
+            for index in range(24):
+                conn=socket.create_connection(('127.0.0.1',self.server.server_port),timeout=2)
+                sockets.append(conn)
+                authorization=ticket('/v1/embeddings',body,'slow-owner-'+str(index)).encode()
+                conn.sendall(b'POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: '+str(len(body)).encode()+b'\r\nAuthorization: '+authorization+b'\r\n\r\n'+body[:1])
+            until=time.monotonic()+1
+            while len(self.server.pending_headers)<24 and time.monotonic()<until:
+                time.sleep(0.01)
+            self.assertGreaterEqual(len(self.server.pending_headers),24)
+            started=time.monotonic()
+            status,result=self.call('/v1/embeddings',{'input':'a complete legitimate request'})
+            self.assertEqual(status,200)
+            self.assertEqual(len(result['data'][0]['embedding']),DIMENSIONS)
+            self.assertLess(time.monotonic()-started,1)
+        finally:
+            for conn in sockets:conn.close()
+
+    def test_large_complete_body_and_conflicting_framing(self):
+        status,result=self.call('/v1/embeddings',{'input':'complete','padding':'x'*20000})
+        self.assertEqual(status,200)
+        self.assertEqual(len(result['data'][0]['embedding']),DIMENSIONS)
+        for framing,status in [(b'Content-Length: 2\r\nContent-Length: 3',413),(b'Transfer-Encoding: chunked\r\nContent-Length: 2',415)]:
+            with self.subTest(framing=framing), socket.create_connection(('127.0.0.1',self.server.server_port),timeout=2) as conn:
+                conn.sendall(b'POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\n'+framing+b'\r\n\r\n{}')
+                self.assertIn(str(status).encode(),conn.recv(4096).split(b'\r\n',1)[0])
+
     def test_saturated_idle_header_queue_admits_health_and_signed_work(self):
         server = Server(('127.0.0.1', 0), Handler)
         server.engine = self.engine
@@ -289,10 +319,27 @@ class AdmissionTest(unittest.TestCase):
         with self.assertRaises(AdmissionError): self.a.begin(self.issue(), '/v1/search')
         other=self.a.begin(self.issue('other'), '/v1/search'); self.a.finish(other); self.a.finish(c)
     def test_capacity_never_evicts_live_replay_protection(self):
-        self.a.used={str(i):self.now+20 for i in range(4096)}
+        original=self.issue()
+        claims=self.a.begin(original,'/v1/search'); self.a.finish(claims)
+        used=self.a.callers['caller']['used']
+        used.update({str(i):self.now+20 for i in range(163)})
         with self.assertRaises(AdmissionError) as caught:self.a.begin(self.issue(),'/v1/search')
-        self.assertEqual(caught.exception.status,503)
-        self.assertEqual(len(self.a.used),4096)
+        self.assertEqual(caught.exception.status,429)
+        self.assertEqual(len(self.a.callers['caller']['used']),164)
+        with self.assertRaises(AdmissionError) as replay:self.a.begin(original,'/v1/search')
+        self.assertEqual(replay.exception.code,'admission_used')
+        other=self.a.begin(self.issue('other'),'/v1/search'); self.a.finish(other)
+
+    def test_many_owners_cannot_fill_another_owners_replay_storage(self):
+        for owner in range(35):
+            for _ in range(120):
+                claims=self.a.begin(self.issue('owner-'+str(owner)),'/v1/search')
+                with self.assertRaises(AdmissionError):self.a.verify_body(claims,b'{"different":true}')
+                self.a.finish(claims)
+        victim=self.a.begin(self.issue('victim'),'/v1/search')
+        self.a.verify_body(victim,self.body)
+        self.a.finish(victim)
+        self.assertEqual(sum(len(v['used']) for v in self.a.callers.values()),4201)
 
     def test_agents_share_owner_concurrency_and_capacity(self):
         c=self.a.begin(self.issue('agent-1',owner='same-owner'),'/v1/search')

@@ -3,6 +3,7 @@ from admission import Admission, AdmissionError
 import hashlib
 import io
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.client import parse_headers, HTTPException
 import json
 import os
 from pathlib import Path
@@ -83,6 +84,8 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
     allow_reuse_address = True
     request_deadline = REQUEST_DEADLINE
     header_deadline = 1
+    body_deadline = 2
+    response_timeout = 1
     max_pending_headers = 256
     max_header_bytes = 8192
     request_queue_size = 1024
@@ -127,7 +130,8 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                 self.service_actions()
 
     def process_request(self, request, client_address):
-        # Partial/idle anonymous connections never occupy application workers.
+        # Incomplete requests never occupy application workers, even when
+        # their headers contain a valid admission ticket.
         if len(self.pending_headers) >= self.max_pending_headers:
             # Prefer new progress over a connection that has occupied the
             # header queue longest. No admitted request is evicted here.
@@ -136,7 +140,7 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
             self.reject_connection(oldest, 503)
         request.setblocking(False)
         now = time.monotonic()
-        self.pending_headers[request] = (client_address, bytearray(), now)
+        self.pending_headers[request] = (client_address, bytearray(), now, None)
         self.headers.register(request, selectors.EVENT_READ)
 
     def serve_forever(self, poll_interval=0.02):
@@ -159,13 +163,15 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
     def service_actions(self):
         for key, _ in self.headers.select(timeout=0):
             request = key.fileobj
-            address, prefix, accepted_at = self.pending_headers[request]
-            if time.monotonic() - accepted_at >= min(self.header_deadline, self.request_deadline):
+            address, prefix, accepted_at, target = self.pending_headers[request]
+            deadline = self.header_deadline if target is None else self.body_deadline
+            if time.monotonic() - accepted_at >= min(deadline, self.request_deadline):
                 self.remove_pending(request)
                 self.reject_connection(request, 408)
                 continue
             try:
-                data = request.recv(self.max_header_bytes + 1 - len(prefix))
+                bound = self.max_header_bytes + 1 if target is None else target
+                data = request.recv(bound - len(prefix))
             except BlockingIOError:
                 continue
             except OSError:
@@ -175,17 +181,43 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                 self.shutdown_request(request)
                 continue
             prefix.extend(data)
-            boundary = prefix.find(b'\r\n\r\n')
-            if boundary >= 0 and boundary + 4 <= self.max_header_bytes:
+            if target is None:
+                boundary = prefix.find(b'\r\n\r\n')
+                if boundary < 0 or boundary + 4 > self.max_header_bytes:
+                    if len(prefix) > self.max_header_bytes:
+                        self.remove_pending(request)
+                        self.reject_connection(request, 431)
+                    continue
+                # Use the same standard-library header parser as Handler.
+                # Validate framing before reserving an inference worker.
+                try:
+                    first_line, _, header_bytes = bytes(prefix[:boundary]).partition(b'\r\n')
+                    headers = parse_headers(io.BytesIO(header_bytes + b'\r\n\r\n'))
+                    body_size = 0
+                    if first_line.startswith(b'POST '):
+                        if headers.get('Transfer-Encoding') or headers.get_content_type() != 'application/json':
+                            raise ValueError(415)
+                        lengths = headers.get_all('Content-Length', [])
+                        if (len(lengths) != 1 or not 1 <= len(lengths[0]) <= 5
+                                or not lengths[0].isascii() or not lengths[0].isdigit()
+                                or not 1 <= int(lengths[0]) <= MAX_BODY):
+                            raise ValueError(413)
+                        body_size = int(lengths[0])
+                    target = boundary + 4 + body_size
+                except (ValueError, HTTPException) as error:
+                    status = error.args[0] if isinstance(error, ValueError) and error.args and isinstance(error.args[0], int) else 400
+                    self.remove_pending(request)
+                    self.reject_connection(request, status)
+                    continue
+                self.pending_headers[request] = (address, prefix, accepted_at, target)
+            if len(prefix) >= target:
                 self.remove_pending(request)
                 request.setblocking(True)
-                self.dispatch_request(request, address, bytes(prefix), accepted_at)
-            elif len(prefix) > self.max_header_bytes:
-                self.remove_pending(request)
-                self.reject_connection(request, 431)
+                self.dispatch_request(request, address, bytes(prefix[:target]), accepted_at)
         now = time.monotonic()
-        for request, (_, _, accepted_at) in list(self.pending_headers.items()):
-            if now - accepted_at >= min(self.header_deadline, self.request_deadline):
+        for request, (_, _, accepted_at, target) in list(self.pending_headers.items()):
+            deadline = self.header_deadline if target is None else self.body_deadline
+            if now - accepted_at >= min(deadline, self.request_deadline):
                 self.remove_pending(request)
                 self.reject_connection(request, 408)
 
@@ -282,6 +314,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def reply(self, status, body):
         data = json.dumps(body, allow_nan=False, separators=(',', ':')).encode()
+        self.connection.settimeout(self.server.response_timeout)
         self.send_response(status)
         for key, value in {'Content-Type': 'application/json', 'Content-Length': str(len(data)), 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Connection': 'close', 'X-Content-Type-Options': 'nosniff'}.items():
             self.send_header(key, value)
