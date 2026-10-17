@@ -1,11 +1,13 @@
 """Bounded local embedding inference. No runtime downloads, keys, storage or tools."""
 from admission import Admission, AdmissionError
 import hashlib
+import io
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
 from pathlib import Path
 import signal
+import selectors
 import socket
 import socketserver
 import threading
@@ -50,6 +52,8 @@ class Engine:
             raise ValueError('input_requires_1_to_16_texts')
         if any(not isinstance(t, str) or not t.strip() or len(t) > MAX_TEXT for t in texts):
             raise ValueError('text_requires_1_to_2048_characters')
+        for text in texts:
+            text.encode('utf-8')  # Reject JSON-escaped lone surrogates before inference.
         if not self.lock.acquire(timeout=3):
             raise BlockingIOError('inference_busy')
         try:
@@ -78,20 +82,98 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
     daemon_threads = False
     allow_reuse_address = True
     request_deadline = REQUEST_DEADLINE
+    header_deadline = 1
+    max_pending_headers = 256
+    max_header_bytes = 8192
 
     def __init__(self, *args, **kwargs):
         self.workers = threading.BoundedSemaphore(24)
+        self.health_workers = threading.BoundedSemaphore(2)
         self.admission = Admission()
+        self.headers = selectors.DefaultSelector()
+        self.pending_headers = {}
+        self.request_prefixes = {}
+        self.request_expiry = {}
+        self.request_pools = {}
         super().__init__(*args, **kwargs)
 
     def process_request(self, request, client_address):
-        if not self.workers.acquire(blocking=False):
-            self.shutdown_request(request)
+        # Partial/idle anonymous connections never occupy application workers.
+        if len(self.pending_headers) >= self.max_pending_headers:
+            self.reject_connection(request, 503)
             return
+        request.setblocking(False)
+        now = time.monotonic()
+        self.pending_headers[request] = (client_address, bytearray(), now)
+        self.headers.register(request, selectors.EVENT_READ)
+
+    def serve_forever(self, poll_interval=0.02):
+        super().serve_forever(poll_interval=min(poll_interval, 0.02))
+
+    def reject_connection(self, request, status):
+        response = ('HTTP/1.1 %d Unavailable\r\nContent-Length: 0\r\n'
+                    'Connection: close\r\nRetry-After: 1\r\n\r\n' % status).encode()
+        try:
+            request.setblocking(False)
+            request.send(response)
+        except OSError:
+            pass
+        self.shutdown_request(request)
+
+    def remove_pending(self, request):
+        self.headers.unregister(request)
+        return self.pending_headers.pop(request)
+
+    def service_actions(self):
+        for key, _ in self.headers.select(timeout=0):
+            request = key.fileobj
+            address, prefix, accepted_at = self.pending_headers[request]
+            if time.monotonic() - accepted_at >= min(self.header_deadline, self.request_deadline):
+                self.remove_pending(request)
+                self.reject_connection(request, 408)
+                continue
+            try:
+                data = request.recv(self.max_header_bytes + 1 - len(prefix))
+            except BlockingIOError:
+                continue
+            except OSError:
+                data = b''
+            if not data:
+                self.remove_pending(request)
+                self.shutdown_request(request)
+                continue
+            prefix.extend(data)
+            boundary = prefix.find(b'\r\n\r\n')
+            if boundary >= 0 and boundary + 4 <= self.max_header_bytes:
+                self.remove_pending(request)
+                request.setblocking(True)
+                self.dispatch_request(request, address, bytes(prefix), accepted_at)
+            elif len(prefix) > self.max_header_bytes:
+                self.remove_pending(request)
+                self.reject_connection(request, 431)
+        now = time.monotonic()
+        for request, (_, _, accepted_at) in list(self.pending_headers.items()):
+            if now - accepted_at >= min(self.header_deadline, self.request_deadline):
+                self.remove_pending(request)
+                self.reject_connection(request, 408)
+
+    def dispatch_request(self, request, client_address, prefix, accepted_at):
+        line = prefix.split(b'\r\n', 1)[0]
+        health = line in (b'GET /health HTTP/1.1', b'HEAD /health HTTP/1.1',
+                          b'GET /health HTTP/1.0', b'HEAD /health HTTP/1.0')
+        pool = self.health_workers if health else self.workers
+        if not pool.acquire(blocking=False):
+            self.reject_connection(request, 503)
+            return
+        self.request_prefixes[request] = prefix
+        self.request_expiry[request] = accepted_at + self.request_deadline
+        self.request_pools[request] = pool
         try:
             super().process_request(request, client_address)
         except BaseException:
-            self.workers.release()
+            self.request_prefixes.pop(request, None)
+            self.request_expiry.pop(request, None)
+            self.request_pools.pop(request).release()
             raise
 
     def process_request_thread(self, request, client_address):
@@ -104,25 +186,63 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                 pass
             request.close()
 
-        deadline = threading.Timer(self.request_deadline, expire)
+        remaining = max(0, self.request_expiry.pop(request) - time.monotonic())
+        deadline = threading.Timer(remaining, expire)
         deadline.daemon = True
         try:
             deadline.start()
             super().process_request_thread(request, client_address)
         finally:
             deadline.cancel()
-            self.workers.release()
+            self.request_prefixes.pop(request, None)
+            self.request_pools.pop(request).release()
+
+    def server_close(self):
+        for request in list(self.pending_headers):
+            self.remove_pending(request)
+            self.shutdown_request(request)
+        self.headers.close()
+        super().server_close()
 
     def handle_error(self, request, client_address):
         # Malformed/disconnected clients must not expose addresses or requests.
         pass
 
 
+class PrefixedReader:
+    """Replay pre-read bytes through the standard HTTP parser, without reparsing."""
+    def __init__(self, prefix, source):
+        self.prefix, self.source = io.BytesIO(prefix), source
+
+    def readline(self, size=-1):
+        head = self.prefix.readline(size)
+        if head.endswith(b'\n') or size >= 0 and len(head) == size:
+            return head
+        return head + self.source.readline(-1 if size < 0 else size - len(head))
+
+    def read(self, size=-1):
+        head = self.prefix.read(size)
+        if size >= 0 and len(head) == size:
+            return head
+        return head + self.source.read(-1 if size < 0 else size - len(head))
+
+    def close(self):
+        self.prefix.close()
+        self.source.close()
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
 
+    def version_string(self):
+        return 'Claus'
+
+    def send_error(self, code, message=None, explain=None):
+        self.reply(code, {'error':'http_error','status':code})
+
     def setup(self):
         super().setup()
+        self.rfile = PrefixedReader(self.server.request_prefixes.pop(self.connection, b''), self.rfile)
         self.connection.settimeout(5)
 
     def log_message(self, *_):
@@ -171,7 +291,10 @@ class Handler(BaseHTTPRequestHandler):
             if len(body) != int(lengths[0]):
                 raise ValueError('incomplete_request')
             self.server.admission.verify_body(claims, body)
-            data = json.loads(body)
+            try:
+                data = json.loads(body)
+            except RecursionError:
+                raise ValueError('invalid_json') from None
             if not isinstance(data, dict):
                 raise ValueError('object_required')
             if self.path == '/v1/embeddings':
