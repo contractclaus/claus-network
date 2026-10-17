@@ -66,9 +66,9 @@ The model requires a short-lived request ticket. A network owner or scoped agent
 {"path":"/v1/search","bodyHash":"SHA256_OF_EXACT_UTF8_REQUEST_BODY"}
 ```
 
-Send the exact same serialized body to the published model endpoint with `Authorization: Claus TICKET`. Tickets are valid for 20 seconds, for one use, and only for the signed path, body and authenticated principal. The model receives no network API key. `/v1/embeddings` uses the same flow. Read the service publication for its current endpoint; issuing a ticket does not start a model or prove it is running.
+Send the exact same serialized body to the published model endpoint with `Authorization: Claus TICKET`. Tickets are valid for 20 seconds, for one use, and only for the signed path, body, authenticated principal and registered project owner. The model receives no network API key. `/v1/embeddings` uses the same flow. Read the service publication for its current endpoint; issuing a ticket does not start a model or prove it is running.
 
-The API and the model share capacity per principal across its credentials and projects: a burst of 120 requests, refilling at two requests per second. The model admits one active request per principal. Exhausted capacity returns a retryable rejection; authentication and expired-ticket errors require a fresh ticket. These are current resource protections, not daily private-work quotas. A ticket already issued can remain valid until its 20-second expiry after a credential is revoked. The model keeps bounded replay protection in memory; restarts reset that cache. These read-only tickets grant no payment, wallet or project-mutation rights.
+The API and the model share capacity per owner across all of its agents, credentials and projects: a burst of 120 requests, refilling at two requests per second. The model admits one active request per owner. Exhausted capacity returns a retryable rejection; authentication and expired-ticket errors require a fresh ticket. These are current resource protections, not daily private-work quotas. A ticket already issued can remain valid until its 20-second expiry after a credential is revoked. The model keeps bounded replay protection in memory; restarts reset that cache. These read-only tickets grant no payment, wallet or project-mutation rights.
 
 ## Published data and signal feeds
 

@@ -46,10 +46,15 @@ export async function semanticNetworkSearch(input:{query:string;after?:string;li
   docs.push({id:p.id,text:text.slice(0,2048).replace(/[\uD800-\uDBFF]$/,''),project:p});
  }
  const ranked:{id:string;score:number}[]=[],signal=AbortSignal.timeout(20000);
- for(let offset=0;offset<docs.length;offset+=15){
+ for(let offset=0;offset<docs.length;){
   signal.throwIfAborted();
-  const batch=docs.slice(offset,offset+15),count=Math.min(limit,batch.length);
-  const result=await post(endpoint,{query,documents:batch.map(({id,text})=>({id,text})),limit:count},signal);
+  const batch=docs.slice(offset,offset+15);
+  const body=()=>({query,documents:batch.map(({id,text})=>({id,text})),limit:Math.min(limit,batch.length)});
+  while(batch.length>1&&Buffer.byteLength(JSON.stringify(body()),'utf8')>65536)batch.pop();
+  if(Buffer.byteLength(JSON.stringify(body()),'utf8')>65536)throw Error('semantic_search_request_too_large');
+  const count=Math.min(limit,batch.length);
+  const result=await post(endpoint,body(),signal);
+  offset+=batch.length;
   const allowed=new Set(batch.map(d=>d.id)),returned=new Set<string>();
   if(result?.model!==s.model||!Array.isArray(result.results)||result.results.length!==count)throw Error('semantic_search_response_invalid');
   for(const match of result.results){

@@ -21,7 +21,7 @@ CONFIG = {'publicKey': base64.urlsafe_b64encode(KEY.public_key().public_bytes_ra
 
 def ticket(path, body, subject='test-caller', now=None, **changes):
     at = int(time.time() * 1000) if now is None else now
-    c = dict(v=1, aud=CONFIG['service'], sub=subject, path=path, bodyHash=hashlib.sha256(body).hexdigest(), iat=at, exp=at+20000, nonce=os.urandom(16).hex())
+    c = dict(v=2, aud=CONFIG['service'], sub=subject, owner=subject, path=path, bodyHash=hashlib.sha256(body).hexdigest(), iat=at, exp=at+20000, nonce=os.urandom(16).hex())
     c.update(changes)
     raw = json.dumps(c, separators=(',', ':')).encode()
     enc = lambda b: base64.urlsafe_b64encode(b).decode().rstrip('=')
@@ -74,7 +74,7 @@ class ServiceTest(unittest.TestCase):
 
     def test_invalid_requests_do_not_infer(self):
         with patch.object(self.engine.session, 'run', wraps=self.engine.session.run) as infer:
-            for path, data in [('/v1/embeddings', {'input': []}), ('/v1/embeddings', {'input': 'x' * 2049}), ('/v1/embeddings', {'input': 'hello', 'model': 'arbitrary'}), ('/v1/search', {'query': 'q', 'documents': [{'id': 'x', 'text': 'a'}, {'id': 'x', 'text': 'b'}]})]:
+            for path, data in [('/v1/embeddings', {'input': []}), ('/v1/embeddings', {'input': 'x' * 2049}), ('/v1/embeddings', {'input': 'a\ud800'}), ('/v1/embeddings', {'input': 'hello', 'model': 'arbitrary'}), ('/v1/search', {'query': 'a\ud800', 'documents': [{'id': 'x', 'text': 'a'}]}), ('/v1/search', {'query': 'q', 'documents': [{'id': 'x', 'text': 'a'}, {'id': 'x', 'text': 'b'}]})]:
                 status, _ = self.call(path, data)
                 self.assertEqual(status, 400)
             infer.assert_not_called()
@@ -120,7 +120,13 @@ class ServiceTest(unittest.TestCase):
                     dripper.start()
                     before = time.monotonic()
                     try:
-                        self.assertEqual(conn.recv(4096), b'')
+                        closed = conn.recv(4096)
+                        self.assertTrue(closed == b'' or closed.startswith(b'HTTP/1.1 408 '))
+                        if closed:
+                            try:
+                                self.assertEqual(conn.recv(4096), b'')
+                            except ConnectionResetError:
+                                pass
                         self.assertLess(time.monotonic() - before, 1.5)
                     finally:
                         stopped.set()
@@ -168,6 +174,57 @@ class ServiceTest(unittest.TestCase):
                 process.kill()
                 process.communicate()
 
+    def test_idle_connections_do_not_occupy_health_or_inference_workers(self):
+        sockets = [socket.create_connection(('127.0.0.1', self.server.server_port), timeout=2)
+                   for _ in range(24)]
+        try:
+            conn = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=2)
+            started = time.monotonic()
+            conn.request('GET', '/health')
+            response = conn.getresponse()
+            self.assertEqual(response.status, 200)
+            response.read()
+            self.assertLess(time.monotonic() - started, 1)
+            conn.close()
+            self.assertEqual(self.call('/v1/embeddings', {'input':'still available'})[0],200)
+        finally:
+            for sock in sockets: sock.close()
+
+    def test_busy_application_pool_reserves_health_and_returns_http_overload(self):
+        held = 0
+        try:
+            for _ in range(24):
+                self.assertTrue(self.server.workers.acquire(blocking=False))
+                held += 1
+            for path, expected in [('/health',200), ('/',503)]:
+                conn = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=2)
+                conn.request('GET',path)
+                response=conn.getresponse()
+                self.assertEqual(response.status,expected)
+                response.read()
+                conn.close()
+        finally:
+            for _ in range(held): self.server.workers.release()
+
+    def test_protocol_errors_are_json_without_interpreter_disclosure(self):
+        conn=http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=2)
+        conn.request('PUT','/v1/embeddings')
+        response=conn.getresponse()
+        self.assertEqual(response.status,501)
+        self.assertEqual(response.getheader('Server'),'Claus')
+        self.assertEqual(response.getheader('Content-Type'),'application/json')
+        self.assertEqual(json.loads(response.read()),{'error':'http_error','status':501})
+        conn.close()
+
+    def test_excessive_json_depth_is_a_client_error(self):
+        body=b'['*60000
+        conn=http.client.HTTPConnection('127.0.0.1',self.server.server_port,timeout=2)
+        conn.request('POST','/v1/embeddings',body,{'Content-Type':'application/json','Authorization':ticket('/v1/embeddings',body)})
+        response=conn.getresponse()
+        self.assertEqual(response.status,400)
+        self.assertEqual(json.loads(response.read()),{'error':'invalid_json'})
+        conn.close()
+
 
 class AdmissionTest(unittest.TestCase):
     def setUp(self):
@@ -195,10 +252,45 @@ class AdmissionTest(unittest.TestCase):
         with self.assertRaises(AdmissionError): self.a.begin(self.issue(), '/v1/search')
         other=self.a.begin(self.issue('other'), '/v1/search'); self.a.finish(other); self.a.finish(c)
     def test_capacity_never_evicts_live_replay_protection(self):
-        self.a.used={str(i):self.now*1000+20000 for i in range(4096)}
+        self.a.used={str(i):self.now+20 for i in range(4096)}
         with self.assertRaises(AdmissionError) as caught:self.a.begin(self.issue(),'/v1/search')
         self.assertEqual(caught.exception.status,503)
         self.assertEqual(len(self.a.used),4096)
+
+    def test_agents_share_owner_concurrency_and_capacity(self):
+        c=self.a.begin(self.issue('agent-1',owner='same-owner'),'/v1/search')
+        for i in range(2,10):
+            with self.assertRaises(AdmissionError) as caught:
+                self.a.begin(self.issue('agent-'+str(i),owner='same-owner'),'/v1/search')
+            self.assertEqual(caught.exception.status,429)
+        other=self.a.begin(self.issue('unrelated',owner='other-owner'),'/v1/search')
+        self.a.finish(other)
+        self.a.finish(c)
+        for i in range(119):
+            c=self.a.begin(self.issue('agent-'+str(i+10),owner='same-owner'),'/v1/search')
+            self.a.finish(c)
+        with self.assertRaises(AdmissionError) as caught:
+            self.a.begin(self.issue('another-new-agent',owner='same-owner'),'/v1/search')
+        self.assertEqual(caught.exception.status,429)
+        self.assertEqual(set(self.a.callers),{'same-owner','other-owner'})
+
+    def test_old_ticket_without_owner_is_not_accepted(self):
+        with self.assertRaises(AdmissionError):
+            self.a.begin(self.issue(v=1),'/v1/search')
+
+    def test_clock_corrections_cannot_reopen_used_or_expired_tickets(self):
+        wall, mono = [self.now], [0.0]
+        a = Admission(CONFIG, clock=lambda: wall[0], monotonic=lambda: mono[0])
+        h = self.issue()
+        c = a.begin(h, '/v1/search'); a.finish(c)
+        wall[0] += 25
+        with self.assertRaises(AdmissionError): a.begin(h, '/v1/search')
+        wall[0] -= 25
+        mono[0] += 26
+        with self.assertRaises(AdmissionError): a.begin(h, '/v1/search')
+        fresh = ticket('/v1/search',self.body,now=int((wall[0]+51)*1000))
+        wall[0] += 51
+        c = a.begin(fresh,'/v1/search'); a.finish(c)
 
 if __name__ == '__main__':
     unittest.main()
