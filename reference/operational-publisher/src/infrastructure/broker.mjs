@@ -48,7 +48,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     check(saved.input.projectId===work.projectId&&digest(saved.input.profile)===digest(work.profile)&&digest(saved.input.manifest)===digest(work.manifest),'quote_binding_invalid');
     return saved.result;
   }
-  const result=(w,r)=>({operationId:w.id,accountId:w.profile.accountId,providerResourceId:r.providerResourceId??null,state:r.state??'unknown',outcome:r.outcome??null,ready:r.ready===true,terminal:r.terminal===true,stopped:r.stopped===true,endpoint:r.endpoint??null,storageRetained:r.storageRetained??null,providerLeaseUntil:r.leaseUntil??w.leaseUntil,hourlyMicroUsd:r.hourlyMicroUsd??null,costObservation:r.costObservation??null,...(r.receipt?{receipt:r.receipt}:{})});
+  const result=(w,r)=>({operationId:w.id,accountId:w.profile.accountId,providerResourceId:r.providerResourceId??null,state:r.state??'unknown',outcome:r.outcome??null,ready:r.ready===true,terminal:r.terminal===true,stopped:r.stopped===true,endpoint:r.endpoint??null,storageRetained:r.storageRetained??null,providerLeaseUntil:r.leaseUntil??w.leaseUntil,hourlyMicroUsd:r.hourlyMicroUsd??null,costObservation:r.costObservation??null,error:r.error??null,errorDetails:r.errorDetails??null,...(r.receipt?{receipt:r.receipt}:{})});
   async function locked(work,operation){
     const token=randomUUID(),row=await ledger.infrastructureLock(key(work.id),token,now());check(row,'resource_busy');
     let current=row.result;
@@ -101,7 +101,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
         // A timeout or 5xx keeps the original operation and all reserved money.
         if([400,401,402,403,413,422].includes(e.status)){
           const receipt={id:'provider-rejected:'+work.id,resourceId:work.id,accountId:work.profile.accountId,asset:work.profile.asset,final:true,actual:'0'};
-          return result(work,await record({state:'rejected',terminal:true,ready:false,receipt,error:e.message}));
+          return result(work,await record({state:'rejected',terminal:true,ready:false,receipt,error:e.message,errorDetails:e.details??null}));
         }
         await record({state:'unknown',outcome:'unknown',ready:false,error:'provider_create_outcome_unknown'});throw e;
       }
