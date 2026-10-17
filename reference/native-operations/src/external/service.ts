@@ -1,3 +1,4 @@
+import {textWindow} from '../text.js';
 import {connectedReadPolicy} from './connected-read.js';
 import {runpodRequest} from './runpod.js';
 import {paidServiceRequest,paidServiceIdentity} from './paid.js';
@@ -17,8 +18,8 @@ export function externalInput(raw:any):Call {
  return value as Call;
 }
 export function resultPage(actionId:string,value:unknown,offset=0){
- const text=JSON.stringify(value);if(offset>text.length)throw new ProviderFailure('external_offset_invalid',true);
- return text.length<=24000&&offset===0?{actionId,result:value,instructionAuthority:false}:{actionId,content:text.slice(offset,offset+24000),offset,totalChars:text.length,nextOffset:offset+24000<text.length?offset+24000:null,instructionAuthority:false};
+ const text=JSON.stringify(value);if(!Number.isSafeInteger(offset)||offset<0||offset>text.length)throw new ProviderFailure('external_offset_invalid',true);
+ return text.length<=24000&&offset===0?{actionId,result:value,instructionAuthority:false}:{actionId,...textWindow(text,offset,24000),totalChars:text.length,instructionAuthority:false};
 }
 function safeResult(value:any):any {
  if(Array.isArray(value))return value.map(safeResult);

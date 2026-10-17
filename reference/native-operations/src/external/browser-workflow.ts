@@ -29,7 +29,7 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
  const connect=new URL(session.connectUrl??'https://invalid');
  if(typeof session.id!=='string'||session.projectId!==spec.projectId||connect.protocol!=='wss:'||!(connect.hostname==='connect.browserbase.com'||connect.hostname.endsWith('.browserbase.com')))throw new ProviderFailure('browser_connection_invalid',false);
  let browser:Awaited<ReturnType<typeof chromium.connectOverCDP>>|undefined;
- const observations:any[]=[];let completedSteps=0;
+ const observations:any[]=[];let completedSteps=0,failedStep:number|null=null,failurePhase='connection',outcome:any;
  try{
   browser=await chromium.connectOverCDP(session.connectUrl,{timeout:15000});
   const context=browser.contexts()[0];if(!context)throw new ProviderFailure('browser_context_missing',true);
@@ -39,8 +39,10 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
   });
   const page=context.pages()[0]??await context.newPage();page.setDefaultTimeout(5000);
   const observe=async()=>{browserUrl(policy,page.url());return {url:page.url(),title:await page.title(),text:(await page.locator('body').innerText()).slice(0,10000),controls:await page.locator('a,button,input,textarea,select,[role="button"]').evaluateAll(nodes=>nodes.slice(0,100).map((n:any)=>({tag:n.tagName.toLowerCase(),role:n.getAttribute('role'),name:(n.innerText||n.getAttribute('aria-label')||n.labels?.[0]?.innerText||n.getAttribute('placeholder')||'').slice(0,180),type:n.type??null})))}};
-  await page.goto(plan.url,{waitUntil:'domcontentloaded',timeout:15000});observations.push(await observe());
-  for(const step of plan.steps){
+  failurePhase='initial_navigation';await page.goto(plan.url,{waitUntil:'domcontentloaded',timeout:15000});
+  failurePhase='initial_observation';observations.push(await observe());
+  for(const [stepIndex,step] of plan.steps.entries()){
+   failedStep=stepIndex;failurePhase='action';
    browserUrl(policy,page.url());
    if(step.action==='navigate')await page.goto(step.url,{waitUntil:'domcontentloaded',timeout:15000});
    if(step.action==='click'||step.action==='fill'){
@@ -51,15 +53,23 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
      await loc.fill(step.value);
     }else await loc.click();
    }
-   completedSteps++;observations.push(await observe());
+   completedSteps++;failurePhase='observation';observations.push(await observe());
   }
-  return {state:'completed',sessionId:session.id,contextId:plan.contextId??null,completedSteps,observations,closedAfterWork:true,instructionAuthority:false};
+  outcome={state:'completed',sessionId:session.id,contextId:plan.contextId??null,completedSteps,observations,instructionAuthority:false};
  }catch(error){
   // Earlier clicks may have changed the remote app. Preserve observations and
   // stop; never repeat the whole sequence after a later timeout.
-  return {state:'stopped',sessionId:session.id,contextId:plan.contextId??null,completedSteps,observations,failedStep:completedSteps,error:error instanceof ProviderFailure?error.message:'browser_step_outcome_unknown',retryWholeWorkflow:false,closedAfterWork:true,instructionAuthority:false};
- }finally{
-  if(browser)await browser.close().catch(()=>{});
-  await providerJson('https://api.browserbase.com/v1/sessions/'+session.id,{method:'POST',headers,body:JSON.stringify({status:'REQUEST_RELEASE'})},false).catch(()=>{});
+  outcome={state:'stopped',sessionId:session.id,contextId:plan.contextId??null,completedSteps,observations,failedStep,failurePhase,error:error instanceof ProviderFailure?error.message:'browser_step_outcome_unknown',retryWholeWorkflow:false,instructionAuthority:false};
  }
+ if(browser)await browser.close().catch(()=>{});
+ let sessionRelease:any={state:'unknown',sessionId:session.id};
+ try{
+  const released=await providerJson('https://api.browserbase.com/v1/sessions/'+session.id,{method:'POST',headers,body:JSON.stringify({status:'REQUEST_RELEASE'})},false);
+  if(released.id===session.id&&released.projectId===spec.projectId){
+   const terminal=['COMPLETED','ERROR','TIMED_OUT'].includes(released.status);
+   sessionRelease={state:terminal?'confirmed':'requested',sessionId:session.id,providerStatus:released.status??null};
+  }
+ }catch{}
+ return {...outcome,closedAfterWork:sessionRelease.state==='confirmed',sessionRelease,retryWholeWorkflow:false};
 }
+
