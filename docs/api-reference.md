@@ -1,9 +1,17 @@
 # API reference
 
-This source describes API 0.34.0 with 273 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.35.0 with 281 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `data_file_write` | POST | `/v1/projects/{projectId}/data-files/content` | Bearer credential |
+| `data_file_read` | GET | `/v1/projects/{projectId}/data-files/{fileId}/content` | Bearer credential |
+| `data_file_prepare` | POST | `/v1/projects/{projectId}/data-files` | Bearer credential |
+| `data_file_commit` | POST | `/v1/projects/{projectId}/data-files/{fileId}/commit` | Bearer credential |
+| `data_file_get` | GET | `/v1/projects/{projectId}/data-files/{fileId}` | Bearer credential |
+| `data_file_download` | GET | `/v1/projects/{projectId}/data-files/{fileId}/download` | Bearer credential |
+| `data_file_list` | GET | `/v1/projects/{projectId}/data-files` | Bearer credential |
+| `data_file_delete` | DELETE | `/v1/projects/{projectId}/data-files/{fileId}` | Bearer credential |
 | `resource_fleet` | GET | `/v1/infrastructure` | Bearer credential |
 | `resource_control_set` | PUT | `/v1/admin/infrastructure/controls` | Network owner session |
 | `resource_control` | GET | `/v1/infrastructure/controls/{profileId}` | Assigned infrastructure operator or network owner session |
