@@ -28,7 +28,7 @@ export function createDataFiles({store,identity,objects,now=()=>Date.now(),limit
   });return {removed:true};
  }
  const api={
-  discovery:()=>({enabled:!!objects,private:true,limits,uploads:'short-lived-signed-PUT',publication:false,scope:{read:'artifact.read',write:'artifact.write'},immutable:true}),
+  discovery:()=>({enabled:!!objects,private:true,limits,uploads:'short-lived-signed-PUT',publication:false,backup:{profile:'claus-private-data-backup/1',client:'claus-data',resourceAuthority:'historical-only',restore:'verified-ready-files-only'},scope:{read:'artifact.read',write:'artifact.write'},immutable:true}),
   async prepare(actor,projectId,{name,sha256,bytes,idempotencyKey}){
    available();await auth(actor,projectId,true);sourcePath(name);contentHash(sha256);text(idempotencyKey);integer(bytes,1,limits.fileBytes);
    const id=digest({projectId,upload:idempotencyKey}),requestHash=digest({name,sha256,bytes});

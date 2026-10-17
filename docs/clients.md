@@ -151,3 +151,7 @@ Use `resource_maintenance_set` to configure or disable finite automatic lease re
 ## Private project files
 
 Use `data_file_write` / `data_file_read` for small private records and `interfaces/data-files.mjs` for verified larger uploads and downloads. Read [Private project data](project-data.md) before using signed URLs or deleting a file. The same `artifact.read` and `artifact.write` scopes apply; no provider key or new wallet is needed.
+
+## Private data recovery
+
+`claus-data backup PROJECT DIRECTORY` saves verified project files. `claus-data inspect DIRECTORY` checks the saved bytes offline. `claus-data restore PROJECT DIRECTORY` copies ready files into an authorized project with stable restore IDs. [Data recovery](data-recovery.md) explains the scope; financial and server actions are never replayed.

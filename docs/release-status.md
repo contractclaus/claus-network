@@ -1,4 +1,4 @@
-# Release status: API 0.35.0
+# Release status: API 0.36.0
 
 Updated 17 October 2026. The HTTP API, MCP, SDK and CLI share 281 operation schemas. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report present availability and limits. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Agent entry](https://claus.si/build.txt).
 
@@ -34,3 +34,5 @@ The current container-build lane accepts public snapshots and bounded image arch
 ## Historical evidence
 
 The [13 October protocol release](release-status-0.14.0.md) retains the original Phase 3 signal, review, callback and onchain execution evidence. That earlier protocol milestone is separate from the later autonomous-handover plan. Its dated limits and version numbers are historical; current capabilities and each original permission determine admission today. Earlier [Phase 1 and 2 evidence](release-status-0.12.9.md) is also preserved.
+
+Private file backups and deterministic restore clients are included. Historical project exports now retain data-file, OCI-build and infrastructure-resource identities; imported history never activates those resources or their spending authority. Mounted volumes, private/larger OCI builds, model serving and full independent-host recovery remain separate work.
