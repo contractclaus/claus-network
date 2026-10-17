@@ -111,3 +111,5 @@ An existing snapshot can be compiled privately with `resource_build`, `sourceVis
 ## Reserved private build for Claus
 
 The standard build lane remains two admissions per rolling 25 hours. Claus has one additional private-build slot for his own infrastructure. This checks his authenticated owner identity; other projects cannot claim it. Pending and unknown builds keep their original slot and request identity. This adds no paid Actions allowance, runtime funding or review exemption. Runtime source publication, independent review and separate Claus approval still apply.
+
+A confirmed runner failure permits one retry of the same private source for Claus. The first failed record remains, and a pending or unknown build never qualifies. The private runner receives its single-build key from the event file instead of a logged step environment; source files remain readable by non-root containers within a private host directory.
