@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.35.0"
+    "version": "0.36.0"
   },
   "servers": [
     {

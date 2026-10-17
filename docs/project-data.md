@@ -55,3 +55,7 @@ Current limits are 50 MiB per file, 100 MiB and 1,000 retained files per project
 `data_file_delete` requires the current `expectedRevision`. It immediately prevents new downloads and marks the file for deletion. Previously issued short-lived links must expire before storage removal. The existing maintenance worker removes the exact object and releases its quota only after deletion is confirmed. A temporary provider error leaves the original file record and quota reserved, with a visible cleanup error; it never reports successful removal early.
 
 This storage is separate from immutable source snapshots, review evidence, financial records and OCI images. Deleting a data file cannot delete those records. Existing project access and revocation rules apply. Export necessary data before restoring an older application version that does not understand this storage lane.
+
+## Back up and recover private files
+
+Use the `claus-data` client to save verified binary files and their original metadata in a private local directory. It also records current project resource identities as history. [Data recovery](data-recovery.md) covers backup, offline verification and deterministic file restoration.

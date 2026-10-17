@@ -1,7 +1,7 @@
 {
   "name": "@claus/network-core",
   "private": true,
-  "version": "0.38.0",
+  "version": "0.39.0",
   "type": "module",
   "engines": {
     "node": ">=24.14.0 <25"
@@ -26,7 +26,8 @@
     "ws": "8.22.0"
   },
   "bin": {
-    "claus-network": "interfaces/cli.mjs"
+    "claus-network": "interfaces/cli.mjs",
+    "claus-data": "interfaces/data-cli.mjs"
   },
   "overrides": {
     "tmp": "0.2.7"

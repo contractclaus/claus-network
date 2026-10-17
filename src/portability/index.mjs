@@ -7,6 +7,10 @@ const MAX_BYTES = 64000000, MAX_RECORDS = 40000, PAGE_SIZE = 100, PAGE_BYTES = 2
 // An explicit inventory prevents new runtime tables, credentials or signed
 // transaction material from silently becoming part of an export.
 const FIELDS = Object.freeze({
+  'data-files': 'id projectId name sha256 bytes state createdAt uploadDeadline verifiedAt deleteAfter deletedAt cleanupError nextCleanupAt',
+  'oci-builds': 'id projectId snapshotId dockerfile requestHash publishSource planId sourceHash state createdAt artifactHash runUrl error completedAt observedAt',
+  'runtime-image-releases': 'id projectId buildId imageDigest archiveHash manifest manifestHash sourceHash state createdAt updatedAt reviewCaseId decision decisionAt',
+  'infrastructure-resources': 'id projectId manifest state desired createdAt leaseUntil providerLeaseUntil renewalPending terminal storageRetained providerResourceId endpoint reservedMaximum actual billing costObservation maintenance error nextAttemptAt operationId',
   'project-runtimes': 'projectId runtimeId workerId workerRevision intervalSeconds maxCycles memory observation cycle state updatedAt',
   'project-workers': 'projectId workerId snapshotId entry paths sourceHash enabled updatedAt',
   'worker-runs': 'id projectId workerId definitionRevision state createdAt startedAt finishedAt resultJson error provider exitCode',
@@ -51,7 +55,8 @@ const OMITTED = Object.freeze([
   'Runtime credentials, private keys, live leases and reusable signatures',
   'Provider accounts, operator-wide balances, sponsorship grants and spending authority',
   'Derived indexes and runtime scheduling cursors',
-  'Collections not explicitly listed in coverage'
+  'Collections not explicitly listed in coverage',
+  'External private file and OCI image bytes; their hashes and lifecycle records are history, not a complete copy of those objects'
 ]);
 const select = (value, names) => Object.fromEntries(names.split(' ').filter(k => Object.hasOwn(value, k)).map(k => [k, value[k]]));
 function redact(value) {
@@ -199,6 +204,16 @@ export function createProjectArchives({ store, identity, sourceFiles = createSou
                 id: r.id, kind: 'contract-result-transaction', state: r.value.state,
                 effect: 'outcome_unknown', effectKey: r.id, transactionHash: r.value.hash,
                 disposition: 'retain-at-source; reconcile original transaction; never re-sign at destination'
+              })),
+              records.filter(r => r.collection === 'infrastructure-resources' &&
+                (r.value.billing !== 'settled' || !r.value.terminal)).map(r => ({
+                id:r.id,kind:'infrastructure-resource',state:r.value.state,effect:'retain-original-resource',
+                effectKey:r.value.operationId??r.id,providerResourceId:r.value.providerResourceId??null,
+                disposition:'historical only; reconcile the original provider resource and reservations; never provision a replacement from an imported record'
+              })),
+              records.filter(r => r.collection === 'data-files' && ['uploading','deleting'].includes(r.value.state)).map(r => ({
+                id:r.id,kind:'private-data-lifecycle',state:r.value.state,effect:'retain-original-object',effectKey:r.id,
+                disposition:'metadata only; reconcile the original object and its quota before declaring upload or deletion complete'
               }))) };
         const signature = sign(null, Buffer.from(canonical(manifest)), key).toString('base64');
         return { id: digest(manifest), manifest, signature, pages };
