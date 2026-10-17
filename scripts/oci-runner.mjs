@@ -14,7 +14,7 @@ const buildId=process.env.CLAUS_OCI_BUILD_ID;
 requireThat(buildId==='verify'||/^sha256:[a-f0-9]{64}$/.test(buildId??''),'oci_build_id_invalid');
 requireThat(process.env.GITHUB_REPOSITORY==='contractclaus/claus-network'&&process.env.GITHUB_EVENT_NAME==='workflow_dispatch'&&process.env.GITHUB_RUN_ATTEMPT==='1','oci_runner_context_invalid');
 const root=path.join(process.env.RUNNER_TEMP,'claus-oci'),context=path.join(root,'source'),config=path.join(root,'docker');
-await fs.mkdir(root,{recursive:false});await fs.mkdir(context);await fs.mkdir(config);await fs.writeFile(path.join(config,'config.json'),'{}',{mode:0o600});
+await fs.mkdir(root,{recursive:false,mode:0o700});await fs.mkdir(context);await fs.mkdir(config);await fs.writeFile(path.join(config,'config.json'),'{}',{mode:0o600});
 let source;
 if(buildId==='verify'){
   const dir=new URL('../test/fixtures/oci/',import.meta.url),files=[];
@@ -27,7 +27,7 @@ if(buildId==='verify'){
 requireThat(source.buildId===buildId,'oci_source_mismatch');
 const original=source.plan,plan=createOciBuildPlan({projectId:original.projectId,snapshotId:original.snapshotId,dockerfile:original.dockerfile,files:original.source});
 requireThat(plan.id===original.id&&plan.sourceHash===original.sourceHash,'oci_plan_changed');
-for(const f of plan.source){const filename=path.join(context,f.path);await fs.mkdir(path.dirname(filename),{recursive:true});await fs.writeFile(filename,f.content,{flag:'wx',mode:0o600});}
+for(const f of plan.source){const filename=path.join(context,f.path);await fs.mkdir(path.dirname(filename),{recursive:true});await fs.writeFile(filename,f.content,{flag:'wx',mode:0o644});}
 const options={env:{PATH:process.env.PATH,HOME:root,DOCKER_CONFIG:config,TMPDIR:process.env.RUNNER_TEMP},maxBuffer:4000000,timeout:480000,killSignal:'SIGKILL'};
 const builder='claus-oci-'+process.env.GITHUB_RUN_ID,archive=path.join(root,'image.tar'),metadataFile=path.join(root,'metadata.json');
 const buildkit=JSON.parse(await fs.readFile(new URL('../config/oci-runner.json',import.meta.url),'utf8')).buildkit;
