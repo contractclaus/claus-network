@@ -1,4 +1,5 @@
 import {installGithubRoutes} from './github/routes.mjs';
+import {installRuntimeGuardian} from './runtime-guardian.mjs';
 import {installPartnerGateway} from './partner-launch/routes.mjs';
 import {installCapitalRoutes} from './capital/routes.mjs';
 import {installFundingRoutes} from './compute-funding/service.mjs';
@@ -51,7 +52,7 @@ app.get('/health',c=>c.json(process.env.SERVICE_ROLE==='operator'
   ? {ready:!!process.env.DATABASE_URL&&!!process.env.SIGNER_PRIVATE_KEY,payer:address,scope:'fixed_operator_with_legacy_observer',inferencePayments:false,labResearch:process.env.OPERATOR_LAB_ENABLED==='true',configPresence:{database:!!process.env.DATABASE_URL,signing:!!process.env.SIGNER_PRIVATE_KEY,legacyStatus:!!process.env.LEGACY_STATUS_SECRET}}
   : {service:'claus-inference',databaseConfigured:!!process.env.DATABASE_URL,signingConfigured:!!process.env.SIGNER_PRIVATE_KEY,scope:'inference_and_policy_gated_wallet',transactionSigning:!!process.env.WALLET_SECRET&&!!process.env.WALLET_POLICY_SECRET,inferencePaymentScheme:inferencePaymentSchemes()[0],maximumInferenceQuoteMicroUsdc:process.env.MAX_INFERENCE_QUOTE_MICRO_USDC??'1000000'}));
 app.use('/api/*',async(c,next)=>{
-  if(c.req.path==='/api/github'||c.req.path==='/api/partner-launch'||c.req.path==='/api/capital'||c.req.path==='/api/search'||c.req.path==='/api/search/status'||c.req.path==='/api/social'||/^\/api\/social\/receipts\/[a-zA-Z0-9_.:%-]+$/.test(c.req.path)||(c.req.path==='/api/native-missions'||/^\/api\/native-missions\/[a-zA-Z0-9_.:%-]+$/.test(c.req.path)||c.req.path==='/api/native-configuration'||/^\/api\/native-configuration\/[0-9]+$/.test(c.req.path))||c.req.path.startsWith('/api/jobs/')||c.req.path==='/api/programs'||c.req.path==='/api/publisher'||c.req.path==='/api/surface-publisher')return next();
+  if(c.req.path==='/api/runtime/guardian'||c.req.path==='/api/github'||c.req.path==='/api/partner-launch'||c.req.path==='/api/capital'||c.req.path==='/api/search'||c.req.path==='/api/search/status'||c.req.path==='/api/social'||/^\/api\/social\/receipts\/[a-zA-Z0-9_.:%-]+$/.test(c.req.path)||(c.req.path==='/api/native-missions'||/^\/api\/native-missions\/[a-zA-Z0-9_.:%-]+$/.test(c.req.path)||c.req.path==='/api/native-configuration'||/^\/api\/native-configuration\/[0-9]+$/.test(c.req.path))||c.req.path.startsWith('/api/jobs/')||c.req.path==='/api/programs'||c.req.path==='/api/publisher'||c.req.path==='/api/surface-publisher')return next();
   // Explicit opt-in only: retain the historical default until manual migration.
   // This gate precedes authentication selection, body parsing and all handlers.
   if(process.env.SERVICE_ROLE==='operator') {
@@ -98,6 +99,7 @@ installJobsRoutes(app);
 installCapitalRoutes(app);
 installPartnerGateway(app);
 installGithubRoutes(app);
+installRuntimeGuardian(app);
 installProgramRoutes(app);
 installPublisherRoutes(app);
 installSurfacePublisherRoutes(app);

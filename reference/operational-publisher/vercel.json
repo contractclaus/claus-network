@@ -1,0 +1,50 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "hono",
+  "regions": [
+    "cle1"
+  ],
+  "functions": {
+    "src/index.js": {
+      "maxDuration": 800
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/runtime/guardian",
+      "schedule": "7-57/10 * * * *"
+    },
+    {
+      "path": "/api/ordinary-buybacks/process",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/weather/relay",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/liquidity/process",
+      "schedule": "2-59/5 * * * *"
+    },
+    {
+      "path": "/api/nfts/process",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/predictions/process",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/lp-rewards/process",
+      "schedule": "3-59/5 * * * *"
+    },
+    {
+      "path": "/api/nft-staking/process",
+      "schedule": "4-59/5 * * * *"
+    },
+    {
+      "path": "/api/compute-funding/process",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

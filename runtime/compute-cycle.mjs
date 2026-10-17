@@ -4,6 +4,7 @@ export async function computeCycle({app,store,now=()=>Date.now(),release=null}) 
  const started=now();
  const outcomes=await Promise.allSettled([
   app.runtimes.tick(),
+  app.workers.tick(),
   (async()=>{
    if(!(await app.inference.discovery()).enabled)return {enabled:false,completedWorkers:0,failedWorkers:0};
    const workers=await Promise.allSettled([app.inference.run(),app.inference.run()]);
@@ -11,13 +12,14 @@ export async function computeCycle({app,store,now=()=>Date.now(),release=null}) 
   })()
  ]);
  const runtime=outcomes[0].status==='fulfilled'?{state:'observed',processed:outcomes[0].value.processed}:{state:'unavailable'};
- const inference=outcomes[1].status==='fulfilled'?{state:'observed',...outcomes[1].value}:{state:'unavailable'};
+ const workers=outcomes[1].status==='fulfilled'?{state:'observed',...outcomes[1].value}:{state:'unavailable'};
+ const inference=outcomes[2].status==='fulfilled'?{state:'observed',...outcomes[2].value}:{state:'unavailable'};
  const observedAt=now();
  await store.transaction(async tx=>{
-  for(const [role,state]of [['runtimes',runtime],['inference',inference]]){
+  for(const [role,state]of [['runtimes',runtime],['workers',workers],['inference',inference]]){
    const old=await tx.read('worker-health',role);
    await tx.write('worker-health',role,{...state,observedAt,durationMs:Math.max(0,observedAt-started),release},old?.revision??0);
   }
  });
- return {ok:runtime.state==='observed'&&inference.state==='observed'&&inference.failedWorkers===0,runtime,inference};
+ return {ok:runtime.state==='observed'&&workers.state==='observed'&&inference.state==='observed'&&inference.failedWorkers===0,runtime,workers,inference};
 }
