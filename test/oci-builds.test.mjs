@@ -61,3 +61,13 @@ test('an expired original archive is explicit and does not trigger another build
  const b=await f.api.submit('owner','p',f.input);await f.api.runOne();f.advance();await f.api.runOne();
  assert.equal((await f.api.artifact('owner','p',b.id)).artifactAvailability,'expired');assert.equal(f.calls(),1);assert.equal((await f.api.get('owner','p',b.id)).state,'compiled');
 });
+
+
+test('a completed build permits one correction in the same project without increasing the global window',async t=>{
+ const f=await fixture(t),a=await f.api.submit('owner','p',f.input);
+ await f.api.runOne();f.advance();await f.api.runOne();assert.equal((await f.api.get('owner','p',a.id)).state,'compiled');
+ const read=f.projects.publicSource;f.projects.publicSource=async id=>({...await read(id),snapshotId:id===digest({projectId:'p',id:'corrected'})?'corrected':'third'});
+ const second=await f.api.submit('owner','p',{...f.input,snapshotId:'corrected',idempotencyKey:'corrected'});assert.notEqual(second.id,a.id);
+ await assert.rejects(f.api.submit('owner','p',{...f.input,snapshotId:'third',idempotencyKey:'third'}),{code:'oci_build_capacity_reached'});
+ assert.equal((await f.api.submit('owner','p',f.input)).id,a.id);
+});
