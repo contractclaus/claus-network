@@ -1,3 +1,4 @@
+import {CLAUS_IDENTITY} from '../src/partner-launch/policy.mjs';
 import {createRuntimeReleases,RUNTIME_IMAGE_PROFILE,validateRuntimeBuild} from '../src/infrastructure/runtime-release.mjs';
 import {createImageRegistry} from '../src/infrastructure/registry.mjs';
 import {createOciBuilds} from '../src/infrastructure/builds.mjs';
@@ -153,7 +154,7 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
  workflows=createWorkflows({store,identity,apps,now,admit:access.collaboration});
  const discovery=createDiscovery({store,projects,apps,services,now});
  const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
- const ociBuilds=createOciBuilds({store,identity,projects,jobs,artifacts,images:imageArchive,sourceFiles,privateEnabled:ociPrivateEnabled,privateSecret:ociPrivateSecret,now,ports:ociBuildPorts,enabled:ociBuildEnabled});
+ const ociBuilds=createOciBuilds({store,identity,projects,jobs,artifacts,images:imageArchive,sourceFiles,privateEnabled:ociPrivateEnabled,privateSecret:ociPrivateSecret,reservedPrivateOwner:CLAUS_IDENTITY,now,ports:ociBuildPorts,enabled:ociBuildEnabled});
  const imageRegistry=createImageRegistry({store,identity,projects,artifacts,images:imageArchive,origin:registryOrigin,now});
  const infrastructure=createInfrastructure({store,identity,projects,now,ports:infrastructurePorts,enabled:infrastructureEnabled});
  const workers=createWorkers({store,identity,projects,artifacts,now,ports:workerPorts,enabled:workersEnabled});

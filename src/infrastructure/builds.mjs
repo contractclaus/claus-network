@@ -4,7 +4,7 @@ import {sealPrivateContext} from './private-context.mjs';
 
 // Builds have no wallet or deployment authority. Public-source consent is
 // explicit because standard public GitHub runners expose build logs/artifacts.
-export function createOciBuilds({store,identity,projects,jobs,artifacts,images=null,sourceFiles=null,privateEnabled=false,privateSecret=null,now=()=>Date.now(),ports={},enabled=false}) {
+export function createOciBuilds({store,identity,projects,jobs,artifacts,images=null,sourceFiles=null,privateEnabled=false,privateSecret=null,reservedPrivateOwner=null,now=()=>Date.now(),ports={},enabled=false}) {
   const kind='oci-build-v1';
   const complete=new Set(['compiled','failed','cancelled','blocked']);
   async function owned(reader,projectId,id){const row=await reader.read('oci-builds',text(id));requireThat(row?.value.projectId===projectId,'not_found');return row;}
@@ -28,7 +28,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
     return createOciBuildPlan({projectId:v.projectId,snapshotId:v.snapshotId,dockerfile:v.dockerfile,files});
   }
   return {
-    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',privateSource:privateEnabled&&!!privateSecret,artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxPrivateImageBytes:134217728,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:2,projectConcurrentBuilds:1,globalBuildsPerWindow:2,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
+    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',privateSource:privateEnabled&&!!privateSecret,artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxPrivateImageBytes:134217728,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:2,projectConcurrentBuilds:1,globalBuildsPerWindow:2,reservedOwnerPrivateBuildsPerWindow:reservedPrivateOwner?1:0,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
     async submit(actor,projectId,{snapshotId,dockerfile='Dockerfile',sourceVisibility='public',publishSource,idempotencyKey}){
       await identity.authorize(actor,'build.compile',{projectId});
       text(idempotencyKey);requireThat(idempotencyKey.length<=128,'invalid_identifier');
@@ -56,8 +56,14 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
           if(entry.at>now()-90000000||pending)active.push(entry);
           if(pending)busy.push(entry);
         }
-        if(active.length>=2||busy.some(x=>x.projectId===projectId)){
-          const relevant=active.some(x=>x.projectId===projectId)?active.filter(x=>x.projectId===projectId):active;
+        let reservedPrivate=false;
+        const standard=active.filter(entry=>entry.reservedPrivate!==true);
+        if(standard.length>=2&&isPrivate&&reservedPrivateOwner&&!active.some(entry=>entry.reservedPrivate===true)){
+          const credential=await identity.credential(actor,tx),principal=(await tx.read('principals',credential.principalId))?.value;
+          reservedPrivate=credential.kind==='owner'&&principal?.chainId===1&&principal.address?.toLowerCase()===reservedPrivateOwner;
+        }
+        if((standard.length>=2&&!reservedPrivate)||busy.some(x=>x.projectId===projectId)){
+          const relevant=busy.some(x=>x.projectId===projectId)?busy.filter(x=>x.projectId===projectId):active;
           const retryAt=Math.max(now()+60000,Math.min(...relevant.map(x=>x.at+90000000)));
           throw Object.assign(Error('oci_build_capacity_reached'),{code:'oci_build_capacity_reached',retryAt});
         }
@@ -65,7 +71,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
         requireThat(job.id===id,'oci_job_binding_mismatch');
         const value={id,projectId,snapshotId,dockerfile,requestHash,publishSource:!isPrivate,...(isPrivate?{sourceVisibility:'private'}:{}),actor,planId:plan.id,sourceHash:plan.sourceHash,state:'queued',createdAt:now(),artifactHash:null};
         const saved=await tx.write('oci-builds',id,value,0);
-        await tx.write('oci-capacity','standard',{entries:[...active,{id,projectId,at:now()}]},row?.revision??0);
+        await tx.write('oci-capacity','standard',{entries:[...active,{id,projectId,at:now(),...(reservedPrivate?{reservedPrivate:true}:{})}]},row?.revision??0);
         return visible(tx,saved);
       });
     },
