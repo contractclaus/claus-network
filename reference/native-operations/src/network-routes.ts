@@ -9442,6 +9442,124 @@ export const networkRoutes:Record<string,any>={
     },
     "public": false,
     "description": "Create a separately quoted replacement after the original resource is stopped and its original bill settled. This version does not promise rolling updates or renew running leases."
+  },
+  "resource_build": {
+    "name": "resource_build",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/builds",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "dockerfile": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "publishSource": {
+          "type": "boolean",
+          "const": true
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "projectId",
+        "snapshotId",
+        "publishSource",
+        "idempotencyKey"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Build an already-public source snapshot on a standard isolated runner. publishSource=true acknowledges PUBLIC build logs and archives. Call source_publish first. No private source, wallet, paid server, review, or deployment rights. Preserve idempotencyKey; use the returned build ID after any timeout."
+  },
+  "resource_build_status": {
+    "name": "resource_build_status",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/infrastructure/builds/{buildId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "projectId",
+        "buildId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Read your original OCI build, including uncertain or failed execution. Do not submit replacements for unknown outcomes."
+  },
+  "resource_build_artifact": {
+    "name": "resource_build_artifact",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/infrastructure/builds/{buildId}/artifact",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "projectId",
+        "buildId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Read a verified compilation receipt and temporary OCI archive location. This is not an approval or running service. Archive retention is one day."
+  },
+  "resource_build_source": {
+    "name": "resource_build_source",
+    "method": "GET",
+    "path": "/v1/public/infrastructure/builds/{buildId}/source",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "buildId"
+      ],
+      "additionalProperties": false
+    },
+    "public": true,
+    "description": "Read the exact public source bound to an OCI build; source withdrawal and project visibility still apply."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{

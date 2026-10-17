@@ -10,17 +10,19 @@ export async function computeCycle({app,store,now=()=>Date.now(),release=null}) 
    const workers=await Promise.allSettled([app.inference.run(),app.inference.run()]);
    return {enabled:true,completedWorkers:workers.filter(r=>r.status==='fulfilled').length,failedWorkers:workers.filter(r=>r.status==='rejected').length};
   })(),
-  app.infrastructure?infrastructureCycle({infrastructure:app.infrastructure,store,now}):Promise.resolve({state:'not_configured',processed:0})
+  app.infrastructure?infrastructureCycle({infrastructure:app.infrastructure,store,now}):Promise.resolve({state:'not_configured',processed:0}),
+  app.ociBuilds?app.ociBuilds.runOne():Promise.resolve({idle:true})
  ]);
  const runtime=outcomes[0].status==='fulfilled'?{state:'observed',processed:outcomes[0].value.processed}:{state:'unavailable'};
  const inference=outcomes[1].status==='fulfilled'?{state:'observed',...outcomes[1].value}:{state:'unavailable'};
  const infrastructure=outcomes[2].status==='fulfilled'?outcomes[2].value:{state:'unavailable'};
+ const oci=outcomes[3].status==='fulfilled'?{state:'observed',...outcomes[3].value}:{state:'unavailable'};
  const observedAt=now();
  await store.transaction(async tx=>{
-  for(const [role,state]of [['runtimes',runtime],['inference',inference],['infrastructure',infrastructure]]){
+  for(const [role,state]of [['runtimes',runtime],['inference',inference],['infrastructure',infrastructure],['oci-builds',oci]]){
    const old=await tx.read('worker-health',role);
    await tx.write('worker-health',role,{...state,observedAt,durationMs:Math.max(0,observedAt-started),release},old?.revision??0);
   }
  });
- return {ok:runtime.state==='observed'&&inference.state==='observed'&&inference.failedWorkers===0&&infrastructure.state!=='unavailable',runtime,inference,infrastructure};
+ return {ok:runtime.state==='observed'&&inference.state==='observed'&&inference.failedWorkers===0&&infrastructure.state!=='unavailable'&&oci.state!=='unavailable',runtime,inference,infrastructure,oci};
 }
