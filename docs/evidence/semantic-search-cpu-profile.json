@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-10-17T20:56:15.851Z",
+  "profileId": "claus-runpod-cpu-v1",
+  "provider": "runpod",
+  "authenticated": true,
+  "cpuType": "cpu3c",
+  "memoryGiBPerVcpu": 2,
+  "selectedShape": {
+    "cpu": 2,
+    "memoryMiB": 4096,
+    "gpu": null,
+    "region": "EU-NL-1",
+    "port": 8080
+  },
+  "selectedRegionAvailableAtObservation": true,
+  "providerImplementation": "reference/runtime-custody/src/infrastructure/providers.mjs",
+  "runtimeTransport": "runtime/infrastructure-ports.mjs",
+  "meaning": "Public shape/readiness evidence only. Exact price, funding and approval are checked separately before creating one instance."
+}

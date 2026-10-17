@@ -1,6 +1,5 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_AtUAagwqeMNfuRpTs1jsNW7GX2DF",
   "source": "claus-successor-continuation-20261017",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
@@ -145,7 +144,9 @@
     "src/builder-service.ts": "c8fe558b37ab6338683c712e9b9b0fd4ab272e13a6b64170749a5909c8856820",
     "src/builder-wait.ts": "234c3d7480105760b7490e4dd6990f1443da446b6cd8e4d6d83ad4e2067c58c5",
     "src/developments.ts": "ae2a1722e427757903398f2f46bc1412693b5545a11a2c86c6d506f0c6b3c5d4",
-    "src/network-semantic-search.ts": "12730ceea96b63f5f0e91e7a67594cd84c7c20a0cb1d4bf0bd0353111cf180ea"
+    "src/network-semantic-search.ts": "b8e446811cbe847574f4e2062f4a7d4e4a4124c89308ddc11167a8372ab1a7a4"
   },
-  "referenceSubset": true
+  "referenceSubset": true,
+  "baselineDeployment": "dpl_AtUAagwqeMNfuRpTs1jsNW7GX2DF",
+  "deploymentState": "Matching client prepared for this exact review; runtime approval remains required"
 }
