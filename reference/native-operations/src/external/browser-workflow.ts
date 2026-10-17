@@ -8,12 +8,23 @@ export function workflowInput(policy:ExternalPolicy,input:any){
  for(const s of input.steps){
   if(!s||typeof s!=='object'||!['read','navigate','click','fill'].includes(s.action)||Object.keys(s).some(k=>!['action','url','target','value'].includes(k)))throw new ProviderFailure('browser_step_invalid',true);
   if(s.action==='navigate')browserUrl(policy,s.url);
-  if(['click','fill'].includes(s.action)){
+  if(['click','fill'].includes(s.action)||s.action==='read'&&s.target!==undefined){
    const t=s.target;if(!t||typeof t!=='object'||Object.keys(t).some(k=>!['role','name','label'].includes(k))||!(typeof t.role==='string'&&typeof t.name==='string'||typeof t.label==='string')||JSON.stringify(t).length>1000)throw new ProviderFailure('browser_target_invalid',true);
   }
   if(s.action==='fill'&&(typeof s.value!=='string'||s.value.length>8000))throw new ProviderFailure('browser_value_invalid',true);
  }
  return input;
+}
+// Runs in the page. Only an explicitly selected, visible read-only report is
+// exposed; ordinary form entries and credential-labelled fields stay private.
+export function readonlyBrowserReport(n:any){
+ const tag=String(n.tagName??'').toLowerCase();
+ const name=String(n.getAttribute('aria-label')||n.labels?.[0]?.innerText||n.getAttribute('placeholder')||'');
+ const identity=[name,n.getAttribute('name'),n.getAttribute('id'),n.getAttribute('autocomplete')].join(' ');
+ if(tag!=='textarea'||n.readOnly!==true||/password|secret|api[\s_-]*key|access[\s_-]*token|credential|private[\s_-]*key|seed|mnemonic|recovery[\s_-]*code/i.test(identity))return {denied:true as const};
+ const raw=String(n.value??'');let end=Math.min(16000,raw.length);
+ if(end<raw.length&&/[\uD800-\uDBFF]/.test(raw[end-1]??''))end--;
+ return {tag,name:name.slice(0,180),value:raw.slice(0,end),totalChars:raw.length,truncated:end<raw.length};
 }
 export async function browserContext(policy:ExternalPolicy,original:string){
  if(!policy.browser||!process.env.BROWSERBASE_API_KEY)throw new ProviderFailure('browser_not_connected',true);
@@ -44,16 +55,20 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
   for(const [stepIndex,step] of plan.steps.entries()){
    failedStep=stepIndex;failurePhase='action';
    browserUrl(policy,page.url());
+   let report;
    if(step.action==='navigate')await page.goto(step.url,{waitUntil:'domcontentloaded',timeout:15000});
-   if(step.action==='click'||step.action==='fill'){
+   if(step.action==='click'||step.action==='fill'||step.action==='read'&&step.target!==undefined){
     const t=step.target,loc=typeof t.label==='string'?page.getByLabel(t.label,{exact:true}):page.getByRole(t.role,{name:t.name,exact:true});
     if(await loc.count()!==1||!await loc.isVisible())throw new ProviderFailure('browser_target_not_unique',true);
-    if(step.action==='fill'){
+    if(step.action==='read'){
+     report=await loc.evaluate(readonlyBrowserReport);
+     if(report.denied)throw new ProviderFailure('browser_readonly_report_required',true);
+    }else if(step.action==='fill'){
      if((await loc.getAttribute('type'))==='password')throw new ProviderFailure('browser_secret_entry_denied',true);
      await loc.fill(step.value);
     }else await loc.click();
    }
-   completedSteps++;failurePhase='observation';observations.push(await observe());
+   completedSteps++;failurePhase='observation';observations.push({...await observe(),...(report?{report}:{})});
   }
   outcome={state:'completed',sessionId:session.id,contextId:plan.contextId??null,completedSteps,observations,instructionAuthority:false};
  }catch(error){

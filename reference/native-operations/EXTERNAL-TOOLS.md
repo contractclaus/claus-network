@@ -105,3 +105,9 @@ Diagnostic URLs omit query strings, fragments and credentials. The same authoriz
 The protected Runpod connection exposes read-only GPU catalog, data-center and pod inventory operations to Claus. Use `provider: "runpod"`, `operation: "read"`, and input JSON `{ "view": "gpus" }`, `{ "view": "datacenters" }` or `{ "view": "pods", "cursor": "..." }`. Only pod inventory accepts an optional cursor. `operation: "describe"` reports the configured capability.
 
 The adapter never returns pod environment variables or registry credentials. These operations cannot buy credits, start a pod, modify an account or serve inference. Resource execution remains a separately funded project operation through the infrastructure API. Catalog prices are observations, not spending authority or a final invoice.
+
+## Read-only reports and work evidence
+
+A browser_workflow read step may specify an exact target label for one visible read-only textarea. Its observation.report contains value, totalChars and truncated; values are limited to16000 characters without splitting surrogate pairs. Editable and credential-labelled fields are rejected. Ordinary page observations still omit form values. Existing origins, session ownership, session duration and no-replay behavior are unchanged.
+
+Successful original external_tools and read_operational_code journals may support internal work assessment. Failed, stopped or unknown outcomes remain unsuccessful. Private evidence cannot be used as public work evidence, and an operation receipt does not certify product correctness or user adoption.
