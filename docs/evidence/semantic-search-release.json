@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
+  "snapshotId": "sha256:81f952b96e85fa15b151cd35a1231c78d82085958c9926200da432eb422e502b",
+  "files": [
+    {
+      "path": "examples/semantic-search/Dockerfile",
+      "sha256": "83187b811896ff40e99a13a24da827140b4529e7c51e55cb22e3e3fcf45e4061"
+    },
+    {
+      "path": "examples/semantic-search/server.py",
+      "sha256": "603c76aefe2a0abb8496516efa3a8701d2b870d36f5bcfec351e6b53b5735886"
+    },
+    {
+      "path": "examples/semantic-search/admission.py",
+      "sha256": "53247ab0902363a0acf3fb8c75d5d73634f0d15ac3699377e93cdf4e0461180d"
+    },
+    {
+      "path": "examples/semantic-search/admission-key.json",
+      "sha256": "cc398827eead0852e3ef4d8a17b00f47a912fb565f3148d596151ae3e30e6dfb"
+    },
+    {
+      "path": "examples/semantic-search/fetch_assets.py",
+      "sha256": "e3321d2d5fe9d4b8e635af8975b07672c15c9efb3f0ef750709c69eef5588178"
+    },
+    {
+      "path": "examples/semantic-search/model-lock.json",
+      "sha256": "a94475abac470915e308200291c1dcb9267958513e7044ae91020a59b1cb30c1"
+    },
+    {
+      "path": "examples/semantic-search/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "examples/semantic-search/README.md",
+      "sha256": "cedc8dc0475dd4d2edc76a007d523f9ee068197d56e835f2d5948afdfaa39514"
+    },
+    {
+      "path": "examples/semantic-search/test_service.py",
+      "sha256": "fbf1d50dcfe1de5afca14513ea27fcd338b8d17e5d535520890adabcee9520e0"
+    }
+  ],
+  "plan": {
+    "id": "sha256:804693eaf107dce21402ed05584d6ce2d98d461a001d6f11bac0049268f4b81d",
+    "sourceHash": "sha256:d0f29abf88c09f85bfde48ae005c3905b76d13e256bc2180f42826976e8f6731",
+    "sourceBytes": 58968
+  },
+  "build": {
+    "id": "sha256:e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0",
+    "snapshotId": "sha256:81f952b96e85fa15b151cd35a1231c78d82085958c9926200da432eb422e502b",
+    "planId": "sha256:804693eaf107dce21402ed05584d6ce2d98d461a001d6f11bac0049268f4b81d",
+    "sourceHash": "sha256:d0f29abf88c09f85bfde48ae005c3905b76d13e256bc2180f42826976e8f6731",
+    "artifactHash": "sha256:ce889f21571c34b68f34d4ba87b9ea3275d4e9b055b47af46207155cc2a3279d",
+    "sourceVisibility": "private",
+    "receipt": null
+  },
+  "release": {
+    "id": "sha256:5c56727b6d5d56c9ce2f56504dd09ef392600dbec7aad5ecc1844475e2b2925b",
+    "buildId": "sha256:e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0",
+    "buildHash": "sha256:ce889f21571c34b68f34d4ba87b9ea3275d4e9b055b47af46207155cc2a3279d",
+    "sourceHash": "sha256:81f952b96e85fa15b151cd35a1231c78d82085958c9926200da432eb422e502b",
+    "profile": "claus-runtime-image-v1",
+    "manifest": {
+      "command": [],
+      "cpu": 2,
+      "gpu": null,
+      "healthPath": "/health",
+      "image": "claus-network-api.vercel.app/claus/e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0@sha256:25d46d1e403f7f96f88acc0aae45b3346e026e5cd24b6f12f727ebe5b6ca2560",
+      "memoryMiB": 4096,
+      "mode": "model",
+      "port": 8080,
+      "region": "EU-NL-1",
+      "storageGiB": 0,
+      "version": 1,
+      "releaseHash": "sha256:5c56727b6d5d56c9ce2f56504dd09ef392600dbec7aad5ecc1844475e2b2925b"
+    }
+  },
+  "image": "claus-network-api.vercel.app/claus/e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0@sha256:25d46d1e403f7f96f88acc0aae45b3346e026e5cd24b6f12f727ebe5b6ca2560",
+  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0/manifests/sha256:25d46d1e403f7f96f88acc0aae45b3346e026e5cd24b6f12f727ebe5b6ca2560",
+  "runtimeProviderProfile": "claus-runpod-cpu-v1",
+  "reviewProfile": "claus-runtime-image-v1",
+  "interpretation": "The review profile evaluates the image. The provider profile grants CPU resources; their names intentionally differ. Published source, compiled image and source hashes are evidence, not approval or hosting.",
+  "reproduction": "node scripts/verify-semantic-search-release.mjs",
+  "priorReview": {
+    "caseId": "sha256:f8e55e6cccabea6c606fe3d815170fb7ac4f763174db5f1daa2b3c918fd8e48b",
+    "providerJobId": "bf415c0b-adac-441d-8c5d-1e1cbe1b84a3",
+    "approval": false,
+    "mediumFindings": 2
+  },
+  "changes": [
+    "All agents, keys and projects share registered-owner capacity",
+    "Nonblocking short header admission and separate health workers",
+    "Monotonic expiry and replay retention",
+    "Reject invalid Unicode and excessive JSON depth as client errors",
+    "UTF-8 byte-sized catalogue batches",
+    "JSON protocol errors without interpreter version"
+  ],
+  "approvalGranted": false,
+  "modelHosted": false
+}
