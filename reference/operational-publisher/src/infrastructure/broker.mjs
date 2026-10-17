@@ -1,3 +1,4 @@
+import {flyTarget} from './fly-target.mjs';
 import {runtimeReleaseApproved} from './release.mjs';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
 import {check,runpodDriver,flyDriver} from './providers.mjs';
@@ -11,11 +12,13 @@ const original=w=>{const {leaseUntil,extensions,...rest}=w;return rest;};
 
 export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus}={}){
   drivers??={runpod:runpodDriver({token:()=>process.env.CLAUS_RUNPOD_API_KEY,request,now}),fly:flyDriver({token:()=>process.env.CLAUS_FLY_API_TOKEN,request})};
-  function profile(p){
+  function profile(p,projectId){
     const c=config(),found=c.profiles?.find(x=>x.id===p.id);
     check(found&&found.profileHash===digest(p)&&found.accountId===p.accountId&&found.provider===p.provider,'profile_not_authorized');
     check(c.enabled===true&&found.enabled===true,'provider_not_enabled');
-    if(found.provider==='fly')check(typeof found.projectId==='string'&&!c.profiles.some(other=>other.provider==='fly'&&other.app===found.app&&other.projectId!==found.projectId),'project_app_not_isolated');
+    if(found.provider==='fly'){
+      const target=flyTarget(found,projectId);check(!c.profiles.some(other=>other.provider==='fly'&&other.app===target.app&&other.projectId!==target.projectId),'project_app_not_isolated');return target;
+    }
     check(drivers[p.provider],'provider_unknown');return found;
   }
   const releaseApproved=releaseStatus??(w=>runtimeReleaseApproved(w,{request}));
@@ -28,12 +31,12 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     check(input?.profile&&input.manifest&&hashPattern.test(input.requestHash),'quote_invalid');
     check(input.requestHash===digest({projectId:input.projectId,profile:input.profile,manifest:input.manifest,leaseSeconds:input.leaseSeconds}),'quote_binding_invalid');
     check(await releaseApproved(input),'release_not_approved');
-    const p=profile(input.profile);check(Number.isSafeInteger(input.leaseSeconds)&&input.leaseSeconds>=60&&input.leaseSeconds<=input.profile.maxLeaseSeconds,'lease_invalid');
+    const p=profile(input.profile,input.projectId);check(Number.isSafeInteger(input.leaseSeconds)&&input.leaseSeconds>=60&&input.leaseSeconds<=input.profile.maxLeaseSeconds,'lease_invalid');
     const price=await drivers[p.provider].quote(input,p);
     const hourly=BigInt(price.hourlyMicroUsd);check(hourly>0n&&hourly<=BigInt(p.maxHourlyMicroUsd),'price_over_limit');
     const maximum=(hourly*BigInt(input.leaseSeconds+(p.shutdownHeadroomSeconds??300))+3599n)/3600n;
     check(maximum<=BigInt(input.profile.maxPerLease),'quote_over_limit');
-    const id=digest({request:input.requestHash,price,at:now()}),result={id,requestHash:input.requestHash,accountId:p.accountId,asset:input.profile.asset,maximum:maximum.toString(),expiresAt:now()+60000,totalLifecycle:true,...price};
+    const id=digest({request:input.requestHash,price,at:now()}),result={id,requestHash:input.requestHash,accountId:p.accountId,asset:input.profile.asset,maximum:maximum.toString(),expiresAt:now()+300000,totalLifecycle:true,...price};
     check(input.profile.asset==='USD','billing_asset_invalid');
     await ledger.reserveOci('infrastructure-quote:'+id,{input,result},{input,result,phase:'quoted'});
     return result;
@@ -74,14 +77,14 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
   }
   async function create(work){
     if(!await ledger.get(key(work.id))){
-      const p=profile(work.profile),price=await validateQuote(work);check(await releaseApproved(work),'release_not_approved');
+      const p=profile(work.profile,work.projectId),price=await validateQuote(work);check(await releaseApproved(work),'release_not_approved');
       check(work.leaseUntil>now()&&work.leaseUntil<=work.createdAt+work.quote.leaseSeconds*1000,'lease_invalid');
       check(work.extensions.length===0,'extension_invalid');
       await ledger.reserveOci(key(work.id),original(work),{work,providerConfig:p,price,leaseUntil:work.leaseUntil,phase:'prepared',createdAt:now(),providerResourceId:null});
     }
     return locked(work,async(get,record)=>{
       const c=get();if(c.phase!=='prepared')return inspectLocked(work,get,record);
-      profile(work.profile);await validateQuote(work);check(await releaseApproved(work),'release_not_approved');check(c.leaseUntil>now(),'lease_expired');
+      profile(work.profile,work.projectId);await validateQuote(work);check(await releaseApproved(work),'release_not_approved');check(c.leaseUntil>now(),'lease_expired');
       await record({phase:'dispatching'});
       try{return result(work,await record(await drivers[c.providerConfig.provider].create(c.work,c.price,c.providerConfig)));}
       catch(e){
@@ -113,7 +116,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
       const c=get(),driver=drivers[c.providerConfig.provider];
       if(operation==='inspect')return inspectLocked(work,get,record);
       if(operation==='extend'){
-        check(!c.terminal&&!c.stopped&&!c.deletionRequested&&c.providerResourceId,'resource_not_running');profile(work.profile);check(await releaseApproved(work),'release_not_approved');
+        check(!c.terminal&&!c.stopped&&!c.deletionRequested&&c.providerResourceId,'resource_not_running');profile(work.profile,work.projectId);check(await releaseApproved(work),'release_not_approved');
         if(c.leaseUntil===work.leaseUntil){check(digest(c.work)===digest(work),'extension_invalid');return result(work,c);}
         check(c.leaseUntil>now()&&work.leaseUntil>c.leaseUntil&&work.leaseUntil<=now()+work.profile.maxLeaseSeconds*1000,'lease_invalid');
         const before=c.work.extensions??[],added=work.extensions.at(-1);

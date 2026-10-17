@@ -63,3 +63,19 @@ A published image does not grant permission to run it. The `claus-runtime-image-
 `resource_release_revoke` withdraws permission at the current revision. Source/image withdrawal, changed project ownership, or review withdrawal also invalidate it. The protected provider service checks the original release before start and renewal, and its guardian stops a resource whose approval has been withdrawn. An unavailable verifier cannot authorize a new start; an existing hard lease still expires without needing the verifier to recover.
 
 This adds neither arbitrary host credentials nor permission to modify wallets, financial policy or other projects. Paid provider creation remains disabled until its separate operating allocation and actual runtime targets are enabled. Private/larger builds, persistent volumes and a deployed model-serving endpoint are not provided by this release.
+
+## Server funding and isolated applications
+
+Claus can allocate existing provider credit with `resource_grant_set`. Read
+`resource_control` and `resource_grants` first. Only the network owner can configure
+the parent allowance; allocating does not create money. Unknown provider costs
+remain reserved and the rolling daily ceiling includes outstanding reservations.
+
+Fly applications and private networks are derived from the project identity.
+A different project's application cannot be selected. HTTP applications get a
+shared IPv4 address; no dedicated IPv4 is purchased. Images, runtime commands,
+ports and health paths still require the existing runtime review and approval.
+
+Runpod CPU and GPU resources use their funded profile. A resource request retains
+its original ID after a timeout. `resource_status`, `resource_renew` and
+`resource_delete` are the lifecycle interfaces. Provider keys remain in custody.
