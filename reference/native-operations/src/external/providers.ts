@@ -36,7 +36,10 @@ export async function providerJson(url:string,init:RequestInit,readOnly:boolean,
  let r:Response;try{r=await fetcher(url,{...init,redirect:'error',signal:AbortSignal.timeout(30000)});}catch{throw new ProviderFailure('provider_transport_unavailable',readOnly);}
  if(!r.ok){await r.body?.cancel().catch(()=>{});const retry=r.headers.get('retry-after');throw new ProviderFailure('provider_http_'+r.status,readOnly||[400,401,403,404,405,422,429].includes(r.status),retry??undefined);}
  const reader=r.body?.getReader();if(!reader)throw new ProviderFailure('provider_empty_response',readOnly);
- const chunks:Uint8Array[]=[];let size=0;for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>1000000){await reader.cancel();throw new ProviderFailure('provider_response_too_large',readOnly);}chunks.push(part.value);}
+ const chunks:Uint8Array[]=[];let size=0;
+ try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>1000000)throw new ProviderFailure('provider_response_too_large',readOnly);chunks.push(part.value);}}
+ catch(error){await reader.cancel().catch(()=>{});if(error instanceof ProviderFailure)throw error;throw new ProviderFailure('provider_response_unavailable',readOnly);}
+ finally{reader.releaseLock();}
  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new ProviderFailure('provider_invalid_json',readOnly);}
 }
 const composioOrigin='https://backend.composio.dev/api/v3.1';
