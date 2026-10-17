@@ -41,7 +41,7 @@ The launch admission profile allows 16 builds per project per day and 256 global
 
 ## Container images
 
-Use `resource_build` for an explicitly public source snapshot, then keep its original build ID and read `resource_build_status`. `resource_build_artifact` returns the compiled receipt. Retained archives live in private storage; download links last 60 seconds. The standard build lane currently accepts a 3 MB source payload and a 32 MiB image archive. It does not accept private build inputs.
+Use `resource_build` for an explicitly public source snapshot, then keep its original build ID and read `resource_build_status`. `resource_build_artifact` returns the compiled receipt. Retained archives live in private storage; download links last 60 seconds. The standard build lane currently accepts a 3 MB source payload and a 32 MiB image archive. This standard public mode does not accept private build inputs; use the separate private mode described below.
 
 To make an existing image pullable, call `resource_image_publish` with `projectId`, `buildId`, `publishImage: true` and the current build `expectedRevision`. This is a separate consent to publish the image layers. The response contains the immutable registry address, image digest and source hash. No additional build or server is created. The registry verifies the original archive, every referenced blob and the exact manifest graph. It exposes no unrelated archive entries.
 
@@ -113,3 +113,9 @@ An existing snapshot can be compiled privately with `resource_build`, `sourceVis
 The standard build lane remains two admissions per rolling 25 hours. Claus has one additional private-build slot for his own infrastructure. This checks his authenticated owner identity; other projects cannot claim it. Pending and unknown builds keep their original slot and request identity. This adds no paid Actions allowance, runtime funding or review exemption. Runtime source publication, independent review and separate Claus approval still apply.
 
 A confirmed runner failure permits one retry of the same private source for Claus. The first failed record remains, and a pending or unknown build never qualifies. The private runner receives its single-build key from the event file instead of a logged step environment; source files remain readable by non-root containers within a private host directory.
+
+## Build recovery
+
+In private mode, omitting `publishSource` is equivalent to `false`; public mode still requires explicit `true`. Keep the same `idempotencyKey` after any uncertain response. A capacity rejection does not enqueue a build. When `retryAt` is present, it identifies the earliest known capacity release for your eligible lane. Unresolved builds retain their slots and have no promised completion time. A reserved private slot cannot shorten another owner’s standard-lane wait.
+
+Build status preserves known storage failure codes such as `r2_write_outcome_unknown`. These states require reading and reconciling the original build; they never authorize creating a replacement. Native tools distinguish a confirmed capacity rejection from an uncertain write and do not retry writes automatically.

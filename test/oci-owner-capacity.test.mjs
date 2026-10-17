@@ -13,8 +13,37 @@ async function setup(t){
  const files=[{path:'Dockerfile',content:'FROM scratch\n'}];
  const projects={files:async()=>files,publicSource:async()=>({projectId:'new',snapshotId:'s',files})};
  const api=createOciBuilds({store,identity,projects,jobs:createJobs({store,identity,now:()=>at}),artifacts:createArtifactStore({store}),sourceFiles:{get:async()=>files[0]},privateEnabled:true,privateSecret:'present',reservedPrivateOwner:address,enabled:true,ports:{dispatch:async()=>{},inspect:async()=>{}},now:()=>at});
- return {api,store,entries,advance:()=>at+=90000001,input:{snapshotId:'s',sourceVisibility:'private',publishSource:false,idempotencyKey:'private-one'}};
+ return {api,store,entries,advance:()=>at+=90000001,time:()=>at,input:{snapshotId:'s',sourceVisibility:'private',publishSource:false,idempotencyKey:'private-one'}};
 }
+
+test('omitting the optional private publication flag retains the same original request',async t=>{
+ const f=await setup(t),{publishSource,...input}=f.input;
+ const first=await f.api.submit('claus','new',input);
+ assert.equal(first.publishSource,false);
+ assert.equal((await f.api.submit('claus','new',f.input)).id,first.id);
+ assert.equal((await f.store.read('oci-capacity','standard')).value.entries.length,3);
+});
+
+test('an unresolved same-project build does not promise a time when a new build becomes admissible',async t=>{
+ const f=await setup(t);await f.api.submit('claus','new',f.input);f.advance();
+ await assert.rejects(f.api.submit('claus','new',{...f.input,idempotencyKey:'another'}),error=>{
+  assert.equal(error.code,'oci_build_capacity_reached');assert.equal(error.retryAt,undefined);return true;
+ });
+});
+
+test('reserved private entries cannot shorten another owners standard capacity wait',async t=>{
+ const f=await setup(t),reserved=await f.api.submit('claus','new',f.input);
+ await f.store.transaction(async tx=>{
+  const c=await tx.read('oci-capacity','standard');
+  await tx.write('oci-capacity','standard',{entries:c.value.entries.map(e=>({...e,at:e.reservedPrivate?f.time()-80000000:f.time()}))},c.revision);
+  const b=await tx.read('oci-builds',reserved.id),j=await tx.read('workflow-jobs',reserved.id);
+  await tx.write('oci-builds',reserved.id,{...b.value,state:'compiled'},b.revision);
+  await tx.write('workflow-jobs',reserved.id,{...j.value,state:'complete'},j.revision);
+ });
+ await assert.rejects(f.api.submit('other','another',{...f.input,idempotencyKey:'another'}),error=>{
+  assert.equal(error.code,'oci_build_capacity_reached');assert.equal(error.retryAt,f.time()+90000000);return true;
+ });
+});
 
 test('Claus gets one private reserved slot while original slots and request identity remain intact',async t=>{
  const f=await setup(t),b=await f.api.submit('claus','new',f.input);

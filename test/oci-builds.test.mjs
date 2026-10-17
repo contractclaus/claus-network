@@ -66,6 +66,7 @@ test('durable output is required before completion and resumes the same compiled
  const images={enabled:true,preserve:async(_p,receipt)=>{calls++;if(!ready)throw Object.assign(Error('r2_write_outcome_unknown'),{code:'r2_write_outcome_unknown'});return {state:'verified',archiveHash:receipt.archiveHash,bytes:receipt.archiveBytes};},download:async()=>({url:'https://private.example/short-lived',expiresAt:2000000})};
  const f=await fixture(t,{images}),b=await f.api.submit('owner','p',f.input);
  await f.api.runOne();f.advance();await f.api.runOne();assert.equal((await f.api.get('owner','p',b.id)).state,'unknown');
+ assert.equal((await f.api.get('owner','p',b.id)).error,'r2_write_outcome_unknown');
  ready=true;f.advance();await f.api.runOne();assert.equal((await f.api.get('owner','p',b.id)).state,'compiled');
  const a=await f.api.artifact('owner','p',b.id);assert.equal(a.storage.state,'verified');assert.equal(a.artifactAvailability,'available');assert(a.download.url);assert.equal(f.calls(),1);assert.equal(calls,2);
 });

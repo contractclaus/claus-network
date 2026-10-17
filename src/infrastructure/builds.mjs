@@ -36,7 +36,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
       const isPrivate=sourceVisibility==='private';
       requireThat(isPrivate?publishSource!==true:publishSource===true,'oci_public_source_consent_required');
       if(isPrivate)requireThat(privateEnabled&&privateSecret&&sourceFiles,'oci_private_not_enabled');
-      const id=digest({projectId,kind,idempotencyKey}),requestHash=digest({...{snapshotId,dockerfile,publishSource},...(isPrivate?{sourceVisibility:'private'}:{})});
+      const id=digest({projectId,kind,idempotencyKey}),requestHash=digest({...{snapshotId,dockerfile,publishSource:!isPrivate},...(isPrivate?{sourceVisibility:'private'}:{})});
       const prior=await store.read('oci-builds',id);
       if(prior){requireThat(prior.value.requestHash===requestHash,'idempotency_conflict');return visible(store,prior);}
       requireThat(enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function','oci_builds_not_enabled');
@@ -56,22 +56,31 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
           if(entry.at>now()-90000000||pending)active.push(entry);
           if(pending)busy.push(entry);
         }
-        let reservedPrivate=false,reservedRetry=false;
+        let reservedPrivate=false,reservedRetry=false,isReservedOwner=false;
         const standard=active.filter(entry=>entry.reservedPrivate!==true);
         const reserved=active.filter(entry=>entry.reservedPrivate===true);
         // One bounded retry of identical source after a confirmed runner failure.
         // An unknown, successful or already-retried build never frees this slot.
         const failed=reserved.length===1?await tx.read('oci-builds',reserved[0].id):null;
         const canRetry=reserved.length===1&&!reserved[0].reservedRetry&&failed?.value.state==='failed'&&failed.value.error==='oci_runner_failure'&&failed.value.projectId===projectId&&failed.value.planId===plan.id;
-        if(standard.length>=2&&isPrivate&&reservedPrivateOwner&&(reserved.length===0||canRetry)){
+        if(standard.length>=2&&isPrivate&&reservedPrivateOwner){
           const credential=await identity.credential(actor,tx),principal=(await tx.read('principals',credential.principalId))?.value;
-          reservedPrivate=credential.kind==='owner'&&principal?.chainId===1&&principal.address?.toLowerCase()===reservedPrivateOwner;
+          isReservedOwner=credential.kind==='owner'&&principal?.chainId===1&&principal.address?.toLowerCase()===reservedPrivateOwner;
+          reservedPrivate=isReservedOwner&&(reserved.length===0||canRetry);
           reservedRetry=reservedPrivate&&canRetry;
         }
         if((standard.length>=2&&!reservedPrivate)||busy.some(x=>x.projectId===projectId)){
-          const relevant=busy.some(x=>x.projectId===projectId)?busy.filter(x=>x.projectId===projectId):active;
-          const retryAt=Math.max(now()+60000,Math.min(...relevant.map(x=>x.at+90000000)));
-          throw Object.assign(Error('oci_build_capacity_reached'),{code:'oci_build_capacity_reached',retryAt});
+          // An unresolved build has no known expiry. A different owner's
+          // reserved slot also cannot free standard capacity for this caller.
+          const busyIds=new Set(busy.map(x=>x.id));
+          const expires=entry=>busyIds.has(entry.id)?Infinity:entry.at+90000000;
+          let retryAt=Infinity;
+          if(!busy.some(x=>x.projectId===projectId)){
+            retryAt=standard.map(expires).sort((a,b)=>a-b)[standard.length-2]??Infinity;
+            if(isReservedOwner)retryAt=Math.min(retryAt,Math.max(...reserved.map(expires)));
+          }
+          throw Object.assign(Error('oci_build_capacity_reached'),{code:'oci_build_capacity_reached',
+            ...(Number.isFinite(retryAt)?{retryAt,retryAfterSeconds:Math.max(1,Math.min(300,Math.ceil((retryAt-now())/1000)))}:{})});
         }
         const job=await jobs.enqueue(tx,{projectId,kind,idempotencyKey,payload:{buildId:id},authority:{actor}});
         requireThat(job.id===id,'oci_job_binding_mismatch');
@@ -167,7 +176,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
         });
       }catch(error){
         if(error.code==='lease_lost')return {stale:true};
-        const code=/^oci_[a-z0-9_]+$/.test(error.code??'')?error.code:'oci_outcome_unknown';
+        const code=/^oci_[a-z0-9_]+$/.test(error.code??'')||['r2_read_unavailable','r2_write_outcome_unknown','r2_write_not_visible'].includes(error.code)?error.code:'oci_outcome_unknown';
         try{return await jobs.finish(claim,{state:'waiting',result:{state:'unknown',error:code},retryAt:now()+retryDelay(claim.job.attempts)},async tx=>{const r=await owned(tx,v.projectId,v.id);await tx.write('oci-builds',v.id,{...r.value,state:'unknown',error:code,observedAt:now()},r.revision);});}
         catch(finishError){if(finishError.code==='lease_lost')return {stale:true};throw finishError;}
       }
