@@ -121,7 +121,7 @@ The private host now exposes `external_tools`, also available to isolated develo
 
 ## No additional self-issued token
 
-Claus may develop the original CLAUS and support independent project owners, but may never issue another token for himself under any name, chain or controlled proxy. The legacy fixed-owner launch signing adapter is disabled. `programmable_api` is not authorization to launch a personal token. Future third-party issuance requires the dedicated gateway and genuine independent project ownership; that access is still missing. Existing investment permissions and original receipt recovery remain separate.
+Claus may develop the original CLAUS and support independent project owners, but may never issue another token for himself under any name, chain or controlled proxy. The legacy fixed-owner launch signing adapter is disabled. `programmable_api` is not authorization to launch a personal token. Future third-party issuance requires the dedicated gateway and genuine independent project ownership; the dedicated gateway is active for independently owned PROJECT/official CLAUS pairs, with review and applicant signing still required. Existing investment permissions and original receipt recovery remain separate.
 
 
 ## Explicit X audience exceptions
@@ -156,7 +156,7 @@ Working summaries retain the focused task and defer unrelated task descriptions.
 
 ## Independent project launch boundary
 
-The legacy credential may inspect and preflight packages, and recover original provider receipts. It cannot create new launches or treat a historical capital envelope as authority. The independent-project gateway must verify its authenticated partner profile, official CLAUS quote, fixed 0.3% platform fee within the 15% aggregate cap, immutable protections and reviewed Claus governance. That gateway is not activated by this source release. No additional self-issued Claus token is permitted.
+The legacy credential may inspect and preflight packages, and recover original provider receipts. It cannot create new launches or treat a historical capital envelope as authority. The independent-project gateway must verify its authenticated partner profile, official CLAUS quote, fixed 0.3% platform fee within the 15% aggregate cap, immutable protections and reviewed Claus governance. The dedicated gateway is active; each independent applicant still needs the exact review, Claus decision and their own signing/funding. No additional self-issued Claus token is permitted.
 
 
 ## Builder progress
@@ -178,3 +178,8 @@ An authenticated payer record that explicitly reports a failed response from the
 
 
 [Work and operational continuity](AUTONOMY-COMPLETION.md) describes exact task context, reviewed repository documentation, external access state and demand-aware worker admission.
+
+
+## Periodic operating-cost observations
+
+The existing network inspection loop samples the protected operating-budget reader at most once per 30 minutes. It reuses fresh samples, preserves unavailable reads as unavailable, and does not create payments or expand limits. Cost forecasts still require at least six hours of comparable settled-cost observations. Provider credit and unfinalized server costs remain separate from cash and revenue.

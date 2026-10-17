@@ -1,10 +1,12 @@
+import {sampleOperatingBudget} from './operating-sampler.js';
+import {operatingResources} from './operating-resources.js';
 import {completedCapitalReceipt} from './capital.js';
 import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {planWork} from './isolated/work.js';
 import {readOperationalCapabilities} from './operational-capabilities.js';
 import {operationSucceeded} from './operation-result.js';
 import {executionSnapshot,executionAvailable,executionChanged,executionInvestigations} from './network-execution.js';
-import {saveMeasurement} from './network-measurements.js';
+import {saveMeasurement,measurementHistory} from './network-measurements.js';
 import {recordNetworkIncidents,readNetworkIncidents} from './network-incidents.js';
 import {createHash} from 'node:crypto';
 import {sql} from './store.js';
@@ -132,7 +134,7 @@ export function createNetworkOperations({database=sql,observe=networkOperatingCo
   const capabilityHash=value.capabilitiesStatus==='available'?createHash('sha256').update(JSON.stringify(stableCapabilityFacts(value.capabilities))).digest('hex'):old.capabilities_hash;
   const changed=(healthy?(fingerprint!==old.fingerprint||Number(old.failures)>=2):failures===2)||executionChanged(value.operations?.execution,executionAvailable(old.execution)?old.execution:old.reviewed_execution);
   await db`UPDATE claus_network_watch SET capabilities_changed_at=CASE WHEN ${capabilityHash??null} IS DISTINCT FROM capabilities_hash THEN ${at}::timestamptz ELSE capabilities_changed_at END,capabilities_hash=${capabilityHash??null},fingerprint=${healthy?fingerprint:old.fingerprint},observation=${JSON.stringify(value)}::jsonb,observed_at=${at}::timestamptz,failures=${failures},pending=pending OR ${changed} OR (${capabilityHash??null} IS DISTINCT FROM capabilities_hash) WHERE id`;
-  await recordNetworkIncidents(value,at,database);if(database===sql)await saveMeasurement('network',{coverageVersion:1,observedAt:Date.parse(at),readLatencyMs:value.readLatencyMs??null,inventoryStatus:value.inventoryStatus,capabilitiesStatus:value.capabilitiesStatus,operationsStatus:value.operationsStatus,execution:executionSnapshot(value.operations?.execution),workers:(value.operations?.workers??[]).map((worker:any)=>({role:worker.role,status:worker.status}))});return due();
+  await recordNetworkIncidents(value,at,database);if(database===sql)await saveMeasurement('network',{coverageVersion:1,observedAt:Date.parse(at),readLatencyMs:value.readLatencyMs??null,inventoryStatus:value.inventoryStatus,capabilitiesStatus:value.capabilitiesStatus,operationsStatus:value.operationsStatus,execution:executionSnapshot(value.operations?.execution),workers:(value.operations?.workers??[]).map((worker:any)=>({role:worker.role,status:worker.status}))});if(database===sql)await sampleOperatingBudget({history:()=>measurementHistory('operating-budget'),read:operatingResources,save:(v:any)=>saveMeasurement('operating-budget',v),now});return due();
  }
  async function acknowledge(watch?:any){
   await initialize();const db=database(),at=new Date(now()).toISOString();
