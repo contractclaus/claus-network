@@ -120,7 +120,13 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
       let committed=0n,after='';
       for(;;){
         const rows=await reader.list('infrastructure-resources',{after,limit:100});
-        for(const r of rows){const v=r.value;if(v.profile.id===profileId&&(v.createdAt>now()-86400000||v.billing==='reserved'))committed+=amount(v.reservedMaximum??v.quote.maximum);}
+        for(const r of rows){
+          const v=r.value;
+          if(v.profile.id!==profileId||!(v.createdAt>now()-86400000||v.billing==='reserved'))continue;
+          // A final, settled receipt replaces its maximum reservation. Unknown
+          // outcomes retain the entire reservation, including older holds.
+          committed+=amount(v.billing==='settled'&&v.actual!==undefined&&v.actual!==null?v.actual:v.reservedMaximum??v.quote.maximum);
+        }
         if(rows.length<100)break;after=rows.at(-1).id;
       }
       requireThat(committed+amount(additional)<=amount(policy.dailyLimit),'infrastructure_daily_limit');

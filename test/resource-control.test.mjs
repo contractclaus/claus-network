@@ -14,6 +14,9 @@ test('Claus allocates funded server credit without increasing parent limits; unk
  await assert.rejects(api.control.grant('claus','project',{...grant,expectedRevision:1,limit:'1001',idempotencyKey:'over'}),{code:'infrastructure_project_limit'});
  await store.transaction(async tx=>{await tx.write('infrastructure-resources','pending',{profile,createdAt:1,billing:'reserved',reservedMaximum:'150'},0);});
  await assert.rejects(api.control.checkSpend(store,'cpu','51'),{code:'infrastructure_daily_limit'});await api.control.checkSpend(store,'cpu','50');
+ await store.transaction(async tx=>{await tx.write('infrastructure-resources','rejected',{profile,createdAt:999999,billing:'settled',actual:'0',reservedMaximum:'100'},0);});
+ await api.control.checkSpend(store,'cpu','50');
+ await assert.rejects(api.control.checkSpend(store,'cpu','51'),{code:'infrastructure_daily_limit'});
  assert.equal((await api.control.policy('claus','cpu')).remaining,'500');
 });
 

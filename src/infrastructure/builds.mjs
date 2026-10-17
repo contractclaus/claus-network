@@ -14,7 +14,11 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
     const {actor,planHash,...value}=row.value;
     return {...value,state:job?.state==='cancelled'?'cancelled':value.state,revision:row.revision,nextCheckAt:job?.state==='waiting'?job.availableAt:null};
   }
-  async function authorized(reader,v){return identity.allowed(v.actor,'build.compile',{projectId:v.projectId},reader);}
+  async function authorized(reader,v){
+    // An admitted immutable owner build outlives its transport login, just as
+    // its published source does. Explicit revocation still invalidates it.
+    return identity.publishedBuildAllowed?identity.publishedBuildAllowed(v.actor,v.projectId,reader):identity.allowed(v.actor,'build.compile',{projectId:v.projectId},reader);
+  }
   return {
     discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:2,projectConcurrentBuilds:1,globalBuildsPerWindow:2,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
     async submit(actor,projectId,{snapshotId,dockerfile='Dockerfile',publishSource,idempotencyKey}){
