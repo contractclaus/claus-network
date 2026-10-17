@@ -36,6 +36,13 @@ export async function createR2Objects({accountId,bucket,accessKeyId,secretAccess
  }
  return {
   read,
+  async download(projectId,sha256,{filename,contentType,expiresIn=60}={}){
+   requireThat(filename==='image.tar'&&contentType==='application/x-tar'&&expiresIn===60,'r2_download_invalid');
+   const Key=key(projectId,sha256);
+   const {getSignedUrl}=await import('@aws-sdk/s3-request-presigner');
+   const url=await getSignedUrl(client,new S.GetObjectCommand({Bucket:bucket,Key,ResponseContentType:contentType,ResponseContentDisposition:'attachment; filename="image.tar"'}),{expiresIn});
+   return {url,expiresAt:Date.now()+expiresIn*1000,method:'GET'};
+  },
   async put(projectId,bytes){
    requireThat(bytes instanceof Uint8Array&&bytes.length>0&&bytes.length<=maxBytes,'r2_object_too_large');
    const sha256=hash(bytes),Key=key(projectId,sha256);

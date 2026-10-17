@@ -3,7 +3,7 @@ import {createOciBuildPlan} from './build-plan.mjs';
 
 // Builds have no wallet or deployment authority. Public-source consent is
 // explicit because standard public GitHub runners expose build logs/artifacts.
-export function createOciBuilds({store,identity,projects,jobs,artifacts,now=()=>Date.now(),ports={},enabled=false}) {
+export function createOciBuilds({store,identity,projects,jobs,artifacts,images=null,now=()=>Date.now(),ports={},enabled=false}) {
   const kind='oci-build-v1';
   const complete=new Set(['compiled','failed','cancelled','blocked']);
   async function owned(reader,projectId,id){const row=await reader.read('oci-builds',text(id));requireThat(row?.value.projectId===projectId,'not_found');return row;}
@@ -16,7 +16,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,now=()=>
   }
   async function authorized(reader,v){return identity.allowed(v.actor,'build.compile',{projectId:v.projectId},reader);}
   return {
-    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:1,globalBuildsPerWindow:2,windowSeconds:90000,artifactRetentionDays:1};},
+    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:1,globalBuildsPerWindow:2,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
     async submit(actor,projectId,{snapshotId,dockerfile='Dockerfile',publishSource,idempotencyKey}){
       await identity.authorize(actor,'build.compile',{projectId});
       text(idempotencyKey);requireThat(idempotencyKey.length<=128,'invalid_identifier');
@@ -53,7 +53,18 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,now=()=>
       });
     },
     async get(actor,projectId,id){await identity.authorize(actor,'artifact.read',{projectId});return visible(store,await owned(store,projectId,id));},
-    async artifact(actor,projectId,id){await identity.authorize(actor,'artifact.read',{projectId});const v=(await owned(store,projectId,id)).value;requireThat(v.artifactHash,'build_not_complete');const result=await artifacts.get(projectId,v.artifactHash);const expiresAt=Date.parse(result.artifact?.expiresAt);return {...result,artifactAvailability:Number.isFinite(expiresAt)?expiresAt<=now()?'expired':'available':'unknown'};},
+    async artifact(actor,projectId,id){
+      await identity.authorize(actor,'artifact.read',{projectId});const v=(await owned(store,projectId,id)).value;requireThat(v.artifactHash,'build_not_complete');
+      const result=await artifacts.get(projectId,v.artifactHash);
+      if(result.storage?.state==='verified'){
+        requireThat(images?.enabled,'oci_image_storage_unavailable');
+        const download=await images.download(projectId,result);
+        await identity.authorize(actor,'artifact.read',{projectId});
+        return {...result,artifactAvailability:'available',download};
+      }
+      const expiresAt=Date.parse(result.artifact?.expiresAt);
+      return {...result,artifactAvailability:result.storage?.state==='expired'?'expired':Number.isFinite(expiresAt)?expiresAt<=now()?'expired':'available':'unknown'};
+    },
     async publicSource(id){
       const v=(await store.read('oci-builds',text(id)))?.value;
       requireThat(v?.publishSource===true&&await authorized(store,v),'not_found');
@@ -67,7 +78,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,now=()=>
     },
     async runOne(){
       if(typeof ports.inspect!=='function')return {idle:true,configured:false};
-      const claim=await jobs.claim({kinds:[kind],leaseMs:90000});if(claim.idle)return claim;
+      const claim=await jobs.claim({kinds:[kind],leaseMs:images?.enabled?180000:90000});if(claim.idle)return claim;
       const v=(await owned(store,claim.job.projectId,claim.id)).value;
       const work={id:v.id,projectId:v.projectId,planId:v.planId,sourceHash:v.sourceHash};
       const blocked=()=>jobs.finish(claim,{state:'blocked',result:{error:'authorization_revoked'}},async tx=>{const r=await owned(tx,v.projectId,v.id);await tx.write('oci-builds',v.id,{...r.value,state:'blocked',error:'authorization_revoked'},r.revision);});
@@ -99,6 +110,14 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,now=()=>
           requireThat(/^sha256:[a-f0-9]{64}$/.test(receipt.imageDigest)&&/^sha256:[a-f0-9]{64}$/.test(receipt.archiveHash),'oci_receipt_invalid');
           integer(receipt.archiveBytes,1,33554432);
           requireThat(typeof ports.verify==='function'&&await ports.verify(receipt,observation)===true,'oci_receipt_unverified');
+          if(images?.enabled&&await authorized(store,v)){
+            await jobs.assertCurrent(claim);
+            let storage;
+            try{storage=await images.preserve(v.projectId,receipt,()=>ports.download(work,receipt));}
+            catch(error){if(error.code!=='oci_result_expired')throw error;storage={state:'expired',archiveHash:receipt.archiveHash};}
+            observation={...observation,receipt:{...receipt,storage}};
+            await jobs.assertCurrent(claim);
+          }
         }
         const final=['compiled','failed'].includes(observation.state);
         const retryAt=final?null:now()+(observation.state==='running'?60000:retryDelay(claim.job.attempts));

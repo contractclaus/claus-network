@@ -68,7 +68,7 @@ import {createPublicAppearances} from '../src/releases/appearance.mjs';
 import {sourceObjects as configuredSourceObjects} from './source-objects.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({ociBuildPorts={},ociBuildEnabled=false,infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
+export function createApplication({imageArchive=null,ociBuildPorts={},ociBuildEnabled=false,infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
@@ -154,7 +154,7 @@ export function createApplication({ociBuildPorts={},ociBuildEnabled=false,infras
  workflows=createWorkflows({store,identity,apps,now,admit:access.collaboration});
  const discovery=createDiscovery({store,projects,apps,services,now});
  const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
- const ociBuilds=createOciBuilds({store,identity,projects,jobs,artifacts,now,ports:ociBuildPorts,enabled:ociBuildEnabled});
+ const ociBuilds=createOciBuilds({store,identity,projects,jobs,artifacts,images:imageArchive,now,ports:ociBuildPorts,enabled:ociBuildEnabled});
  const infrastructure=createInfrastructure({store,identity,projects,now,ports:infrastructurePorts,enabled:infrastructureEnabled});
  const workers=createWorkers({store,identity,projects,artifacts,now,ports:workerPorts,enabled:workersEnabled});
  const collaboration=createCollaboration({renderTemplate,store,identity,apps,visible:contentAdmin.visible,admit:access.collaboration,now});
