@@ -14,6 +14,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     const c=config(),found=c.profiles?.find(x=>x.id===p.id);
     check(found&&found.profileHash===digest(p)&&found.accountId===p.accountId&&found.provider===p.provider,'profile_not_authorized');
     check(c.enabled===true&&found.enabled===true,'provider_not_enabled');
+    if(found.provider==='fly')check(typeof found.projectId==='string'&&!c.profiles.some(other=>other.provider==='fly'&&other.app===found.app&&other.projectId!==found.projectId),'project_app_not_isolated');
     check(drivers[p.provider],'provider_unknown');return found;
   }
   const releaseApproved=w=>(config().releases??[]).some(r=>r.enabled===true&&r.projectId===w.projectId&&r.manifestHash===digest(w.manifest)&&r.releaseHash===w.manifest.releaseHash&&hashPattern.test(r.reviewHash));
@@ -61,7 +62,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     const driver=drivers[c.providerConfig.provider];
     let observed=await driver.inspect(c.work,c,c.providerConfig);
     const overPrice=observed.hourlyMicroUsd&&BigInt(observed.hourlyMicroUsd)>BigInt(c.price.hourlyMicroUsd);
-    const revoked=!config().enabled||!config().profiles?.some(p=>p.id===c.providerConfig.id&&p.enabled&&p.profileHash===c.providerConfig.profileHash);
+    const revoked=!config().enabled||!config().profiles?.some(p=>p.id===c.providerConfig.id&&p.enabled&&p.profileHash===c.providerConfig.profileHash)||!releaseApproved(c.work);
     if((c.leaseUntil<=now()||revoked||overPrice||c.deletionRequested)&&observed.providerResourceId&&!observed.terminal){
       await record({...observed,deletionRequested:true});
       observed=await driver.stop(c.work,get(),true,c.providerConfig);
