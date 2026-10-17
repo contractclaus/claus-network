@@ -42,7 +42,7 @@ class Admission:
         # correction can poison future admission or reopen an expired window.
         return int((self.wall + max(0, self.monotonic() - self.tick)) * 1000)
 
-    def begin(self, header, path):
+    def verify_header(self, header, path):
         try:
             if not isinstance(header, str) or len(header) > 1800 or not header.startswith('Claus '):
                 raise ValueError('header')
@@ -63,6 +63,11 @@ class Admission:
                 raise ValueError('claims')
         except (ValueError, TypeError, KeyError, AttributeError, InvalidSignature):
             raise AdmissionError(401, 'admission_required') from None
+        return claims
+
+    def begin(self, header, path):
+        claims = self.verify_header(header, path)
+        now = self.now_ms()
         with self.lock:
             tick = self.monotonic()
             self.callers = {k: v for k, v in self.callers.items() if v['active'] or tick - v['at'] < 60}
@@ -81,6 +86,18 @@ class Admission:
             used[claims['nonce']] = tick + (claims['exp'] - now) / 1000
             self.callers[claims['owner']] = {'tokens': tokens - 1, 'at': tick, 'active': True, 'used': used}
         return claims
+
+    def charge(self, claims, cost):
+        # begin already charged one unit. Each additional unit represents up
+        # to 64 actual, truncated model tokens, shared by all of an owner's
+        # projects. Expensive requests cannot bypass the sustainable budget.
+        if type(cost) is not int or not 1 <= cost <= 64:
+            raise ValueError('inference_cost_invalid')
+        with self.lock:
+            caller = self.callers[claims['owner']]
+            if not caller['active'] or caller['tokens'] < cost - 1:
+                raise AdmissionError(429, 'caller_cost_budget')
+            caller['tokens'] -= cost - 1
 
     def verify_body(self, claims, body):
         if hashlib.sha256(body).hexdigest() != claims['bodyHash'] or claims['exp'] <= self.now_ms():

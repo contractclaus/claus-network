@@ -1,0 +1,26 @@
+{
+  "observedAt": "2026-10-17T20:56:29.109Z",
+  "origin": "https://claus-network-api.vercel.app/v1/projects/prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a/search-admission",
+  "input": {
+    "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
+    "path": "/v1/embeddings",
+    "bodyHash": "c53253c9100e4775d36de16f886464e77f94a0adabaf046a50404683977e0f07"
+  },
+  "publicKey": "91OURUkwFClQdYbFw_1JbZ8V_aPpJghROjhmAzWiQh8",
+  "payload": "eyJ2IjoyLCJhdWQiOiJwcmpfZGU3MGQ0YWEtMDgwNC00YTk0LTgwOTctN2E5YTM0ZjBhMjhhIiwic3ViIjoidXNyX2ExODY4NzdiYTNkNGQyNDI5MGNkNDJkNDliYjUzYjdkNDE1ZmY0YzZiY2JiOTA2YTg2NGIwN2I5NzZhOTRmZDYiLCJvd25lciI6InVzcl9hMTg2ODc3YmEzZDRkMjQyOTBjZDQyZDQ5YmI1M2I3ZDQxNWZmNGM2YmNiYjkwNmE4NjRiMDdiOTc2YTk0ZmQ2IiwicGF0aCI6Ii92MS9lbWJlZGRpbmdzIiwiYm9keUhhc2giOiJjNTMyNTNjOTEwMGU0Nzc1ZDM2ZGUxNmY4ODY0NjRlNzdmOTRhMGFkYWJhZjA0NmE1MDQwNDY4Mzk3N2UwZjA3IiwiaWF0IjoxNzkyMjcwNTg5MDU4LCJleHAiOjE3OTIyNzA2MDkwNTgsIm5vbmNlIjoiY2QwODA5NDFlMDU4N2E0MzRlNjI5NTMxZTE5ZDBiYjkifQ",
+  "signature": "6fwCoJovDuYlm1XXsjWX1gqyEOeFZbNrkToD5Ib7VGu_BptEID0wlewRkfYTsEB4424v4UuZrVcUXMFgE1tRBg",
+  "claims": {
+    "v": 2,
+    "aud": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
+    "sub": "usr_a186877ba3d4d24290cd42d49bb53b7d415ff4c6bcbb906a864b07b976a94fd6",
+    "owner": "usr_a186877ba3d4d24290cd42d49bb53b7d415ff4c6bcbb906a864b07b976a94fd6",
+    "path": "/v1/embeddings",
+    "bodyHash": "c53253c9100e4775d36de16f886464e77f94a0adabaf046a50404683977e0f07",
+    "iat": 1792270589058,
+    "exp": 1792270609058,
+    "nonce": "cd080941e0587a434e629531e19d0bb9"
+  },
+  "verified": true,
+  "meaning": "An actual API admission signature verifies with the baked model public key. Publish only after expiration; it grants no wallet or infrastructure rights.",
+  "expired": true
+}

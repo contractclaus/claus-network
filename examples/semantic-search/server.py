@@ -15,7 +15,7 @@ import threading
 import time
 
 os.environ.setdefault('TOKENIZERS_PARALLELISM', 'false')
-os.environ.setdefault('OMP_NUM_THREADS', '1')
+os.environ.setdefault('OMP_NUM_THREADS', '2')
 os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 import numpy as np
 import onnxruntime as ort
@@ -41,27 +41,44 @@ class Engine:
         self.tokenizer.enable_truncation(max_length=256)
         self.tokenizer.enable_padding(pad_id=0, pad_token='[PAD]')
         settings = ort.SessionOptions()
-        settings.intra_op_num_threads = 1
+        settings.intra_op_num_threads = 2
         settings.inter_op_num_threads = 1
         self.session = ort.InferenceSession(str(ROOT / 'model/onnx/model_quantized.onnx'), sess_options=settings, providers=['CPUExecutionProvider'])
         self.input_names = {item.name for item in self.session.get_inputs()}
         self.lock = threading.BoundedSemaphore(1)
+        self.state_lock = threading.Lock()
+        self.inference_started = None
+        self.warmed = False
         self.embed(['Claus Network'])
+        self.warmed = True
 
-    def embed(self, texts):
+    def ready(self):
+        with self.state_lock:
+            return self.warmed and (self.inference_started is None or
+                                   time.monotonic() - self.inference_started < REQUEST_DEADLINE)
+
+    def embed(self, texts, meter=None):
         if not isinstance(texts, list) or not 1 <= len(texts) <= MAX_BATCH:
             raise ValueError('input_requires_1_to_16_texts')
         if any(not isinstance(t, str) or not t.strip() or len(t) > MAX_TEXT for t in texts):
             raise ValueError('text_requires_1_to_2048_characters')
         for text in texts:
             text.encode('utf-8')  # Reject JSON-escaped lone surrogates before inference.
+        # Tokenization is bounded by MAX_BATCH/MAX_TEXT and consumes no model
+        # worker. Empty normalized texts must not acquire a mean embedding.
+        examples = list(dict.fromkeys(texts))
+        encoded = self.tokenizer.encode_batch(examples)
+        if any(not any(i not in (0, 101, 102) for i in value.ids) for value in encoded):
+            raise ValueError('text_requires_content_tokens')
+        if meter is not None:
+            meter(max(1, (sum(sum(v.attention_mask) for v in encoded) + 63) // 64))
         if not self.lock.acquire(timeout=3):
             raise BlockingIOError('inference_busy')
         try:
+            with self.state_lock:
+                self.inference_started = time.monotonic()
             # Reuse is confined to this request; another caller's input cannot
             # influence a cache hit, timing shortcut or public inference counter.
-            examples = list(dict.fromkeys(texts))
-            encoded = self.tokenizer.encode_batch(examples)
             values = {
                 'input_ids': np.array([v.ids for v in encoded], dtype=np.int64),
                 'attention_mask': np.array([v.attention_mask for v in encoded], dtype=np.int64),
@@ -76,6 +93,8 @@ class Engine:
             answers = dict(zip(examples, vectors.astype(np.float32).tolist()))
             return [answers[text] for text in texts]
         finally:
+            with self.state_lock:
+                self.inference_started = None
             self.lock.release()
 
 
@@ -192,9 +211,17 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                 # Validate framing before reserving an inference worker.
                 try:
                     first_line, _, header_bytes = bytes(prefix[:boundary]).partition(b'\r\n')
+                    # BaseHTTPRequestHandler otherwise accepts arbitrary
+                    # whitespace. Reject noncanonical lines before dispatch,
+                    # so its method cannot differ from our body/health routing.
+                    parts = first_line.split(b' ')
+                    if (len(parts) != 3 or any(not part for part in parts)
+                            or any(byte < 33 or byte > 126 for part in parts for byte in part)
+                            or parts[2] not in (b'HTTP/1.0', b'HTTP/1.1')):
+                        raise ValueError(400)
                     headers = parse_headers(io.BytesIO(header_bytes + b'\r\n\r\n'))
                     body_size = 0
-                    if first_line.startswith(b'POST '):
+                    if parts[0] == b'POST':
                         if headers.get('Transfer-Encoding') or headers.get_content_type() != 'application/json':
                             raise ValueError(415)
                         lengths = headers.get_all('Content-Length', [])
@@ -203,9 +230,12 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                                 or not 1 <= int(lengths[0]) <= MAX_BODY):
                             raise ValueError(413)
                         body_size = int(lengths[0])
+                        authorizations = headers.get_all('Authorization', [])
+                        self.admission.verify_header(authorizations[0] if len(authorizations) == 1 else None,
+                                                     parts[1].decode('ascii'))
                     target = boundary + 4 + body_size
-                except (ValueError, HTTPException) as error:
-                    status = error.args[0] if isinstance(error, ValueError) and error.args and isinstance(error.args[0], int) else 400
+                except (ValueError, HTTPException, AdmissionError) as error:
+                    status = error.status if isinstance(error, AdmissionError) else error.args[0] if isinstance(error, ValueError) and error.args and isinstance(error.args[0], int) else 400
                     self.remove_pending(request)
                     self.reject_connection(request, status)
                     continue
@@ -352,7 +382,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == '/health':
-            return self.reply(200, {'status': 'ok', 'model': MODEL, 'dimensions': DIMENSIONS})
+            ready = self.server.engine.ready()
+            return self.reply(200 if ready else 503, {'status': 'ok' if ready else 'unavailable', 'model': MODEL, 'dimensions': DIMENSIONS})
         if self.path == '/':
             return self.reply(200, {'service': 'Claus Semantic Search', 'model': MODEL, 'dimensions': DIMENSIONS, 'endpoints': ['/health', '/v1/embeddings', '/v1/search'], 'modelLicense': 'Apache-2.0', 'billing': 'No per-request charge; funded bounded CPU lease', 'limits': {'batch': MAX_BATCH, 'textCharacters': MAX_TEXT, 'requestBytes': MAX_BODY}})
         self.reply(404, {'error': 'not_found'})
@@ -385,7 +416,8 @@ class Handler(BaseHTTPRequestHandler):
                 if data.get('model', MODEL) not in [MODEL, LOCK['model']['repository']]:
                     raise ValueError('model_not_available')
                 texts = data.get('input')
-                vectors = self.server.engine.embed([texts] if isinstance(texts, str) else texts)
+                vectors = self.server.engine.embed([texts] if isinstance(texts, str) else texts,
+                                                  meter=lambda cost: self.server.admission.charge(claims, cost))
                 return self.reply(200, {'object': 'list', 'model': MODEL, 'data': [{'object': 'embedding', 'index': i, 'embedding': v} for i, v in enumerate(vectors)]})
             documents = data.get('documents')
             if not isinstance(documents, list) or not 1 <= len(documents) < MAX_BATCH:
@@ -396,8 +428,9 @@ class Handler(BaseHTTPRequestHandler):
             limit = data.get('limit', 5)
             if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 15:
                 raise ValueError('limit_requires_1_to_15')
-            vectors = np.asarray(self.server.engine.embed([data.get('query')] + [d.get('text') for d in documents]))
-            scores = vectors[1:] @ vectors[0]
+            vectors = np.asarray(self.server.engine.embed([data.get('query')] + [d.get('text') for d in documents],
+                                                        meter=lambda cost: self.server.admission.charge(claims, cost)))
+            scores = np.clip(vectors[1:] @ vectors[0], -1.0, 1.0)
             results = sorted([{'id': i, 'score': float(s)} for i, s in zip(ids, scores)], key=lambda v: (-v['score'], v['id']))[:limit]
             self.reply(200, {'model': MODEL, 'results': results})
         except AdmissionError as error:

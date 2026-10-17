@@ -74,7 +74,7 @@
   "nativeLibraries": [
     {
       "path": "native/libstdc++6.deb",
-      "url": "https://deb.debian.org/debian/pool/main/g/gcc-12/libstdc++6_12.2.0-14+deb12u1_amd64.deb",
+      "url": "https://snapshot.debian.org/file/b1d2dc0cd7bcd57fa4b1ea6dd27a40384d45b937",
       "sha256": "5cd3171216d4ab0fc911cfe9c35509bf2dd8f47761c43b7f6a4296701551a24d",
       "size": 612604,
       "name": "libstdc++6",
@@ -82,7 +82,7 @@
     },
     {
       "path": "native/libgomp1.deb",
-      "url": "https://deb.debian.org/debian/pool/main/g/gcc-12/libgomp1_12.2.0-14+deb12u1_amd64.deb",
+      "url": "https://snapshot.debian.org/file/3b337b2fec0382e12d81f71ee91472b6beda2e52",
       "sha256": "48fec46bda7f5b1638b9e959889bfbc20491247d402d120bb152687eb48143d7",
       "size": 115772,
       "name": "libgomp1",

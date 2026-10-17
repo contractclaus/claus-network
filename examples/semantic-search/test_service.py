@@ -410,5 +410,48 @@ class AdmissionTest(unittest.TestCase):
             with self.assertRaises(AdmissionError):
                 a.begin(used, '/v1/search')
 
+
+class ReviewRegressionTest(ServiceTest):
+    def test_review_request_line_and_anonymous_body_admission(self):
+        body = b'{"input":"hello"}'
+        for line, expected in [(b'POST\t/v1/embeddings HTTP/1.1', b'400'),
+                               (b' POST /v1/embeddings HTTP/1.1', b'400'),
+                               (b'POST /v1/embeddings HTTP/1.1', b'401')]:
+            with socket.create_connection(('127.0.0.1', self.server.server_port), timeout=3) as conn:
+                conn.sendall(line+b'\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: '+str(len(body)).encode()+b'\r\n\r\n')
+                self.assertIn(expected, conn.recv(4096).split(b'\r\n', 1)[0])
+        self.assertEqual(self.server.workers._value, 24)
+
+    def test_review_content_tokens_and_bounded_scores(self):
+        for text in ['\u200b', '\x00', '\ufeff', '\x01\x02\x03']:
+            self.assertEqual(self.call('/v1/embeddings', {'input': text})[0], 400)
+        status, result = self.call('/v1/search', {'query':'Claus Network','documents':[{'id':'same','text':'Claus Network'}]})
+        self.assertEqual(status, 200)
+        self.assertTrue(-1 <= result['results'][0]['score'] <= 1)
+
+    def test_review_readiness_detects_hung_inference(self):
+        with self.engine.state_lock:
+            self.engine.inference_started = time.monotonic() - 20
+        try:
+            conn = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=3)
+            conn.request('GET', '/health'); response = conn.getresponse()
+            self.assertEqual(response.status, 503); response.read(); conn.close()
+        finally:
+            with self.engine.state_lock:
+                self.engine.inference_started = None
+        self.assertTrue(self.engine.ready())
+
+    def test_review_cost_budget_is_per_owner_and_consumed_before_inference(self):
+        meter = Admission(CONFIG)
+        body=b'{"input":"hello"}'
+        first=meter.begin(ticket('/v1/embeddings',body,subject='large'),'/v1/embeddings')
+        meter.charge(first,64); meter.finish(first)
+        second=meter.begin(ticket('/v1/embeddings',body,subject='large'),'/v1/embeddings')
+        with self.assertRaises(AdmissionError) as error:
+            meter.charge(second,64)
+        self.assertEqual(error.exception.code,'caller_cost_budget');meter.finish(second)
+        other=meter.begin(ticket('/v1/embeddings',body,subject='other'),'/v1/embeddings')
+        meter.charge(other,64);meter.finish(other)
+
 if __name__ == '__main__':
     unittest.main()

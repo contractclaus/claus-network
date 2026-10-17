@@ -1,0 +1,11 @@
+{
+  "deployment": "dpl_3pxnEqa8KyhjSdhyViDgJyJvnFHj",
+  "files": {
+    "src/infrastructure/providers.mjs": "1f65a51bcb7d414442f0ef16da870eea2c98859b98e923d05176c667d18bb5df",
+    "src/infrastructure/release.mjs": "59cde463509df28234cc4f121d8f7ac639415a58ea6336f0e3a991e5afafde5e",
+    "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
+    "src/infrastructure/broker.mjs": "0b5e1e22c638ec0821a2c61c110f546731c57851c73d70a16e4406818487ba06"
+  },
+  "sourceMatchesDeployed": true,
+  "meaning": "Credential-free source reference for the actual fixed provider broker. Provider configuration and secrets are not included."
+}

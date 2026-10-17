@@ -44,3 +44,19 @@ test('missing Runpod resource remains unknown, and an incomplete inventory canno
  const incomplete=createRunpodInfrastructure({token:'test',accountId:'account',request:async()=>json({pods:[],pagination:{hasNextPage:true,nextCursor:'same'}})});
  await assert.rejects(incomplete.create(w),{code:'infrastructure_cursor_invalid'});
 });
+
+test('Runpod CPU path matches the deployed allocation shape and retains the original pod identity',async()=>{
+ const w=work('runpod');w.manifest={...w.manifest,mode:'model',cpu:2,memoryMiB:4096,gpu:null,port:8080,healthPath:'/health',region:'EU-NL-1'};w.profile={...w.profile,gpuTypes:[],regions:['EU-NL-1']};
+ const calls=[];let pod=null;
+ const api=createRunpodInfrastructure({token:'test',accountId:'account',cpuConfiguration:{type:'cpu3c',bootDiskGiB:2},request:async(url,init)=>{
+  calls.push({url,method:init.method,body:init.body?JSON.parse(init.body):null});
+  if(url.endsWith('/health'))return json({status:'ok'});
+  if(init.method==='POST'&&url.endsWith('/v2/pods')){const b=JSON.parse(init.body);pod={id:'cpu123abc',name:b.name,image:b.image,status:'RUNNING'};return json(pod);}
+  if(url.endsWith('/action')){pod.status='EXITED';return json(pod);}
+  return json({pods:pod?[pod]:[],pagination:{hasNextPage:false}});
+ }});
+ const created=await api.create(w);assert.equal(created.endpoint,'https://cpu123abc-8080.proxy.runpod.net');assert.equal(created.ready,true);
+ const body=calls.find(c=>c.method==='POST'&&c.url.endsWith('/v2/pods')).body;assert.deepEqual(body.cpu,{id:'cpu3c',vcpuCount:2});assert.deepEqual(body.ports,['8080/http']);assert.equal(body.gpu,undefined);assert.equal(body.env,undefined);assert.equal(body.startSsh,false);
+ assert.equal((await api.create(w)).providerResourceId,created.providerResourceId);assert.equal(calls.filter(c=>c.method==='POST'&&c.url.endsWith('/v2/pods')).length,1);
+ w.desired='stopped';assert.equal((await api.stop(w)).state,'EXITED');
+});

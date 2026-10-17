@@ -1,31 +1,11 @@
 {
   "version": 1,
   "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
-  "snapshotId": "sha256:0289dad6f92960b552c7f95850c691c90782e451da746fdb39b0ac965e3704ed",
+  "snapshotId": "sha256:f374ac1462461b3c5c6f143e4402cce9b888e5cdbf06a0100791d99e29674a69",
   "files": [
     {
       "path": "examples/semantic-search/Dockerfile",
-      "sha256": "b0ec4d6983ae3ca50dc009fb376d0b627afc4452358dd1a3a61e99a803bf38b2"
-    },
-    {
-      "path": "examples/semantic-search/server.py",
-      "sha256": "79a7aaced411f864b7f6744eb069233441afb04d906aa0a067965735f97555ce"
-    },
-    {
-      "path": "examples/semantic-search/admission.py",
-      "sha256": "1454f54f487b7c83adbfa92c225c8a3eb63bcb29feba3ed8a1e7f65094337cdd"
-    },
-    {
-      "path": "examples/semantic-search/admission-key.json",
-      "sha256": "cc398827eead0852e3ef4d8a17b00f47a912fb565f3148d596151ae3e30e6dfb"
-    },
-    {
-      "path": "examples/semantic-search/fetch_assets.py",
-      "sha256": "e3321d2d5fe9d4b8e635af8975b07672c15c9efb3f0ef750709c69eef5588178"
-    },
-    {
-      "path": "examples/semantic-search/model-lock.json",
-      "sha256": "a94475abac470915e308200291c1dcb9267958513e7044ae91020a59b1cb30c1"
+      "sha256": "974c4020c32312745201e73c0951a9b41e9ff9af12f1c49ca2fbedba6ebcbf3f"
     },
     {
       "path": "examples/semantic-search/LICENSE",
@@ -33,80 +13,100 @@
     },
     {
       "path": "examples/semantic-search/README.md",
-      "sha256": "d184d536204569ac8f895bf51fbd78806d5a2c51752e8dc0a6d6b75f8cab35c0"
+      "sha256": "4d06a177f5b1256e71b95566d9df0f5e98e33fd7cf7680c5fc739706b2d70ac5"
+    },
+    {
+      "path": "examples/semantic-search/admission-key.json",
+      "sha256": "cc398827eead0852e3ef4d8a17b00f47a912fb565f3148d596151ae3e30e6dfb"
+    },
+    {
+      "path": "examples/semantic-search/admission.py",
+      "sha256": "18f1ce99754e41ec13f8dc6b067f1a01519cb5984237d3946d0a97e3b9b48c87"
+    },
+    {
+      "path": "examples/semantic-search/fetch_assets.py",
+      "sha256": "e3321d2d5fe9d4b8e635af8975b07672c15c9efb3f0ef750709c69eef5588178"
+    },
+    {
+      "path": "examples/semantic-search/model-lock.json",
+      "sha256": "3ea22af0a27600e6293b32a3acc5d23dec704e6b0cb13b96f46fbd9ec6c082ba"
+    },
+    {
+      "path": "examples/semantic-search/server.py",
+      "sha256": "d023ec3b2693586314c2d2da9108ff1aa4efd5c3889a2b77139c2199770248c0"
     },
     {
       "path": "examples/semantic-search/test_service.py",
-      "sha256": "b31079769e4b28bc30628c692fc4dc26fb953a6975794a07c842bfe541a5a877"
+      "sha256": "f22748e2d1c535b5d41ffc41408ad17ba5f5f01b25f0f6e2e983ebb4e5354ff2"
     }
   ],
   "plan": {
-    "id": "sha256:5042e85175d6ea3a42895d80b5c8d70e9bb89237457a692a0ecd882759610f6e",
-    "sourceHash": "sha256:3cbf5b5ade56472cae966f3e19225e590554bff27d448783f13972d6253c7f94",
-    "sourceBytes": 71309
+    "id": "sha256:c06e98529a6653a0bf55c9fe95fe5016773e848a7f88778968b52bfca0230465",
+    "sourceHash": "sha256:ff2720c0904f54a18e4a7ee450084e3baf5260d8281b9afb10d633fc530b02db",
+    "sourceBytes": 77678
   },
   "build": {
-    "id": "sha256:b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d",
-    "snapshotId": "sha256:0289dad6f92960b552c7f95850c691c90782e451da746fdb39b0ac965e3704ed",
-    "planId": "sha256:5042e85175d6ea3a42895d80b5c8d70e9bb89237457a692a0ecd882759610f6e",
-    "sourceHash": "sha256:3cbf5b5ade56472cae966f3e19225e590554bff27d448783f13972d6253c7f94",
-    "artifactHash": "sha256:6c8e9c9384fd317c16700c8a1ae9f0f2dbb21b4041a5709f4ad8219b882d7b05",
+    "id": "sha256:f74bb847c57324ec487b946d9a2e69d841548cd2b5ed1d7796902d029188117f",
+    "snapshotId": "sha256:f374ac1462461b3c5c6f143e4402cce9b888e5cdbf06a0100791d99e29674a69",
+    "planId": "sha256:c06e98529a6653a0bf55c9fe95fe5016773e848a7f88778968b52bfca0230465",
+    "sourceHash": "sha256:ff2720c0904f54a18e4a7ee450084e3baf5260d8281b9afb10d633fc530b02db",
+    "artifactHash": "sha256:d3bddb4ed2d90546f404f5990d1936d34da53e59e329233ac4c3c864f04d8417",
     "sourceVisibility": "private",
     "receipt": {
-      "archiveBytes": 113183232,
-      "archiveHash": "sha256:f9ac8ad5e1dbb886f684f0790da268613a477060aa9aa5cfb7563e3ef3479364",
+      "archiveBytes": 113183744,
+      "archiveHash": "sha256:4c2bdff08d7ff2e1530fd53a94c11a046f4a275556b1e401d5a4f0f532e90051",
       "artifact": {
-        "digest": "sha256:fb913f3ca64867c6c6fbb0acdffbb000b0e9dcc0a6dae16f37a42e15ba6a350c",
-        "expiresAt": "2026-10-18T19:41:44Z",
-        "id": 12111844952,
-        "url": "https://github.com/contractclaus/claus-private-builds/actions/runs/39063523098/artifacts/12111844952"
+        "digest": "sha256:c9eae152487b5adf48c21b9d6c34c037208faab031862f782b30a220ffa1f1cc",
+        "expiresAt": "2026-10-18T20:57:49Z",
+        "id": 12113992976,
+        "url": "https://github.com/contractclaus/claus-private-builds/actions/runs/39068871012/artifacts/12113992976"
       },
-      "buildId": "sha256:b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d",
+      "buildId": "sha256:f74bb847c57324ec487b946d9a2e69d841548cd2b5ed1d7796902d029188117f",
       "evidence": "compiled_only",
-      "imageDigest": "sha256:bf627bbd8e1f6204d61a1fcaa260d656f1e95a739584993ae59037e3bd9ab336",
-      "planId": "sha256:5042e85175d6ea3a42895d80b5c8d70e9bb89237457a692a0ecd882759610f6e",
+      "imageDigest": "sha256:76ea63b05ef9af39d848b47c453205b5a1cb7407cc86a8998f5d0510d5571e6b",
+      "planId": "sha256:c06e98529a6653a0bf55c9fe95fe5016773e848a7f88778968b52bfca0230465",
       "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
-      "runId": "39063523098",
+      "runId": "39068871012",
       "runnerSha": "c3ae7e469c5aa72cbea77ef25cb10c055f9973d6",
-      "sourceHash": "sha256:3cbf5b5ade56472cae966f3e19225e590554bff27d448783f13972d6253c7f94",
+      "sourceHash": "sha256:ff2720c0904f54a18e4a7ee450084e3baf5260d8281b9afb10d633fc530b02db",
       "storage": {
-        "archiveHash": "sha256:f9ac8ad5e1dbb886f684f0790da268613a477060aa9aa5cfb7563e3ef3479364",
-        "bytes": 113183232,
+        "archiveHash": "sha256:4c2bdff08d7ff2e1530fd53a94c11a046f4a275556b1e401d5a4f0f532e90051",
+        "bytes": 113183744,
         "expiresAt": null,
         "profile": "private-r2-oci-v1",
         "state": "verified",
-        "verifiedAt": 1792266202930
+        "verifiedAt": 1792270767466
       },
       "verification": false,
       "version": 1
     }
   },
   "release": {
-    "id": "sha256:3dfe4243cbb03b754978674e3aeb1aec44cec3267659080a9ff01cf5cca41315",
-    "buildId": "sha256:b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d",
-    "buildHash": "sha256:6c8e9c9384fd317c16700c8a1ae9f0f2dbb21b4041a5709f4ad8219b882d7b05",
-    "sourceHash": "sha256:0289dad6f92960b552c7f95850c691c90782e451da746fdb39b0ac965e3704ed",
+    "id": "sha256:2f43f0ffc821ea4a3cdffecd51ecd08732b87900765acb95625a26067bbf473b",
+    "buildId": "sha256:f74bb847c57324ec487b946d9a2e69d841548cd2b5ed1d7796902d029188117f",
+    "buildHash": "sha256:d3bddb4ed2d90546f404f5990d1936d34da53e59e329233ac4c3c864f04d8417",
+    "sourceHash": "sha256:f374ac1462461b3c5c6f143e4402cce9b888e5cdbf06a0100791d99e29674a69",
     "profile": "claus-runtime-image-v1",
     "manifest": {
       "command": [],
       "cpu": 2,
       "gpu": null,
       "healthPath": "/health",
-      "image": "claus-network-api.vercel.app/claus/b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d@sha256:bf627bbd8e1f6204d61a1fcaa260d656f1e95a739584993ae59037e3bd9ab336",
+      "image": "claus-network-api.vercel.app/claus/f74bb847c57324ec487b946d9a2e69d841548cd2b5ed1d7796902d029188117f@sha256:76ea63b05ef9af39d848b47c453205b5a1cb7407cc86a8998f5d0510d5571e6b",
       "memoryMiB": 4096,
       "mode": "model",
       "port": 8080,
       "region": "EU-NL-1",
       "storageGiB": 0,
       "version": 1,
-      "releaseHash": "sha256:3dfe4243cbb03b754978674e3aeb1aec44cec3267659080a9ff01cf5cca41315"
+      "releaseHash": "sha256:2f43f0ffc821ea4a3cdffecd51ecd08732b87900765acb95625a26067bbf473b"
     }
   },
-  "image": "claus-network-api.vercel.app/claus/b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d@sha256:bf627bbd8e1f6204d61a1fcaa260d656f1e95a739584993ae59037e3bd9ab336",
-  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d/manifests/sha256:bf627bbd8e1f6204d61a1fcaa260d656f1e95a739584993ae59037e3bd9ab336",
+  "image": "claus-network-api.vercel.app/claus/f74bb847c57324ec487b946d9a2e69d841548cd2b5ed1d7796902d029188117f@sha256:76ea63b05ef9af39d848b47c453205b5a1cb7407cc86a8998f5d0510d5571e6b",
+  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/f74bb847c57324ec487b946d9a2e69d841548cd2b5ed1d7796902d029188117f/manifests/sha256:76ea63b05ef9af39d848b47c453205b5a1cb7407cc86a8998f5d0510d5571e6b",
   "runtimeProviderProfile": "claus-runpod-cpu-v1",
   "reviewProfile": "claus-runtime-image-v1",
-  "interpretation": "The immutable build receipt links the compiled image to its source. The image build runs a real local-model warmup as its runtime user. Neither is independent approval or proof of hosting.",
+  "interpretation": "Exact compiled image and source binding. Runtime approval and hosting are separate.",
   "reproduction": "node scripts/verify-semantic-search-release.mjs",
   "priorReviews": [
     {
@@ -120,14 +120,20 @@
     {
       "providerJobId": "dc6d6f08-9b3c-4c44-89e5-58be7f7e8f73",
       "approval": false
+    },
+    {
+      "providerJobId": "a0bc4afa-dea6-459d-9195-6bb8da722133",
+      "approval": false,
+      "reportHash": "sha256:601174e4ce1a399e919ef645872e3f880b21310ee9300a8dbdaf48ee59caf7bc"
     }
   ],
   "changes": [
-    "Complete bounded request bodies are received before taking application workers; combined two-second read deadline",
-    "Per-owner replay storage preserves unrelated owners and one-use protection",
-    "One-second response timeout and explicit HTTP 100-continue handling",
-    "Maximum ticket acceptance window documented as 22 seconds; original clock guard preserved",
-    "Exact image receipt and real model warmup retained"
+    "Canonical request lines and pre-body signature verification; nonces still consumed only after complete bodies",
+    "Reject token-empty texts, clamp cosine, charge actual truncated token work per owner",
+    "Use two CPU threads and report stale inference as not ready",
+    "Immutable Debian package snapshot URLs with unchanged expected bytes",
+    "CPU reference adapter uses explicit fixed CPU allocation and authenticated application ingress",
+    "Exact deployed provider broker source and exact executing private build-runner revision included"
   ],
   "approvalGranted": false,
   "modelHosted": false
