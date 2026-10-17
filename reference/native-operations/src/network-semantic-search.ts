@@ -1,8 +1,8 @@
 // Only public catalogue fields are sent to this reviewed, self-hosted model.
 export const semanticSearchRelease={
  projectId:'prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a',
- releaseId:'sha256:364adafb90e97ca36af0934596a90e3e20cd069e1937c9d803b4ed61ae646fca',
- image:'claus-network-api.vercel.app/claus/bfdb7c75daaa4ab0f53bf5a3a4907e531630fec9d222880372045c87dce1668c@sha256:bcb0a279671ce0b040c7700d77fced855dbc29bd3d390a79dc2b385f03e1e7bf',
+ releaseId:'sha256:5c56727b6d5d56c9ce2f56504dd09ef392600dbec7aad5ecc1844475e2b2925b',
+ image:'claus-network-api.vercel.app/claus/e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0@sha256:25d46d1e403f7f96f88acc0aae45b3346e026e5cd24b6f12f727ebe5b6ca2560',
  model:'Xenova/all-MiniLM-L6-v2@751bff37182d3f1213fa05d7196b954e230abad9'
 };
 const slug=/^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/;
