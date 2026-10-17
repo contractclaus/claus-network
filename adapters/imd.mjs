@@ -9,6 +9,8 @@ export const IMD_REVIEW = Object.freeze({ origin: 'https://api.imd.fun', network
   payTo: '0x4e0fa57bde726079356537e2f34d671e9f41adbc', maximum: '500000000000000000',
   template: 'audit', policyVersion: 'job-1' });
 const hash = value => digest(value).slice(7);
+// IMD prepares omitted audit entry lists as []. No other field may change.
+export const preparedAuditInput=value=>value.template==='audit'&&!Object.hasOwn(value,'contracts')?{...value,contracts:[]}:value;
 const id = value => { requireThat(typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(value), 'invalid_provider_id'); return value; };
 
 export function reviewRequest({ repoUrl, baseCommit, contracts, sourceHash, buildHash, reviewProfile, chainId, capital, partnerLaunch, runtimeImage }) {
@@ -103,7 +105,7 @@ export function createImdReviewProvider({ store, sealer, resolveInput, fetch: fe
     requireThat(amount(quote.payment.amount) > 0n && amount(quote.payment.amount) <= amount(IMD_REVIEW.maximum), 'provider_price_exceeds_profile');
     requireThat(quote.expiresAt > quote.issuedAt && quote.expiresAt - quote.issuedAt <= 600 &&
       quote.issuedAt <= Math.floor(now() / 1000) + 5, 'invalid_provider_expiry');
-    requireThat(/^[0-9a-f]{64}$/.test(quote.quoteHash) && quote.inputHash === hash(request.input), 'provider_input_mismatch');
+    requireThat(/^[0-9a-f]{64}$/.test(quote.quoteHash) && quote.inputHash === hash(preparedAuditInput(request.input)), 'provider_input_mismatch');
   }
   async function record(offerId) {
     const mapping = (await store.read('imd-offer-index', id(offerId)))?.value;
@@ -146,7 +148,7 @@ export function createImdReviewProvider({ store, sealer, resolveInput, fetch: fe
       const saved = await record(offerId);
       const result = await call('/requests/' + id(offerId) + '/submit', { method: 'POST', token: saved.credentials.requestToken, statuses: [402] });
       validateQuote(result.quote, saved.request);
-      requireThat(canonical(result.quote) === canonical(saved.quote) && canonical(result.input) === canonical(saved.request.input), 'provider_challenge_mismatch');
+      requireThat(canonical(result.quote) === canonical(saved.quote) && canonical(result.input) === canonical(preparedAuditInput(saved.request.input)), 'provider_challenge_mismatch');
       requireThat(result.x402Version === 2 && result.resourceUrl === IMD_REVIEW.origin + '/requests/' + offerId &&
         result.resource?.url === result.resourceUrl && /^[0-9a-f]{64}$/.test(result.requesterScopeHash) &&
         Array.isArray(result.accepts) && result.accepts.length === 1, 'provider_challenge_mismatch');
