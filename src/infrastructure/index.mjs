@@ -31,7 +31,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
       state:v.state,desired:v.desired,createdAt:v.createdAt,leaseUntil:v.leaseUntil,providerLeaseUntil:v.providerLeaseUntil??null,renewalPending:v.renewalPending===true,terminal:v.terminal===true,storageRetained:v.storageRetained??null,nextAttemptAt:v.nextAttemptAt??null,
       providerResourceId:v.providerResourceId??null,endpoint:v.endpoint??null,
       cost:{asset:v.profile.asset,maximum:maximum(v),actual:v.actual??null,state:v.billing,observation:v.costObservation??null},
-      error:v.error??null,requiresReconciliation:v.state==='unknown',operationId:v.operationId};
+      error:v.error??null,errorDetails:v.errorDetails??null,requiresReconciliation:v.state==='unknown',operationId:v.operationId};
   }
   async function adjustGrant(tx,v,reserved,spent){
     const id=grantKey(v.projectId,v.profile.id),g=await tx.read('infrastructure-grants',id);requireThat(g,'infrastructure_allowance_missing');
@@ -208,7 +208,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
           await update(async(tx,r)=>{
             const endpoint=observed.endpoint??null;requireThat(endpoint===null||typeof endpoint==='string'&&/^https:\/\/[a-z0-9.-]+\/?$/.test(endpoint),'infrastructure_endpoint_invalid');
             const state=observed.outcome==='unknown'?'unknown':observed.terminal||['stopped','suspended','EXITED'].includes(observed.state)?'stopped':observed.ready?'running':observed.providerResourceId?'provisioning':'unknown';
-            return {state,terminal:observed.terminal===true,storageRetained:observed.storageRetained??null,providerLeaseUntil:observed.providerLeaseUntil??r.value.providerLeaseUntil??null,renewalPending:r.value.renewalPending===true&&observed.providerLeaseUntil!==r.value.leaseUntil,failures:0,nextAttemptAt:null,...(costObservation?{costObservation}:{}),providerResourceId:observed.providerResourceId??r.value.providerResourceId??null,endpoint,observedAt:now(),controllerLease:null,error:null,...(observed.receipt?await settle(tx,r,observed.receipt):{})};
+            return {state,terminal:observed.terminal===true,storageRetained:observed.storageRetained??null,providerLeaseUntil:observed.providerLeaseUntil??r.value.providerLeaseUntil??null,renewalPending:r.value.renewalPending===true&&observed.providerLeaseUntil!==r.value.leaseUntil,failures:0,nextAttemptAt:null,...(costObservation?{costObservation}:{}),providerResourceId:observed.providerResourceId??r.value.providerResourceId??null,endpoint,observedAt:now(),controllerLease:null,error:observed.error??null,errorDetails:observed.errorDetails??null,...(observed.receipt?await settle(tx,r,observed.receipt):{})};
           });
           }
         }

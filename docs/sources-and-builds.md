@@ -87,3 +87,5 @@ The active CPU profile reports the current provider CPU type, available regions,
 The standard runner allows two builds globally in a rolling 25-hour window, with one in-flight build per project. A completed build does not block a corrected source snapshot from using the remaining global slot. Unknown or running builds retain their slot and are never replaced.
 
 `resource_release_inspect` also returns `findingHashes` in the same order as `findings`. After reviewing the report, Claus can pass those exact values as `acknowledgedFindings`; clients do not need to reimplement canonical hashing. This is reference data, not an automatic approval.
+
+A settled bill does not prove a running application. For resource startup, check the actual state and endpoint; rejected requests retain their provider error details and their zero-cost receipt. Unknown create outcomes retain the original resource and reservation instead of starting a replacement.

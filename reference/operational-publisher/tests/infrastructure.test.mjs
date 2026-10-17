@@ -124,3 +124,9 @@ test('GPU readiness reads only configured GPU types and preserves partial catalo
  assert.deepEqual(result.capacity.items,[{gpuType:'GPU A',availableRegions:['US-GA-2'],hourlyMicroUsd:'245000',catalogAvailable:true},{gpuType:'missing',catalogAvailable:false,error:'catalog_unavailable'}]);
  assert.equal(urls.length,3);assert(!urls.some(u=>u.includes('/catalog/cpus/')));
 });
+
+test('confirmed provider rejection retains bounded useful error details',async()=>{
+ const f=await fixture();f.driver.create=async()=>{throw new ProviderError(400,'provider_400',null,{title:'Bad request',detail:'CPU pods reject globalNetworking',errors:[]})};
+ const rejected=await f.call('create',f.work);assert.equal(rejected.error,'infrastructure_provider_400');assert.equal(rejected.errorDetails.detail,'CPU pods reject globalNetworking');assert.equal(rejected.receipt.actual,'0');assert.equal(rejected.terminal,true);
+ await assert.rejects(providerRequest(async()=>Response.json({title:'Bad request',detail:'Bearer do-not-return\n'+'.'.repeat(600),errors:['$.cpu invalid']},{status:400}),'https://api.runpod.io/v2/pods','private',{method:'POST',body:{}}),e=>e.status===400&&e.details.detail.length<=500&&!e.details.detail.includes('do-not-return')&&e.details.errors[0]==='$.cpu invalid');
+});

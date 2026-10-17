@@ -115,3 +115,9 @@ test('renewal reserves once, preserves the original resource and waits for provi
  const closed=await f.api.stop('owner','project',r.id,{expectedRevision:live.revision});await f.api.reconcile(closed.id);
  assert.deepEqual(await f.balance(),{account:'fund',asset:'USDC',available:'470',reserved:'0',spent:'30'});
 });
+
+test('zero-cost rejected provisioning stays visible after billing settles',async t=>{
+ const f=await fixture(t),q=await f.quote(),r=await f.api.request('owner','project',{quoteId:q.id,idempotencyKey:'reject'});
+ f.ports.create=async w=>({operationId:w.id,accountId:'account',state:'rejected',terminal:true,ready:false,error:'infrastructure_provider_400',errorDetails:{detail:'CPU field is invalid'},receipt:{id:'rejection:'+w.id,resourceId:w.id,accountId:'account',asset:'USDC',final:true,actual:'0'}});
+ await f.api.reconcile(r.id);const status=await f.api.get('owner','project',r.id);assert.equal(status.cost.state,'settled');assert.equal(status.cost.actual,'0');assert.equal(status.error,'infrastructure_provider_400');assert.equal(status.errorDetails.detail,'CPU field is invalid');assert.equal((await f.balance()).available,'500');
+});

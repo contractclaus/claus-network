@@ -1,7 +1,7 @@
 import {flyApps} from './fly-target.mjs';
 export const check=(value,code)=>{if(!value)throw Error('infrastructure_'+code);};
 export class ProviderError extends Error {
-  constructor(status,code,retryAt=null){super('infrastructure_'+code);this.status=status;this.retryAt=retryAt;}
+  constructor(status,code,retryAt=null,details=null){super('infrastructure_'+code);this.status=status;this.retryAt=retryAt;this.details=details;}
 }
 export const microUsd=value=>{
   check(typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<1000000,'price_invalid');
@@ -11,7 +11,18 @@ export async function providerRequest(request,url,token,{method='GET',body,strea
   const response=await request(url,{method,redirect:'error',signal:AbortSignal.timeout(stream?5000:18000),headers:{authorization:'Bearer '+token,accept:stream?'text/event-stream':'application/json',...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
   if(!response.ok){
     const retry=Number(response.headers.get('retry-after'));
-    throw new ProviderError(response.status,'provider_'+response.status,Number.isFinite(retry)&&retry>0?Date.now()+Math.min(retry,900)*1000:null);
+    let details=null;
+    const reader=response.body?.getReader();
+    if(reader)try{
+      let size=0;const chunks=[];
+      for(;;){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>8192)break;chunks.push(part.value);}
+      if(size<=8192){const value=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        const clean=v=>typeof v==='string'?v.replace(/[\u0000-\u001f]/g,' ').replace(/Bearer\s+\S+/gi,'Bearer [redacted]').slice(0,500):null;
+        details={title:clean(value.title),detail:clean(value.detail),errors:Array.isArray(value.errors)?value.errors.slice(0,5).map(clean).filter(Boolean):[]};
+      }
+    }catch{/* Malformed provider errors do not hide the original status. */}
+    finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+    throw new ProviderError(response.status,'provider_'+response.status,Number.isFinite(retry)&&retry>0?Date.now()+Math.min(retry,900)*1000:null,details);
   }
   if(response.status===204)return null;
   const reader=response.body?.getReader();check(reader,'provider_response_missing');let length=0;const parts=[];
