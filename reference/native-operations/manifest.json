@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_9jao42cG7QZKpLcUNerrdyLvcacD",
-  "source": "claus-search-owner-isolation-20261017",
+  "deployed": "dpl_CLoavzSakBDUbWR2XyCBpo67sK4N",
+  "source": "claus-search-header-fairness-20261017",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -145,7 +145,7 @@
     "src/builder-service.ts": "c8fe558b37ab6338683c712e9b9b0fd4ab272e13a6b64170749a5909c8856820",
     "src/builder-wait.ts": "234c3d7480105760b7490e4dd6990f1443da446b6cd8e4d6d83ad4e2067c58c5",
     "src/developments.ts": "ae2a1722e427757903398f2f46bc1412693b5545a11a2c86c6d506f0c6b3c5d4",
-    "src/network-semantic-search.ts": "a39ac51c12538afe253be7bb4ec4c9582648692a33e16346e6a7f623b65b5c8f"
+    "src/network-semantic-search.ts": "91b23c334036fa2677f6cbdcc77694dae3934434f87465bb4114b9a157d88558"
   },
   "referenceSubset": true
 }
