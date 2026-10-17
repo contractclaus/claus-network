@@ -40,6 +40,7 @@ test('keys and projects share principal capacity; other principals and refill co
  await assert.rejects(f.admission.issue('second-key',input),{code:'rate_limited'});
  await f.admission.issue('another-owner',input);
  f.setTime(1700000000500);await f.admission.issue('owner',input);
+ f.setTime(1700000000501);await f.admission.issue('another-owner',input);
 });
 test('HTTP route requires real bearer authentication and validates request fields',async t=>{
  const f=fixture(t),http=createHttp({service:createService({identity:f.identity,searchAdmission:f.admission}),origin:'https://claus-network-api.vercel.app'});
