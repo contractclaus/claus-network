@@ -1,3 +1,4 @@
+import {flyApps} from './fly-target.mjs';
 export const check=(value,code)=>{if(!value)throw Error('infrastructure_'+code);};
 export class ProviderError extends Error {
   constructor(status,code,retryAt=null){super('infrastructure_'+code);this.status=status;this.retryAt=retryAt;}
@@ -104,6 +105,7 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
 }
 
 export function flyDriver({token,request=fetch}){
+  const apps=flyApps({request,token});
   const api=(path,options)=>providerRequest(request,'https://api.machines.dev/v1'+path,token(),options);
   const appPath=config=>'/apps/'+encodeURIComponent(config.app);
   function project(work,config){check(config.projectId===work.projectId&&/^[a-z0-9][a-z0-9-]{2,62}$/.test(config.app??''),'project_app_not_isolated');}
@@ -117,9 +119,9 @@ export function flyDriver({token,request=fetch}){
       // A single small-machine price must not authorize every size in a profile.
       const rate=config.rates?.find(r=>r.cpu===m.cpu&&r.memoryMiB===m.memoryMiB&&r.region===m.region);
       check(rate&&/^[1-9][0-9]*$/.test(rate.hourlyMicroUsd??'')&&typeof rate.priceSource==='string'&&rate.priceSource.length>0,'price_not_configured');
-      await account(config);return {hourlyMicroUsd:rate.hourlyMicroUsd,priceSource:rate.priceSource,bootDiskGiB:0,shape:{cpu:m.cpu,memoryMiB:m.memoryMiB,region:m.region}};
+      if(config.projectIsolation===true){await apps.inspect(config);}else await account(config);return {hourlyMicroUsd:rate.hourlyMicroUsd,priceSource:rate.priceSource,bootDiskGiB:0,shape:{cpu:m.cpu,memoryMiB:m.memoryMiB,region:m.region}};
     },
-    async create(work,quote,config){project(work,config);await account(config);const m=work.manifest;check(quote.shape?.cpu===m.cpu&&quote.shape.memoryMiB===m.memoryMiB&&quote.shape.region===m.region,'price_shape_mismatch');const machine=await api(appPath(config)+'/machines',{method:'POST',body:{name:'claus-'+work.id.slice(-40),region:m.region,config:{image:m.image,metadata:{claus_resource:work.id,claus_project:work.projectId},init:m.command.length?{exec:m.command}:{},guest:{cpu_kind:'shared',cpus:m.cpu,memory_mb:m.memoryMiB},restart:{policy:m.mode==='job'?'no':'always'},auto_destroy:false,services:m.port?[{protocol:'tcp',internal_port:m.port,ports:[{port:443,handlers:['tls','http']}],autostop:false,autostart:false,}]:[],checks:m.port?{readiness:{type:'http',port:m.port,path:m.healthPath,method:'GET',interval:'30s',timeout:'5s'}}:{}}}});return observation(machine,work,config);},
+    async create(work,quote,config){project(work,config);const m=work.manifest;check(quote.shape?.cpu===m.cpu&&quote.shape.memoryMiB===m.memoryMiB&&quote.shape.region===m.region,'price_shape_mismatch');if(config.projectIsolation===true)await apps.prepare(config,{publicHttp:!!m.port});await account(config);const machine=await api(appPath(config)+'/machines',{method:'POST',body:{name:'claus-'+work.id.slice(-40),region:m.region,config:{image:m.image,metadata:{claus_resource:work.id,claus_project:work.projectId},init:m.command.length?{exec:m.command}:{},guest:{cpu_kind:'shared',cpus:m.cpu,memory_mb:m.memoryMiB},restart:{policy:m.mode==='job'?'no':'always'},auto_destroy:false,services:m.port?[{protocol:'tcp',internal_port:m.port,ports:[{port:443,handlers:['tls','http']}],autostop:false,autostart:false,}]:[],checks:m.port?{readiness:{type:'http',port:m.port,path:m.healthPath,method:'GET',interval:'30s',timeout:'5s'}}:{}}}});return observation(machine,work,config);},
     async inspect(work,checkpoint,config){if(checkpoint.providerResourceId){try{return observation(await api(appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId)),work,config);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return {providerResourceId:checkpoint.providerResourceId,state:'destroyed',terminal:true,stopped:true,ready:false,storageRetained:false,costFinal:false};throw e;}}
       const machines=await api(appPath(config)+'/machines?include_deleted=true');check(Array.isArray(machines),'provider_shape_invalid');const found=machines.filter(x=>x.config?.metadata?.claus_resource===work.id);check(found.length<=1,'duplicate_resource');return found.length?observation(found[0],work,config):{state:'unknown',outcome:'unknown',ready:false,terminal:false};},
     async stop(work,checkpoint,remove,config){check(checkpoint.providerResourceId,'resource_not_identified');const path=appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId);let m;try{m=matches(await api(path),work);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return this.inspect(work,checkpoint,config);throw e;}

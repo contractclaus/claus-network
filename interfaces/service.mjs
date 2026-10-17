@@ -2,6 +2,10 @@ import {ROUTES,validate} from './contract.mjs';
 
 export function createService({runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  resource_control_set:(a,i)=>infrastructure.control.configure(a,i),
+  resource_control:(a,i)=>infrastructure.control.policy(a,i.profileId),
+  resource_grant_set:(a,{projectId,...i})=>infrastructure.control.grant(a,projectId,i),
+  resource_grants:(a,i)=>infrastructure.control.grants(a,i.profileId,i),
   resource_release_prepare:(a,i)=>runtimeReleases.prepare(a,i.projectId,i),
   resource_release_get:(a,i)=>runtimeReleases.get(a,i.projectId,i.releaseId),
   resource_release_inspect:(a,i)=>runtimeReleases.inspect(a,i.projectId,i.releaseId,i.caseId),

@@ -1,3 +1,4 @@
+import {createResourceControl} from './control.mjs';
 import {randomUUID} from 'node:crypto';
 import {amount,copy,digest,integer,requireThat,text} from '../shared/index.mjs';
 import {reserve,settleReservation} from '../billing/index.mjs';
@@ -8,6 +9,7 @@ const grantKey=(projectId,profileId)=>digest({projectId,profileId});
 const maximum=v=>v.reservedMaximum??v.quote.maximum;
 const done=new Set(['cancelled','settled']);
 export function createInfrastructure({store,identity,projects,now=()=>Date.now(),ports={},enabled=false}) {
+  const control=createResourceControl({store,identity,now});
   async function auth(actor,projectId,action='infrastructure.read',reader=store){await identity.authorize(actor,action,{projectId},reader);}
   async function owner(actor,reader){
     const c=await identity.credential(actor,reader),p=(await reader.read('principals',c.principalId))?.value,a=(await reader.read('network','authority'))?.value;
@@ -17,7 +19,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
     await auth(actor,projectId,'infrastructure.manage',reader);
     requireThat(enabled,'infrastructure_not_enabled');
     const row=await reader.read('infrastructure-profiles',profileId),profile=validateProfile(row?.value);
-    requireThat(profile.enabled,'infrastructure_profile_disabled');
+    requireThat(profile.enabled&&await control.active(reader,profileId),'infrastructure_profile_disabled');
     const grant=await reader.read('infrastructure-grants',grantKey(projectId,profileId));
     requireThat(grant?.value.enabled&&grant.value.expiresAt>now(),'infrastructure_allowance_unavailable');
     return {profile,profileRevision:row.revision,grant};
@@ -56,6 +58,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
       const {source,...plan}=createOciBuildPlan({projectId,snapshotId,files,dockerfile});
       return plan;
     },
+    control,
     async setProfile(actor,{profile,expectedRevision}){
       const p=validateProfile(profile);integer(expectedRevision);
       return store.transaction(async tx=>{await owner(actor,tx);const old=await tx.read('infrastructure-profiles',p.id);
@@ -64,7 +67,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
     },
     async setGrant(actor,projectId,{profileId,enabled:active,expiresAt,limit,expectedRevision}){
       text(profileId);integer(expectedRevision);integer(expiresAt,now()+1);amount(limit);requireThat(typeof active==='boolean','invalid_allowance');
-      return store.transaction(async tx=>{await owner(actor,tx);requireThat(await tx.read('projects',projectId),'not_found');requireThat(await tx.read('infrastructure-profiles',profileId),'not_found');
+      return store.transaction(async tx=>{await owner(actor,tx);requireThat(!await tx.read('infrastructure-controls',profileId),'infrastructure_controlled_grant_required');requireThat(await tx.read('projects',projectId),'not_found');requireThat(await tx.read('infrastructure-profiles',profileId),'not_found');
         const id=grantKey(projectId,profileId),old=await tx.read('infrastructure-grants',id),reserved=old?.value.reserved??'0',spent=old?.value.spent??'0';
         requireThat(amount(limit)>=amount(reserved)+amount(spent),'allowance_below_obligations');
         const r=await tx.write('infrastructure-grants',id,{projectId,profileId,enabled:active,expiresAt,limit,reserved,spent},expectedRevision);return {...r.value,revision:r.revision};});
@@ -94,6 +97,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
         requireThat(amount(grant.value.limit)>=amount(grant.value.reserved)+amount(grant.value.spent)+amount(q.maximum),'infrastructure_allowance_exhausted');
         const capacityId=grantKey(projectId,profile.id),capacity=await tx.read('infrastructure-capacity',capacityId),active=capacity?.value.active??[];
         requireThat(active.length<profile.maxActive,'infrastructure_capacity_reached');
+        await control.checkSpend(tx,profile.id,q.maximum);
         await reserve(tx,profile.fundingAccount,profile.asset,q.maximum);
         const globalId='profile:'+profile.id,global=await tx.read('infrastructure-capacity',globalId),globalActive=global?.value.active??[];
         requireThat(globalActive.length<profile.maxActive,'infrastructure_capacity_reached');
@@ -123,6 +127,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
         const {profile,grant}=await admission(tx,actor,projectId,v.profile.id);
         requireThat(v.leaseUntil+q.leaseSeconds*1000<=now()+profile.maxLeaseSeconds*1000,'infrastructure_lease_too_long');
         requireThat(amount(grant.value.limit)>=amount(grant.value.reserved)+amount(grant.value.spent)+amount(q.maximum),'infrastructure_allowance_exhausted');
+        await control.checkSpend(tx,profile.id,q.maximum);
         await reserve(tx,profile.fundingAccount,profile.asset,q.maximum);await adjustGrant(tx,v,amount(q.maximum),0n);
         const extension={id:renewalId,sequence:(v.extensions?.at(-1)?.sequence??0)+1,previousUntil:v.leaseUntil,quote:q};
         await tx.write('infrastructure-renewals',renewalId,{resourceId:id,quoteId,extension},0);

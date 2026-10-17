@@ -9959,6 +9959,119 @@ export const networkRoutes:Record<string,any>={
     },
     "public": true,
     "description": "GET /v1/public/infrastructure/releases/{releaseId}. Public read."
+  },
+  "resource_control": {
+    "name": "resource_control",
+    "method": "GET",
+    "path": "/v1/infrastructure/controls/{profileId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "profileId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/infrastructure/controls/{profileId}. Requires current object read permission."
+  },
+  "resource_grants": {
+    "name": "resource_grants",
+    "method": "GET",
+    "path": "/v1/infrastructure/controls/{profileId}/grants",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "after": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "profileId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/infrastructure/controls/{profileId}/grants. Requires current object read permission."
+  },
+  "resource_grant_set": {
+    "name": "resource_grant_set",
+    "method": "PUT",
+    "path": "/v1/infrastructure/controls/{profileId}/grants/{projectId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "limit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "projectId",
+        "profileId",
+        "enabled",
+        "expiresAt",
+        "limit",
+        "expectedRevision",
+        "idempotencyKey",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "PUT /v1/infrastructure/controls/{profileId}/grants/{projectId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{
