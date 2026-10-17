@@ -210,6 +210,21 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                     self.reject_connection(request, status)
                     continue
                 self.pending_headers[request] = (address, prefix, accepted_at, target)
+                expectation = headers.get('Expect', '').lower()
+                if expectation:
+                    if expectation != '100-continue':
+                        self.remove_pending(request)
+                        self.reject_connection(request, 417)
+                        continue
+                    if len(prefix) < target:
+                        interim = b'HTTP/1.1 100 Continue\r\n\r\n'
+                        try:
+                            if request.send(interim) != len(interim):
+                                raise OSError('incomplete_interim_response')
+                        except OSError:
+                            self.remove_pending(request)
+                            self.shutdown_request(request)
+                            continue
             if len(prefix) >= target:
                 self.remove_pending(request)
                 request.setblocking(True)
@@ -297,6 +312,10 @@ class PrefixedReader:
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
+
+    def handle_expect_100(self):
+        # Already handled before buffering the body, without a worker slot.
+        return True
 
     def version_string(self):
         return 'Claus'

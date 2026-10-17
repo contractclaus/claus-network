@@ -220,6 +220,21 @@ class ServiceTest(unittest.TestCase):
                 conn.sendall(b'POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\n'+framing+b'\r\n\r\n{}')
                 self.assertIn(str(status).encode(),conn.recv(4096).split(b'\r\n',1)[0])
 
+    def test_expect_continue_does_not_wait_for_unsent_body(self):
+        body=b'{"input":"send after continue"}'
+        authorization=ticket('/v1/embeddings',body,'expect-caller').encode()
+        with socket.create_connection(('127.0.0.1',self.server.server_port),timeout=2) as conn:
+            conn.sendall(b'POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nExpect: 100-continue\r\nContent-Type: application/json\r\nContent-Length: '+str(len(body)).encode()+b'\r\nAuthorization: '+authorization+b'\r\n\r\n')
+            response=b''
+            while b'\r\n\r\n' not in response:
+                response+=conn.recv(4096)
+            self.assertEqual(response,b'HTTP/1.1 100 Continue\r\n\r\n')
+            conn.sendall(body)
+            final=http.client.HTTPResponse(conn)
+            final.begin()
+            self.assertEqual(final.status,200)
+            self.assertEqual(len(json.loads(final.read())['data'][0]['embedding']),DIMENSIONS)
+
     def test_saturated_idle_header_queue_admits_health_and_signed_work(self):
         server = Server(('127.0.0.1', 0), Handler)
         server.engine = self.engine
