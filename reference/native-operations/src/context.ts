@@ -1,5 +1,6 @@
 import {operationSucceeded} from './operation-result.js';
 import {textWindow,textPrefix} from './text.ts';
+import {walletOverview,paymentRequest,paymentProgress} from './payment-context.js';
 // Context is a view of durable evidence, never the only copy of that evidence.
 // Keep search pages below the tool-result envelope so their cursor is visible.
 export function searchPage<T>(rows:T[],offset:number,maxRecords:number) {
@@ -22,6 +23,7 @@ export function pageRecord(value:unknown,offset=0,limit=12000) {
 // complete result, including logs; never alter archived page offsets or bytes.
 export function operatingResultView(value:any):any {
   if(!value||typeof value!=='object'||Array.isArray(value)||value.contextProjection)return value;
+  const wallet=walletOverview(value);if(wallet!==value)return wallet;
   if(value.kind==='journal'&&value.record?.kind==='tool'&&value.record.result){
     const result=operatingResultView(value.record.result);
     return result===value.record.result?value:{...value,record:{...value.record,result}};
@@ -81,6 +83,8 @@ export function workProgress(messages:any[]) {
   let view:any={};try{view=JSON.parse(messages[1]?.content??'{}');}catch{}
   const prior=view.workProgress?.operations??view.continuation?.progress?.operations??[];
   const records=new Map<string,any>(prior.filter((r:any)=>typeof r?.callId==='string').map((r:any)=>[r.callId,r]));
+  const priorPayments=view.workProgress?.payments??view.continuation?.progress?.payments??[];
+  const payments=new Map<string,any>((Array.isArray(priorPayments)?priorPayments:[]).filter((p:any)=>typeof p?.id==='string'&&/^ww_[a-f0-9]{64}$/.test(p.id)).map((p:any)=>[p.id,p]));
   for(let i=2;i<messages.length;i++) {
     const m=messages[i];if(m.role!=='assistant')continue;
     for(const call of m.tool_calls??[]) {
@@ -103,7 +107,13 @@ export function workProgress(messages:any[]) {
         if(typeof input.request?.action==='string')request.serviceAction=textPrefix(input.request.action,80);
       }catch{}
       const actual=result?.result??result;
+      if(call.function.name==='work_wallet'){
+        Object.assign(request,paymentRequest(args.input));
+        const payment=paymentProgress(args,actual,typeof result.archiveId==='string'?result.archiveId:null,[...payments.values()]);
+        if(payment){payments.delete(payment.id);payments.set(payment.id,payment);}
+      }
       const outcome:any={};for(const key of ['error','status','published','id','revision','sourceRevision','sourceHash','releaseId','snapshotId','collection','contentVersion','available','observedAt','projectId','workerId','runtimeId','profileId','requestId','workerRevision','cycle','state','enabled','nextAt'])if(['string','number','boolean'].includes(typeof actual?.[key]))outcome[key]=typeof actual[key]==='string'?textPrefix(actual[key],180):actual[key];
+      if(call.function.name==='work_wallet')for(const key of ['transactionHash','outcome','next'])if(typeof actual?.[key]==='string')outcome[key]=textPrefix(actual[key],800);
       if(Object.hasOwn(actual??{},'nextOffset')&&(actual.nextOffset===null||Number.isSafeInteger(actual.nextOffset)))outcome.nextOffset=actual.nextOffset;
       if(Object.hasOwn(actual??{},'nextCursor')){if(actual.nextCursor===null||typeof actual.nextCursor==='string'&&actual.nextCursor.length<=2048)outcome.nextCursor=actual.nextCursor;else outcome.nextCursorArchived=true;}
       if(Array.isArray(actual?.items)){outcome.itemCount=actual.items.length;outcome.itemIds=actual.items.slice(0,4).flatMap((item:any)=>typeof item?.id==='string'?[textPrefix(item.id,160)]:[]);}
@@ -114,9 +124,9 @@ export function workProgress(messages:any[]) {
     }
   }
   const operations=[...records.values()].slice(-24);
-  const groups=new Map<string,any[]>();for(const r of operations){if(r.request.describe===true||['read_url','recall'].includes(r.tool)){const k=JSON.stringify([r.tool,r.request]);groups.set(k,[...(groups.get(k)??[]),r]);}}
+  const groups=new Map<string,any[]>();for(const r of operations){if(r.request.describe===true||['read_url','recall'].includes(r.tool)||r.tool==='work_wallet'&&r.request.operation==='status'){const k=JSON.stringify([r.tool,r.request]);groups.set(k,[...(groups.get(k)??[]),r]);}}
   const repeatedReads=[...groups.values()].filter(rows=>rows.length>=3).map(rows=>({tool:rows[0].tool,request:rows[0].request,count:rows.length,lastReceipt:rows.at(-1).archiveId,hint:'This read repeats within the retained receipt window. Reuse its evidence if unchanged; verify fresh state when needed. A schema description is not an executed action.'}));
-  return {operations,repeatedReads,instructionAuthority:false,meaning:'Receipt index of your recent operations across context boundaries. Reuse the archived result for unchanged source; a failed read is not proof of absence. Follow its file/cursor rather than rereading its first page. Reread live state when freshness matters. These entries prove only the recorded operation, not completion of your goal. If research has established the next step, implement it or checkpoint the concrete missing capability.'};
+  return {operations,payments:[...payments.values()].slice(-12),repeatedReads,instructionAuthority:false,meaning:'Receipt index of your recent operations across context boundaries. Payments retain the last observed original action, task and transaction; they are historical evidence, not a fresh wallet observation or execution permission. Reconcile an unresolved payment by its original id. Reuse the archived result for unchanged source; a failed read is not proof of absence. Follow its file/cursor rather than rereading its first page. Reread live state when freshness matters. These entries prove only the recorded operation, not completion of your goal. If research has established the next step, implement it or checkpoint the concrete missing capability.'};
 }
 
 export function continuationView(messages:any[],checkpointId:string) {

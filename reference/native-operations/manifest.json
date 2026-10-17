@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_mdpwS4whVLZ2koNZTQb5tk8aPgRw",
-  "source": "claus-browser-evidence-20261017",
+  "deployed": "dpl_GP8p4QELJzzGor4Y7wBaWS8sjnrk",
+  "source": "claus-payment-flow-20261017",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -13,11 +13,11 @@
     "src/operating-context.ts": "835ea2feff26df686fe8dfae8db18b04c6b0e8b5c46de1dba4f2b362250accc3",
     "src/knowledge-schema.ts": "52205d68b086be1fd36584c0a702b31782d50529468697d1528f9caba5202139",
     "src/work-wallet-sponsor.ts": "325134bc9146d516e2e818211b5e5e8e3ea068213726e04229fdd712779099f5",
-    "src/work-wallet.ts": "c4434dd0c2363044ffeb0a19c0620a4ee5acea928bf2c8fa4a89ee1e3b8f6dd1",
+    "src/work-wallet.ts": "bd0bdeede358a160c54d36dc521a63c065db05c7b745021228da9806aa144c39",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
     "src/network-access.ts": "3a9d1a8040402e5d2302d2c34f1cc34941b77cb20f0ff88c2e4ac669ddc077dc",
-    "src/context.ts": "3192fe2e5b49eb1725ba78cb80cb00da492f9a97e4a3580b31585130bfff386f",
+    "src/context.ts": "f5b472a2ec54b7dd35099d1d6b0969d76df73a5b56ba9506c0ff92c9eceadcbe",
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "fb5b6e2813c5c8d9760c025766667c4babe596248d1b46deb4476ce57c9c3777",
     "src/network-operations.ts": "79c8c0c6a95b0b17ded9234a0861ee1d1ddf53089001147256bec422dce695dc",
@@ -139,7 +139,8 @@
     "src/standby.ts": "5481d3c1916e56266835b023e9c352b3e198e71d273af102127f64c53a99aceb",
     "src/builder-model-profile.ts": "1c58285832895fbc48c247310843f1f050417fc689b96972ebb606a05e20bf71",
     "src/builder-worker.ts": "daf0f57e472d66f64fa7ba3b8c3044e80e589ad52deda0e4edb9c1080e47033f",
-    "src/payment-readiness.ts": "719957d3bc97572fa956bb98066592e59b297cb9323c9ff9c2c0fcb3aabbffba"
+    "src/payment-readiness.ts": "719957d3bc97572fa956bb98066592e59b297cb9323c9ff9c2c0fcb3aabbffba",
+    "src/payment-context.ts": "74f5ee7039c32ad7aed3dca84a63871600139708f4421f9963dd9ca1c36a2cc6"
   },
   "referenceSubset": true
 }
