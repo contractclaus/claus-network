@@ -52,6 +52,10 @@ body[data-ui=network] .world.core:active:not(:disabled){transform:translate(-50%
 .network-activity-list{margin:0;padding:0 4px 0 0;list-style:none;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#21191125 transparent;min-height:0;mask-image:linear-gradient(#000 calc(100% - 16px),transparent)}
  .network-activity-list li{padding:0 0 7px;position:relative;border:0;margin:0}
 .network-activity-entry{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:64px;padding:9px 7px;border-radius:14px;color:#211911;text-decoration:none;transition:background-color 150ms,scale 150ms}
+.network-activity-list li.has-related-next{padding-bottom:0}
+.network-activity-list li.is-related .network-activity-entry{min-height:44px;padding-top:2px;padding-bottom:7px}
+.network-activity-list li.is-related .network-activity-avatar{visibility:hidden}
+.network-activity-list li.is-related .network-activity-project{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .network-activity-entry:hover{background:#fff2d82b}.network-activity-entry:active{scale:.96}
 .network-activity-avatar{position:relative;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;overflow:hidden;background:#fff2d82b;box-shadow:inset 0 0 0 1px #0000000d;font-size:12px;font-weight:550}
 .network-activity-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -64,8 +68,7 @@ body[data-ui=network] .world.core:active:not(:disabled){transform:translate(-50%
 .network-activity-detail a{display:inline-flex;align-items:center;min-height:24px;font-size:11px;line-height:1.5;color:#4f2b1d;text-decoration:underline;text-underline-offset:3px}
 .network-activity-note{font-size:12px;line-height:1.5;margin:0 0 18px;color:#4f2b1d;text-align:center}
 .network-activity-toggle,.network-activity-close{display:none}
-.network-activity-detail summary{min-height:24px;cursor:pointer}
-.network-activity button:focus-visible,.network-activity a:focus-visible,.network-activity summary:focus-visible{outline:2px solid #211911;outline-offset:3px;border-radius:3px}
+.network-activity button:focus-visible,.network-activity a:focus-visible{outline:2px solid #211911;outline-offset:3px;border-radius:3px}
 .network-ping .object,.network-ping .network-orb-face{animation:network-ping 1s ease-out}
 .network-activity-list .is-new{animation:network-arrive 300ms ease-out}
 @keyframes network-ping{0%,100%{filter:none}35%{filter:drop-shadow(0 0 14px #fff2d8)}}

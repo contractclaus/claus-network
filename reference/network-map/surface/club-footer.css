@@ -1,0 +1,36 @@
+/* Shared Home artwork for Club and Splash, sized to the available viewport. */
+:root{--claus-footer-height:clamp(180px,calc(100dvh - 420px),300px)}
+body{min-height:100dvh;display:flex;flex-direction:column}
+body .club-shell,body.club-connected .club-shell{width:100%;min-height:0;flex:1 0 auto}
+.club-footer{position:relative;isolation:isolate;flex:none;min-height:var(--claus-footer-height);margin-top:auto;overflow:hidden;color:#fff2d8}
+.club-footer-tide{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.club-footer-claus{position:absolute;right:-24px;bottom:0;width:auto;height:calc(var(--claus-footer-height) + 30px);pointer-events:none}
+.club-footer-links{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:24px;width:max-content}
+.club-footer-links>a,.club-footer-links>.onchain-trigger{position:relative;display:flex;align-items:center;justify-content:center;flex:none;width:auto;height:44px;color:inherit;text-decoration:none}
+.club-footer-links>a::before,.club-footer-links>.onchain-trigger::before{content:"";position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:max(100%,44px)}
+.club-footer-links a svg{display:block;width:31.31px;height:32px;fill:currentColor}
+.club-footer-links .splash-link svg{width:24px;height:32px}
+.club-footer-links a[aria-label='Claus on OpenSea'] svg{width:35.46px;height:32px;overflow:hidden}
+.club-footer-links .club-link{font-size:38px;font-weight:500;line-height:1;letter-spacing:-2.6px}
+.club-footer-links .onchain-trigger{padding:0;background:none;border:0}
+.club-footer-links .onchain-trigger svg{width:20.57px;height:32px;fill:currentColor}
+.club-footer-links :is(a,button):hover{opacity:.72}
+.club-footer-links :is(a,button):focus-visible{outline:1px solid currentColor;outline-offset:4px;border-radius:4px}
+.club-onchain-panel .contract-copy{background:none;border:0;border-radius:0;color:inherit;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:42px;padding:8px 0;text-align:left;font-size:16px;line-height:1.35}
+.club-footer .copy-glyph{position:relative;width:18px;height:20px}
+.club-footer .copy-glyph svg{position:absolute;inset:0;width:18px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:opacity .2s,transform .2s}
+.club-footer .copied-mark{opacity:0;transform:scale(.8)}
+.club-footer [data-copied='true'] .clipboard-mark{opacity:0;transform:scale(.8)}
+.club-footer [data-copied='true'] .copied-mark{opacity:1;transform:none}
+.club-footer .copy-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.club-footer .copy-status[data-error='true']{position:static;width:auto;height:auto;clip-path:none;white-space:normal;font-size:13px;line-height:1.4}
+.club-onchain-panel{position:fixed;inset:auto;margin:0;padding:18px 20px 12px;width:244px;max-width:calc(100vw - 32px);overflow:auto;background:#080808;color:#fff2d8;border:1px solid #ffffff29;border-radius:12px;box-shadow:0 12px 36px #0003;font:inherit}
+.club-onchain-panel h2{margin:0 0 8px;font-size:20px;font-weight:500;line-height:1.3}
+.club-onchain-panel nav{display:grid}.club-onchain-panel a{display:flex;align-items:center;min-height:42px;padding:8px 0;font-size:16px;line-height:1.35;color:inherit;text-decoration:none}.club-onchain-panel :is(a,button):hover{opacity:.7}
+@media(max-width:600px){:root{--claus-footer-height:clamp(180px,calc(100dvh - 460px),270px)}.club-footer-claus{height:calc(var(--claus-footer-height) + 25px);right:-25px}.club-footer-links{bottom:max(10px,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){.club-footer *{transition:none!important}}
+
+/* Keep the entry artwork above the fold without suppressing content scrolling. */
+body:not(.club-connected) .club-shell{padding-top:8px}
+body:not(.club-connected) #gate{padding-top:0;padding-bottom:24px}
+body:not(.club-connected) #x-gate{height:auto;min-height:0;padding:24px 12px}
