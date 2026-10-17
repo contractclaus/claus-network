@@ -59,7 +59,16 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
         }
         const operating=await operatingProject(tx,projectId);
         let reservedPrivate=false,reservedRetry=false,isReservedOwner=false;
-        const standard=active.filter(entry=>entry.reservedPrivate!==true&&entry.operating!==true);
+        // Entries admitted before operating admission existed have no marker.
+        // Reconcile them against the same authenticated project classification;
+        // their original records and all unresolved concurrency slots stay intact.
+        const operatingProjects=new Map([[projectId,operating]]);
+        const standard=[];
+        for(const entry of active){
+          if(entry.reservedPrivate===true||entry.operating===true)continue;
+          if(!operatingProjects.has(entry.projectId))operatingProjects.set(entry.projectId,await operatingProject(tx,entry.projectId));
+          if(!operatingProjects.get(entry.projectId))standard.push(entry);
+        }
         const reserved=active.filter(entry=>entry.reservedPrivate===true);
         // One bounded retry of identical source after a confirmed runner failure.
         // An unknown, successful or already-retried build never frees this slot.
@@ -82,7 +91,8 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
             if(isReservedOwner)retryAt=Math.min(retryAt,Math.max(...reserved.map(expires)));
           }
           throw Object.assign(Error('oci_build_capacity_reached'),{code:'oci_build_capacity_reached',
-            ...(Number.isFinite(retryAt)?{retryAt,retryAfterSeconds:Math.max(1,Math.min(300,Math.ceil((retryAt-now())/1000)))}:{})});
+            capacityScope:busy.some(x=>x.projectId===projectId)?'project_concurrency':busy.length>=2?'global_concurrency':'public_window',
+            ...(Number.isFinite(retryAt)?{retryAt,retryAfterSeconds:Math.max(1,Math.ceil((retryAt-now())/1000))}:{})});
         }
         const job=await jobs.enqueue(tx,{projectId,kind,idempotencyKey,payload:{buildId:id},authority:{actor}});
         requireThat(job.id===id,'oci_job_binding_mismatch');

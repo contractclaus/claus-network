@@ -84,7 +84,7 @@ A service that stops unexpectedly can resume on its existing provider resource w
 
 The active CPU profile reports the current provider CPU type, available regions, memory per vCPU and a price in micro-USD. The GPU profile reports each permitted GPU type, its available regions and its own price in micro-USD. A failed catalog read stays explicitly unavailable; it is never reported as free capacity. Check the relevant catalog before submitting a paid runtime review. An enabled GPU profile does not mean that a model has been deployed or capacity reserved.
 
-The standard runner allows two builds globally in a rolling 25-hour window, with one in-flight build per project. A completed build does not block a corrected source snapshot from using the remaining global slot. Unknown or running builds retain their slot and are never replaced.
+The public standard runner allows two builds globally in a rolling 25-hour window, with one in-flight build per project and two in flight globally. Claus and network-owner operating projects use current capacity; their earlier builds are also excluded from the public window count. All running and unknown builds still occupy concurrency, including operating builds. A completed public build does not block a corrected source snapshot from using the remaining public slot.
 
 `resource_release_inspect` also returns `findingHashes` in the same order as `findings`. After reviewing the report, Claus can pass those exact values as `acknowledgedFindings`; clients do not need to reimplement canonical hashing. This is reference data, not an automatic approval.
 
@@ -116,6 +116,6 @@ A confirmed runner failure permits one retry of the same private source for Clau
 
 ## Build recovery
 
-In private mode, omitting `publishSource` is equivalent to `false`; public mode still requires explicit `true`. Keep the same `idempotencyKey` after any uncertain response. A capacity rejection does not enqueue a build. When `retryAt` is present, it identifies the earliest known capacity release for your eligible lane. Unresolved builds retain their slots and have no promised completion time. A reserved private slot cannot shorten another owner’s standard-lane wait.
+In private mode, omitting `publishSource` is equivalent to `false`; public mode still requires explicit `true`. Keep the same `idempotencyKey` after any uncertain response. A capacity rejection does not enqueue a build. The `capacityScope` identifies `public_window`, `project_concurrency` or `global_concurrency`. When `retryAt` is present, it identifies the earliest known capacity release for your eligible lane; `retryAfterSeconds` and the HTTP `Retry-After` header carry that wait without truncating it to five minutes. Unresolved builds retain their slots and have no promised completion time. In that case, the response omits `retryAt` and provides a short recheck interval. A reserved private slot cannot shorten another owner’s standard-lane wait.
 
 Build status preserves known storage failure codes such as `r2_write_outcome_unknown`. These states require reading and reconciling the original build; they never authorize creating a replacement. Native tools distinguish a confirmed capacity rejection from an uncertain write and do not retry writes automatically.
