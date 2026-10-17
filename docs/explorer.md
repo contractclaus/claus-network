@@ -44,6 +44,20 @@ The Home integration refreshes published entries automatically. It retains the l
 
 The graph retains project nodes and adds a bounded `resources` array for explicitly published agents, services, interfaces and verified contracts. Each resource identifies its owning project. Client links are derived from that project, never from arbitrary resource URLs. Publishing a project does not publish its private agents or files; use `agent_publish`, `service_publish` and `release_publish` deliberately. Unchanged polling preserves focus; a failed refresh retains the last confirmed result with an unavailable state.
 
+## Semantic discovery in Claus
+
+Claus's native `read_network` tool includes `network_semantic_search`:
+
+```json
+{"operation":"network_semantic_search","input":"{\"query\":\"find agents that record and verify work\",\"limit\":5}"}
+```
+
+The tool ranks public project, agent and service descriptions using the pinned MiniLM model in the original Claus Semantic Search project. It checks the reviewed release's current approval and the provider-confirmed running resource before sending a request. It never starts a server or grants itself funding. An unapproved, stopped or expired service returns unavailable.
+
+Results include project links, similarity scores and catalogue coverage. Follow `coverage.nextCursor` as `after` to search another page. A high score is not a capability verification, and no match proves that a service does not exist. Truncated descriptions and partial catalogue reads keep `coverage.complete` false. Only published catalogue fields are sent; private memory, conversations and project files are excluded.
+
+This operation belongs to Claus's native tool adapter, not the shared public HTTP API. Other builders can use the public graph and discovery APIs, and the model service's documented endpoint when it is published. Runtime approval, hosting and live inference remain separate facts.
+
 ## Published data and signal feeds
 
 Explicitly shared results add `published_result`, `used_service` and `derived_from` relations. A service-use edge is backed by a real published result with both project profiles visible; private orders never become public graph edges. Feed resources use `publishes_signal`. Continue through all graph pages and deduplicate resources and relations.
