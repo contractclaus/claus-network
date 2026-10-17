@@ -8,14 +8,14 @@ export function createSearchRepository(transaction){
    if(old)throw new SearchError(old.request_hash===request.hash?'search_request_already_reserved':'search_request_conflict',409);
    const row=(await q.query("SELECT (now() AT TIME ZONE 'UTC')::date::text AS day")).rows[0];
    const {used}=await usage(q,row.day);
-   if(used>=dailyLimit)throw new SearchError('search_daily_limit',429);
+   if(dailyLimit!==null&&used>=dailyLimit)throw new SearchError('search_daily_limit',429);
    await q.query("INSERT INTO claus_search_requests(id,request_hash,day,status) VALUES($1,$2,$3,'started')",[request.id,request.hash,row.day]);
   });},
   async finish(id,status){return transaction(q=>q.query("UPDATE claus_search_requests SET status=$2,completed_at=now() WHERE id=$1 AND status='started'",[id,status]));},
   async status(){return transaction(async q=>{
    const row=(await q.query("SELECT (now() AT TIME ZONE 'UTC')::date::text AS day")).rows[0];
    const {used}=await usage(q,row.day);
-   return {day:row.day,limit:dailyLimit,used,remaining:Math.max(0,dailyLimit-used)};
+   return {day:row.day,limit:dailyLimit,used,remaining:dailyLimit===null?null:Math.max(0,dailyLimit-used)};
   });}
  };
 }

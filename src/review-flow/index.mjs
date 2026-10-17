@@ -103,7 +103,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         }
         requireThat(candidates.length < 64, 'capacity_reached');
         const eligibility = await sponsor(tx, projectId);
-        if (eligibility.kind === 'public' || scope?.profile === 'claus-managed-v1' || [NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE,RUNTIME_IMAGE_PROFILE].includes(scope?.profile)) {
+        if (['public', 'operating'].includes(eligibility.kind) || scope?.profile === 'claus-managed-v1' || [NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE,RUNTIME_IMAGE_PROFILE].includes(scope?.profile)) {
           requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
           await validatePublicBuild(await artifacts.get(projectId, build.artifactHash, tx), scope?.profile);
         }
@@ -193,12 +193,12 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       requireThat(value.state === 'quoted' && value.inputHash === quote.inputHash, 'quote_input_mismatch');
       const pilot = await sponsor(tx, projectId);
       requireThat(BigInt(quote.offer.maximum) <= BigInt(pilot.maximumPerReview), 'sponsor_limit');
-      if (pilot.kind === 'public' || [NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE,RUNTIME_IMAGE_PROFILE].includes(value.profile)) {
+      if (['public', 'operating'].includes(pilot.kind) || [NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE,RUNTIME_IMAGE_PROFILE].includes(value.profile)) {
         requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
         if (selectReviewProfile && value.profile)
           await selectReviewProfile(tx, projectId, { chainId: value.chainId, profile: value.profile, actor,capitalJson:value.input.capital,partnerLaunchJson:value.input.partnerLaunch,runtimeReleaseId:value.input.runtimeImage?.releaseId });
         await validatePublicBuild(await artifacts.get(projectId, value.input.buildHash, tx), value.profile);
-        if (pilot.kind === 'public') await admission.reserve(tx, projectId, quote.offer.maximum, pilot, jobId);
+        if (['public', 'operating'].includes(pilot.kind)) await admission.reserve(tx, projectId, quote.offer.maximum, pilot, jobId);
       }
       const active = (await tx.read('active-paid-reviews', 'global'))?.value.ids ?? [];
       const live = [];
@@ -206,14 +206,14 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         const job = (await tx.read('review-jobs', id))?.value;
         if (job && !(['completed', 'cancelled', 'failed'].includes(job.work) && ['settled', 'void'].includes(job.billing))) live.push(job);
       }
-      requireThat(live.length < (pilot.kind === 'public' ? pilot.activeGlobal : 8) && !live.some(job => job.projectId === projectId), 'review_in_progress');
+      requireThat(live.length < (['public', 'operating'].includes(pilot.kind) ? pilot.activeGlobal : 8) && !live.some(job => job.projectId === projectId), 'review_in_progress');
       for (const [subject, maximum] of [[projectId, pilot.perProjectDay ?? 2], ['global', pilot.globalDay ?? 8]]) {
         // Public sponsorship has its own finite allocation. Keep the original
         // pilot counters intact; a new public pool does not reset or consume it.
         const key = digest({ subject, day: Math.floor(now() / 86400000),
-          version: pilot.kind === 'public' ? 'public-review-admission-v1' : 'review-admission-v1' });
+          version: pilot.kind === 'operating' ? 'operating-review-admission-v1' : pilot.kind === 'public' ? 'public-review-admission-v1' : 'review-admission-v1' });
         const old = await tx.read('review-admission', key);
-        requireThat((old?.value.count ?? 0) < maximum, 'capacity_reached');
+        requireThat(pilot.kind === 'operating' || (old?.value.count ?? 0) < maximum, 'capacity_reached');
         await tx.write('review-admission', key, { count: (old?.value.count ?? 0) + 1 }, old?.revision ?? 0);
       }
     },

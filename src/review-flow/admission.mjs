@@ -1,4 +1,5 @@
 import { operatingExpiry, operatingWindowOpen, amount, digest, integer, requireThat, shape } from '../shared/index.mjs';
+import { operatingProject } from '../operating-access/index.mjs';
 import { createPolicies } from '../policies/index.mjs';
 
 // Public sponsorship is distinct from free project access and from chain admission.
@@ -23,10 +24,10 @@ export function createReviewAdmission({ store, networkOwner, now }) {
     active,
     async eligible(reader, projectId) {
       const pilot = (await reader.read('review-pilots', projectId))?.value;
-      if (pilot?.enabled && pilot.expiresAt > now()) return { ...pilot, kind: 'pilot' };
+      if (pilot?.enabled && pilot.expiresAt > now()) return { ...pilot, kind: await operatingProject(reader, projectId) ? 'operating' : 'pilot', activeGlobal: 8 };
       const policy = await active(reader);
       requireThat(policy?.config.enabled && operatingWindowOpen(policy.config.expiresAt, now()), 'sponsor_not_enabled');
-      return { ...policy.config, kind: 'public', generation: policy.generation };
+      return { ...policy.config, kind: await operatingProject(reader, projectId) ? 'operating' : 'public', generation: policy.generation };
     },
     async get(actor) {
       await networkOwner(store, actor);
@@ -44,24 +45,29 @@ export function createReviewAdmission({ store, networkOwner, now }) {
     async reserve(tx, projectId, maximum, config, jobId) {
       requireThat(typeof jobId === 'string' && !await tx.read('public-review-reservations', jobId), 'idempotency_conflict');
       const project = (await tx.read('projects', projectId)).value;
+      const operating = config.kind === 'operating' && await operatingProject(tx, projectId);
+      const exposureCollection = operating ? 'operating-review-exposure' : 'public-review-exposure';
+      const ownerCollection = operating ? 'operating-review-owner-admission' : 'public-review-owner-admission';
       const ownerKey = digest({ ownerId: project.ownerId, day: Math.floor(now() / 86400000) });
-      const ownerUsage = await tx.read('public-review-owner-admission', ownerKey);
-      requireThat((ownerUsage?.value.count ?? 0) < config.perOwnerDay, 'capacity_reached');
-      const lifetime = await tx.read('public-review-exposure', 'lifetime');
+      const ownerUsage = await tx.read(ownerCollection, ownerKey);
+      requireThat(operating || (ownerUsage?.value.count ?? 0) < config.perOwnerDay, 'capacity_reached');
+      const lifetime = await tx.read(exposureCollection, 'lifetime');
       const total = amount(lifetime?.value.maximum ?? '0') + amount(maximum);
-      requireThat(total <= amount(config.maximumLifetime), 'sponsor_exhausted');
-      await tx.write('public-review-owner-admission', ownerKey, { count: (ownerUsage?.value.count ?? 0) + 1 }, ownerUsage?.revision ?? 0);
-      await tx.write('public-review-exposure', 'lifetime', { maximum: total.toString() }, lifetime?.revision ?? 0);
-      await tx.write('public-review-reservations', jobId, { projectId, maximum, released: false }, 0);
+      requireThat(operating || total <= amount(config.maximumLifetime), 'sponsor_exhausted');
+      await tx.write(ownerCollection, ownerKey, { count: (ownerUsage?.value.count ?? 0) + 1 }, ownerUsage?.revision ?? 0);
+      await tx.write(exposureCollection, 'lifetime', { maximum: total.toString() }, lifetime?.revision ?? 0);
+      await tx.write('public-review-reservations', jobId, { projectId, maximum, released: false, exposureCollection }, 0);
     },
     async releaseUnsent(tx, jobId) {
       const row = await tx.read('public-review-reservations', jobId);
       if (!row || row.value.released) return;
       const job = (await tx.read('review-jobs', jobId))?.value;
       requireThat(job?.work === 'cancelled' && job.billing === 'void', 'effect_requires_reconciliation');
-      const lifetime = await tx.read('public-review-exposure', 'lifetime');
+      const exposureCollection = row.value.exposureCollection ?? 'public-review-exposure';
+      requireThat(['public-review-exposure', 'operating-review-exposure'].includes(exposureCollection), 'invalid_reservation');
+      const lifetime = await tx.read(exposureCollection, 'lifetime');
       requireThat(amount(lifetime.value.maximum) >= amount(row.value.maximum), 'sponsor_exposure_mismatch');
-      await tx.write('public-review-exposure', 'lifetime', {
+      await tx.write(exposureCollection, 'lifetime', {
         maximum: (amount(lifetime.value.maximum) - amount(row.value.maximum)).toString()
       }, lifetime.revision);
       await tx.write('public-review-reservations', jobId, { ...row.value, released: true }, row.revision);

@@ -1,3 +1,4 @@
+import {buildAllowances} from './builder-limits.js';
 import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import type {LabDatabase,LabQuery} from './lab-db.js';
 import {modelCapacity} from './builder-wait.js';
@@ -119,17 +120,18 @@ export class BuilderStore {
     WHERE b.owner_scope=$1 OR e.created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' OR e.status IN ${activeEffects}`,[scope])).rows;
    const daily=effects.filter(e=>e.today||['reserved','running','uncertain'].includes(e.status));
    const modelUsed=daily.filter(e=>e.kind==='model').reduce((n,e)=>n+builderCommitment(e),0n),testsUsed=daily.filter(e=>e.kind==='test').length;
-   const capacity=modelCapacity(effects,new Date(clock.reset_at).toISOString());
+   const limits=buildAllowances(scope);
+   const capacity=modelCapacity(effects,new Date(clock.reset_at).toISOString(),Date.now(),scope);
    const own=(await q.query('SELECT id,status,next_at FROM claus_builds WHERE owner_scope=$1 ORDER BY created_at DESC LIMIT 24',[scope])).rows;
    const versions=(await q.query('SELECT v.project_id,count(*)::int n FROM claus_build_versions v JOIN claus_builds b ON b.id=v.project_id WHERE b.owner_scope=$1 GROUP BY v.project_id',[scope])).rows;
    const projectsUsed=projects.filter(p=>p.owner_scope===scope).length,projectsPerDay=scope==='claus'?null:1;
    // Null means no count cap; model spending and execution capacity still govern work.
    return {projectsUsed,projectsPerDay,projectsRemaining:projectsPerDay===null?null:Math.max(0,projectsPerDay-projectsUsed),
     sharedDailyProjectsRemaining:null,projectAdmission:'budget_and_capacity',
-    sharedDailyModelBudgetMicroUsdc:BUILD_LIMITS.dailyModelBudget,sharedPendingModelMicroUsdc:String(daily.filter(e=>e.kind==='model'&&['reserved','running','uncertain'].includes(e.status)).reduce((n,e)=>n+builderCommitment(e),0n)),sharedDailyModelUsedMicroUsdc:String(modelUsed),sharedDailyModelRemainingMicroUsdc:String(BigInt(BUILD_LIMITS.dailyModelBudget)>modelUsed?BigInt(BUILD_LIMITS.dailyModelBudget)-modelUsed:0n),sharedDailyModelRequestsRemaining:Number((BigInt(BUILD_LIMITS.dailyModelBudget)>modelUsed?BigInt(BUILD_LIMITS.dailyModelBudget)-modelUsed:0n)/BigInt(BUILD_LIMITS.modelReservation)),
-    sharedDailyTestRuns:BUILD_LIMITS.dailyTestRuns,sharedDailyTestRunsUsed:testsUsed,sharedDailyTestRunsRemaining:Math.max(0,BUILD_LIMITS.dailyTestRuns-testsUsed),
+    sharedDailyModelBudgetMicroUsdc:limits.dailyModelBudget,sharedPendingModelMicroUsdc:String(daily.filter(e=>e.kind==='model'&&['reserved','running','uncertain'].includes(e.status)).reduce((n,e)=>n+builderCommitment(e),0n)),sharedDailyModelUsedMicroUsdc:String(modelUsed),sharedDailyModelRemainingMicroUsdc:scope==='claus'?null:String(BigInt(BUILD_LIMITS.dailyModelBudget)>modelUsed?BigInt(BUILD_LIMITS.dailyModelBudget)-modelUsed:0n),sharedDailyModelRequestsRemaining:scope==='claus'?null:Number((BigInt(BUILD_LIMITS.dailyModelBudget)>modelUsed?BigInt(BUILD_LIMITS.dailyModelBudget)-modelUsed:0n)/BigInt(BUILD_LIMITS.modelReservation)),
+    sharedDailyTestRuns:limits.dailyTestRuns,sharedDailyTestRunsUsed:testsUsed,sharedDailyTestRunsRemaining:scope==='claus'?null:Math.max(0,BUILD_LIMITS.dailyTestRuns-testsUsed),
     resetsAt:new Date(clock.reset_at).toISOString(),pendingReservationsCarryOver:true,modelCapacity:capacity,
-    projects:own.map(p=>{const es=effects.filter(e=>e.project_id===p.id),models=es.filter(e=>e.kind==='model'),tests=es.filter(e=>e.kind==='test'),used=models.reduce((n,e)=>n+builderCommitment(e),0n);return {id:p.id,status:p.status,...builderProgress(p,capacity,es.some(e=>['running','uncertain'].includes(e.status))),modelRequestsRemaining:Math.max(0,BUILD_LIMITS.modelRequests-models.length),modelBudgetRemainingMicroUsdc:String(BigInt(BUILD_LIMITS.modelBudget)>used?BigInt(BUILD_LIMITS.modelBudget)-used:0n),testRunsRemaining:Math.max(0,BUILD_LIMITS.testRuns-tests.length),versionsRemaining:Math.max(0,BUILD_LIMITS.versions-(versions.find(v=>v.project_id===p.id)?.n??0)),lifetimeResetsAt:null};})};
+    projects:own.map(p=>{const es=effects.filter(e=>e.project_id===p.id),models=es.filter(e=>e.kind==='model'),tests=es.filter(e=>e.kind==='test'),used=models.reduce((n,e)=>n+builderCommitment(e),0n);return {id:p.id,status:p.status,...builderProgress(p,capacity,es.some(e=>['running','uncertain'].includes(e.status))),modelRequestsRemaining:scope==='claus'?null:Math.max(0,BUILD_LIMITS.modelRequests-models.length),modelBudgetRemainingMicroUsdc:scope==='claus'?null:String(BigInt(BUILD_LIMITS.modelBudget)>used?BigInt(BUILD_LIMITS.modelBudget)-used:0n),testRunsRemaining:scope==='claus'?null:Math.max(0,BUILD_LIMITS.testRuns-tests.length),versionsRemaining:scope==='claus'?null:Math.max(0,BUILD_LIMITS.versions-(versions.find(v=>v.project_id===p.id)?.n??0)),lifetimeResetsAt:null};})};
   });
  }
  async upload(requestId:string,id:string,scope:string,expectedRevision:number,input:unknown){
@@ -145,10 +147,10 @@ export class BuilderStore {
    if(p.revision!==expectedRevision)throw Error('builder_revision_conflict');
    if(p.lease_until&&new Date(p.lease_until)>new Date()||!['editing','ready_for_review','needs_changes','blocked','untested','waiting_test_quota'].includes(p.status))throw Error('builder_project_busy');
    if((await q.query("SELECT 1 FROM claus_build_effects WHERE project_id=$1 AND status IN ('reserved','running','uncertain')",[id])).rows.length)throw Error('builder_pending_effect');
-   const [{n}]=(await q.query('SELECT count(*)::int n FROM claus_build_versions WHERE project_id=$1',[id])).rows;if(n>=BUILD_LIMITS.versions)throw Error('builder_version_limit');
+   const [{n}]=(await q.query('SELECT count(*)::int n FROM claus_build_versions WHERE project_id=$1',[id])).rows;if(scope!=='claus'&&n>=BUILD_LIMITS.versions)throw Error('builder_version_limit');
    const [{n:tests}]=(await q.query("SELECT count(*)::int n FROM claus_build_effects WHERE project_id=$1 AND kind='test'",[id])).rows;
-   const status=tests>=BUILD_LIMITS.testRuns?'untested':'testing',summary=status==='untested'?'Source saved and exportable, untested: project lifetime test allowance exhausted.':'Source saved. Checks queued.';
-   const revision=p.revision+1,result={id,revision,sourceHash,state:status,testRunsRemaining:Math.max(0,BUILD_LIMITS.testRuns-tests)};
+   const status=scope!=='claus'&&tests>=BUILD_LIMITS.testRuns?'untested':'testing',summary=status==='untested'?'Source saved and exportable, untested: project lifetime test allowance exhausted.':'Source saved. Checks queued.';
+   const revision=p.revision+1,result={id,revision,sourceHash,state:status,testRunsRemaining:scope==='claus'?null:Math.max(0,BUILD_LIMITS.testRuns-tests)};
    await q.query("UPDATE claus_build_effects SET application_status='superseded',application_reason='Member saved a replacement revision.',application_at=now() WHERE project_id=$1 AND kind='model' AND status='completed' AND application_status IS NULL AND NOT EXISTS(SELECT 1 FROM claus_build_versions v WHERE v.source_effect=claus_build_effects.id)",[id]);
    await q.query('INSERT INTO claus_build_versions(project_id,revision,source_effect,files,source_hash,summary) VALUES($1,$2,NULL,$3::jsonb,$4,$5)',[id,revision,JSON.stringify(files),sourceHash,summary]);
    await q.query("UPDATE claus_builds SET revision=$2,mode='source',status=$3,summary=$4,next_at=now(),updated_at=now() WHERE id=$1",[id,revision,status,summary]);
@@ -157,8 +159,9 @@ export class BuilderStore {
  }
  async wakeCapacityWaiters(){return this.db.transaction(async q=>{
   await q.query('SELECT pg_advisory_xact_lock(6041010)');await this.coordination.assertCurrent(q);
-  const waiters=(await q.query("SELECT id FROM claus_builds WHERE status='waiting_model_quota' AND (lease_until IS NULL OR lease_until<=now()) LIMIT 1")).rows;
+  const waiters=(await q.query("SELECT id FROM claus_builds WHERE status IN ('waiting_model_quota','waiting_test_quota') AND (lease_until IS NULL OR lease_until<=now()) LIMIT 1")).rows;
   if(!waiters.length)return;
+  await q.query("UPDATE claus_builds SET next_at=LEAST(next_at,now()) WHERE owner_scope='claus' AND status IN ('waiting_model_quota','waiting_test_quota') AND (lease_until IS NULL OR lease_until<=now())");
   const rows=(await q.query("SELECT id,kind,status,amount::text,output,created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS today FROM claus_build_effects WHERE kind='model' AND (created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' OR status IN ('reserved','running','uncertain'))")).rows;
   if(modelCapacity(rows,new Date().toISOString()).ready)await q.query("UPDATE claus_builds SET next_at=LEAST(next_at,now()) WHERE status='waiting_model_quota' AND (lease_until IS NULL OR lease_until<=now())");
  });}
@@ -193,13 +196,13 @@ export class BuilderStore {
   const rows=(await q.query("SELECT id,output,project_id,kind,status,amount::text,created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS today FROM claus_build_effects WHERE project_id=$1 OR created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' OR status IN ('reserved','running','uncertain')",[id])).rows;
   const own=rows.filter(r=>r.project_id===id&&r.kind===kind),daily=rows.filter(r=>r.kind===kind&&(r.today||['reserved','running','uncertain'].includes(r.status)));
   const amount=kind==='model'?BUILD_LIMITS.modelReservation:'0';
-  if(kind==='model'&&(own.length>=BUILD_LIMITS.modelRequests||own.reduce((n,r)=>n+builderCommitment(r),0n)+BigInt(amount)>BigInt(BUILD_LIMITS.modelBudget)))throw Error('builder_lifetime_model_budget');
-  if(kind==='test'&&own.length>=BUILD_LIMITS.testRuns)throw Error('builder_lifetime_test_budget');
+  if(p.owner_scope!=='claus'&&kind==='model'&&(own.length>=BUILD_LIMITS.modelRequests||own.reduce((n,r)=>n+builderCommitment(r),0n)+BigInt(amount)>BigInt(BUILD_LIMITS.modelBudget)))throw Error('builder_lifetime_model_budget');
+  if(p.owner_scope!=='claus'&&kind==='test'&&own.length>=BUILD_LIMITS.testRuns)throw Error('builder_lifetime_test_budget');
   if(kind==='model'&&own.length){
    const firsts=(await q.query(`SELECT first.* FROM claus_builds first WHERE first.id<>$1 AND ${initialAttempt('first')}`,[id])).rows;
    for(const first of firsts)if(!eligible||await eligible(first,q))throw Error('builder_initial_attempt_priority');
   }
-  if(kind==='model'&&daily.reduce((n,r)=>n+builderCommitment(r),0n)+BigInt(amount)>BigInt(BUILD_LIMITS.dailyModelBudget)||kind==='test'&&daily.length>=BUILD_LIMITS.dailyTestRuns){
+  if(p.owner_scope!=='claus'&&(kind==='model'&&daily.reduce((n,r)=>n+builderCommitment(r),0n)+BigInt(amount)>BigInt(BUILD_LIMITS.dailyModelBudget)||kind==='test'&&daily.length>=BUILD_LIMITS.dailyTestRuns)){
    const {reset_at}=(await q.query("SELECT (date_trunc('day',now() AT TIME ZONE 'UTC')+interval '1 day') AT TIME ZONE 'UTC' AS reset_at")).rows[0];
    throw new BuilderQuotaWait(kind,new Date(reset_at).toISOString(),kind==='model'?modelCapacity(rows,new Date(reset_at).toISOString()):undefined);
   }

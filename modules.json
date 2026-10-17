@@ -94,7 +94,8 @@
       "id": "identity",
       "path": "src/identity/",
       "imports": [
-        "shared"
+        "shared",
+        "operating-access"
       ],
       "builtins": [
         "node:crypto"
@@ -105,7 +106,8 @@
       "path": "src/projects/",
       "imports": [
         "shared",
-        "artifact-store"
+        "artifact-store",
+        "operating-access"
       ],
       "builtins": []
     },
@@ -133,7 +135,8 @@
       "id": "builds",
       "path": "src/builds/",
       "imports": [
-        "shared"
+        "shared",
+        "operating-access"
       ],
       "builtins": []
     },
@@ -143,7 +146,8 @@
       "imports": [
         "shared",
         "policies",
-        "capital"
+        "capital",
+        "operating-access"
       ],
       "builtins": []
     },
@@ -161,7 +165,8 @@
       "path": "src/approvals/",
       "imports": [
         "shared",
-        "chain-deployments"
+        "chain-deployments",
+        "operating-access"
       ],
       "builtins": []
     },
@@ -169,7 +174,8 @@
       "id": "services",
       "path": "src/services/",
       "imports": [
-        "shared"
+        "shared",
+        "operating-access"
       ],
       "builtins": [
         "node:crypto"
@@ -188,7 +194,8 @@
       "path": "src/releases/",
       "imports": [
         "shared",
-        "artifact-store"
+        "artifact-store",
+        "operating-access"
       ],
       "builtins": []
     },
@@ -225,7 +232,8 @@
       "path": "src/access/",
       "imports": [
         "shared",
-        "policies"
+        "policies",
+        "operating-access"
       ],
       "builtins": []
     },
@@ -241,7 +249,8 @@
       "id": "apps",
       "path": "src/apps/",
       "imports": [
-        "shared"
+        "shared",
+        "operating-access"
       ],
       "builtins": [
         "node:crypto"
@@ -302,7 +311,8 @@
       "id": "workers",
       "path": "src/workers/",
       "imports": [
-        "shared"
+        "shared",
+        "operating-access"
       ],
       "builtins": []
     },
@@ -353,11 +363,18 @@
       "path": "src/infrastructure/",
       "imports": [
         "shared",
-        "billing"
+        "billing",
+        "operating-access"
       ],
       "builtins": [
         "node:crypto"
       ]
+    },
+    {
+      "id": "operating-access",
+      "path": "src/operating-access/",
+      "imports": [],
+      "builtins": []
     }
   ],
   "planned": [

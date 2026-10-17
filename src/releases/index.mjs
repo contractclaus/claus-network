@@ -1,3 +1,4 @@
+import {operatingProject} from '../operating-access/index.mjs';
 import {createSourceFiles} from '../artifact-store/index.mjs';
 import { manifestConnections, SITE_LIMITS, sitePublicationActive, sourcePath, canonical, digest, integer, requireThat, text } from '../shared/index.mjs';
 
@@ -27,7 +28,7 @@ export function createReleases({ store, identity, projects, artifacts, sourceFil
         await admit(projectId,tx);
         const old=await tx.read('project-releases',id);if(old)return old.value;
         const capacity=await tx.read('release-capacity',projectId);
-        requireThat((capacity?.value.count??0)<(await limit('releasesPerProject',tx)??32),'capacity_reached');
+        requireThat(await operatingProject(tx,projectId)||(capacity?.value.count??0)<(await limit('releasesPerProject',tx)??32),'capacity_reached');
         const contentHash=await artifacts.put(tx,projectId,files);
         const value={id,projectId,snapshotId,contentHash,paths:files.map(f=>f.path),createdAt:now(),
           isolation:'opaque-origin-static-v1',appSchemaHash,connect,url:origin+'/r/'+id.slice(7)+'/index.html'};

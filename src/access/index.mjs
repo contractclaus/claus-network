@@ -1,3 +1,4 @@
+import { operatingProject, operatingPrincipal } from '../operating-access/index.mjs';
 import { SITE_LIMITS, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
 import { createPolicies } from '../policies/index.mjs';
 
@@ -41,13 +42,13 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
     return policies.active('project-access', reader);
   }
   async function limit(key, reader = store) { return (await policy(reader)).config[key]; }
-  async function consume(reader, kind, amount, dailyKey, totalKey) {
+  async function consume(reader, kind, amount, dailyKey, totalKey, operating = false) {
     const config = (await policy(reader)).config;
     requireThat(!config.paused, 'project_admission_paused');
     for (const [period, maximum] of [[Math.floor(now() / 86400000), config[dailyKey]], ['total', config[totalKey]]]) {
-      const id = digest({ kind, period }), old = await reader.read('access-capacity', id);
+      const id = digest({ kind, period, ...(operating ? { lane: 'operating' } : {}) }), old = await reader.read('access-capacity', id);
       const used = old?.value.used ?? 0;
-      requireThat(used + amount <= maximum, 'capacity_reached');
+      requireThat(operating || used + amount <= maximum, 'capacity_reached');
       await reader.write('access-capacity', id, { kind, period, used: used + amount }, old?.revision ?? 0);
     }
   }
@@ -103,7 +104,7 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       await collaboration(projectId, reader);
       requireThat((await policy(reader)).config.publicDataServices === true, 'public_data_not_enabled');
     },
-    consumeProjects: reader => consume(reader, 'projects', 1, 'newProjectsPerDay', 'newProjectsTotal'),
+    consumeProjects: async (reader, principalId) => consume(reader, 'projects', 1, 'newProjectsPerDay', 'newProjectsTotal', !!principalId && await operatingPrincipal(reader, principalId)),
     consumeSnapshotBytes: (reader, bytes) => consume(reader, 'snapshotBytes', bytes, 'newSnapshotBytesPerDay', 'newSnapshotBytesTotal'),
     async project(actor, projectId) {
       await identity.authorize(actor, 'project.read', { projectId });
@@ -122,19 +123,21 @@ export function createAccess({ store, identity, reviewAdmission = async () => nu
       try { await collaboration(projectId); }
       catch (error) { free = { available: false, reason: error.code, next: 'Read capabilities for current admission; retain existing resource IDs.' }; }
       const day = Math.floor(now() / 86400000);
+      const operating = await operatingProject(store, projectId);
       const quota = async (collection, id, key, field = 'count') => {
         const used = (await store.read(collection, id))?.value[field] ?? 0, maximum = active.config[key];
-        return { used, maximum, remaining: Math.max(0, maximum - used) };
+        return operating && ['agentsPerProject','snapshotsPerProject','releasesPerProject','buildsPerProjectDay','serviceVersionsPerProject','quotesPerProjectDay','ordersPerProjectDay'].includes(key) ? { used, maximum: null, remaining: null } : { used, maximum, remaining: Math.max(0, maximum - used) };
       };
       return { projectId, policyVersion: active.version, policyGeneration: active.generation, scopes,
         suspended: status?.value.suspended === true, accessRevision: status?.revision ?? 0, collaboration: free,
+        operatingAdmission: operating ? 'available_funding_and_capacity' : null,
         reviews: { eligible: sponsorActive, reason: sponsorActive ? null : 'sponsor_not_enabled',
           reservationRequired: true, projectPrice: '0' },
         quotas: {
           agents: await quota('identity-capacity', digest({ kind: 'agents', subject: projectId }), 'agentsPerProject'),
           snapshots: await quota('snapshot-capacity', projectId, 'snapshotsPerProject'),
           snapshotBytes: await quota('snapshot-capacity', projectId, 'snapshotBytesPerProject', 'bytes'),
-          buildsToday: await quota('build-admission', digest({ scope: projectId, day, version: 'compile-admission-v1' }), 'buildsPerProjectDay'),
+          buildsToday: await quota('build-admission', digest({ scope: projectId, day, version: 'compile-admission-v1', ...(operating ? { lane: 'operating' } : {}) }), 'buildsPerProjectDay'),
           serviceVersions: await quota('service-capacity', digest({ kind: 'versions', subject: projectId }), 'serviceVersionsPerProject'),
           quotesToday: await quota('service-capacity', digest({ kind: 'quotes', subject: projectId + ':' + day }), 'quotesPerProjectDay'),
           ordersToday: await quota('service-capacity', digest({ kind: 'orders', subject: projectId + ':' + day }), 'ordersPerProjectDay'),

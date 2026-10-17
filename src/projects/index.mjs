@@ -1,3 +1,4 @@
+import {operatingProject} from '../operating-access/index.mjs';
 import {createSourceFiles} from '../artifact-store/index.mjs';
 import { SITE_LIMITS, canonical, copy, digest, integer, requireThat, text, sourcePath, sourceText } from '../shared/index.mjs';
 import { agentPublicationVisible } from './agent-publication.mjs';
@@ -97,7 +98,7 @@ export function createProjects({ store, identity, sourceFiles = createSourceFile
       const existing = (await store.read('snapshots', projectRef(projectId, id)))?.value;
       if (existing) return existing;
       const capacity = await store.read('snapshot-capacity', projectId);
-      requireThat((capacity?.value.count ?? 0) < (await limit('snapshotsPerProject', store) ?? 64) &&
+      requireThat((await operatingProject(store, projectId) || (capacity?.value.count ?? 0) < (await limit('snapshotsPerProject', store) ?? 64)) &&
         (capacity?.value.bytes ?? 0) + Buffer.byteLength(canonical(clean)) <=
         (await limit('snapshotBytesPerProject', store) ?? 8000000), 'capacity_reached');
       const prepared = new Map();
@@ -113,7 +114,7 @@ export function createProjects({ store, identity, sourceFiles = createSourceFile
         if (old) return old;
         const usage = await tx.read('snapshot-capacity', projectId);
         const bytes = Buffer.byteLength(canonical(clean));
-        requireThat((usage?.value.count ?? 0) < (await limit('snapshotsPerProject', tx) ?? 64) &&
+        requireThat((await operatingProject(tx, projectId) || (usage?.value.count ?? 0) < (await limit('snapshotsPerProject', tx) ?? 64)) &&
           (usage?.value.bytes ?? 0) + bytes <= (await limit('snapshotBytesPerProject', tx) ?? 8000000), 'capacity_reached');
         await consumeSnapshotBytes(tx, bytes);
         for (const file of clean) {

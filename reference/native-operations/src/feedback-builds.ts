@@ -31,9 +31,9 @@ export class FeedbackBuildStore{
  constructor(readonly db:LabDatabase){}
  async availability(){
   const usage=await new BuilderStore(this.db).usage('claus');
-  if(usage.sharedDailyModelRequestsRemaining<1){
+  if(usage.sharedDailyModelRequestsRemaining!==null&&usage.sharedDailyModelRequestsRemaining<1){
    const held=BigInt(usage.sharedPendingModelMicroUsdc);
-   const waitsForReceipt=BigInt(usage.sharedDailyModelBudgetMicroUsdc)-held<BigInt(BUILD_LIMITS.modelReservation);
+   const waitsForReceipt=BigInt(usage.sharedDailyModelBudgetMicroUsdc ?? BUILD_LIMITS.dailyModelBudget)-held<BigInt(BUILD_LIMITS.modelReservation);
    return {state:waitsForReceipt?'waiting_for_reconciliation':'waiting_model_quota',nextCheckAt:waitsForReceipt?null:usage.resetsAt,meaning:waitsForReceipt?'Unresolved model requests occupy the existing allowance. A day change alone does not restore capacity. Saved requests have not started.':'The daily model allowance is occupied. This is a recheck time, not a promised start.'};
   }
   return {state:'capacity_available',nextCheckAt:null,meaning:'Local quota permits admission; worker availability and provider checks still apply. This does not mean a saved request is running.'};
@@ -78,8 +78,8 @@ export class FeedbackBuildStore{
    if(!i)return {status:'idle'};
    const scoped:LabDatabase={query:q.query.bind(q),transaction:fn=>fn(q)},builds=new BuilderStore(scoped),usage=await builds.usage('claus');
    const wait=async(status:string,nextAt:string)=>{await q.query('UPDATE claus_prototype_intake SET status=$2,next_at=$3 WHERE id=$1',[i.id,status,nextAt]);return this.result(q,i.id);};
-   if(usage.sharedDailyModelRequestsRemaining<1){
-    if(BigInt(usage.sharedDailyModelBudgetMicroUsdc)-BigInt(usage.sharedPendingModelMicroUsdc)<BigInt(BUILD_LIMITS.modelReservation))return wait('waiting_reconciliation',new Date(Date.now()+300000).toISOString());
+   if(usage.sharedDailyModelRequestsRemaining!==null&&usage.sharedDailyModelRequestsRemaining<1){
+    if(BigInt(usage.sharedDailyModelBudgetMicroUsdc ?? BUILD_LIMITS.dailyModelBudget)-BigInt(usage.sharedPendingModelMicroUsdc)<BigInt(BUILD_LIMITS.modelReservation))return wait('waiting_reconciliation',new Date(Date.now()+300000).toISOString());
     return wait('waiting_model_quota',usage.resetsAt);
    }
    if((await q.query('SELECT id FROM claus_builds WHERE lease_until>now() LIMIT 1')).rows.length)return wait('waiting_builder',new Date(Date.now()+60000).toISOString());

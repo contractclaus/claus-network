@@ -1,3 +1,4 @@
+import {operatingProject} from '../operating-access/index.mjs';
 import {digest,integer,requireThat,text} from '../shared/index.mjs';
 import {createOciBuildPlan} from './build-plan.mjs';
 import {sealPrivateContext} from './private-context.mjs';
@@ -28,7 +29,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
     return createOciBuildPlan({projectId:v.projectId,snapshotId:v.snapshotId,dockerfile:v.dockerfile,files});
   }
   return {
-    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',privateSource:privateEnabled&&!!privateSecret,artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxPrivateImageBytes:134217728,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:2,projectConcurrentBuilds:1,globalBuildsPerWindow:2,reservedOwnerPrivateBuildsPerWindow:reservedPrivateOwner?1:0,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
+    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',privateSource:privateEnabled&&!!privateSecret,artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxPrivateImageBytes:134217728,maxSourcePayloadBytes:3200000,operatingAdmission:'current_capacity',operatingBuildsPerWindow:null,operatingConcurrentBuilds:2,projectBuildsPerWindow:2,projectConcurrentBuilds:1,globalBuildsPerWindow:2,reservedOwnerPrivateBuildsPerWindow:reservedPrivateOwner?1:0,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
     async submit(actor,projectId,{snapshotId,dockerfile='Dockerfile',sourceVisibility='public',publishSource,idempotencyKey}){
       await identity.authorize(actor,'build.compile',{projectId});
       text(idempotencyKey);requireThat(idempotencyKey.length<=128,'invalid_identifier');
@@ -56,26 +57,27 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
           if(entry.at>now()-90000000||pending)active.push(entry);
           if(pending)busy.push(entry);
         }
+        const operating=await operatingProject(tx,projectId);
         let reservedPrivate=false,reservedRetry=false,isReservedOwner=false;
-        const standard=active.filter(entry=>entry.reservedPrivate!==true);
+        const standard=active.filter(entry=>entry.reservedPrivate!==true&&entry.operating!==true);
         const reserved=active.filter(entry=>entry.reservedPrivate===true);
         // One bounded retry of identical source after a confirmed runner failure.
         // An unknown, successful or already-retried build never frees this slot.
         const failed=reserved.length===1?await tx.read('oci-builds',reserved[0].id):null;
         const canRetry=reserved.length===1&&!reserved[0].reservedRetry&&failed?.value.state==='failed'&&failed.value.error==='oci_runner_failure'&&failed.value.projectId===projectId&&failed.value.planId===plan.id;
-        if(standard.length>=2&&isPrivate&&reservedPrivateOwner){
+        if(!operating&&standard.length>=2&&isPrivate&&reservedPrivateOwner){
           const credential=await identity.credential(actor,tx),principal=(await tx.read('principals',credential.principalId))?.value;
           isReservedOwner=credential.kind==='owner'&&principal?.chainId===1&&principal.address?.toLowerCase()===reservedPrivateOwner;
           reservedPrivate=isReservedOwner&&(reserved.length===0||canRetry);
           reservedRetry=reservedPrivate&&canRetry;
         }
-        if((standard.length>=2&&!reservedPrivate)||busy.some(x=>x.projectId===projectId)){
+        if(busy.length>=2||(!operating&&standard.length>=2&&!reservedPrivate)||busy.some(x=>x.projectId===projectId)){
           // An unresolved build has no known expiry. A different owner's
           // reserved slot also cannot free standard capacity for this caller.
           const busyIds=new Set(busy.map(x=>x.id));
           const expires=entry=>busyIds.has(entry.id)?Infinity:entry.at+90000000;
           let retryAt=Infinity;
-          if(!busy.some(x=>x.projectId===projectId)){
+          if(!operating&&busy.length<2&&!busy.some(x=>x.projectId===projectId)){
             retryAt=standard.map(expires).sort((a,b)=>a-b)[standard.length-2]??Infinity;
             if(isReservedOwner)retryAt=Math.min(retryAt,Math.max(...reserved.map(expires)));
           }
@@ -86,7 +88,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
         requireThat(job.id===id,'oci_job_binding_mismatch');
         const value={id,projectId,snapshotId,dockerfile,requestHash,publishSource:!isPrivate,...(isPrivate?{sourceVisibility:'private'}:{}),actor,planId:plan.id,sourceHash:plan.sourceHash,state:'queued',createdAt:now(),artifactHash:null};
         const saved=await tx.write('oci-builds',id,value,0);
-        await tx.write('oci-capacity','standard',{entries:[...active,{id,projectId,at:now(),...(reservedPrivate?{reservedPrivate:true}:{}),...(reservedRetry?{reservedRetry:true,retryOf:reserved[0].id}:{})}]},row?.revision??0);
+        await tx.write('oci-capacity','standard',{entries:[...active,{id,projectId,at:now(),...(operating?{operating:true}:{}),...(reservedPrivate?{reservedPrivate:true}:{}),...(reservedRetry?{reservedRetry:true,retryOf:reserved[0].id}:{})}]},row?.revision??0);
         return visible(tx,saved);
       });
     },

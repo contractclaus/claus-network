@@ -1,3 +1,4 @@
+import { operatingProject } from '../operating-access/index.mjs';
 import { digest } from '../shared/index.mjs';
 
 // Public requests spend the operator's existing model budget. These admission
@@ -6,6 +7,7 @@ export const PUBLIC_DECISION_LIMITS = { projectDay: 2, globalDay: 8, projectLife
 export async function publicDecisionCapacity(reader, projectId, now, reserve = false) {
   const pilot = (await reader.read('review-pilots', projectId))?.value;
   if (!await reader.read('public-chain-projects', projectId) && pilot?.enabled && pilot.expiresAt > now) return false;
+  const operating = await operatingProject(reader, projectId);
   const day = Math.floor(now / 86400000);
   const operation = (await reader.read('network-capabilities', 'continuous-operation'))?.value;
   const continuous = operation?.enabled === true && operation.profile === 'claus-operation-v1' && operation.expiresAt === null;
@@ -31,10 +33,10 @@ export async function publicDecisionCapacity(reader, projectId, now, reserve = f
     ['day', projectId, day, projectDay],
     ['day', 'global', day, allocated ? requestedGlobalDay : PUBLIC_DECISION_LIMITS.globalDay]
   ]) {
-    const key = digest({ scope, subject, period }), row = await reader.read('public-decision-admission', key);
+    const key = digest({ scope, subject, period, ...(operating ? { lane: 'operating' } : {}) }), row = await reader.read('public-decision-admission', key);
     if (scope === 'lifetime' && subject === projectId)
       canRetryNextDay = continuous || (row?.value.count ?? 0) < PUBLIC_DECISION_LIMITS.projectLifetime;
-    if (maximum !== null && (row?.value.count ?? 0) >= maximum) throw Object.assign(new Error('decision_capacity_reached'),
+    if (!operating && maximum !== null && (row?.value.count ?? 0) >= maximum) throw Object.assign(new Error('decision_capacity_reached'),
       { code: 'decision_capacity_reached', ...(scope === 'day' && canRetryNextDay ? { retryAt: (day + 1) * 86400000 } : {}) });
     if (reserve) await reader.write('public-decision-admission', key, { count: (row?.value.count ?? 0) + 1 }, row?.revision ?? 0);
   }

@@ -262,7 +262,8 @@ export class LabStore {
       if(!settings.experiments)throw Error('lab_experiment_disabled');
       const {rows:[counts]}=await q.query("SELECT count(*) FILTER(WHERE period=$1)::int AS daily,count(*) FILTER(WHERE idea_id=$2)::int AS idea,count(*) FILTER(WHERE status IN ('reserved','started','uncertain'))::int AS pending FROM claus_lab_effects WHERE kind='experiment'",[period,input.ideaId]);
       if(counts.pending>0)throw Error('lab_experiment_pending');
-      if(counts.daily>=4||counts.idea>=2)throw Error('lab_experiment_limit');
+      // The current experiment, bounded sandbox and idea step budget limit work.
+      // Completed experiments do not create an unrelated daily or lifetime ban.
     }
     const daily=input.currency==='USDC'?settings.modelDailyBudgetMicroUsdc:settings.imdDailyBudgetAtomic,perIdea=input.currency==='USDC'?settings.modelIdeaBudgetMicroUsdc:settings.imdIdeaBudgetAtomic;
     if(input.currency!=='NONE'){
