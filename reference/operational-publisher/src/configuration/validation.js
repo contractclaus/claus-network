@@ -12163,7 +12163,7 @@ var nonempty = (v, max) => typeof v === "string" && !!v.trim() && v.length <= ma
 var timestamp = (v) => typeof v === "string" && /^\d{4}-\d\d-\d\dT/.test(v) && Number.isFinite(Date.parse(v));
 function validateKnowledge(value) {
   const v = value;
-  if (!v || v.version !== 1 || !Array.isArray(v.topics) || v.topics.length > 64 || JSON.stringify(v).length > 8e4) throw Error("invalid_knowledge");
+  if (!v || v.version !== 1 || !Array.isArray(v.topics) || v.topics.length > 64 || JSON.stringify(v).length > 256000) throw Error("invalid_knowledge");
   const ids = /* @__PURE__ */ new Set();
   for (const t of v.topics) {
     if (!t || !/^[a-z][a-z0-9-]{1,63}$/.test(t.id) || ids.has(t.id) || !nonempty(t.title, 120) || !nonempty(t.summary, 400) || typeof t.body !== "string" || t.body.length > 16e3 || !["current", "historical", "proposed"].includes(t.status) || !["public", "internal"].includes(t.visibility) || !timestamp(t.updatedAt) || t.reviewAfter !== void 0 && !timestamp(t.reviewAfter)) throw Error("invalid_knowledge_topic");

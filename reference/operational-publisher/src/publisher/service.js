@@ -3,6 +3,7 @@ import {target,hash,sha,validateManifest,validateChanges,patch,denyNewAuthority}
 import {validateProgram} from './program.js';
 import {publicationControls} from './controls.js';
 import {trustedReview} from './review-evidence.js';
+import {NativeArchive} from './native-archive.js';
 
 const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
 const equal=(a,b)=>canonical(a)===canonical(b);
@@ -13,8 +14,9 @@ const deploymentView=d=>({id:d.id,url:d.url,projectId:d.projectId,readyState:d.r
 
 // No caller-selected provider path, URL, environment, build command or SQL.
 // The original release and its completed review come from a read-only DB role.
-export function createPublisher({repository,ledger,host=new OperationsHost(),reviewEvidence=trustedReview,controls}){
+export function createPublisher({repository,ledger,host=new OperationsHost(),reviewEvidence=trustedReview,controls,nativeArchive}){
  const control=()=>controls??=publicationControls();
+ const retainNative=(scope,deployment,manifest)=>scope==='native'?(nativeArchive??=new NativeArchive({host})).retain(deployment,manifest):Promise.resolve(null);
  async function context(scope){target(scope);const c=await repository.current(scope);if(!c)fail('scope_missing');validateManifest(c.manifest);return c;}
  async function release(scope,id){if(!/^op_[a-f0-9]{24}$/.test(id??''))fail('release_invalid');const r=await repository.release(id);if(!r||r.scope!==scope)fail('release_missing');return r;}
  async function bound(scope,id){
@@ -88,10 +90,11 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
    }
    const actual=await host.api('/v13/deployments/'+deploymentId(id),{},scope);if(actual.projectId!==target(scope).project)fail('deployment_binding');
    const proof=await host.verify(scope,{id,url:'https://'+actual.url},manifest,true);
+   const standby=await retainNative(scope,id,manifest);
    const schedules=p=>(p??[]).map(({path,schedule})=>({path,schedule})).sort((a,b)=>a.path.localeCompare(b.path));
    const live=await host.project(scope);if(live.targets?.production?.id!==id)fail('production_changed');
    if(!equal(schedules(live.crons?.definitions),schedules(c.crons)))fail('schedule_changed');
-   return rollback?control().rollbackOperation(c,r,manifest,{passed:true,rollback:{completedAt:new Date().toISOString(),verification:proof}}):control().activateOperation(c,r,{passed:true,sourceHash:r.source_hash,reviewEffect:r.review_effect,production:proof,verifiedBy:'fixed-publisher'});
+   return rollback?control().rollbackOperation(c,r,manifest,{passed:true,rollback:{completedAt:new Date().toISOString(),verification:proof},standby}):control().activateOperation(c,r,{passed:true,sourceHash:r.source_hash,reviewEffect:r.review_effect,production:proof,standby,verifiedBy:'fixed-publisher'});
   }
   if(operation==='project')return projectView(await host.project(scope));
   if(operation==='baseline'){const [id,manifest]=args;if(id!==c.deployment||!equal(manifest,c.manifest))fail('base_changed');return projectView(await host.baseline(scope,id,c.manifest));}
@@ -115,6 +118,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
    else{await reviewed(r,c);if(!r.promote_started||r.deployment?.id!==d.id||!['deploying','verified'].includes(r.state))fail('promotion_unbound');const original=await reconcileDeployment(r,true);if(original.id!==d.id)fail('promotion_unbound');}
    const b=await bound(scope,d.id),actual=await host.api('/v13/deployments/'+d.id,{},scope);if(actual.projectId!==target(scope).project)fail('deployment_binding');
    await host.verify(scope,{id:d.id,url:'https://'+actual.url},b.manifest);
+   await retainNative(scope,d.id,b.manifest);
    const crons=p=>(p??[]).map(({path,schedule})=>({path,schedule})).sort((a,b)=>a.path.localeCompare(b.path));
    if(!equal(crons((await host.project(scope)).crons?.definitions),crons(c.crons)))fail('schedule_changed');
    return once((rollback?'rollback:':'promote:')+r.id,{scope,base,target:d.id},async()=>{

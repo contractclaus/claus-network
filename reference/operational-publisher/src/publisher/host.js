@@ -59,9 +59,12 @@ class OperationsHost {
     return p;
   }
   async read(scope, deployment, file) {
+    return (await this.readBytes(scope, deployment, file)).toString("utf8");
+  }
+  async readBytes(scope, deployment, file) {
     const response = await this.api("/v8/deployments/" + deployment + "/files/" + file.sha, {}, scope), bytes = Buffer.from(response.data, "base64");
     if (sha(bytes) !== file.sha || bytes.length !== file.size) throw Error("operations_source_mismatch");
-    return bytes.toString("utf8");
+    return bytes;
   }
   async deploy(scope, base, manifest, files, id, sourceHash) {
     const p = target(scope);
