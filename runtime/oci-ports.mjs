@@ -1,4 +1,4 @@
-import {canonical,digest,requireThat} from '../src/shared/index.mjs';
+import {canonical,requireThat} from '../src/shared/index.mjs';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 
 export function ociPorts({env=process.env,request=fetch}={}){
@@ -9,11 +9,16 @@ export function ociPorts({env=process.env,request=fetch}={}){
     const raw=await response.text();requireThat(Buffer.byteLength(raw)<=64000&&response.ok,'oci_broker_unavailable');
     return JSON.parse(raw).result;
   };
+  const valid=(expected,proof)=>typeof proof==='string'&&/^[a-f0-9]{64}$/.test(proof)&&timingSafeEqual(Buffer.from(expected,'hex'),Buffer.from(proof,'hex'));
   return {enabled:env.CLAUS_OCI_BUILDS_ENABLED==='1',ports:{
     dispatch:work=>call('dispatch',work),inspect:work=>call('inspect',work),
+    async verifyObservation(work,observation){
+      const {observationProof,proof,...result}=observation;
+      return valid(createHmac('sha256',secret).update(canonical({work,result})).digest('hex'),observationProof);
+    },
     async verify(receipt,result){
       const expected=createHmac('sha256',secret).update(canonical({receipt,runUrl:result.runUrl})).digest('hex');
-      return typeof result.proof==='string'&&result.proof.length===expected.length&&timingSafeEqual(Buffer.from(expected),Buffer.from(result.proof));
+      return valid(expected,result.proof);
     }
   }};
 }

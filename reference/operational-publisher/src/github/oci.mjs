@@ -22,7 +22,7 @@ export function receiptFromZip(bytes){
   const raw=method===8?inflateRawSync(zipped,{maxOutputLength:16384}):zipped;check(raw.length===rawSize,'receipt_archive_invalid');return JSON.parse(raw.toString());
 }
 
-export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,config=()=>JSON.parse(process.env.CLAUS_OCI_RUNNER??'null'),request=fetch,ledger}){
+export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,config=()=>JSON.parse(process.env.CLAUS_OCI_RUNNER??'null'),request=fetch,ledger,now=()=>Date.now()}){
   async function body(r,max=1000000){const reader=r.body.getReader(),parts=[];let size=0;try{for(;;){const p=await reader.read();if(p.done)break;size+=p.value.length;check(size<=max,'provider_response_size');parts.push(p.value);}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}return Buffer.concat(parts);}
   async function api(path,method='GET',data){
     check(token(),'not_configured');const r=await request('https://api.github.com'+path,{method,redirect:'manual',signal:AbortSignal.timeout(15000),headers:{authorization:'Bearer '+token(),accept:'application/vnd.github+json','x-github-api-version':'2022-11-28','user-agent':'contractclaus',...(data?{'content-type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})});
@@ -37,46 +37,77 @@ export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret
     const data=await request(u,{redirect:'error',signal:AbortSignal.timeout(15000)});check(data.ok,'receipt_unavailable');const bytes=await body(data,65536);
     check('sha256:'+sha(bytes)===artifact.digest,'receipt_hash_mismatch');return receiptFromZip(bytes);
   }
-  async function inspect(work,c){
+  function signed(work,result){
+    const observationProof=createHmac('sha256',secret()).update(canonical({work,result})).digest('hex');
+    // Retain the old receipt proof while the API deployment transitions.
+    return {...result,observationProof,...(result.receipt?{proof:createHmac('sha256',secret()).update(canonical({receipt:result.receipt,runUrl:result.runUrl})).digest('hex')}:{})};
+  }
+  async function inspect(work){
     const key='oci:'+sha(work.id),prior=await ledger.get(key),checkpoint=prior?.result;
-    if(checkpoint?.work){check(canonical(checkpoint.work)===canonical(work),'request_changed');c=checkpoint.runner;}
-    if(checkpoint?.completed){const result=checkpoint.completed;return {...result,...(result.receipt?{proof:createHmac('sha256',secret()).update(canonical({receipt:result.receipt,runUrl:result.runUrl})).digest('hex')}:{})};}
-    const runs=checkpoint?.runId?{workflow_runs:[await api('/repos/'+repository+'/actions/runs/'+checkpoint.runId)]}:await api('/repos/'+repository+'/actions/workflows/'+workflow+'/runs?event=workflow_dispatch&head_sha='+c.sha+'&per_page=100');
+    if(!prior)return {buildId:work.id,state:'not_started'};
+    if(checkpoint?.work)check(canonical(checkpoint.work)===canonical(work),'request_changed');
+    if(checkpoint?.completed)return checkpoint.completed;
+    if(checkpoint?.phase==='prepared')return {buildId:work.id,state:'not_started'};
+    // Recovery uses the original runner even if current admission is disabled
+    // or its configuration is unavailable. Legacy unknown intents stay unknown.
+    const c=checkpoint?.runner??settings();
+    const page=Number.isSafeInteger(checkpoint?.searchPage)?checkpoint.searchPage:1;
+    const since=checkpoint?.createdAt?'&created='+encodeURIComponent('>='+new Date(checkpoint.createdAt-60000).toISOString()):'';
+    const runs=checkpoint?.runId?{workflow_runs:[await api('/repos/'+repository+'/actions/runs/'+checkpoint.runId)]}:await api('/repos/'+repository+'/actions/workflows/'+workflow+'/runs?event=workflow_dispatch&head_sha='+c.sha+'&per_page=100&page='+page+since);
     const matches=(runs.workflow_runs??[]).filter(r=>r.display_title==='Claus OCI '+work.id&&r.head_sha===c.sha&&r.event==='workflow_dispatch');
     check(matches.length<=1,'duplicate_execution');
-    if(!matches.length)return {buildId:work.id,state:'unknown'};
-    const run=matches[0];if(!checkpoint?.runId&&checkpoint)await ledger.checkpoint(key,{...checkpoint,runId:run.id});check(run.run_attempt===1&&run.repository?.full_name===repository,'runner_mismatch');
+    if(!matches.length){
+      if(checkpoint)await ledger.checkpoint(key,{...checkpoint,searchPage:(runs.workflow_runs??[]).length===100&&page<10?page+1:1});
+      return {buildId:work.id,state:'unknown',error:'oci_dispatch_outcome_unknown'};
+    }
+    const run=matches[0];
+    check(run.run_attempt===1&&run.repository?.full_name===repository,'runner_mismatch');
+    const saved={...checkpoint,runId:run.id};
+    if(!checkpoint?.runId&&checkpoint)await ledger.checkpoint(key,saved);
     const result={buildId:work.id,state:run.status==='completed'?'failed':'running',runUrl:run.html_url};
+    const finish=async completed=>{if(checkpoint)await ledger.complete(key,{...saved,completed});return completed;};
     if(run.status!=='completed')return result;
-    if(run.conclusion!=='success'){const completed={...result,error:'oci_runner_'+run.conclusion};if(checkpoint)await ledger.complete(key,{...checkpoint,runId:run.id,completed});return completed;}
+    if(run.conclusion!=='success')return finish({...result,error:'oci_runner_'+run.conclusion});
     const list=await api('/repos/'+repository+'/actions/runs/'+run.id+'/artifacts?per_page=100');
-    const receipts=list.artifacts.filter(a=>a.name==='oci-receipt'&&!a.expired),archives=list.artifacts.filter(a=>a.name==='oci-image'&&!a.expired);
-    check(receipts.length===1&&archives.length===1,'artifacts_missing');
+    const receipts=(list.artifacts??[]).filter(a=>a.name==='oci-receipt'),archives=(list.artifacts??[]).filter(a=>a.name==='oci-image');
+    const expired=a=>a.expired===true||(a.expires_at&&Date.parse(a.expires_at)<=now());
+    if([...receipts,...archives].some(expired))return finish({...result,error:'oci_result_expired'});
+    if(receipts.length!==1||archives.length!==1){
+      // Allow artifact indexing to settle, but do not hold a completed job forever.
+      if(Date.parse(run.updated_at)+300000<=now())return finish({...result,error:'oci_result_unavailable'});
+      return {...result,state:'running',error:'oci_artifacts_pending'};
+    }
     const receipt=await receiptFile(receipts[0]),archive=archives[0];
     check(receipt.buildId===work.id&&receipt.projectId===work.projectId&&receipt.planId===work.planId&&receipt.sourceHash===work.sourceHash&&receipt.runId===String(run.id)&&receipt.runnerSha===c.sha&&receipt.evidence==='compiled_only','receipt_binding_mismatch');
     check(hash.test(receipt.imageDigest)&&hash.test(receipt.archiveHash)&&Number.isSafeInteger(receipt.archiveBytes)&&receipt.archiveBytes>0&&receipt.archiveBytes<=33554432&&archive.size_in_bytes<=34000000,'receipt_invalid');
     receipt.artifact={id:archive.id,digest:archive.digest,expiresAt:archive.expires_at,url:'https://github.com/'+repository+'/actions/runs/'+run.id+'/artifacts/'+archive.id};
-    result.state='compiled';result.receipt=receipt;
-    if(checkpoint)await ledger.complete(key,{...checkpoint,runId:run.id,completed:result});
-    result.proof=createHmac('sha256',secret()).update(canonical({receipt,runUrl:result.runUrl})).digest('hex');return result;
+    return finish({...result,state:'compiled',receipt});
+  }
+  async function dispatch(work){
+    const key='oci:'+sha(work.id),prior=await ledger.get(key);
+    if(prior&&prior.result?.phase!=='prepared')return inspect(work);
+    if(prior?.result?.work)check(canonical(prior.result.work)===canonical(work),'request_changed');
+    let c;
+    try{
+      const current=settings();check(current.enabled===true,'not_enabled');c=prior?.result?.runner??current;
+      const ref=await api('/repos/'+repository+'/git/ref/tags/'+c.ref);check(ref.object?.sha===c.sha&&ref.object?.type==='commit','runner_changed');
+      const account=await api('/repos/'+repository);check(account.private===false&&account.owner?.login==='contractclaus','repository_changed');
+      const publicResponse=await request('https://claus-network-api.vercel.app/v1/public/infrastructure/builds/'+encodeURIComponent(work.id)+'/source',{redirect:'error',signal:AbortSignal.timeout(15000)});check(publicResponse.ok,'source_unavailable');
+      const source=JSON.parse((await body(publicResponse,3200000)).toString());
+      check(source.buildId===work.id&&source.plan?.id===work.planId&&source.plan?.projectId===work.projectId&&source.plan?.sourceHash===work.sourceHash,'source_changed');
+    }catch(e){
+      const current=await inspect(work);
+      return current.state==='not_started'?{...current,error:/^oci_[a-z0-9_]+$/.test(e.message)?e.message:'oci_preflight_unavailable'}:current;
+    }
+    await ledger.reserveOci(key,{work,runnerSha:c.sha,runnerRef:c.ref},{work,runner:c,phase:'prepared',createdAt:now(),runId:null});
+    if(!await ledger.startOciDispatch(key))return inspect(work);
+    // This CAS is the only path to an external dispatch. Even an expired API
+    // lease, concurrent retry or lost acknowledgement cannot send it twice.
+    try{await api('/repos/'+repository+'/actions/workflows/'+workflow+'/dispatches','POST',{ref:c.ref,inputs:{build_id:work.id}});}catch{return {buildId:work.id,state:'unknown',error:'oci_dispatch_outcome_unknown'};}
+    return {buildId:work.id,state:'running'};
   }
   return async({operation,work})=>{
     check(['dispatch','inspect'].includes(operation)&&work&&hash.test(work.id)&&hash.test(work.planId)&&hash.test(work.sourceHash)&&typeof work.projectId==='string'&&work.projectId.length<=128,'request_invalid');
-    const c=settings();
-    if(operation==='inspect')return inspect(work,c);
-    check(c.enabled===true,'not_enabled');
-    // The immutable runner ref is checked before reserving or dispatching.
-    const ref=await api('/repos/'+repository+'/git/ref/tags/'+c.ref);check(ref.object?.sha===c.sha&&ref.object?.type==='commit','runner_changed');
-    const account=await api('/repos/'+repository);check(account.private===false&&account.owner?.login==='contractclaus','repository_changed');
-    const publicResponse=await request('https://claus-network-api.vercel.app/v1/public/infrastructure/builds/'+encodeURIComponent(work.id)+'/source',{redirect:'error',signal:AbortSignal.timeout(15000)});check(publicResponse.ok,'source_unavailable');
-    const source=JSON.parse((await body(publicResponse,3200000)).toString());
-    check(source.buildId===work.id&&source.plan?.id===work.planId&&source.plan?.projectId===work.projectId&&source.plan?.sourceHash===work.sourceHash,'source_changed');
-    const saved=await ledger.reserve('oci:'+sha(work.id),{work,runnerSha:c.sha,runnerRef:c.ref});
-    if(!saved.created)return inspect(work,c);
-    await ledger.checkpoint('oci:'+sha(work.id),{work,runner:c,runId:null});
-    // Intent is durable before the external effect. No replacement dispatch,
-    // even when GitHub accepted the request but the response was lost.
-    try{await api('/repos/'+repository+'/actions/workflows/'+workflow+'/dispatches','POST',{ref:c.ref,inputs:{build_id:work.id}});}catch{return {buildId:work.id,state:'unknown'};}
-    return {buildId:work.id,state:'running'};
+    return signed(work,await(operation==='inspect'?inspect(work):dispatch(work)));
   };
 }
