@@ -1,7 +1,11 @@
 import {createHash,createHmac} from 'node:crypto';
 import {inflateRawSync} from 'node:zlib';
+import {privateContextKey} from './private-context.mjs';
 
-const repository='contractclaus/claus-network';
+const publicRepository='contractclaus/claus-network';
+const privateRepository='contractclaus/claus-private-builds';
+const repositoryFor=c=>c?.privateSource===true?privateRepository:publicRepository;
+const maxImageFor=c=>c?.privateSource===true?134217728:33554432;
 const workflow='claus-oci.yml';
 const hash=/^sha256:[a-f0-9]{64}$/;
 const check=(v,c)=>{if(!v)throw Error('oci_'+c);};
@@ -28,8 +32,9 @@ export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret
     check(token(),'not_configured');const r=await request('https://api.github.com'+path,{method,redirect:'manual',signal:AbortSignal.timeout(15000),headers:{authorization:'Bearer '+token(),accept:'application/vnd.github+json','x-github-api-version':'2022-11-28','user-agent':'contractclaus',...(data?{'content-type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})});
     check(r.ok,'provider_'+r.status);return r.status===204?null:JSON.parse((await body(r)).toString());
   }
-  function settings(){const c=config();check(c&&/^[a-f0-9]{40}$/.test(c.sha??'')&&/^claus-oci-v[0-9]+-[a-z0-9-]+$/.test(c.ref??''),'not_configured');return c;}
-  async function receiptFile(artifact){
+  function settings(work){const all=config(),c=work?.visibility==='private'?all?.private:all;check(c&&/^[a-f0-9]{40}$/.test(c.sha??'')&&/^claus-oci-v[0-9]+-[a-z0-9-]+$/.test(c.ref??''),'not_configured');return {...c,...(work?.visibility==='private'?{privateSource:true}:{})};}
+  async function receiptFile(artifact,c){
+    const repository=repositoryFor(c);
     check(hash.test(artifact.digest??'')&&artifact.size_in_bytes<=65536,'receipt_metadata_invalid');
     const r=await request('https://api.github.com/repos/'+repository+'/actions/artifacts/'+artifact.id+'/zip',{redirect:'manual',signal:AbortSignal.timeout(15000),headers:{authorization:'Bearer '+token(),accept:'application/vnd.github+json'}});
     check(r.status===302,'receipt_redirect_missing');const u=new URL(r.headers.get('location'));
@@ -50,7 +55,7 @@ export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret
     if(checkpoint?.phase==='prepared')return {buildId:work.id,state:'not_started'};
     // Recovery uses the original runner even if current admission is disabled
     // or its configuration is unavailable. Legacy unknown intents stay unknown.
-    const c=checkpoint?.runner??settings();
+    const c=checkpoint?.runner??settings(work),repository=repositoryFor(c);
     const page=Number.isSafeInteger(checkpoint?.searchPage)?checkpoint.searchPage:1;
     const since=checkpoint?.createdAt?'&created='+encodeURIComponent('>='+new Date(checkpoint.createdAt-60000).toISOString()):'';
     const runs=checkpoint?.runId?{workflow_runs:[await api('/repos/'+repository+'/actions/runs/'+checkpoint.runId)]}:await api('/repos/'+repository+'/actions/workflows/'+workflow+'/runs?event=workflow_dispatch&head_sha='+c.sha+'&per_page=100&page='+page+since);
@@ -77,16 +82,16 @@ export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret
       if(Date.parse(run.updated_at)+300000<=now())return finish({...result,error:'oci_result_unavailable'});
       return {...result,state:'running',error:'oci_artifacts_pending'};
     }
-    const receipt=await receiptFile(receipts[0]),archive=archives[0];
+    const receipt=await receiptFile(receipts[0],c),archive=archives[0];
     check(receipt.buildId===work.id&&receipt.projectId===work.projectId&&receipt.planId===work.planId&&receipt.sourceHash===work.sourceHash&&receipt.runId===String(run.id)&&receipt.runnerSha===c.sha&&receipt.evidence==='compiled_only','receipt_binding_mismatch');
-    check(hash.test(receipt.imageDigest)&&hash.test(receipt.archiveHash)&&Number.isSafeInteger(receipt.archiveBytes)&&receipt.archiveBytes>0&&receipt.archiveBytes<=33554432&&Number.isSafeInteger(archive.id)&&archive.id>0&&hash.test(archive.digest??'')&&archive.size_in_bytes>0&&archive.size_in_bytes<=33619968&&Number.isFinite(Date.parse(archive.expires_at)),'receipt_invalid');
+    check(hash.test(receipt.imageDigest)&&hash.test(receipt.archiveHash)&&Number.isSafeInteger(receipt.archiveBytes)&&receipt.archiveBytes>0&&receipt.archiveBytes<=maxImageFor(c)&&Number.isSafeInteger(archive.id)&&archive.id>0&&hash.test(archive.digest??'')&&archive.size_in_bytes>0&&archive.size_in_bytes<=maxImageFor(c)+65536&&Number.isFinite(Date.parse(archive.expires_at)),'receipt_invalid');
     receipt.artifact={id:archive.id,digest:archive.digest,expiresAt:archive.expires_at,url:'https://github.com/'+repository+'/actions/runs/'+run.id+'/artifacts/'+archive.id};
     return finish({...result,state:'compiled',receipt});
   }
   async function download(work){
     const prior=await ledger.get('oci:'+sha(work.id)),checkpoint=prior?.result;
     check(checkpoint?.work&&canonical(checkpoint.work)===canonical(work),'request_changed');
-    const completed=checkpoint.completed,receipt=completed?.receipt;
+    const completed=checkpoint.completed,receipt=completed?.receipt,repository=repositoryFor(checkpoint.runner);
     check(completed?.state==='compiled'&&receipt?.buildId===work.id&&receipt.projectId===work.projectId&&receipt.planId===work.planId&&receipt.sourceHash===work.sourceHash,'image_not_complete');
     check(Number.isSafeInteger(receipt.artifact?.id)&&receipt.artifact.id>0&&hash.test(receipt.artifact?.digest??''),'image_metadata_invalid');
     check(Date.parse(receipt.artifact.expiresAt)>now(),'result_expired');
@@ -104,12 +109,13 @@ export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret
     if(prior?.result?.work)check(canonical(prior.result.work)===canonical(work),'request_changed');
     let c;
     try{
-      const current=settings();check(current.enabled===true,'not_enabled');c=prior?.result?.runner??current;
+      const current=settings(work);check(current.enabled===true,'not_enabled');c=prior?.result?.runner??current;const repository=repositoryFor(c);
       const ref=await api('/repos/'+repository+'/git/ref/tags/'+c.ref);check(ref.object?.sha===c.sha&&ref.object?.type==='commit','runner_changed');
-      const account=await api('/repos/'+repository);check(account.private===false&&account.owner?.login==='contractclaus','repository_changed');
+      const account=await api('/repos/'+repository);check(account.private===(c.privateSource===true)&&account.owner?.login==='contractclaus','repository_changed');
       const publicResponse=await request('https://claus-network-api.vercel.app/v1/public/infrastructure/builds/'+encodeURIComponent(work.id)+'/source',{redirect:'error',signal:AbortSignal.timeout(15000)});check(publicResponse.ok,'source_unavailable');
-      const source=JSON.parse((await body(publicResponse,3200000)).toString());
-      check(source.buildId===work.id&&source.plan?.id===work.planId&&source.plan?.projectId===work.projectId&&source.plan?.sourceHash===work.sourceHash,'source_changed');
+      const source=JSON.parse((await body(publicResponse,work.visibility==='private'?4300000:3200000)).toString());
+      if(c.privateSource){check(source.profile==='claus-private-context/1'&&canonical(source.scope)===canonical({...work,visibility:'private'}),'source_changed');}
+      else check(source.buildId===work.id&&source.plan?.id===work.planId&&source.plan?.projectId===work.projectId&&source.plan?.sourceHash===work.sourceHash,'source_changed');
     }catch(e){
       const current=await inspect(work);
       return current.state==='not_started'?{...current,error:/^oci_[a-z0-9_]+$/.test(e.message)?e.message:'oci_preflight_unavailable'}:current;
@@ -118,11 +124,11 @@ export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret
     if(!await ledger.startOciDispatch(key))return inspect(work);
     // This CAS is the only path to an external dispatch. Even an expired API
     // lease, concurrent retry or lost acknowledgement cannot send it twice.
-    try{await api('/repos/'+repository+'/actions/workflows/'+workflow+'/dispatches','POST',{ref:c.ref,inputs:{build_id:work.id}});}catch{return {buildId:work.id,state:'unknown',error:'oci_dispatch_outcome_unknown'};}
+    try{await api('/repos/'+repositoryFor(c)+'/actions/workflows/'+workflow+'/dispatches','POST',{ref:c.ref,inputs:{build_id:work.id,...(c.privateSource?{context_key:privateContextKey(secret(),work).toString('hex')}:{})}});}catch{return {buildId:work.id,state:'unknown',error:'oci_dispatch_outcome_unknown'};}
     return {buildId:work.id,state:'running'};
   }
   return async({operation,work})=>{
-    check(['dispatch','inspect','download'].includes(operation)&&work&&hash.test(work.id)&&hash.test(work.planId)&&hash.test(work.sourceHash)&&typeof work.projectId==='string'&&work.projectId.length<=128,'request_invalid');
+    check(['dispatch','inspect','download'].includes(operation)&&work&&hash.test(work.id)&&hash.test(work.planId)&&hash.test(work.sourceHash)&&typeof work.projectId==='string'&&work.projectId.length<=128&&(work.visibility===undefined||work.visibility==='private'),'request_invalid');
     return signed(work,await(operation==='inspect'?inspect(work):operation==='download'?download(work):dispatch(work)));
   };
 }

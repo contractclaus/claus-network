@@ -10,11 +10,13 @@ export type KnowledgeTopic = {
   relatedRules:string[]; hookPaths:string[];
 };
 export type KnowledgeBase = {version:1; topics:KnowledgeTopic[]};
+// Stored configuration capacity is independent of the compact prompt projection.
+export const knowledgeMaxChars = 256000;
 const nonempty=(v:unknown,max:number)=>typeof v==='string'&&!!v.trim()&&v.length<=max;
 const timestamp=(v:unknown)=>typeof v==='string'&&/^\d{4}-\d\d-\d\dT/.test(v)&&Number.isFinite(Date.parse(v));
 export function validateKnowledge(value:unknown): asserts value is KnowledgeBase {
   const v=value as KnowledgeBase;
-  if(!v||v.version!==1||!Array.isArray(v.topics)||v.topics.length>64||JSON.stringify(v).length>80000)throw Error('invalid_knowledge');
+  if(!v||v.version!==1||!Array.isArray(v.topics)||v.topics.length>64||JSON.stringify(v).length>knowledgeMaxChars)throw Error('invalid_knowledge');
   const ids=new Set();
   for(const t of v.topics) {
     if(!t||!/^[a-z][a-z0-9-]{1,63}$/.test(t.id)||ids.has(t.id)||!nonempty(t.title,120)||!nonempty(t.summary,400)||typeof t.body!=='string'||t.body.length>16000||!['current','historical','proposed'].includes(t.status)||!['public','internal'].includes(t.visibility)||!timestamp(t.updatedAt)||t.reviewAfter!==undefined&&!timestamp(t.reviewAfter))throw Error('invalid_knowledge_topic');
