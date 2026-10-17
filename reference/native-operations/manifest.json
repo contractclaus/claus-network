@@ -15,7 +15,7 @@
     "src/work-wallet.ts": "bd0bdeede358a160c54d36dc521a63c065db05c7b745021228da9806aa144c39",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "e587d1d541d5d0332b8e8ebd7f7d7ca3d66c48576a4867ce5ec96cd8fbdd71ed",
+    "src/network-access.ts": "09e001976956345276df06d56b597ca8a70a41647eaba7e0da7b7f559428718e",
     "src/context.ts": "33ee111f17b3a7c820b46b44aa5026cb2eaa2f7976654f5c860de4094e08ade2",
     "src/knowledge.ts": "f98d7fdee97c2af6ac6b06d5229199a565b5836f218c7a8728c29ab7aa0cf581",
     "src/network-care.ts": "fb5b6e2813c5c8d9760c025766667c4babe596248d1b46deb4476ce57c9c3777",
@@ -30,7 +30,7 @@
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
     "src/isolated/runner.mjs": "664b14555698224c02880e743535873e08e6a82e5f64629ba6461edd8b217df9",
     "src/network-products.ts": "b6d829c3ce9b8ced6c1c4ca2b488d1bef809481d39416e473ae196fc1ea2bc94",
-    "src/network-routes.ts": "fc8c1acffeac4e0fe331f9689992226fe3ab0593931c94c6310707431ee5cd8a",
+    "src/network-routes.ts": "c85da12d4521e54fcba75c658712b6003290eb930c2ea5cf6bf135cee5f94072",
     "src/operational-capabilities.ts": "1da5f353b4f5ddb22b212aa948dcee33fea56736d30424f3ed15416621962770",
     "src/cycle.ts": "66c190a295bf3419fbbdba8204671e9e1c0925e069a7badf05f6f099f106d48d",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
@@ -144,8 +144,10 @@
     "src/builder-service.ts": "c8fe558b37ab6338683c712e9b9b0fd4ab272e13a6b64170749a5909c8856820",
     "src/builder-wait.ts": "234c3d7480105760b7490e4dd6990f1443da446b6cd8e4d6d83ad4e2067c58c5",
     "src/developments.ts": "ae2a1722e427757903398f2f46bc1412693b5545a11a2c86c6d506f0c6b3c5d4",
-    "src/network-semantic-search.ts": "18ee47effa87c68998292008f25f82179aba1c573cda9b21c3545e56d0e4f367"
+    "src/network-semantic-search.ts": "6da1146d7dd5d5d5b79fa48d10fc0a6020f08a4ab027a7b3160fb34e7e11a659",
+    "tests/network-semantic-search.test.ts": "103f94aaaca98561c7718ee3608c47771967496bbec6d8c4aa83103686003e1d"
   },
   "referenceSubset": true,
-  "deployed": "dpl_7anrLgYRqXnU5uiaVmtKRQDN8iok"
+  "baselineDeployment": "dpl_7anrLgYRqXnU5uiaVmtKRQDN8iok",
+  "deploymentState": "Matching client prepared; image remains subject to independent review and genuine approval"
 }

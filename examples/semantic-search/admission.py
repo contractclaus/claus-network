@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import threading
@@ -13,8 +14,9 @@ DOMAIN = b'claus-semantic-admission/2\n'
 
 
 class AdmissionError(Exception):
-    def __init__(self, status, code):
+    def __init__(self, status, code, retry_after=1):
         self.status, self.code = status, code
+        self.retry_after = retry_after
 
 
 def decode(value):
@@ -35,6 +37,10 @@ class Admission:
         self.lock = threading.Lock()
         self.wall, self.tick = self.clock(), self.monotonic()
         self.callers = {}
+        # One host-wide budget bounds aggregate work even when a caller can
+        # register many owners. The burst admits a full 64-unit batch; refill
+        # leaves headroom beneath the measured two-CPU inference throughput.
+        self.capacity = {'tokens': 96, 'at': self.tick}
 
     def now_ms(self):
         # Anchor to the synchronized wall clock once; measure elapsed time with
@@ -65,9 +71,23 @@ class Admission:
             raise AdmissionError(401, 'admission_required') from None
         return claims
 
-    def begin(self, header, path):
+    @staticmethod
+    def refill(bucket, tick, burst, rate):
+        bucket['tokens'] = min(burst, bucket['tokens'] + max(0, tick - bucket['at']) * rate)
+        bucket['at'] = tick
+
+    def begin(self, header, path, body=None):
         claims = self.verify_header(header, path)
+        if body is not None:
+            self.verify_body(claims, body)
+        return self.reserve(claims)
+
+    def reserve(self, claims):
+        # Only verified claims reach this internal receive reservation. A
+        # ticket pays for one receive attempt, including a body timeout.
         now = self.now_ms()
+        if claims['exp'] <= now:
+            raise AdmissionError(401, 'admission_required')
         with self.lock:
             tick = self.monotonic()
             self.callers = {k: v for k, v in self.callers.items() if v['active'] or tick - v['at'] < 60}
@@ -83,8 +103,13 @@ class Admission:
             # Replay storage is reserved per owner, never borrowed from peers.
             if previous['active'] or tokens < 1 or len(used) >= 164:
                 raise AdmissionError(429, 'caller_busy')
+            self.refill(self.capacity, tick, 96, 8)
+            if self.capacity['tokens'] < 1:
+                raise AdmissionError(429, 'service_cost_budget')
             used[claims['nonce']] = tick + (claims['exp'] - now) / 1000
-            self.callers[claims['owner']] = {'tokens': tokens - 1, 'at': tick, 'active': True, 'used': used}
+            self.capacity['tokens'] -= 1
+            self.callers[claims['owner']] = {'tokens': tokens - 1, 'at': tick, 'active': True,
+                                             'nonce': claims['nonce'], 'used': used}
         return claims
 
     def charge(self, claims, cost):
@@ -95,16 +120,32 @@ class Admission:
             raise ValueError('inference_cost_invalid')
         with self.lock:
             caller = self.callers[claims['owner']]
-            if not caller['active'] or caller['tokens'] < cost - 1:
+            tick = self.monotonic()
+            self.refill(caller, tick, 120, 2)
+            self.refill(self.capacity, tick, 96, 8)
+            if not caller['active'] or caller['nonce'] != claims['nonce']:
                 raise AdmissionError(429, 'caller_cost_budget')
+            # The next attempt spends a new receive unit, so its wait covers
+            # the full cost rather than only this attempt's remaining cost.
+            retry_after = max(1, math.ceil((cost - caller['tokens']) / 2),
+                              math.ceil((cost - self.capacity['tokens']) / 8))
+            if caller['tokens'] < cost - 1:
+                raise AdmissionError(429, 'caller_cost_budget', retry_after)
+            if self.capacity['tokens'] < cost - 1:
+                raise AdmissionError(429, 'service_cost_budget', retry_after)
             caller['tokens'] -= cost - 1
+            self.capacity['tokens'] -= cost - 1
         refunded = False
 
         def refund():
             nonlocal refunded
             with self.lock:
                 if not refunded:
+                    tick = self.monotonic()
+                    self.refill(caller, tick, 120, 2)
+                    self.refill(self.capacity, tick, 96, 8)
                     caller['tokens'] = min(120, caller['tokens'] + cost - 1)
+                    self.capacity['tokens'] = min(96, self.capacity['tokens'] + cost - 1)
                     refunded = True
 
         return refund
@@ -115,4 +156,6 @@ class Admission:
 
     def finish(self, claims):
         with self.lock:
-            self.callers[claims['owner']]['active'] = False
+            caller = self.callers.get(claims['owner'])
+            if caller and caller['nonce'] == claims['nonce']:
+                caller['active'] = False

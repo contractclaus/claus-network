@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {openStore} from '../src/storage/index.mjs';
 import {createArtifactStore} from '../src/artifact-store/index.mjs';
-import {createRuntimeReleases,RUNTIME_IMAGE_PROFILE,runtimeEndorsement} from '../src/infrastructure/runtime-release.mjs';
+import {createRuntimeReleases,RUNTIME_IMAGE_PROFILE,runtimeEndorsement,OWNER_SEARCH_PROJECT,OWNER_RUNTIME_REVIEW_PROFILE} from '../src/infrastructure/runtime-release.mjs';
 import {CLAUS_IDENTITY} from '../src/partner-launch/policy.mjs';
 import {digest,requireThat} from '../src/shared/index.mjs';
 import {reviewRequest} from '../adapters/imd.mjs';
@@ -10,19 +10,19 @@ import {verifyPublicSource} from '../adapters/public-source.mjs';
 import {createReviewFlow} from '../src/review-flow/index.mjs';
 import {ROUTES} from '../interfaces/contract.mjs';
 
-async function fixture(t){
- const store=openStore(':memory:');t.after(()=>store.close());const artifacts=createArtifactStore({store}),projectId='prj_external',buildId=digest('build'),snapshotId=digest('snapshot'),caseId=digest('case'),planId=digest('plan'),sourceHash=digest('source'),imageDigest=digest('image'),archiveHash=digest('archive');
+async function fixture(t,owned=false){
+ const store=openStore(':memory:');t.after(()=>store.close());const artifacts=createArtifactStore({store}),projectId=owned?OWNER_SEARCH_PROJECT:'prj_external',buildId=digest('build'),snapshotId=digest('snapshot'),caseId=digest('case'),planId=digest('plan'),sourceHash=digest('source'),imageDigest=digest('image'),archiveHash=digest('archive');
  const identity={credential:async actor=>({kind:'owner',principalId:actor}),authorize:async(a,_p,s)=>requireThat(a==='builder'&&s.projectId===projectId,'scope_denied'),allowed:async()=>true};
  const service=createRuntimeReleases({store,identity,artifacts,origin:'https://api.example.com'});
  let artifactHash;
  await store.transaction(async tx=>{
   await tx.write('principals','claus',{chainId:1,address:CLAUS_IDENTITY},0);await tx.write('principals','builder',{chainId:1,address:'0x'+'1'.repeat(40)},0);
-  await tx.write('projects',projectId,{ownerId:'builder'},0);
+  await tx.write('projects',projectId,{ownerId:owned?'claus':'builder'},0);
   artifactHash=await artifacts.put(tx,projectId,{evidence:'compiled_only',buildId,projectId,planId,sourceHash,imageDigest,archiveHash,storage:{state:'verified'}});
   await tx.write('oci-builds',buildId,{id:buildId,actor:'builder',projectId,planId,sourceHash,snapshotId,dockerfile:'Dockerfile',state:'compiled',publishSource:true,registry:{enabled:true,imageDigest,archiveHash},artifactHash},0);
   await tx.write('workflow-jobs',buildId,{state:'complete'},0);await tx.write('public-sources',digest({projectId,id:snapshotId}),{published:true},0);
  });
- const manifest={version:1,mode:'http',image:`api.example.com/claus/${buildId.slice(7)}@${imageDigest}`,region:'ams',cpu:1,memoryMiB:256,gpu:null,port:8080,healthPath:'/health',command:['node','server.mjs'],storageGiB:0};
+ const manifest={version:1,mode:owned?'model':'http',image:`api.example.com/claus/${buildId.slice(7)}@${imageDigest}`,region:'ams',cpu:1,memoryMiB:256,gpu:null,port:8080,healthPath:'/health',command:owned?[]:['node','server.mjs'],storageGiB:0};
  const release=await service.prepare('builder',projectId,{buildId,manifest}),ctx=(await service.input('builder',projectId,release.id,buildId)).runtimeImage;
  const input={repoUrl:'https://github.com/example/project',baseCommit:'a'.repeat(40),contracts:[],sourceHash:snapshotId,buildHash:artifactHash,reviewProfile:RUNTIME_IMAGE_PROFILE,runtimeImage:ctx};
  let report={jobId:'imd-original',complete:true,report:'Independent runtime audit',submissions:{repoUrl:input.repoUrl,baseCommit:input.baseCommit,submissions:[{nodeKey:'audit_judge',accepted:true,outcome:'completed',role:'review',safetyRefusal:false,verificationErrors:0,baseCommit:input.baseCommit,hash:'b'.repeat(64),findings:[],summary:runtimeEndorsement(ctx)}]}};
@@ -96,4 +96,50 @@ test('runtime approval accepts its documented reason length and rejects malforme
  assert.equal(approved.approved,true);assert.equal(approved.decision.reason,reason);
  await assert.rejects(f.service.approve('claus',f.projectId,f.release.id,{...f.decision,reason:reason+'x'}),/invalid_text/);
  await assert.rejects(f.service.approve('claus',f.projectId,f.release.id,{...f.decision,reason:'A full review reason with a hidden\u0000control'}),/invalid_text/);
+});
+
+const ownerReport={report:'Operator review of the exact Search image. '+('Reviewed signed admission, bounded model execution, source digests and client retry behavior. ').repeat(3),findingsJson:JSON.stringify([{severity:'info',title:'Finite capacity',description:'The single CPU service has finite capacity and can return retryable rejections.'}]),published:true};
+const ownerDecision=(r,extra={})=>({reviewId:r.id,reportHash:r.reportHash,acknowledgedFindings:r.findings.map(digest),expectedRevision:1,reason:'I read this operator report and approve the exact bounded Search image under the owner policy.',...extra});
+test('owner Search review is explicit, public, idempotent and still requires a separate Claus decision',async t=>{
+ const f=await fixture(t,true);await f.update('review-jobs','paid-original',{billing:'pending'});
+ await assert.rejects(f.service.ownerReview('builder',f.projectId,f.release.id,ownerReport),/claus_required/);
+ const r=await f.service.ownerReview('claus',f.projectId,f.release.id,ownerReport);
+ assert.equal((await f.service.ownerReview('claus',f.projectId,f.release.id,ownerReport)).id,r.id);
+ const published=await f.service.publicOwnerReview(r.id);assert.equal(published.independent,false);assert.equal(published.authorship,'owner_operator');assert.equal(published.report,ownerReport.report);
+ assert.equal((await f.service.status(f.release.id)).approved,false);
+ await assert.rejects(f.service.ownerApprove('builder',f.projectId,f.release.id,ownerDecision(r)),/claus_required/);
+ await assert.rejects(f.service.ownerApprove('claus',f.projectId,f.release.id,ownerDecision(r,{acknowledgedFindings:[]})),/decision_invalid/);
+ await assert.rejects(f.service.ownerApprove('claus',f.projectId,f.release.id,ownerDecision(r,{reportHash:digest('wrong')})),/decision_invalid/);
+ const approved=await f.service.ownerApprove('claus',f.projectId,f.release.id,ownerDecision(r));
+ const status=await f.service.status(f.release.id);assert.equal(status.approved,true);assert.equal(status.reviewType,OWNER_RUNTIME_REVIEW_PROFILE);
+ assert.equal((await f.store.read('review-jobs','paid-original')).value.billing,'pending');
+ await f.service.revoke('builder',f.projectId,f.release.id,{expectedRevision:approved.revision});assert.equal((await f.service.status(f.release.id)).approved,false);
+});
+test('owner review cannot admit foreign projects or expand the bounded Search resource profile',async t=>{
+ const external=await fixture(t);await assert.rejects(external.service.ownerReview('claus',external.projectId,external.release.id,ownerReport),/owner_scope_denied/);
+ const f=await fixture(t,true);
+ for(const change of [{cpu:3},{memoryMiB:8192},{gpu:'GPU'},{command:['other']},{port:8081},{mode:'http'}]){
+  const next=await f.service.prepare('builder',f.projectId,{buildId:f.buildId,manifest:{...f.manifest,...change}});
+  await assert.rejects(f.service.ownerReview('claus',f.projectId,next.id,ownerReport),/owner_scope_denied/);
+ }
+ await f.update('projects',f.projectId,{ownerId:'builder'});
+ await assert.rejects(f.service.ownerReview('claus',f.projectId,f.release.id,ownerReport),/runtime_image_/);
+});
+test('owner reports remain bound to the exact manifest, owner and published source',async t=>{
+ for(const invalidation of ['source','owner']){
+  const f=await fixture(t,true),r=await f.service.ownerReview('claus',f.projectId,f.release.id,ownerReport);
+  const other=await f.service.prepare('builder',f.projectId,{buildId:f.buildId,manifest:{...f.manifest,region:'other'}});
+  await assert.rejects(f.service.ownerApprove('claus',f.projectId,other.id,ownerDecision(r)),/owner_review_incomplete/);
+  await f.service.ownerApprove('claus',f.projectId,f.release.id,ownerDecision(r));
+  if(invalidation==='source')await f.update('public-sources',digest({projectId:f.projectId,id:f.snapshotId}),{published:false});
+  else await f.update('projects',f.projectId,{ownerId:'builder'});
+  assert.equal((await f.service.status(f.release.id)).approved,false);
+ }
+});
+test('owner policy retains unresolved material findings and blocks approval',async t=>{
+ const f=await fixture(t,true),r=await f.service.ownerReview('claus',f.projectId,f.release.id,{...ownerReport,findingsJson:JSON.stringify([{severity:'medium',title:'Unresolved',description:'Requires a source correction before deployment.'}])});
+ assert.equal((await f.service.publicOwnerReview(r.id)).findings[0].severity,'medium');
+ await assert.rejects(f.service.ownerInspect('claus',f.projectId,f.release.id,r.id),/blocking_review/);
+ await assert.rejects(f.service.ownerApprove('claus',f.projectId,f.release.id,ownerDecision(r)),/blocking_review/);
+ assert.equal((await f.service.status(f.release.id)).approved,false);
 });

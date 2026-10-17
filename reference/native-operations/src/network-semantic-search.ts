@@ -1,13 +1,14 @@
+import {setTimeout as delay} from 'node:timers/promises';
 // Only public catalogue fields are sent to this reviewed, self-hosted model.
 export const semanticSearchRelease={
  projectId:'prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a',
- releaseId:'sha256:cd2ef93906caf6ee064ec9dae7a95a3a1d3cecad4ba40612005c046d903e654b',
- image:'claus-network-api.vercel.app/claus/997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8@sha256:0ac4b815666d2b24750fccb6422a9e86ecbb905b7f4d3cc303fb610310629e0c',
+ releaseId:'sha256:0289b08c3ae189589f9d13081d9bcfa6533713ebf7dc82a57c1ae76d76d443a4',
+ image:'claus-network-api.vercel.app/claus/5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e@sha256:65ac06800a6e5b0ab25fc051b9273db0d6e8ec19ad7622fae65e13fe13c7fed0',
  model:'Xenova/all-MiniLM-L6-v2@751bff37182d3f1213fa05d7196b954e230abad9'
 };
 const slug=/^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/;
 const id=/^prj_[A-Za-z0-9-]{1,120}$/;
-type Dependencies={call:(name:string,input?:any)=>Promise<any>;post:(endpoint:string,body:any,signal:AbortSignal)=>Promise<any>;now?:()=>number};
+type Dependencies={call:(name:string,input?:any)=>Promise<any>;post:(endpoint:string,body:any,signal:AbortSignal)=>Promise<any>;now?:()=>number;wait?:(milliseconds:number,signal:AbortSignal)=>Promise<void>};
 
 export function semanticSearchEndpoint(approval:any,resources:any,now:number){
  const s=semanticSearchRelease;
@@ -24,7 +25,7 @@ export function semanticSearchEndpoint(approval:any,resources:any,now:number){
  return endpoint;
 }
 
-export async function semanticNetworkSearch(input:{query:string;after?:string;limit?:number},{call,post,now=Date.now}:Dependencies){
+export async function semanticNetworkSearch(input:{query:string;after?:string;limit?:number},{call,post,now=Date.now,wait=(ms,signal)=>delay(ms,undefined,{signal})}:Dependencies){
  const query=input.query?.trim(),limit=input.limit??5;
  if(!query||query.length>160||!Number.isInteger(limit)||limit<1||limit>10||input.after!==undefined&&!slug.test(input.after))throw Error('invalid_semantic_search_query');
  const s=semanticSearchRelease;
@@ -45,7 +46,7 @@ export async function semanticNetworkSearch(input:{query:string;after?:string;li
   if(text.length>2048)truncated++;
   docs.push({id:p.id,text:text.slice(0,2048).replace(/[\uD800-\uDBFF]$/,''),project:p});
  }
- const ranked:{id:string;score:number}[]=[],signal=AbortSignal.timeout(20000);
+ const ranked:{id:string;score:number}[]=[],signal=AbortSignal.timeout(60000),deadline=now()+60000;
  for(let offset=0;offset<docs.length;){
   signal.throwIfAborted();
   const batch=docs.slice(offset,offset+15);
@@ -53,7 +54,20 @@ export async function semanticNetworkSearch(input:{query:string;after?:string;li
   while(batch.length>1&&Buffer.byteLength(JSON.stringify(body()),'utf8')>65536)batch.pop();
   if(Buffer.byteLength(JSON.stringify(body()),'utf8')>65536)throw Error('semantic_search_request_too_large');
   const count=Math.min(limit,batch.length);
-  const result=await post(endpoint,body(),signal);
+  let result:any;
+  for(let attempt=0;;attempt++){
+   signal.throwIfAborted();
+   semanticSearchEndpoint(approval,resources,now());
+   try{result=await post(endpoint,body(),signal);break;}
+   catch(error:any){
+    if(![429,503].includes(error?.status)||attempt>=4||!Number.isFinite(error.retryAfterSeconds)||error.retryAfterSeconds<0)throw error;
+    const milliseconds=Math.max(1000*2**attempt,1000*error.retryAfterSeconds);
+    if(now()+milliseconds+1000>=deadline)throw error;
+    // post obtains a fresh body-bound ticket on every attempt. Completed
+    // batches are retained; only the throttled batch is retried.
+    await wait(milliseconds,signal);
+   }
+  }
   offset+=batch.length;
   const allowed=new Set(batch.map(d=>d.id)),returned=new Set<string>();
   if(result?.model!==s.model||!Array.isArray(result.results)||result.results.length!==count)throw Error('semantic_search_response_invalid');

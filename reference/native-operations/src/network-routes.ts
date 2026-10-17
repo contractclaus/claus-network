@@ -1,39 +1,39 @@
 // Generated from the shared Claus Network contract.
 export const networkRoutes:Record<string,any>={
   "search_admission": {
-  "name": "search_admission",
-  "method": "POST",
-  "path": "/v1/projects/{projectId}/search-admission",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "projectId": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 256
+    "name": "search_admission",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/search-admission",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "path": {
+          "type": "string",
+          "enum": [
+            "/v1/search",
+            "/v1/embeddings"
+          ]
+        },
+        "bodyHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
       },
-      "path": {
-        "type": "string",
-        "enum": [
-          "/v1/search",
-          "/v1/embeddings"
-        ]
-      },
-      "bodyHash": {
-        "type": "string",
-        "pattern": "^[a-f0-9]{64}$"
-      }
+      "required": [
+        "projectId",
+        "path",
+        "bodyHash"
+      ],
+      "additionalProperties": false
     },
-    "required": [
-      "projectId",
-      "path",
-      "bodyHash"
-    ],
-    "additionalProperties": false
+    "public": false,
+    "description": "Issue a 20-second, one-use ticket for a hashed semantic-search request. Requires service.call on your project. Per-principal admission applies across credentials and projects. The ticket authorizes only the fixed model service, HTTP path and exact body; no payment, wallet or administration access."
   },
-  "public": false,
-  "description": "Issue a 20-second, one-use ticket for a hashed semantic-search request. Requires service.call on your project. Per-principal admission applies across credentials and projects. The ticket authorizes only the fixed model service, HTTP path and exact body; no payment, wallet or administration access."
-},
   "data_file_write": {
     "name": "data_file_write",
     "method": "POST",
@@ -11089,6 +11089,165 @@ export const networkRoutes:Record<string,any>={
     },
     "public": true,
     "description": "GET /v1/public/graph. Public read."
+  },
+  "resource_release_owner_review": {
+    "name": "resource_release_owner_review",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-review",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "releaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "report": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32000
+        },
+        "findingsJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000
+        },
+        "published": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "projectId",
+        "releaseId",
+        "report",
+        "findingsJson",
+        "published"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-review. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "resource_release_owner_inspect": {
+    "name": "resource_release_owner_inspect",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-review",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "releaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "reviewId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "projectId",
+        "releaseId",
+        "reviewId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-review. Requires current object read permission."
+  },
+  "resource_release_owner_approve": {
+    "name": "resource_release_owner_approve",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-approval",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "releaseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "reviewId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "reportHash": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "acknowledgedFindings": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 71
+          }
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "releaseId",
+        "reviewId",
+        "reportHash",
+        "reason",
+        "acknowledgedFindings",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-approval. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "public_resource_owner_review": {
+    "name": "public_resource_owner_review",
+    "method": "GET",
+    "path": "/v1/public/infrastructure/owner-reviews/{reviewId}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "reviewId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        }
+      },
+      "required": [
+        "reviewId"
+      ],
+      "additionalProperties": false
+    },
+    "public": true,
+    "description": "GET /v1/public/infrastructure/owner-reviews/{reviewId}. Public read."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "runtimeRelease": "sha256:cd2ef93906caf6ee064ec9dae7a95a3a1d3cecad4ba40612005c046d903e654b",
+  "runtimeRelease": "sha256:0289b08c3ae189589f9d13081d9bcfa6533713ebf7dc82a57c1ae76d76d443a4",
   "apiDeployment": "dpl_3tLDuuuV9QJB6XmZDVY4p5QEHgMC",
   "issuer": {
     "path": "src/discovery/admission.mjs",

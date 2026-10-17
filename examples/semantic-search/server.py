@@ -28,7 +28,9 @@ MAX_BODY = 65536
 MAX_TEXT = 2048
 MAX_BATCH = 16
 DIMENSIONS = 384
-REQUEST_DEADLINE = 10
+# The two-core review measured a contended full batch at 6.3 seconds.
+# Allow the bounded 2-second receive + 3-second worker wait + model + write.
+REQUEST_DEADLINE = 15
 
 
 class Engine:
@@ -130,6 +132,7 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
         self.pending_owners = {}
         self.pending_nonces = set()
         self.request_prefixes = {}
+        self.request_claims = {}
         self.request_expiry = {}
         self.request_pools = {}
         super().__init__(*args, **kwargs)
@@ -193,22 +196,25 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
             pass
         self.shutdown_request(request)
 
-    def remove_pending(self, request):
+    def remove_pending(self, request, transfer=False):
         self.headers.unregister(request)
         claims = self.pending_claims.pop(request, None)
         if claims is not None:
             self.pending_owners.pop(claims['owner'], None)
             self.pending_nonces.discard((claims['owner'], claims['nonce']))
+            if not transfer:
+                self.admission.finish(claims)
         return self.pending_headers.pop(request)
 
     def reserve_body(self, request, claims):
-        # This is a temporary receive reservation, not nonce consumption.
+        # Every held body slot consumes one ticket and one owner/host unit.
         # Half the queue remains available for new headers and health probes.
         key = (claims['owner'], claims['nonce'])
         if claims['owner'] in self.pending_owners or key in self.pending_nonces:
             raise AdmissionError(429, 'caller_pending')
         if len(self.pending_claims) >= self.max_pending_headers // 2:
             raise AdmissionError(503, 'pending_body_capacity')
+        self.admission.reserve(claims)
         self.pending_claims[request] = claims
         self.pending_owners[claims['owner']] = request
         self.pending_nonces.add(key)
@@ -267,8 +273,28 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                         authorizations = headers.get_all('Authorization', [])
                         claims = self.admission.verify_header(authorizations[0] if len(authorizations) == 1 else None,
                                                               parts[1].decode('ascii'))
-                        self.reserve_body(request, claims)
                     target = boundary + 4 + body_size
+                    if body_size:
+                        # Drain bytes already available before asking for a
+                        # pending-body slot. Complete clients are not blocked
+                        # merely because slow senders filled that queue.
+                        if len(prefix) < target:
+                            try:
+                                more = request.recv(target - len(prefix))
+                            except BlockingIOError:
+                                more = None
+                            except OSError:
+                                raise ValueError(400) from None
+                            if more == b'':
+                                raise ValueError(400)
+                            if more:
+                                prefix.extend(more)
+                        if len(prefix) >= target:
+                            self.admission.verify_body(claims, bytes(prefix[boundary + 4:target]))
+                            self.admission.reserve(claims)
+                            self.pending_claims[request] = claims
+                        else:
+                            self.reserve_body(request, claims)
                 except (ValueError, HTTPException, AdmissionError) as error:
                     status = error.status if isinstance(error, AdmissionError) else error.args[0] if isinstance(error, ValueError) and error.args and isinstance(error.args[0], int) else 400
                     self.remove_pending(request)
@@ -291,9 +317,15 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                             self.shutdown_request(request)
                             continue
             if len(prefix) >= target:
-                self.remove_pending(request)
-                request.setblocking(True)
-                self.dispatch_request(request, address, bytes(prefix[:target]), accepted_at)
+                claims = self.pending_claims.get(request)
+                try:
+                    request.setblocking(True)
+                except OSError:
+                    self.remove_pending(request)
+                    self.shutdown_request(request)
+                    continue
+                self.remove_pending(request, transfer=True)
+                self.dispatch_request(request, address, bytes(prefix[:target]), accepted_at, claims)
         now = time.monotonic()
         for request, (_, _, accepted_at, target) in list(self.pending_headers.items()):
             deadline = self.header_deadline if target is None else self.body_deadline
@@ -301,21 +333,28 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                 self.remove_pending(request)
                 self.reject_connection(request, 408)
 
-    def dispatch_request(self, request, client_address, prefix, accepted_at):
+    def dispatch_request(self, request, client_address, prefix, accepted_at, claims=None):
         line = prefix.split(b'\r\n', 1)[0]
         health = line in (b'GET /health HTTP/1.1', b'HEAD /health HTTP/1.1',
                           b'GET /health HTTP/1.0', b'HEAD /health HTTP/1.0')
         pool = self.health_workers if health else self.workers
         if not pool.acquire(blocking=False):
+            if claims is not None:
+                self.admission.finish(claims)
             self.reject_connection(request, 503)
             return
         self.request_prefixes[request] = prefix
+        if claims is not None:
+            self.request_claims[request] = claims
         self.request_expiry[request] = accepted_at + self.request_deadline
         self.request_pools[request] = pool
         try:
             super().process_request(request, client_address)
         except BaseException:
             self.request_prefixes.pop(request, None)
+            claims = self.request_claims.pop(request, None)
+            if claims is not None:
+                self.admission.finish(claims)
             self.request_expiry.pop(request, None)
             self.request_pools.pop(request).release()
             raise
@@ -328,7 +367,8 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
                 request.shutdown(socket.SHUT_RDWR)
             except OSError:
                 pass
-            request.close()
+            # Let the handler own close(). Releasing its descriptor here can
+            # race an in-flight send with a newly accepted connection.
 
         remaining = max(0, self.request_expiry.pop(request) - time.monotonic())
         deadline = threading.Timer(remaining, expire)
@@ -339,6 +379,9 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
         finally:
             deadline.cancel()
             self.request_prefixes.pop(request, None)
+            claims = self.request_claims.pop(request, None)
+            if claims is not None:
+                self.admission.finish(claims)
             self.request_pools.pop(request).release()
 
     def server_close(self):
@@ -396,14 +439,14 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass  # No prompts, query strings or client addresses in logs.
 
-    def reply(self, status, body):
+    def reply(self, status, body, retry_after=1):
         data = json.dumps(body, allow_nan=False, separators=(',', ':')).encode()
         self.connection.settimeout(self.server.response_timeout)
         self.send_response(status)
         for key, value in {'Content-Type': 'application/json', 'Content-Length': str(len(data)), 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Connection': 'close', 'X-Content-Type-Options': 'nosniff'}.items():
             self.send_header(key, value)
         if status == 429:
-            self.send_header('Retry-After', '1')
+            self.send_header('Retry-After', str(retry_after))
         self.end_headers()
         if self.command != 'HEAD':
             self.wfile.write(data)
@@ -435,14 +478,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(413, {'error': 'request_size_invalid'})
         claims = None
         try:
-            headers = self.headers.get_all('Authorization', [])
-            claims = self.server.admission.begin(headers[0] if len(headers) == 1 else None, self.path)
+            claims = self.server.request_claims.get(self.connection)
+            if claims is None:
+                raise AdmissionError(401, 'admission_required')
             body = self.rfile.read(int(lengths[0]))
             if len(body) != int(lengths[0]):
                 raise ValueError('incomplete_request')
             self.server.admission.verify_body(claims, body)
             try:
-                data = json.loads(body)
+                data = json.loads(body.decode('utf-8'))
             except RecursionError:
                 raise ValueError('invalid_json') from None
             if not isinstance(data, dict):
@@ -469,7 +513,7 @@ class Handler(BaseHTTPRequestHandler):
             results = sorted([{'id': i, 'score': float(s)} for i, s in zip(ids, scores)], key=lambda v: (-v['score'], v['id']))[:limit]
             self.reply(200, {'model': MODEL, 'results': results})
         except AdmissionError as error:
-            self.reply(error.status, {'error': error.code})
+            self.reply(error.status, {'error': error.code}, retry_after=error.retry_after)
         except (ValueError, UnicodeError) as error:
             self.reply(400, {'error': str(error) if str(error).replace('_', '').isalnum() else 'invalid_json'})
         except BlockingIOError:
@@ -478,9 +522,6 @@ class Handler(BaseHTTPRequestHandler):
             self.close_connection = True
         except Exception:
             self.reply(503, {'error': 'inference_unavailable'})
-        finally:
-            if claims is not None:
-                self.server.admission.finish(claims)
 
 
 def main():

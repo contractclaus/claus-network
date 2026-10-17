@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
-  "snapshotId": "sha256:eab03c869071ab9284decf9f9e496489dcba30ed6c7ed50fdd51e1e0085a46d8",
+  "snapshotId": "sha256:02351f77b82dc9fccee536415e722d45d4461a7b7fa1721e0122953bb80bc352",
   "files": [
     {
       "path": "examples/semantic-search/Dockerfile",
@@ -13,7 +13,7 @@
     },
     {
       "path": "examples/semantic-search/README.md",
-      "sha256": "5952a8c1d749f167bd769a41decc59690d8376c3a33868698394a6775eea5e9f"
+      "sha256": "1e20ebec940236c5ce7e9370a9dc4e35a5bd0f94878c6c4ca6abf896eea47817"
     },
     {
       "path": "examples/semantic-search/admission-key.json",
@@ -21,7 +21,7 @@
     },
     {
       "path": "examples/semantic-search/admission.py",
-      "sha256": "900d1670e31efe06e0a9244656e19cde87d180b3918d37320c2981f2eb945ee1"
+      "sha256": "e90dd7ef3f4f86dc861d59d5cdc59e24cafbe17e7911f727e05ceea93f515948"
     },
     {
       "path": "examples/semantic-search/fetch_assets.py",
@@ -33,80 +33,80 @@
     },
     {
       "path": "examples/semantic-search/server.py",
-      "sha256": "5e9aba6a605187ddb3bac0ffe8a284ef953bd28c1f8d1f9271dddd4c6d1a536f"
+      "sha256": "bddb21940bc333e4c520b12258b5b79707f9810f4f5a588d2319509622870e7e"
     },
     {
       "path": "examples/semantic-search/test_service.py",
-      "sha256": "e13e6d89ddae5ba81a219ceac7dd78ac723e587d56e917a47febd12e8f05be60"
+      "sha256": "4322054bf4d8a105406d7163f151d39770abb670420aa7c73375fcb89638d6d3"
     }
   ],
   "plan": {
-    "id": "sha256:6ffeb584659f00e5fa23f940222009481c5d8f0cd08101e14a12b4390bf6c7ea",
-    "sourceHash": "sha256:739ed541bc52b4bcd2cf95533305a273d4f41201314659484c69ebeddb6dbe7a",
-    "sourceBytes": 88242
+    "id": "sha256:e9e07b640676d9560b987903833a916fa1c9511ee5a9d2f4996b4749f37bbd4a",
+    "sourceHash": "sha256:23ca003a749639e1aaaa805b2b56eed9a2444d81b6a27222021c07302ae52a8f",
+    "sourceBytes": 99855
   },
   "build": {
-    "id": "sha256:997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8",
-    "snapshotId": "sha256:eab03c869071ab9284decf9f9e496489dcba30ed6c7ed50fdd51e1e0085a46d8",
-    "planId": "sha256:6ffeb584659f00e5fa23f940222009481c5d8f0cd08101e14a12b4390bf6c7ea",
-    "sourceHash": "sha256:739ed541bc52b4bcd2cf95533305a273d4f41201314659484c69ebeddb6dbe7a",
-    "artifactHash": "sha256:930238d8056b5499c5a2a8c8795039aecc90c0004d31a2e985f94348fc5bc2c2",
+    "id": "sha256:5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e",
+    "snapshotId": "sha256:02351f77b82dc9fccee536415e722d45d4461a7b7fa1721e0122953bb80bc352",
+    "planId": "sha256:e9e07b640676d9560b987903833a916fa1c9511ee5a9d2f4996b4749f37bbd4a",
+    "sourceHash": "sha256:23ca003a749639e1aaaa805b2b56eed9a2444d81b6a27222021c07302ae52a8f",
+    "artifactHash": "sha256:972100f8f4b7f65e239909f2d7810a00a702b5fe641365783153a37aa61c672f",
     "sourceVisibility": "private",
     "receipt": {
-      "archiveBytes": 113184768,
-      "archiveHash": "sha256:27b50eb79c1a87fea53a04070b5031107a7f2457405f4901b99b4c3baedb8b07",
+      "archiveBytes": 113185792,
+      "archiveHash": "sha256:964f2a2fba359f2420ee87ad2f22727548844b9534178ebc478dfd094053a04d",
       "artifact": {
-        "digest": "sha256:28555370b6f39a8236e0eadf6ff03d00729ceea19a5cf1687ac5c5a6a0bdf7a9",
-        "expiresAt": "2026-10-18T21:55:49Z",
-        "id": 12115752718,
-        "url": "https://github.com/contractclaus/claus-private-builds/actions/runs/39072928811/artifacts/12115752718"
+        "digest": "sha256:332e40ad3106b5a8a59244e959bcc4bfeb097e8ec6a5a514f37ef1b878191bfe",
+        "expiresAt": "2026-10-18T22:40:48Z",
+        "id": 12116642933,
+        "url": "https://github.com/contractclaus/claus-private-builds/actions/runs/39076009831/artifacts/12116642933"
       },
-      "buildId": "sha256:997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8",
+      "buildId": "sha256:5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e",
       "evidence": "compiled_only",
-      "imageDigest": "sha256:0ac4b815666d2b24750fccb6422a9e86ecbb905b7f4d3cc303fb610310629e0c",
-      "planId": "sha256:6ffeb584659f00e5fa23f940222009481c5d8f0cd08101e14a12b4390bf6c7ea",
+      "imageDigest": "sha256:65ac06800a6e5b0ab25fc051b9273db0d6e8ec19ad7622fae65e13fe13c7fed0",
+      "planId": "sha256:e9e07b640676d9560b987903833a916fa1c9511ee5a9d2f4996b4749f37bbd4a",
       "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
-      "runId": "39072928811",
+      "runId": "39076009831",
       "runnerSha": "c3ae7e469c5aa72cbea77ef25cb10c055f9973d6",
-      "sourceHash": "sha256:739ed541bc52b4bcd2cf95533305a273d4f41201314659484c69ebeddb6dbe7a",
+      "sourceHash": "sha256:23ca003a749639e1aaaa805b2b56eed9a2444d81b6a27222021c07302ae52a8f",
       "storage": {
-        "archiveHash": "sha256:27b50eb79c1a87fea53a04070b5031107a7f2457405f4901b99b4c3baedb8b07",
-        "bytes": 113184768,
+        "archiveHash": "sha256:964f2a2fba359f2420ee87ad2f22727548844b9534178ebc478dfd094053a04d",
+        "bytes": 113185792,
         "expiresAt": null,
         "profile": "private-r2-oci-v1",
         "state": "verified",
-        "verifiedAt": 1792274244439
+        "verifiedAt": 1792276942748
       },
       "verification": false,
       "version": 1
     }
   },
   "release": {
-    "id": "sha256:cd2ef93906caf6ee064ec9dae7a95a3a1d3cecad4ba40612005c046d903e654b",
-    "buildId": "sha256:997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8",
-    "buildHash": "sha256:930238d8056b5499c5a2a8c8795039aecc90c0004d31a2e985f94348fc5bc2c2",
-    "sourceHash": "sha256:eab03c869071ab9284decf9f9e496489dcba30ed6c7ed50fdd51e1e0085a46d8",
+    "id": "sha256:0289b08c3ae189589f9d13081d9bcfa6533713ebf7dc82a57c1ae76d76d443a4",
+    "buildId": "sha256:5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e",
+    "buildHash": "sha256:972100f8f4b7f65e239909f2d7810a00a702b5fe641365783153a37aa61c672f",
+    "sourceHash": "sha256:02351f77b82dc9fccee536415e722d45d4461a7b7fa1721e0122953bb80bc352",
     "profile": "claus-runtime-image-v1",
     "manifest": {
       "command": [],
       "cpu": 2,
       "gpu": null,
       "healthPath": "/health",
-      "image": "claus-network-api.vercel.app/claus/997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8@sha256:0ac4b815666d2b24750fccb6422a9e86ecbb905b7f4d3cc303fb610310629e0c",
+      "image": "claus-network-api.vercel.app/claus/5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e@sha256:65ac06800a6e5b0ab25fc051b9273db0d6e8ec19ad7622fae65e13fe13c7fed0",
       "memoryMiB": 4096,
       "mode": "model",
       "port": 8080,
       "region": "EU-NL-1",
       "storageGiB": 0,
       "version": 1,
-      "releaseHash": "sha256:cd2ef93906caf6ee064ec9dae7a95a3a1d3cecad4ba40612005c046d903e654b"
+      "releaseHash": "sha256:0289b08c3ae189589f9d13081d9bcfa6533713ebf7dc82a57c1ae76d76d443a4"
     }
   },
-  "image": "claus-network-api.vercel.app/claus/997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8@sha256:0ac4b815666d2b24750fccb6422a9e86ecbb905b7f4d3cc303fb610310629e0c",
-  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/997125cfd78e177ec186b0219d09418502471e62790400eff238f6b4c9d102b8/manifests/sha256:0ac4b815666d2b24750fccb6422a9e86ecbb905b7f4d3cc303fb610310629e0c",
+  "image": "claus-network-api.vercel.app/claus/5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e@sha256:65ac06800a6e5b0ab25fc051b9273db0d6e8ec19ad7622fae65e13fe13c7fed0",
+  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e/manifests/sha256:65ac06800a6e5b0ab25fc051b9273db0d6e8ec19ad7622fae65e13fe13c7fed0",
   "runtimeProviderProfile": "claus-runpod-cpu-v1",
-  "reviewProfile": "claus-runtime-image-v1",
-  "interpretation": "Exact compiled image and source binding. Runtime approval and hosting are separate.",
+  "reviewProfile": "claus-owner-search-review-v1",
+  "interpretation": "Exact compiled image and source binding. This own Search service uses the explicit owner-operator review policy followed by a genuine Claus decision; hosting remains separate.",
   "reproduction": "node scripts/verify-semantic-search-release.mjs",
   "priorReviews": [
     {
@@ -137,26 +137,33 @@
       "releaseId": "sha256:d7b3dc015e611fa0acc0ae37ea914af91e73cce2b0a47c27b6736a99cdd51d2a",
       "approval": false,
       "reportHash": "sha256:0b9369422ade038b49e996b372838f55c5ec9ac32be47198c9c1a0e0a056eadb"
+    },
+    {
+      "providerJobId": "eaef7f5e-650d-4359-855e-fd17dc680d3c",
+      "reportHash": null,
+      "releaseId": "sha256:cd2ef93906caf6ee064ec9dae7a95a3a1d3cecad4ba40612005c046d903e654b",
+      "approval": false,
+      "state": "executing"
     }
   ],
   "changes": [
-    "Meter executed padded tensor positions for mixed-length batches; preserve within-request deduplication",
-    "Bound pending bodies to one per owner and nonce; reserve half the receive queue for headers and health; release reservations on every exit",
-    "Preserve verified incomplete requests when anonymous connections fill the bounded header queue",
-    "Reserve inference budget only after worker acquisition; refund failed inference; document trusted collaborators",
-    "Canonical request lines and pre-body signature verification; nonces still consumed only after complete bodies",
-    "Reject token-empty texts, clamp cosine, charge executed padded model work per owner",
-    "Use two CPU threads and report stale inference as not ready",
-    "Immutable Debian package snapshot URLs with unchanged expected bytes",
-    "CPU reference adapter uses explicit fixed CPU allocation and authenticated application ingress",
-    "Exact deployed provider broker source and exact executing private build-runner revision included"
+    "Host-wide 96-unit burst and 8-unit/second refill caps aggregate receive and inference work across all owners",
+    "Every partial-body reservation consumes a nonce and one owner/global unit; timeout and disconnect cannot replay it",
+    "Complete available bodies bypass the partial-body quota and are hash-checked before consuming a ticket",
+    "Owner reservations transfer from the receive queue through the worker and release on all terminal exits",
+    "Both budgets receive elapsed refill at charge time and symmetric inference-failure refunds",
+    "Fifteen-second request lifetime accommodates measured two-core model execution; eight-unit/second refill bounds sustained load",
+    "JSON bodies decode strictly as UTF-8",
+    "Deadline timer shuts down sockets; handlers own descriptor closure",
+    "Budget responses advertise refill delay; the client retries only the throttled batch with a fresh ticket within a 60-second bound",
+    "Preserve prior padded-tensor, canonical-protocol, immutable-dependency and CPU-provider corrections"
   ],
-  "approvalGranted": false,
-  "modelHosted": false,
   "imageCoverage": {
     "guide": "semantic-search-image-coverage.md",
     "inventory": "semantic-search-image-inventory.json",
     "issuer": "semantic-search-image-coverage.json",
     "reproduce": "node scripts/inspect-semantic-search-image.mjs /tmp/search-image-inventory.json"
-  }
+  },
+  "approvalGranted": false,
+  "modelHosted": false
 }
