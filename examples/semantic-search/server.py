@@ -85,6 +85,8 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
     header_deadline = 1
     max_pending_headers = 256
     max_header_bytes = 8192
+    request_queue_size = 1024
+    accept_batch = 64
 
     def __init__(self, *args, **kwargs):
         self.workers = threading.BoundedSemaphore(24)
@@ -97,11 +99,41 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
         self.request_pools = {}
         super().__init__(*args, **kwargs)
 
+    def server_activate(self):
+        super().server_activate()
+        self.socket.setblocking(False)
+
+    def _handle_request_noblock(self):
+        # Drain a bounded burst instead of one accept per selector cycle.
+        # Serve readable headers between bursts so arrivals cannot starve them.
+        self.service_actions()
+        for index in range(self.accept_batch):
+            try:
+                request, address = self.get_request()
+            except OSError:
+                break
+            if not self.verify_request(request, address):
+                self.shutdown_request(request)
+                continue
+            try:
+                self.process_request(request, address)
+            except Exception:
+                self.handle_error(request, address)
+                self.shutdown_request(request)
+            except BaseException:
+                self.shutdown_request(request)
+                raise
+            if index % 16 == 15:
+                self.service_actions()
+
     def process_request(self, request, client_address):
         # Partial/idle anonymous connections never occupy application workers.
         if len(self.pending_headers) >= self.max_pending_headers:
-            self.reject_connection(request, 503)
-            return
+            # Prefer new progress over a connection that has occupied the
+            # header queue longest. No admitted request is evicted here.
+            oldest = next(iter(self.pending_headers))
+            self.remove_pending(oldest)
+            self.reject_connection(oldest, 503)
         request.setblocking(False)
         now = time.monotonic()
         self.pending_headers[request] = (client_address, bytearray(), now)

@@ -33,17 +33,14 @@ class Admission:
         self.service = config['service']
         self.clock, self.monotonic = clock, monotonic
         self.lock = threading.Lock()
-        self.clock_lock = threading.Lock()
         self.wall, self.tick = self.clock(), self.monotonic()
         self.used, self.callers = {}, {}
 
     def now_ms(self):
-        # A clock correction must never reopen a ticket's expired window.
-        with self.clock_lock:
-            tick = self.monotonic()
-            self.wall = max(self.clock(), self.wall + max(0, tick - self.tick))
-            self.tick = tick
-            return int(self.wall * 1000)
+        # Anchor to the synchronized wall clock once; measure elapsed time with
+        # the steady clock. Neither a transient forward sample nor a backward
+        # correction can poison future admission or reopen an expired window.
+        return int((self.wall + max(0, self.monotonic() - self.tick)) * 1000)
 
     def begin(self, header, path):
         try:

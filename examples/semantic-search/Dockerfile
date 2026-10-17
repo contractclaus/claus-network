@@ -11,5 +11,6 @@ COPY --from=build /native/usr/lib/x86_64-linux-gnu /usr/local/lib/claus-native
 COPY --from=build /app/model /app/model
 COPY examples/semantic-search/model-lock.json examples/semantic-search/server.py examples/semantic-search/admission.py examples/semantic-search/admission-key.json examples/semantic-search/LICENSE ./
 USER 10001:10001
+RUN python -c "from server import Engine; Engine()"
 EXPOSE 8080
 CMD ["python", "server.py"]

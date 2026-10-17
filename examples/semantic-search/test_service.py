@@ -13,7 +13,7 @@ import time
 import unittest
 from unittest.mock import patch
 import numpy as np
-from server import Engine, Handler, Server, MODEL
+from server import Engine, Handler, Server, MODEL, DIMENSIONS
 
 
 KEY = Ed25519PrivateKey.generate()
@@ -190,6 +190,43 @@ class ServiceTest(unittest.TestCase):
         finally:
             for sock in sockets: sock.close()
 
+    def test_saturated_idle_header_queue_admits_health_and_signed_work(self):
+        server = Server(('127.0.0.1', 0), Handler)
+        server.engine = self.engine
+        server.admission = Admission(CONFIG)
+        server.max_pending_headers = 16
+        server.header_deadline = 5
+        worker = threading.Thread(target=server.serve_forever)
+        worker.start()
+        idle = []
+        try:
+            idle = [socket.create_connection(('127.0.0.1', server.server_port), timeout=2)
+                    for _ in range(server.max_pending_headers)]
+            until = time.monotonic() + 2
+            while len(server.pending_headers) < server.max_pending_headers and time.monotonic() < until:
+                time.sleep(0.01)
+            self.assertEqual(len(server.pending_headers), server.max_pending_headers)
+            for path in ['/health', '/v1/embeddings']:
+                connection = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=2)
+                if path == '/health':
+                    connection.request('GET', path)
+                else:
+                    body = b'{"input":"progress despite idle connections"}'
+                    connection.request('POST', path, body, {'Content-Type':'application/json', 'Authorization':ticket(path, body)})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                result = json.loads(response.read())
+                if path != '/health':
+                    self.assertEqual(len(result['data'][0]['embedding']), DIMENSIONS)
+                connection.close()
+                self.assertLessEqual(len(server.pending_headers), server.max_pending_headers)
+        finally:
+            for connection in idle:
+                connection.close()
+            server.shutdown()
+            server.server_close()
+            worker.join()
+
     def test_busy_application_pool_reserves_health_and_returns_http_overload(self):
         held = 0
         try:
@@ -290,7 +327,26 @@ class AdmissionTest(unittest.TestCase):
         with self.assertRaises(AdmissionError): a.begin(h, '/v1/search')
         fresh = ticket('/v1/search',self.body,now=int((wall[0]+51)*1000))
         wall[0] += 51
+        mono[0] = 51  # Real elapsed time; wall-clock samples are not elapsed time.
         c = a.begin(fresh,'/v1/search'); a.finish(c)
+
+    def test_transient_forward_clock_sample_cannot_poison_fresh_tickets(self):
+        wall, mono = [self.now], [0.0]
+        a = Admission(CONFIG, clock=lambda: wall[0], monotonic=lambda: mono[0])
+        used = self.issue()
+        claims = a.begin(used, '/v1/search'); a.finish(claims)
+        wall[0] += 60
+        a.now_ms()
+        wall[0] -= 60
+        for elapsed in (0, 39, 41):
+            mono[0] = elapsed
+            wall[0] = self.now + elapsed
+            fresh = ticket('/v1/search', self.body, now=int(wall[0] * 1000))
+            claims = a.begin(fresh, '/v1/search')
+            a.verify_body(claims, self.body)
+            a.finish(claims)
+            with self.assertRaises(AdmissionError):
+                a.begin(used, '/v1/search')
 
 if __name__ == '__main__':
     unittest.main()
