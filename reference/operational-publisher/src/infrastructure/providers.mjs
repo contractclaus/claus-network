@@ -86,6 +86,12 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
       if(remove){await api(path,{method:'DELETE'});return {providerResourceId:checkpoint.providerResourceId,state:'TERMINATED',ready:false,terminal:true,stopped:true,storageRetained:false,deletionConfirmed:true,costFinal:false};}
       const pod=await api(path+'/action',{method:'POST',body:{action:'stop'}});return observe(pod,work);
     },
+    async resume(work,checkpoint){
+      check(checkpoint.providerResourceId,'resource_not_identified');
+      const path='/pods/'+encodeURIComponent(checkpoint.providerResourceId);
+      matches(await api(path),work);
+      return observe(await api(path+'/action',{method:'POST',body:{action:'start'}}),work);
+    },
     async logs(work,checkpoint){
       check(checkpoint.providerResourceId,'resource_not_identified');
       matches(await api('/pods/'+encodeURIComponent(checkpoint.providerResourceId)),work);
@@ -127,6 +133,11 @@ export function flyDriver({token,request=fetch}){
     async stop(work,checkpoint,remove,config){check(checkpoint.providerResourceId,'resource_not_identified');const path=appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId);let m;try{m=matches(await api(path),work);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return this.inspect(work,checkpoint,config);throw e;}
       if(remove){await api(path+'?force=true',{method:'DELETE'});return {providerResourceId:m.id,state:'destroyed',terminal:true,stopped:true,ready:false,storageRetained:false,deletionConfirmed:true,costFinal:false};}
       await api(path+'/stop',{method:'POST',body:{signal:'SIGTERM',timeout:'30s'}});return {providerResourceId:m.id,state:'stopping',terminal:false,ready:false,storageRetained:true,costFinal:false};},
+    async resume(work,checkpoint,config){
+      const path=appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId);
+      matches(await api(path),work);await api(path+'/start',{method:'POST',body:{}});
+      return observation(await api(path),work,config);
+    },
     async logs(work,checkpoint,config){const m=matches(await api(appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId)),work);return JSON.stringify({state:m.state,events:m.events??[],checks:m.checks??[],applicationLogsAvailable:false}).slice(0,16000);},
     async cost(){return {final:false,source:'provider-invoice-required'};}
   };
