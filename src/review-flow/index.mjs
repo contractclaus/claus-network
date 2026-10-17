@@ -300,7 +300,8 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         const providerJobId = state.outcome?.admission?.result?.jobId;
         if (providerJobId) {
           const report = await provider.report(providerJobId);
-          if (['failed', 'cancelled', 'expired'].includes(report.state) &&
+          // IMD reports a stopped, unsuccessful audit as blocked. Its charge stays settled.
+          if (['failed', 'cancelled', 'expired', 'blocked'].includes(report.state) &&
               (await store.read('review-jobs', value.reviewJobId)).value.billing === 'settled') {
             await reviews.failure({ actor: workerActor, projectId: value.projectId, jobId: value.reviewJobId,
               providerJobId, reason: 'provider_' + report.state });
