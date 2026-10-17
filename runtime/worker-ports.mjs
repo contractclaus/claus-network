@@ -1,4 +1,3 @@
-import {Sandbox as DefaultSandbox} from '@vercel/sandbox';
 import {WORKER_LIMITS} from '../src/workers/index.mjs';
 import {requireThat} from '../src/shared/index.mjs';
 
@@ -9,12 +8,12 @@ const output=JSON.stringify(await module.default(JSON.parse(fs.readFileSync('/ve
 if(typeof output!=='string'||Buffer.byteLength(output)>16000)throw Error('output_limit');
 fs.writeFileSync('/vercel/sandbox/result.json',output);`;
 const vmName=work=>'claus-run-'+work.id.slice(7,47);
-export function workerPorts({Sandbox=DefaultSandbox,credentials={}}={}){
+export function workerPorts({Sandbox,credentials={}}){
  async function stop(work){const box=await Sandbox.get({...credentials,name:vmName(work),resume:false,signal:AbortSignal.timeout(10000)});if(box.status==='running')await box.stop({signal:AbortSignal.timeout(10000)});}
  return {stop,
   async execute(work,files,progress,allowed){
    await progress({phase:'creating',name:vmName(work)});
-   const box=await Sandbox.create({...credentials,name:vmName(work),runtime:'node22',persistent:false,resources:{vcpus:1},timeout:WORKER_LIMITS.vmSeconds*1000,networkPolicy:'deny-all',env:{},ports:[],signal:AbortSignal.timeout(20000)});
+   const box=await Sandbox.create({...credentials,name:vmName(work),runtime:'node22',persistent:false,resources:{vcpus:1},timeout:WORKER_LIMITS.vmSeconds*1000,networkPolicy:'deny-all',ports:[],signal:AbortSignal.timeout(20000)});
    let cancelled=false,checking=false;
    const timer=setInterval(async()=>{if(checking)return;checking=true;try{if(!await allowed()){cancelled=true;await box.stop({signal:AbortSignal.timeout(5000)}).catch(()=>{});}}catch{cancelled=true;await box.stop({signal:AbortSignal.timeout(5000)}).catch(()=>{});}finally{checking=false;}},3000);
    try{
