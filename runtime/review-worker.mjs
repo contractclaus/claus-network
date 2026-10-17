@@ -8,6 +8,7 @@ import { createSealer } from '../adapters/secrets.mjs';
 import { createImdReviewProvider } from '../adapters/imd.mjs';
 import { createImdPayment } from '../adapters/imd-payment.mjs';
 import { createImdCostVerifier } from '../adapters/imd-cost.mjs';
+import { loadReviewSource } from './review-public-source.mjs';
 import { verifyPublicSource } from '../adapters/public-source.mjs';
 import { requireThat } from '../src/shared/index.mjs';
 
@@ -27,7 +28,7 @@ export async function createReviewWorker(env = process.env) {
   const cost = createImdCostVerifier({ client, payer: signer.address,
     readPayment: async id => (await store.read('imd-payments', id))?.value });
   app = createApplication({ store, origin: env.CLAUS_NETWORK_ORIGIN, rateSalt: env.CLAUS_NETWORK_RATE_SALT,
-    reviewPorts: { provider, verifySource: verifyPublicSource, verifyCost: cost.verify } });
+    reviewPorts: { provider, loadSource:loadReviewSource, verifySource: verifyPublicSource, verifyCost: cost.verify } });
   const flow = app.reviewSystem.flow;
   const createPayment = claim => createImdPayment({ store, sealer, provider, signer,
     authorize: (input, reader) => flow.paymentAuthority(claim, input, reader) });

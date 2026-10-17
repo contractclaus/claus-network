@@ -1,3 +1,4 @@
+import {createRuntimeReleases,RUNTIME_IMAGE_PROFILE,validateRuntimeBuild} from '../src/infrastructure/runtime-release.mjs';
 import {createImageRegistry} from '../src/infrastructure/registry.mjs';
 import {createOciBuilds} from '../src/infrastructure/builds.mjs';
 import {createInfrastructure} from '../src/infrastructure/index.mjs';
@@ -105,7 +106,8 @@ export function createApplication({registryOrigin='https://claus-network-api.ver
  }});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
  const partnerLaunches=createPartnerLaunches({store,identity,builds,artifacts,sourceFiles,pins:partnerLaunchAssignment,now});
- reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,partnerLaunches,validatePublicBuild:(artifact,profile)=>[CAPITAL_PROFILE,PARTNER_PROFILE].includes(profile)?validateCapitalBuild(artifact):profile===NATIVE_PROGRAM_PROFILE?validateNativeProgramBuild(artifact):chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>input.profile===PARTNER_PROFILE?partnerLaunches.select(reader,projectId,input):input.profile===CAPITAL_PROFILE?selectCapitalReview({reader,identity,projectId,...input}):input.profile===NATIVE_PROGRAM_PROFILE?selectNativeProgramReview({reader,identity,projectId,...input}):deployments.reviewProfile(reader,projectId,input),...reviewPorts});
+ const runtimeReleases=createRuntimeReleases({store,identity,projects,artifacts,origin:registryOrigin,now});
+ reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,partnerLaunches,runtimeReleases,validatePublicBuild:(artifact,profile)=>profile===RUNTIME_IMAGE_PROFILE?validateRuntimeBuild(artifact):[CAPITAL_PROFILE,PARTNER_PROFILE].includes(profile)?validateCapitalBuild(artifact):profile===NATIVE_PROGRAM_PROFILE?validateNativeProgramBuild(artifact):chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>input.profile===RUNTIME_IMAGE_PROFILE?runtimeReleases.select(reader,projectId,input):input.profile===PARTNER_PROFILE?partnerLaunches.select(reader,projectId,input):input.profile===CAPITAL_PROFILE?selectCapitalReview({reader,identity,projectId,...input}):input.profile===NATIVE_PROGRAM_PROFILE?selectNativeProgramReview({reader,identity,projectId,...input}):deployments.reviewProfile(reader,projectId,input),...reviewPorts});
  const chain=chainPorts.chain??createReadonlyChainRouter({
   sepolia:createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})}),
   mainnet:chainPorts.mainnetClient?createChainRead({client:chainPorts.mainnetClient,chainId:1}):null,
@@ -158,7 +160,7 @@ export function createApplication({registryOrigin='https://claus-network-api.ver
  const workPlanning=createWorkPlanning({store,identity,apps,collaboration,services,projects,visible:contentAdmin.visible,admit:access.collaboration,validateAction:(name,input,path)=>validate(ROUTES.find(r=>r.name===name).inputSchema,input,path),now});
  const webhooks=createWebhooks({store,identity,apps,admit:access.collaboration,now,deriveSecret:id=>createHmac('sha256',rateSalt).update('claus-webhook/v1:'+id).digest('hex'),deliver:deliverWebhook});
  const runtimes=createRuntimes({store,identity,workers,readWeb:publicWebRead,now,route:name=>ROUTES.find(r=>r.name===name),execute:(name,input,actor)=>service.executeAs(name,input,actor)});
- const service=createService({imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const service=createService({runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   const at=now(),window=Math.floor(at/300000);
   try {
@@ -181,7 +183,7 @@ export function createApplication({registryOrigin='https://claus-network-api.ver
   }
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {sourceFiles,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:async(request,context={})=>{const path=new URL(request.url).pathname;if(path==='/v2'||path.startsWith('/v2/')){try{await admit({route:'resource_image_registry',peer:context.peer??'unknown'});return await imageRegistry.handle(request);}catch(error){return new Response(null,{status:error.code==='rate_limited'?429:503,headers:{'cache-control':'no-store',...(error.retryAfterSeconds?{'retry-after':String(error.retryAfterSeconds)}:{})}});}}return path==='/mcp'?mcp(request,context):http(request,context);}};
+ return {runtimeReleases,sourceFiles,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:async(request,context={})=>{const path=new URL(request.url).pathname;if(path==='/v2'||path.startsWith('/v2/')){try{await admit({route:'resource_image_registry',peer:context.peer??'unknown'});return await imageRegistry.handle(request);}catch(error){return new Response(null,{status:error.code==='rate_limited'?429:503,headers:{'cache-control':'no-store',...(error.retryAfterSeconds?{'retry-after':String(error.retryAfterSeconds)}:{})}});}}return path==='/mcp'?mcp(request,context):http(request,context);}};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

@@ -18,7 +18,7 @@ async function fixture(){
  const manifest={image:'ghcr.io/contractclaus/app@sha256:'+'a'.repeat(64),releaseHash:digest('release')};
  const config={enabled:true,profiles:[{id:'gpu',provider:'runpod',accountId:'own',profileHash:digest(p),enabled:true,maxHourlyMicroUsd:'1000000'}],releases:[{enabled:true,projectId:'p',manifestHash:digest(manifest),releaseHash:manifest.releaseHash,reviewHash:digest('review')}]};
  const driver={quote:async()=>({hourlyMicroUsd:'1000000'}),readiness:async()=>({authenticated:true}),create:async()=>{creates++;found={providerResourceId:'pod1',ready:true,terminal:false};if(lost)throw Error('lost');return found;},inspect:async()=>found??{outcome:'unknown'},stop:async()=>{deletes++;return {...found,terminal:true,ready:false,deletionConfirmed:true};},cost:async()=>({final:false,observedMicroUsd:'0'}),logs:async()=>''};
- const broker=createInfrastructureBroker({ledger,config:()=>config,secret:()=> 's'.repeat(32),now:()=>at,drivers:{runpod:driver}});
+ const broker=createInfrastructureBroker({ledger,config:()=>config,secret:()=> 's'.repeat(32),now:()=>at,drivers:{runpod:driver},releaseStatus:async w=>config.releases.some(r=>r.enabled&&r.projectId===w.projectId&&r.manifestHash===digest(w.manifest))});
  const call=(operation,input)=>broker.call({operation,input});
  const quote=async()=>{const i={projectId:'p',profile:p,manifest,leaseSeconds:300};const r=await call('quote',{...i,requestHash:digest(i)});return {id:digest('quote'+at),providerQuoteId:r.id,maximum:r.maximum,leaseSeconds:300};};
  const work={id:digest('resource'),projectId:'p',profile:p,manifest,quote:await quote(),createdAt:at,leaseUntil:at+300000,extensions:[]};

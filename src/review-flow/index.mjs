@@ -1,3 +1,4 @@
+import {RUNTIME_IMAGE_PROFILE} from '../infrastructure/runtime-release.mjs';
 import {PROFILE as PARTNER_PROFILE} from '../partner-launch/policy.mjs';
 import {PROFILE as CAPITAL_PROFILE,context as capitalContext,capitalReviewInput,validateCapitalParty} from '../capital/index.mjs';
 import { NATIVE_PROGRAM_PROFILE } from './native-program.mjs';
@@ -5,7 +6,7 @@ import { createReviewAdmission } from './admission.mjs';
 import { digest, requireThat, text } from '../shared/index.mjs';
 
 export function createReviewFlow({ store, identity, projects, builds, jobs, artifacts, reviews,
-  workerActor, verifySource, validatePublicBuild, selectReviewProfile, partnerLaunches, now = () => Date.now() }) {
+  workerActor, verifySource, loadSource, validatePublicBuild, selectReviewProfile, partnerLaunches, runtimeReleases, now = () => Date.now() }) {
   async function getCase(reader, projectId, id) {
     const record = await reader.read('review-cases', text(id));
     requireThat(record?.value.projectId === projectId, 'not_found');
@@ -21,8 +22,8 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
     await identity.authorize(actor, action, { projectId: value.projectId }, reader);
     await sponsor(reader, value.projectId);
     await sourceIsPublished(reader, value);
-    if ([NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE].includes(value.profile))
-      await selectReviewProfile(reader, value.projectId, { actor, chainId: value.chainId, profile: value.profile,capitalJson:value.input.capital,partnerLaunchJson:value.input.partnerLaunch });
+    if ([NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE,RUNTIME_IMAGE_PROFILE].includes(value.profile))
+      await selectReviewProfile(reader, value.projectId, { actor, chainId: value.chainId, profile: value.profile,capitalJson:value.input.capital,partnerLaunchJson:value.input.partnerLaunch,runtimeReleaseId:value.input.runtimeImage?.releaseId });
     return true;
   }
   async function networkOwner(reader, actor) {
@@ -55,24 +56,26 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         return { projectId, ...value, revision: record.revision };
       });
     },
-    async request(actor, projectId, { buildId, repoUrl, baseCommit, idempotencyKey, chainId, profile, capitalJson, partnerLaunchJson }) {
+    async request(actor, projectId, { buildId, repoUrl, baseCommit, idempotencyKey, chainId, profile, capitalJson, partnerLaunchJson, runtimeReleaseId }) {
       text(idempotencyKey);
       requireThat(/^https:\/\/github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+$/.test(repoUrl) && /^[0-9a-f]{40}$/.test(baseCommit), 'unsupported_source_host');
-      const build = await builds.get(actor, projectId, buildId);
+      const runtimeInput=profile===RUNTIME_IMAGE_PROFILE?await runtimeReleases.input(actor,projectId,runtimeReleaseId,buildId):null;
+      requireThat(profile===RUNTIME_IMAGE_PROFILE||runtimeReleaseId===undefined,'unsupported_profile');
+      const build = runtimeInput?.build??await builds.get(actor, projectId, buildId);
       requireThat(build.state === 'compiled' && build.artifactHash, 'build_not_complete');
       await identity.authorize(actor, 'review.quote', { projectId });
       const partnerInput=profile===PARTNER_PROFILE?await partnerLaunches.input({actor,projectId,build,partnerLaunchJson}):null;
       requireThat(profile===PARTNER_PROFILE||partnerLaunchJson===undefined,'unsupported_partner_context');
       const capitalInput=profile===CAPITAL_PROFILE?await capitalReviewInput({capitalJson,build,builds,actor,projectId}):null;
       requireThat(profile===CAPITAL_PROFILE||capitalJson===undefined,'unsupported_capital_context');
-      const input = { repoUrl, baseCommit, contracts: partnerInput?.contracts??capitalInput?.contracts??[build.entry], sourceHash: build.snapshotId, buildHash: build.artifactHash,
-        ...([NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE].includes(profile) ? { reviewProfile: profile, chainId } : {}),...(capitalInput?{capital:capitalInput.capital}:{}),...(partnerInput?{partnerLaunch:partnerInput.partnerLaunch}:{}) };
+      const input = { repoUrl, baseCommit, contracts: runtimeInput?[]:partnerInput?.contracts??capitalInput?.contracts??[build.entry], sourceHash: build.snapshotId, buildHash: build.artifactHash,
+        ...([NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE,RUNTIME_IMAGE_PROFILE].includes(profile) ? { reviewProfile: profile, ...(chainId===undefined?{}:{chainId}) } : {}),...(capitalInput?{capital:capitalInput.capital}:{}),...(partnerInput?{partnerLaunch:partnerInput.partnerLaunch}:{}),...(runtimeInput?{runtimeImage:runtimeInput.runtimeImage}:{}) };
       const inputHash = digest(input), id = digest({ projectId, review: idempotencyKey });
       return store.transaction(async tx => {
         const value = { id, projectId, buildId, input, inputHash, createdAt: now(), quoteId: null, reviewJobId: null, state: 'preparing' };
         await identity.authorize(actor, 'review.quote', { projectId }, tx);
         await sourceIsPublished(tx, value);
-        const scope = selectReviewProfile ? await selectReviewProfile(tx, projectId, { chainId, profile, actor, capitalJson, partnerLaunchJson }) : null;
+        const scope = selectReviewProfile ? await selectReviewProfile(tx, projectId, { chainId, profile, actor, capitalJson, partnerLaunchJson, runtimeReleaseId }) : null;
         requireThat(scope || chainId === undefined && profile === undefined, 'unsupported_profile');
         if (scope) { if (scope.chainId !== undefined) value.chainId = scope.chainId; value.profile = scope.profile; }
         const sameScope = record => (record.profile ?? 'claus-readonly-v1') === (scope?.profile ?? 'claus-readonly-v1') &&
@@ -100,7 +103,7 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
         }
         requireThat(candidates.length < 64, 'capacity_reached');
         const eligibility = await sponsor(tx, projectId);
-        if (eligibility.kind === 'public' || scope?.profile === 'claus-managed-v1' || [NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE].includes(scope?.profile)) {
+        if (eligibility.kind === 'public' || scope?.profile === 'claus-managed-v1' || [NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE,RUNTIME_IMAGE_PROFILE].includes(scope?.profile)) {
           requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
           await validatePublicBuild(await artifacts.get(projectId, build.artifactHash, tx), scope?.profile);
         }
@@ -190,10 +193,10 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       requireThat(value.state === 'quoted' && value.inputHash === quote.inputHash, 'quote_input_mismatch');
       const pilot = await sponsor(tx, projectId);
       requireThat(BigInt(quote.offer.maximum) <= BigInt(pilot.maximumPerReview), 'sponsor_limit');
-      if (pilot.kind === 'public' || [NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE].includes(value.profile)) {
+      if (pilot.kind === 'public' || [NATIVE_PROGRAM_PROFILE,CAPITAL_PROFILE,PARTNER_PROFILE,RUNTIME_IMAGE_PROFILE].includes(value.profile)) {
         requireThat(typeof validatePublicBuild === 'function', 'unsupported_profile');
         if (selectReviewProfile && value.profile)
-          await selectReviewProfile(tx, projectId, { chainId: value.chainId, profile: value.profile, actor,capitalJson:value.input.capital,partnerLaunchJson:value.input.partnerLaunch });
+          await selectReviewProfile(tx, projectId, { chainId: value.chainId, profile: value.profile, actor,capitalJson:value.input.capital,partnerLaunchJson:value.input.partnerLaunch,runtimeReleaseId:value.input.runtimeImage?.releaseId });
         await validatePublicBuild(await artifacts.get(projectId, value.input.buildHash, tx), value.profile);
         if (pilot.kind === 'public') await admission.reserve(tx, projectId, quote.offer.maximum, pilot, jobId);
       }
@@ -253,7 +256,8 @@ export function createReviewFlow({ store, identity, projects, builds, jobs, arti
       const actor = claim.job.authority.actor;
       try {
         await mayDispatch(store, value, actor, 'review.quote');
-        const files = await projects.files(actor, value.projectId, value.input.sourceHash);
+        await identity.authorize(actor, 'artifact.read', {projectId:value.projectId});
+        const files = loadSource ? await loadSource(value.projectId,value.input.sourceHash) : await projects.files(actor, value.projectId, value.input.sourceHash);
         const binding = await verifySource({ input: value.input, files });
         requireThat(binding.inputHash === value.inputHash, 'source_mismatch');
         await jobs.assertCurrent(claim);

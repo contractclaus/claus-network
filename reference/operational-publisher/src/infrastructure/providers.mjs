@@ -111,7 +111,7 @@ export function flyDriver({token,request=fetch}){
   function matches(machine,work){check(machine?.config?.metadata?.claus_resource===work.id&&machine.config.metadata.claus_project===work.projectId,'resource_identity_mismatch');check(machine.config.image===work.manifest.image,'resource_image_changed');return machine;}
   function observation(machine,work,config){matches(machine,work);return {providerResourceId:machine.id,state:machine.state,ready:machine.state==='started'&&(!work.manifest.port||(machine.checks??[]).length>0&&(machine.checks??[]).every(x=>x.status==='passing')),terminal:machine.state==='destroyed',stopped:['stopped','destroyed'].includes(machine.state),endpoint:work.manifest.port?'https://'+config.app+'.fly.dev':null,storageRetained:machine.state!=='destroyed',costFinal:false};}
   return {
-    async readiness(config){await account(config);return {authenticated:true,projectId:config.projectId??null,projectIsolationConfigured:typeof config.projectId==='string'};},
+    async readiness(config){if(!config.app){check(config.organization==='claus-network','provider_account_mismatch');const list=await api('/apps?org_slug='+encodeURIComponent(config.organization));check(Array.isArray(list.apps),'provider_shape_invalid');return {authenticated:true,organization:config.organization,projectIsolationConfigured:false};}await account(config);return {authenticated:true,projectId:config.projectId??null,projectIsolationConfigured:typeof config.projectId==='string'};},
     async quote(work,config){
       project(work,config);const m=work.manifest;check(m.storageGiB===0&&!m.gpu,'fly_shape_unavailable');
       // A single small-machine price must not authorize every size in a profile.
