@@ -16,7 +16,7 @@ export function runtimeAccess(config:Configuration,channel:'public'|'club',expos
  const services=Object.fromEntries(Object.entries(groups).map(([group,tools])=>[group,{exposed:tools.filter(n=>names.includes(n)),executionGateOpen:tools.filter(n=>allowed.includes(n))}]));
  return {observedAt:new Date().toISOString(),channel,configurationRevision:(config as any).revision??null,
   externalProviders:channel==='club'?null:externalStatus(),exposedTools:names,executionGateOpen:allowed,executionGateClosed:blocked,services,
-  operationalScopes:channel==='club'?[]:['web','api','native'].map(scope=>{const c=controls.find(x=>x?.scope===scope);return c&&typeof c.enabled==='boolean'?{scope,observation:'available',enabled:c.enabled,revision:c.revision,deployment:c.deployment}:{scope,observation:'unavailable',enabled:null};}),
+  operationalScopes:channel==='club'?[]:['web','api','native','repository'].map(scope=>{const c=controls.find(x=>x?.scope===scope);return c&&typeof c.enabled==='boolean'?{scope,observation:'available',enabled:c.enabled,revision:c.revision,deployment:c.deployment}:{scope,observation:'unavailable',enabled:null};}),
   costSources:channel==='club'?[]:[
    {service:'jobs',tool:'work_wallet',operation:'status',request:{operation:'status',input:'{}'},meaning:'Current separate ETH/CLAUS principal, gas, reservations and actual charges; balance is not revenue.'},
    {service:'projects',tool:'build_network',operation:'compute_grants',request:{operation:'compute_grants',describe:true},requiredInput:['profileId'],meaning:'Describe first, then use the existing policy profileId to read original grants and committed usage. Continue any cursor; a new API key does not reset the budget.'},

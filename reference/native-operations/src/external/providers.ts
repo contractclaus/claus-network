@@ -18,7 +18,7 @@ export function externalPolicy(env:NodeJS.ProcessEnv=process.env):ExternalPolicy
  return p;
 }
 export const externalStatus=(p=externalPolicy(),env:NodeJS.ProcessEnv=process.env)=>({
- profile:'claus-external-tools/3',adapters:{available:true,immutable:true,permissions:'current-provider-policy',scope:'claus-library-and-own-project'},development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,paidServices:{configured:!!env.INFERENCE_SECRET,accounting:'existing-operating-budget',services:['exa_search','exa_contents'],maximumMicroUsdc:'20000',replay:false},github:{configured:!!env.PUBLISHER_SECRET,identity:'contractclaus',repositories:['contractclaus/claus-network','contractclaus/claus-network-contracts'],operations:['status','tree','file','pulls','publish','recover']},bazaar:{discovery:true,payments:false},
+ profile:'claus-external-tools/3',adapters:{available:true,immutable:true,permissions:'current-provider-policy',scope:'claus-library-and-own-project'},development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,paidServices:{configured:!!env.INFERENCE_SECRET,accounting:'existing-operating-budget',services:['exa_search','exa_contents'],maximumMicroUsdc:'20000',replay:false},github:{documentationPublication:'read_operational_code/change_operational_code scope=repository; independent review and exact commit',configured:!!env.PUBLISHER_SECRET,identity:'contractclaus',repositories:['contractclaus/claus-network','contractclaus/claus-network-contracts'],operations:['status','tree','file','pulls','publish','recover','continuity_status']},bazaar:{discovery:true,payments:false},
  composio:{configured:!!env.COMPOSIO_API_KEY&&!!p.composio,tools:Object.keys(p.composio?.tools??{}),readToolkits:p.composio?.readToolkits??[],connectToolkits:p.composio?.connectToolkits??[],missing:env.COMPOSIO_API_KEY&&p.composio?[]:['connected-provider-session']},
  browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',diagnostics:true,workflows:true,contextPersistence:true,secretsExposed:false,missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
  secretsExposed:false,instructionAuthority:false
@@ -39,7 +39,7 @@ export async function providerJson(url:string,init:RequestInit,readOnly:boolean,
  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new ProviderFailure('provider_invalid_json',readOnly);}
 }
 const composioOrigin='https://backend.composio.dev/api/v3.1';
-export async function composioRequest(p:ExternalPolicy,operation:string,input:any,fetcher:typeof fetch=fetch,env:NodeJS.ProcessEnv=process.env){
+export async function composioRequest(p:ExternalPolicy,operation:string,input:any,fetcher:typeof fetch=fetch,env:NodeJS.ProcessEnv=process.env):Promise<any>{
  if(!p.composio||!env.COMPOSIO_API_KEY)throw new ProviderFailure('composio_not_connected',true);
  const base=composioOrigin+'/tool_router/session/'+p.composio.sessionId;
  const headers={'x-api-key':env.COMPOSIO_API_KEY,'content-type':'application/json'};
@@ -52,6 +52,11 @@ export async function composioRequest(p:ExternalPolicy,operation:string,input:an
   else{const params=new URLSearchParams({limit:'20'});if(input.cursor){if(typeof input.cursor!=='string'||input.cursor.length>2000)throw new ProviderFailure('external_cursor_invalid',true);params.set('cursor',input.cursor);}path='/tools?'+params;method='GET';}
  }else if(operation==='connect'){
   if(!(p.composio.connectToolkits??[]).includes(input.toolkit))throw new ProviderFailure('external_connection_not_authorized',true);
+  const accounts=await composioRequest(p,'connections',{},fetcher,env);
+  if(accounts.nextCursor)throw new ProviderFailure('external_account_inventory_incomplete',true);
+  const active=accounts.items.filter((a:any)=>a.toolkit===input.toolkit&&a.status==='ACTIVE');
+  if(active.length>1)throw new ProviderFailure('external_account_selection_required',true);
+  if(active.length===1)return {state:'already_connected',account:active[0],created:false,authorityChanged:false};
   path='/link';body={toolkit:input.toolkit};readOnly=false;
  }else if(operation==='call'){
   const selected=selectTool(p,input.tool,input.arguments??{});readOnly=selected.rule.effect==='read';path='/execute';

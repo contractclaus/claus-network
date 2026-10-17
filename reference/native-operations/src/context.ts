@@ -26,7 +26,8 @@ export function operatingResultView(value:any):any {
     const result=operatingResultView(value.record.result);
     return result===value.record.result?value:{...value,record:{...value.record,result}};
   }
-  if(value.watch&&Array.isArray(value.items)&&value.queue&&value.receiptMeaning){
+  if(value.workView==='detail')return {workView:'detail',contextProjection:'work-detail',requestedId:value.requestedId,items:value.items,focus:value.focus,queue:value.queue,watch:{observed_at:value.watch?.observed_at,capabilities_hash:value.watch?.capabilities_hash,capabilities_status:value.watch?.capabilities_status,pending:value.watch?.pending,readMore:'Use network_work without id for the current network overview.'},receiptMeaning:value.receiptMeaning};
+ if(value.watch&&Array.isArray(value.items)&&value.queue&&value.receiptMeaning){
     const focused=value.focus?.id;
     return {...value,contextProjection:'work-overview',
       watch:{...value.watch,capabilities:undefined,opportunities:undefined,readMore:'Use network_work for current watch details. This view grants no execution permission.'},

@@ -38,8 +38,8 @@ async function publicInferenceCapabilities(){
  const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.byteLength;}return JSON.parse(new TextDecoder().decode(bytes));
 }
 export async function operationalReviewEvidence(scope:string,{read=()=>custodyClient.tool({operation:'status',input:'{}'}),readInference=publicInferenceCapabilities,now=()=>Date.now(),paths=[]}:any={}){
- if(scope!=='web')return {observedAt:new Date(now()).toISOString(),jobsWallet:{available:false,reason:'not_requested_for_scope'}};
- const needsInference=paths.some((p:unknown)=>typeof p==='string'&&/^docs\/(compute|inference)\.(md|html)$/.test(p));
+ if(!['web','repository'].includes(scope))return {observedAt:new Date(now()).toISOString(),jobsWallet:{available:false,reason:'not_requested_for_scope'}};
+ const needsInference=scope==='repository'||paths.some((p:unknown)=>typeof p==='string'&&/^docs\/(compute|inference)\.(md|html)$/.test(p));
  const [jobsWallet,projectInference]=await Promise.all([
   Promise.resolve().then(read).then(custodyEvidence).catch(()=>null),
   needsInference?Promise.resolve().then(readInference).then(inferenceEvidence).catch(()=>null):Promise.resolve(null)

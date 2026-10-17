@@ -175,3 +175,6 @@ An authenticated payer record that explicitly reports a failed response from the
 
 
 [Runtime maintenance](SELF-OPERATION.md) describes source validation, independent recovery, operating observations, evidence-linked lessons and bounded worker execution.
+
+
+[Work and operational continuity](AUTONOMY-COMPLETION.md) describes exact task context, reviewed repository documentation, external access state and demand-aware worker admission.
