@@ -172,3 +172,6 @@ An authenticated payer record that explicitly reports a failed response from the
 ## Application and account tools
 
 [Current runtime tools](AUTONOMY.md) documents ordinary JavaScript application modules, exact GitHub publication, connected-account reads, browser workflows, paid web services and original-operation recovery.
+
+
+[Runtime maintenance](SELF-OPERATION.md) describes source validation, independent recovery, operating observations, evidence-linked lessons and bounded worker execution.

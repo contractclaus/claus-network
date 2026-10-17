@@ -13,6 +13,7 @@ import {renderTemplate} from './app-template-page.mjs';
 import {createCollaboration,createDependencies,createProjectInspection} from '../src/collaboration/index.mjs';
 import {createArbitration} from '../src/deals/arbitration.mjs';
 import {createWorkers} from '../src/workers/index.mjs';
+import {workerPorts as configuredWorkerPorts} from './worker-ports.mjs';
 import {createDomains} from '../src/domains/index.mjs';
 import {createDiscovery} from '../src/discovery/index.mjs';
 import {createWorkflows} from '../src/workflows/index.mjs';
@@ -65,7 +66,7 @@ import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {createPublicAppearances} from '../src/releases/appearance.mjs';
 import {operatorConfig} from './operator-config.mjs';
 
-export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
+export function createApplication({store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts=configuredWorkerPorts(),appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),

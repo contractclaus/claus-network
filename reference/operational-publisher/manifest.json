@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_AqeAvoofqNWpNcPZGQEknAe4ZevL",
-  "source": "claus-autonomy-access-signer-r2-20261017",
+  "deployed": "dpl_CrTapJGZpZQBgwJZpJCCTBJ1DWca",
+  "source": "2026-10-17-self-operation",
   "files": {
-    "src/index.js": "efe8b79ab7db9cc92cf02f7d901f7c218936d35fff0fe15e18d87b4d915d777e",
+    "src/index.js": "a7abaefbd57b21155aa516b51c69df14028673ae950411336a8cc3f46f7e2c36",
     "src/publisher/host.js": "c59603df1592e5b418d6eb44bc4deab0d8028e6fbf9527df9c5d04fdc092197b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
     "src/publisher/policy.js": "6b7f2b07f2aba6348e4e61db6b0f72c5889836230b13e2b5afbe1883760450d5",
@@ -39,7 +39,9 @@
     "src/search/service.js": "8f3016ce4ec353c80a0b2dd7069b34b2c60064e079174e0475e32247dbd86118",
     "src/search/routes.js": "0563bfb04479ba743a7ab8506377650f86a19f53508c167b9b0569a74677d620",
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
-    "src/github/service.mjs": "b7a7d87972423c85d750e9bbf4cd58361e290bf09e7e6345c626ac947cf662be"
+    "src/github/service.mjs": "b7a7d87972423c85d750e9bbf4cd58361e290bf09e7e6345c626ac947cf662be",
+    "src/runtime-guardian.mjs": "d4980e6982268b32fc46043d04093e09c9c0608a7f3b93c7ca1b4afc954981b9",
+    "vercel.json": "abbd92e06a4912af2c0b6eb32128fad6825f23b18de9bfd798fc3a3b20204df0"
   },
   "referenceSubset": true
 }

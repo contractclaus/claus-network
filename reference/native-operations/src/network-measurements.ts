@@ -12,10 +12,11 @@ export function compareMeasurements(previous:any,current:any){
 export async function saveMeasurement(subject:string,document:any){
  await initializeMeasurements();
  const rows=await sql()`SELECT document FROM claus_network_measurements WHERE subject=${subject} ORDER BY id DESC LIMIT 1`;
+ if(subject==='operating-budget'&&Number.isFinite(rows[0]?.document?.observedAt)&&document.observedAt-rows[0].document.observedAt<1800000)return compareMeasurements(rows[0].document,document);
  await sql()`INSERT INTO claus_network_measurements(subject,document) VALUES(${subject},${JSON.stringify(document)}::jsonb)`;
  // Network observations need an actual multi-day history. Other potentially
  // large/private subjects keep their existing bounded count. Never rewrite rows.
- if(subject==='network')await sql()`DELETE FROM claus_network_measurements WHERE subject='network' AND observed_at<now()-interval '8 days'`;
+ if(subject==='network'||subject==='operating-budget')await sql()`DELETE FROM claus_network_measurements WHERE subject=${subject} AND observed_at<now()-interval '8 days'`;
  else await sql()`DELETE FROM claus_network_measurements WHERE subject=${subject} AND id NOT IN (SELECT id FROM claus_network_measurements WHERE subject=${subject} ORDER BY id DESC LIMIT 90)`;
  return compareMeasurements(rows[0]?.document,document);
 }
