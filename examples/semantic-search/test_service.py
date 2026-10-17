@@ -453,5 +453,69 @@ class ReviewRegressionTest(ServiceTest):
         other=meter.begin(ticket('/v1/embeddings',body,subject='other'),'/v1/embeddings')
         meter.charge(other,64);meter.finish(other)
 
+    def test_review_busy_worker_preserves_inference_budget(self):
+        self.server.admission = Admission(CONFIG)
+        payload = {'input': [('word%d ' % i) * 250 for i in range(16)]}
+        with patch.object(self.engine.lock, 'acquire', return_value=False), \
+             patch.object(self.engine.session, 'run', wraps=self.engine.session.run) as run:
+            status, result = self.call('/v1/embeddings', payload)
+        self.assertEqual((status, result['error']), (429, 'inference_busy'))
+        self.assertEqual(self.server.admission.callers['test-caller']['tokens'], 119)
+        run.assert_not_called()
+
+    def test_review_failed_inference_refunds_budget(self):
+        self.server.admission = Admission(CONFIG)
+        payload = {'input': [('word%d ' % i) * 250 for i in range(16)]}
+        with patch.object(self.engine.session, 'run', side_effect=RuntimeError('test_failure')):
+            status, result = self.call('/v1/embeddings', payload)
+        self.assertEqual((status, result['error']), (503, 'inference_unavailable'))
+        self.assertEqual(self.server.admission.callers['test-caller']['tokens'], 119)
+        self.assertTrue(self.engine.ready())
+
+    def test_review_successful_inference_charges_token_cost(self):
+        self.server.admission = Admission(CONFIG)
+        status, result = self.call('/v1/embeddings', {'input': [('word%d ' % i) * 250 for i in range(16)]})
+        self.assertEqual(status, 200)
+        self.assertEqual(len(result['data']), 16)
+        self.assertEqual(self.server.admission.callers['test-caller']['tokens'], 56)
+
+    def test_review_anonymous_connections_preserve_verified_bodies(self):
+        server = Server(('127.0.0.1', 0), Handler)
+        server.engine, server.admission = self.engine, Admission(CONFIG)
+        server.max_pending_headers = 4
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        sockets = []
+        body = b'{"input":"protected signed request"}'
+        def wait_for(predicate):
+            until = time.monotonic() + 1
+            while not predicate() and time.monotonic() < until:
+                time.sleep(0.005)
+            self.assertTrue(predicate())
+        try:
+            for i in range(4):
+                conn = socket.create_connection(server.server_address, timeout=2)
+                sockets.append(conn)
+                authorization = ticket('/v1/embeddings', body, subject='protected-%d' % i)
+                conn.sendall(('POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %d\r\nAuthorization: %s\r\n\r\n' % (len(body), authorization)).encode() + body[:5])
+            wait_for(lambda: sum(e[3] is not None for e in list(server.pending_headers.values())) == 4)
+            newcomer = socket.create_connection(server.server_address, timeout=2)
+            sockets.append(newcomer)
+            self.assertIn(b'503', newcomer.recv(1024).split(b'\r\n')[0])
+            for conn in sockets[1:4]:
+                conn.close()
+            wait_for(lambda: len(server.pending_headers) == 1)
+            for _ in range(4):
+                sockets.append(socket.create_connection(server.server_address, timeout=2))
+            wait_for(lambda: len(server.pending_headers) == 4)
+            self.assertEqual(sum(e[3] is not None for e in list(server.pending_headers.values())), 1)
+            sockets[0].sendall(body[5:])
+            self.assertIn(b'200', sockets[0].recv(1024).split(b'\r\n')[0])
+        finally:
+            for conn in sockets:
+                conn.close()
+            server.shutdown()
+            server.server_close()
+
 if __name__ == '__main__':
     unittest.main()
