@@ -41,7 +41,7 @@ type State struct {
 }
 
 var state State
-var client = &http.Client{Timeout: 8 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+var client = &http.Client{Timeout: 8 * time.Second, Transport: &http.Transport{Proxy: nil, MaxConnsPerHost: 4, MaxIdleConns: 6, IdleConnTimeout: 60 * time.Second, TLSHandshakeTimeout: 5 * time.Second, ResponseHeaderTimeout: 6 * time.Second}, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 var targets = []struct{ Name, URL string }{
 	{"network-api", "https://claus-network-api.vercel.app/health"},
 	{"network-map", "https://claus-network-api.vercel.app/v1/public/graph?view=projects&limit=100"},
@@ -127,6 +127,7 @@ func methodAllowed(w http.ResponseWriter, r *http.Request) bool {
 }
 func jsonBytes(w http.ResponseWriter, r *http.Request, status int, data []byte, cache string) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 	w.Header().Set("Cache-Control", cache)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
