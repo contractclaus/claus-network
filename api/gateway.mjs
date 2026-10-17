@@ -1,3 +1,4 @@
+import {infrastructurePorts} from '../runtime/infrastructure-ports.mjs';
 import {ociPorts} from '../runtime/oci-ports.mjs';
 import {sourceObjects} from '../runtime/source-objects.mjs';
 import {isolatedHealth} from '../src/isolated/bridge.mjs';
@@ -27,7 +28,8 @@ export function application() {
     const store = await openPostgresStore({ pool });
     const intakePorts = contractIntakePorts();
     const oci=ociPorts();
-    return { store, intakePorts, databaseBoundary: () => readDatabaseBoundary(pool), app: createApplication({ ociBuildPorts:oci.ports,ociBuildEnabled:oci.enabled,sourceObjects:await sourceObjects(),inferencePorts:inferencePorts(),arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',dealPorts:dealPorts(),appWritesEnabled:process.env.CLAUS_APPS_WRITES_ENABLED!=='0', appStorage:process.env.CLAUS_APPS_ENABLED==='1'?await openAppPostgres({pool}):null, store, origin: process.env.CLAUS_NETWORK_ORIGIN,
+    const infrastructure=infrastructurePorts();
+    return { store, intakePorts, databaseBoundary: () => readDatabaseBoundary(pool), app: createApplication({ infrastructurePorts:infrastructure.ports,infrastructureEnabled:infrastructure.enabled,ociBuildPorts:oci.ports,ociBuildEnabled:oci.enabled,sourceObjects:await sourceObjects(),inferencePorts:inferencePorts(),arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',dealPorts:dealPorts(),appWritesEnabled:process.env.CLAUS_APPS_WRITES_ENABLED!=='0', appStorage:process.env.CLAUS_APPS_ENABLED==='1'?await openAppPostgres({pool}):null, store, origin: process.env.CLAUS_NETWORK_ORIGIN,
       rateSalt: process.env.CLAUS_NETWORK_RATE_SALT, operatorPorts: operatorConfig(), chainPorts: readonlyPorts(), intakePorts }) };
   })().catch(error => { loaded = null; throw error; });
   return loaded;

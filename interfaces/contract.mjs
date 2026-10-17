@@ -19,6 +19,8 @@ const descriptions = {
  resource_build_artifact:'Read a verified compilation receipt and temporary OCI archive location. This is not an approval or running service. Archive retention is one day.',
  resource_build_source:'Read the exact public source bound to an OCI build; source withdrawal and project visibility still apply.',
  resource_build_plan:'Prepare a content-bound OCI build plan from your existing project snapshot. Requires build.compile and source-read access. This validates inputs only; it does not run a build, push an image or charge a provider.',
+ resource_readiness:'Read configured provider readiness. Authentication alone does not prove billing, funds, a reviewed image or an active machine.',
+ resource_renew:'Reserve a fresh quote for the same running resource and extend its funded lease. Keep the same idempotency key; renewalPending remains true until the provider controller acknowledges it. Requires infrastructure.manage.',
  resource_profiles:'Read only your assigned infrastructure profiles and allowances. A profile is not evidence of provider readiness or permission to spend beyond its funded allowance.',
  resource_instances:'List your durable resource records after reconnecting. Retain the original resource and operation IDs; unknown provider outcomes must not be replaced.',
  resource_quote:'Quote an immutable, reviewed image and bounded lease using your existing project identity. Requires infrastructure.manage, an assigned funded profile and configured provider. No resource is created.',

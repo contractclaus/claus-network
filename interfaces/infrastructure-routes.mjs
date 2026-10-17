@@ -7,6 +7,8 @@ export function infrastructureRoutes(route,string,integer,boolean,object){
     route('resource_build_artifact','GET','/v1/projects/{projectId}/infrastructure/builds/{buildId}/artifact',{...project,buildId:string(71)}),
     route('resource_build_source','GET','/v1/public/infrastructure/builds/{buildId}/source',{buildId:string(71)},['buildId'],true),
     route('resource_build_plan','POST','/v1/projects/{projectId}/infrastructure/build-plan',{...project,snapshotId:string(71),dockerfile:string(200)},['projectId','snapshotId']),
+    route('resource_readiness','GET','/v1/projects/{projectId}/infrastructure/readiness',project),
+    route('resource_renew','POST','/v1/projects/{projectId}/infrastructure/instances/{resourceId}/renew',{...id,expectedRevision:integer,quoteId:string(71),idempotencyKey:string(128)}),
     route('resource_profiles','GET','/v1/projects/{projectId}/infrastructure/profiles',project),
     route('resource_instances','GET','/v1/projects/{projectId}/infrastructure',{...project,after:string(),limit:{type:'integer',minimum:1,maximum:100}},['projectId']),
     route('resource_quote','POST','/v1/projects/{projectId}/infrastructure/quotes',{...project,profileId:string(),manifest,leaseSeconds:{type:'integer',minimum:60,maximum:86400},idempotencyKey:string(128)}),

@@ -7,6 +7,8 @@ export function createService({ociBuilds,infrastructure,partnerLaunches,runtimes
   resource_build_artifact:(a,i)=>ociBuilds.artifact(a,i.projectId,i.buildId),
   resource_build_source:(_a,i)=>ociBuilds.publicSource(i.buildId),
   resource_build_plan:(a,i)=>infrastructure.buildPlan(a,i.projectId,i),
+  resource_readiness:(a,i)=>infrastructure.readiness(a,i.projectId),
+  resource_renew:(a,i)=>infrastructure.renew(a,i.projectId,i.resourceId,i),
   resource_profiles:(a,i)=>infrastructure.profiles(a,i.projectId),
   resource_instances:(a,i)=>infrastructure.list(a,i.projectId,i),
   resource_quote:(a,i)=>infrastructure.quote(a,i.projectId,i),
