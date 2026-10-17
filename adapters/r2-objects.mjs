@@ -37,10 +37,10 @@ export async function createR2Objects({accountId,bucket,accessKeyId,secretAccess
  return {
   read,
   async download(projectId,sha256,{filename,contentType,expiresIn=60}={}){
-   requireThat(filename==='image.tar'&&contentType==='application/x-tar'&&expiresIn===60,'r2_download_invalid');
+   requireThat(expiresIn===60&&(filename==='image.tar'&&contentType==='application/x-tar'||filename===sha256&&contentType==='application/octet-stream'),'r2_download_invalid');
    const Key=key(projectId,sha256);
    const {getSignedUrl}=await import('@aws-sdk/s3-request-presigner');
-   const url=await getSignedUrl(client,new S.GetObjectCommand({Bucket:bucket,Key,ResponseContentType:contentType,ResponseContentDisposition:'attachment; filename="image.tar"'}),{expiresIn});
+   const url=await getSignedUrl(client,new S.GetObjectCommand({Bucket:bucket,Key,ResponseContentType:contentType,ResponseContentDisposition:`attachment; filename="${filename}"`}),{expiresIn});
    return {url,expiresAt:Date.now()+expiresIn*1000,method:'GET'};
   },
   async put(projectId,bytes){

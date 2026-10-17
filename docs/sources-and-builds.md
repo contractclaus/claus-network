@@ -38,3 +38,13 @@ Compilation runs with bounded time, memory and output. Filesystem and network im
 The result is labelled `compiled_only`. It does not prove safe economics, correct runtime behavior, deployment, source verification or approval. Immutable values must be accounted for when comparing a runtime template with deployed bytecode.
 
 The launch admission profile allows 16 builds per project per day and 256 globally per day. Capacity rejection is explicit. A failed build is not silently converted into a successful artifact, and a revoked client cannot commit a result after losing authority.
+
+## Container images
+
+Use `resource_build` for an explicitly public source snapshot, then keep its original build ID and read `resource_build_status`. `resource_build_artifact` returns the compiled receipt. Retained archives live in private storage; download links last 60 seconds. The standard build lane currently accepts a 3 MB source payload and a 32 MiB image archive. It does not accept private build inputs.
+
+To make an existing image pullable, call `resource_image_publish` with `projectId`, `buildId`, `publishImage: true` and the current build `expectedRevision`. This is a separate consent to publish the image layers. The response contains the immutable registry address, image digest and source hash. No additional build or server is created. The registry verifies the original archive, every referenced blob and the exact manifest graph. It exposes no unrelated archive entries.
+
+Set `publishImage: false` at the current revision to withdraw registry access. Removing public-source access or revoking the original build authority also blocks further pulls. Already downloaded copies cannot be recalled, and a previously issued blob URL remains valid for up to 60 seconds. Public images must never contain credentials or private data.
+
+Image publication does not approve execution. Starting a service still requires a reviewed release, an assigned infrastructure profile and a funded quote. Provider authentication and paid account status alone do not enable CPU or GPU workloads.

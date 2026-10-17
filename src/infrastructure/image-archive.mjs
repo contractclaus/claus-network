@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {inflateRawSync} from 'node:zlib';
 import {requireThat} from '../shared/index.mjs';
+import {readOciLayout} from './oci-layout.mjs';
 
 export const MAX_IMAGE_BYTES=33554432;
 export const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -35,6 +36,31 @@ export function createImageArchive({objects,now=()=>Date.now()}){
  }
  return {
   enabled:!!objects,
+  async publish(projectId,receipt){
+   requireThat(objects&&receipt.storage?.state==='verified','oci_image_storage_unavailable');
+   const original=await objects.read(scope(projectId),reference(receipt));
+   requireThat(original.state==='verified'&&original.length===receipt.archiveBytes,'oci_image_storage_mismatch');
+   const layout=readOciLayout(original.bytes,receipt.imageDigest),members=[];
+   for(const {bytes,...member} of layout.members){
+    const namespace='registry-'+sha256(projectId),prior=await objects.read(namespace,member.digest.slice(7));
+    if(prior.state!=='verified'){
+     requireThat(prior.state==='not_found','oci_image_storage_unavailable');
+     const saved=await objects.put(namespace,bytes);
+     requireThat(saved.state==='verified'&&saved.sha256===member.digest.slice(7)&&saved.bytes===member.size,'oci_image_storage_mismatch');
+    }else requireThat(prior.length===member.size,'oci_image_storage_mismatch');
+    members.push(member);
+   }
+   return {profile:'public-oci-v1',imageDigest:layout.imageDigest,archiveHash:receipt.archiveHash,members};
+  },
+  async registryRead(projectId,member){
+   requireThat(objects,'oci_image_storage_unavailable');
+   const namespace='registry-'+sha256(projectId),key=member.digest.slice(7);
+   if(member.manifest){
+    const value=await objects.read(namespace,key);
+    requireThat(value.state==='verified'&&value.length===member.size,'oci_image_storage_mismatch');return {bytes:value.bytes};
+   }
+   return objects.download(namespace,key,{filename:key,contentType:'application/octet-stream',expiresIn:60});
+  },
   async preserve(projectId,receipt,download){
    requireThat(objects,'oci_image_storage_unavailable');const hash=reference(receipt),namespace=scope(projectId);
    const prior=await objects.read(namespace,hash);

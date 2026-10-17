@@ -20,6 +20,14 @@
   },
   "rewrites": [
     {
+      "source": "/v2",
+      "destination": "/api/gateway?__claus_route=/v2"
+    },
+    {
+      "source": "/v2/:path*",
+      "destination": "/api/gateway?__claus_route=/v2/:path*"
+    },
+    {
       "source": "/health",
       "destination": "/api/gateway"
     },

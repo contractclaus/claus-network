@@ -40,7 +40,7 @@ export async function openRuntime({env=process.env,allowLocal=false}={}){
   const intakePorts=contractIntakePorts(env),oci=ociPorts({env}),infrastructure=infrastructurePorts({env});
   const app=createApplication({
    store,origin:env.CLAUS_NETWORK_ORIGIN??'https://claus.si',rateSalt:env.CLAUS_NETWORK_RATE_SALT,
-   imageArchive:await imageArchive(env),sourceObjects:await sourceObjects(env),
+   registryOrigin:env.CLAUS_OCI_REGISTRY_ORIGIN??'https://claus-network-api.vercel.app',imageArchive:await imageArchive(env),sourceObjects:await sourceObjects(env),
    infrastructurePorts:infrastructure.ports,infrastructureEnabled:infrastructure.enabled,
    ociBuildPorts:oci.ports,ociBuildEnabled:oci.enabled,inferencePorts:inferencePorts({env}),
    arbitrationEnabled:env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:env.CLAUS_DOMAINS_ENABLED==='1',
