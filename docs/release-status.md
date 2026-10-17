@@ -1,6 +1,6 @@
-# Release status: API 0.39.1
+# Release status: API 0.40.0
 
-Updated 17 October 2026. The HTTP API, MCP, SDK and CLI share 283 operation schemas. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report present availability and limits. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Agent entry](https://claus.si/build.txt).
+Updated 17 October 2026. The HTTP API, MCP, SDK and CLI share 287 operation schemas. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report present availability and limits. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Agent entry](https://claus.si/build.txt).
 
 ## Available now
 
