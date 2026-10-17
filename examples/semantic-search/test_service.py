@@ -493,22 +493,26 @@ class ReviewRegressionTest(ServiceTest):
                 time.sleep(0.005)
             self.assertTrue(predicate())
         try:
-            for i in range(4):
+            for i in range(2):
                 conn = socket.create_connection(server.server_address, timeout=2)
                 sockets.append(conn)
                 authorization = ticket('/v1/embeddings', body, subject='protected-%d' % i)
                 conn.sendall(('POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %d\r\nAuthorization: %s\r\n\r\n' % (len(body), authorization)).encode() + body[:5])
-            wait_for(lambda: sum(e[3] is not None for e in list(server.pending_headers.values())) == 4)
+            wait_for(lambda: len(server.pending_claims) == 2)
             newcomer = socket.create_connection(server.server_address, timeout=2)
             sockets.append(newcomer)
+            authorization = ticket('/v1/embeddings', body, subject='over-body-capacity')
+            newcomer.sendall(('POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %d\r\nAuthorization: %s\r\n\r\n' % (len(body), authorization)).encode())
             self.assertIn(b'503', newcomer.recv(1024).split(b'\r\n')[0])
-            for conn in sockets[1:4]:
-                conn.close()
-            wait_for(lambda: len(server.pending_headers) == 1)
+            health = http.client.HTTPConnection(*server.server_address, timeout=2)
+            health.request('GET', '/health')
+            response = health.getresponse()
+            self.assertEqual(response.status, 200)
+            response.read(); health.close()
             for _ in range(4):
                 sockets.append(socket.create_connection(server.server_address, timeout=2))
             wait_for(lambda: len(server.pending_headers) == 4)
-            self.assertEqual(sum(e[3] is not None for e in list(server.pending_headers.values())), 1)
+            self.assertEqual(len(server.pending_claims), 2)
             sockets[0].sendall(body[5:])
             self.assertIn(b'200', sockets[0].recv(1024).split(b'\r\n')[0])
         finally:
@@ -516,6 +520,64 @@ class ReviewRegressionTest(ServiceTest):
                 conn.close()
             server.shutdown()
             server.server_close()
+
+    def test_review_pending_owner_and_nonce_are_bounded_and_released(self):
+        server = self.server
+        body = b'{"input":"receive reservation"}'
+        authorization = ticket('/v1/embeddings', body, subject='pending-owner')
+        def headers(auth):
+            return ('POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %d\r\nAuthorization: %s\r\n\r\n' % (len(body), auth)).encode()
+        first = socket.create_connection(server.server_address, timeout=2)
+        first.sendall(headers(authorization) + body[:1])
+        try:
+            until = time.monotonic() + 1
+            while 'pending-owner' not in server.pending_owners and time.monotonic() < until:
+                time.sleep(0.005)
+            self.assertIn('pending-owner', server.pending_owners)
+            for auth in [authorization, ticket('/v1/embeddings', body, subject='pending-owner')]:
+                with socket.create_connection(server.server_address, timeout=2) as duplicate:
+                    duplicate.sendall(headers(auth))
+                    self.assertIn(b'429', duplicate.recv(1024).split(b'\r\n')[0])
+            self.assertEqual(sum(c['owner'] == 'pending-owner' for c in list(server.pending_claims.values())), 1)
+            self.assertEqual(self.call('/v1/embeddings', {'input': 'other owner stays available'})[0], 200)
+        finally:
+            first.close()
+        until = time.monotonic() + 1
+        while 'pending-owner' in server.pending_owners and time.monotonic() < until:
+            time.sleep(0.005)
+        self.assertNotIn('pending-owner', server.pending_owners)
+        with socket.create_connection(server.server_address, timeout=2) as retry:
+            retry.sendall(headers(authorization) + body)
+            self.assertIn(b'200', retry.recv(1024).split(b'\r\n')[0])
+
+    def test_review_receive_timeout_releases_reservations(self):
+        server = self.server
+        prior = server.body_deadline
+        server.body_deadline = 0.05
+        body = b'{"input":"timeout reservation"}'
+        auth = ticket('/v1/embeddings', body, subject='timed-out-owner')
+        try:
+            with socket.create_connection(server.server_address, timeout=2) as conn:
+                conn.sendall(('POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %d\r\nAuthorization: %s\r\n\r\n' % (len(body), auth)).encode())
+                self.assertIn(b'408', conn.recv(1024).split(b'\r\n')[0])
+            self.assertNotIn('timed-out-owner', server.pending_owners)
+            self.assertFalse(any(c['owner'] == 'timed-out-owner' for c in list(server.pending_claims.values())))
+            self.assertFalse(any(owner == 'timed-out-owner' for owner, _ in server.pending_nonces.copy()))
+        finally:
+            server.body_deadline = prior
+
+    def test_review_mixed_lengths_pay_for_padded_tensor(self):
+        self.server.admission = Admission(CONFIG)
+        long = 'alpha beta gamma delta ' * 70
+        status, _ = self.call('/v1/embeddings', {'input': [long] + ['word%d' % i for i in range(15)]})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.server.admission.callers['test-caller']['tokens'], 56)
+
+    def test_review_deduplication_charges_only_executed_rows(self):
+        self.server.admission = Admission(CONFIG)
+        status, _ = self.call('/v1/embeddings', {'input': ['alpha beta gamma delta ' * 70] * 16})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.server.admission.callers['test-caller']['tokens'], 116)
 
 if __name__ == '__main__':
     unittest.main()

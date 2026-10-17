@@ -144,9 +144,9 @@
     "src/builder-service.ts": "c8fe558b37ab6338683c712e9b9b0fd4ab272e13a6b64170749a5909c8856820",
     "src/builder-wait.ts": "234c3d7480105760b7490e4dd6990f1443da446b6cd8e4d6d83ad4e2067c58c5",
     "src/developments.ts": "ae2a1722e427757903398f2f46bc1412693b5545a11a2c86c6d506f0c6b3c5d4",
-    "src/network-semantic-search.ts": "5efa1a7edc011ca5284eb4dd34489b1742e1b24ef19b82a623bd05a20f72c616"
+    "src/network-semantic-search.ts": "18ee47effa87c68998292008f25f82179aba1c573cda9b21c3545e56d0e4f367"
   },
   "referenceSubset": true,
-  "baselineDeployment": "dpl_BBJqh9whNyZtZHTjuq8nL3LyMhhQ",
+  "baselineDeployment": "dpl_3ZuA7J3HLMNnrcGAfnrF35jfcHnM",
   "deploymentState": "Matching client prepared for this exact review; runtime approval remains required"
 }
