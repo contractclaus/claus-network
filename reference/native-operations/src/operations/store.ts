@@ -4,7 +4,7 @@ import {parse} from 'acorn';
 import type {LabDatabase,LabQuery} from '../lab-db.js';
 import {BuilderStore} from '../builder-store.js';
 import {assertBuilderDeployment} from '../builder-coordination.js';
-import {hash,sha,target,validateManifest,validateChanges,patch,denyNewAuthority,OperationsInputRejection,type FileRef} from './policy.js';
+import {hash,sha,target,isolatedPath,gitBlobSha,validateManifest,validateChanges,patch,denyNewAuthority,OperationsInputRejection,type FileRef} from './policy.js';
 import {OperationsHost} from './host.js';
 import {handoffColumns} from './runtime-handoff.js';
 export class OperationsStore{
@@ -16,22 +16,32 @@ export class OperationsStore{
  ${handoffColumns}`);}
  async current(scope:string,q:LabQuery=this.db){target(scope);return(await q.query('SELECT * FROM claus_operations_control WHERE scope=$1',[scope])).rows[0]??null;}
  async get(id:string,q:LabQuery=this.db){const r=(await q.query('SELECT * FROM claus_operations_releases WHERE id=$1 OR build_id=$1',[id])).rows[0];if(!r)throw Error('operations_release_missing');return r;}
- async read({scope,id,path,offset=0}:any){
+ async read({scope,id,path,offset=0,diagnostics=false}:any){
+  if(diagnostics)return this.diagnostics(scope);
   if(id){const r=await this.get(id);return{id:r.id,scope:r.scope,state:r.state,sourceHash:r.source_hash,baseDeployment:r.base_deployment,deployment:r.deployment,proof:r.proof,buildId:r.build_id,reviewEffect:r.review_effect??null,...(r.scope==='native'?{runtimeHandoffs:(await this.db.query('SELECT id,generation,run_id,dispatch_state,observed_at FROM claus_operations_handoffs WHERE release_id=$1 ORDER BY created_at DESC',[r.id])).rows}:{})};}
   const c=await this.current(scope);if(!c)throw Error('operations_not_configured');
   if(path){if(typeof path!=='string'||!target(scope).paths.some(r=>r.test(path))||!Number.isSafeInteger(offset)||offset<0)throw Error('operations_path_denied');const ref=c.manifest.find((f:FileRef)=>f.path===path);if(!ref)throw Error('operations_file_missing');const content=await this.host.read(scope,c.deployment,ref);return{scope,revision:c.revision,deployment:c.deployment,path,sha:ref.sha,content:content.slice(offset,offset+18000),nextOffset:offset+18000<content.length?offset+18000:null};}
   return{scope,enabled:c.enabled,revision:c.revision,deployment:c.deployment,files:c.manifest.filter((f:FileRef)=>target(scope).paths.some(r=>r.test(f.path))),recent:(await this.db.query('SELECT id,state,source_hash,deployment,updated_at FROM claus_operations_releases WHERE scope=$1 ORDER BY created_at DESC LIMIT 8',[scope])).rows,...(scope==='native'?{runtimeHandoffs:(await this.db.query('SELECT id,target_deployment,generation,run_id,dispatch_state,observed_at FROM claus_operations_handoffs WHERE target_deployment=$1 ORDER BY created_at DESC LIMIT 3',[c.deployment])).rows}:{})};
  }
+ async diagnostics(scope:string){
+  const c=await this.current(scope);if(!c)throw Error('operations_not_configured');
+  const releases=(await this.db.query("SELECT id,scope,state,base_deployment,deployment->>'id' AS deployment_id,created_at,updated_at FROM claus_operations_releases WHERE scope=$1 ORDER BY updated_at DESC LIMIT 20",[scope])).rows;
+  const actions=(await this.db.query("SELECT id,kind,status,created_at FROM claus_actions WHERE status NOT IN ('completed','failed') ORDER BY created_at LIMIT 30")).rows;
+  const failed=(await this.db.query("SELECT id,kind,status,created_at FROM claus_actions WHERE status='failed' ORDER BY created_at DESC LIMIT 20")).rows;
+  const work=(await this.db.query("SELECT id,status,priority,next_at,revision FROM claus_network_work WHERE status NOT IN ('completed','cancelled') ORDER BY priority,next_at LIMIT 30")).rows;
+  let provider;try{provider=await this.host.diagnostics(scope);}catch{provider={state:'unavailable',retry:'Read again; no execution or replacement was requested.'};}
+  return {scope,observedAt:new Date().toISOString(),control:{enabled:c.enabled,revision:c.revision,deployment:c.deployment},releases,pendingActions:actions,failedActions:failed,work,provider,instructionAuthority:false,next:'Read original action receipts or release IDs before changes. Empty results are not a general health guarantee.'};
+ }
  async propose(requestId:string,input:any,builder:BuilderStore){
   if(!input||Object.keys(input).some(k=>!['scope','expectedRevision','title','goal','changes'].includes(k))||!Number.isSafeInteger(input.expectedRevision)||typeof input.title!=='string'||!input.title.trim()||input.title.length>120||typeof input.goal!=='string'||!input.goal.trim()||input.goal.length>2400)throw new OperationsInputRejection('operations_input_invalid','Provide the current expectedRevision, a title up to 120 characters, a goal up to 2400 characters and only supported fields.');
   validateChanges(input.scope,input.changes);const id='op_'+hash(requestId).slice(0,24),requestHash=hash(input),old=(await this.db.query('SELECT * FROM claus_operations_releases WHERE id=$1',[id])).rows[0];if(old){if(old.request_hash!==requestHash)throw Error('operations_request_conflict');return old;}
   const c=await this.current(input.scope);if(!c?.enabled||c.revision!==input.expectedRevision)throw Error('operations_disabled_or_revision_conflict');validateManifest(c.manifest);await this.host.baseline(input.scope,c.deployment,c.manifest);
-  const files:{path:string;before:string;content:string}[]=[],manifest:FileRef[]=structuredClone(c.manifest);
-  for(const change of input.changes){const ref=manifest.find(f=>f.path===change.path);if(!ref)throw Error('operations_existing_file_required');const before=await this.host.read(input.scope,c.deployment,ref),content=patch(before,change);denyNewAuthority(before,content);if(!['web','repository'].includes(input.scope)){
+  const files:{path:string;before:string;content:string;created?:boolean}[]=[],manifest:FileRef[]=structuredClone(c.manifest);
+  for(const change of input.changes){let ref=manifest.find(f=>f.path===change.path);const created=!ref;if(created&&change.before!=='')throw new OperationsInputRejection('operations_new_file_before_not_empty','Use an empty before value only when adding a file absent from the current manifest.');const before=ref?await this.host.read(input.scope,c.deployment,ref):'',content=patch(before,change);if(!ref){ref={path:change.path,sha:sha(content),size:Buffer.byteLength(content)};manifest.push(ref);}if(!['web','repository'].includes(input.scope)&&isolatedPath(change.path)){denyNewAuthority(before,content);
    try{parse(validateProgram(change.path==='src/application/main.js'?{version:2,lines:content.split('\n')}:JSON.parse(content)),{ecmaVersion:'latest',sourceType:'script'});}
    catch{throw new OperationsInputRejection('operations_source_invalid','Correct the syntax in this exact isolated script before submitting. No build or review was created.');}
-  }files.push({path:change.path,before,content});ref.sha=sha(content);ref.size=Buffer.byteLength(content);}
-  if(Buffer.byteLength(JSON.stringify(files))>250000)throw Error('operations_review_source_too_large');
+  }else if(change.path.endsWith('.json')){try{JSON.parse(content);}catch{throw new OperationsInputRejection('operations_source_invalid','Correct JSON syntax before submission.');}}files.push({path:change.path,before,content,...(created?{created:true}:{})});ref.sha=sha(content);ref.size=Buffer.byteLength(content);if(input.scope==='repository')(ref as any).gitSha=gitBlobSha(content);}
+  if(Buffer.byteLength(JSON.stringify(files))>2500000)throw Error('operations_review_source_too_large');
   const sourceHash=hash(manifest);
   const build=await builder.create('operations:'+id,input.title,input.goal,'claus','source',undefined,'javascript','operations',{
    prepare:async q=>{await assertBuilderDeployment(q);const fresh=await this.current(input.scope,q);if(!fresh?.enabled||fresh.revision!==input.expectedRevision)throw Error('operations_disabled_or_revision_conflict');},

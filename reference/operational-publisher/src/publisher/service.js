@@ -1,5 +1,5 @@
 import {OperationsHost} from './host.js';
-import {target,hash,sha,validateManifest,validateChanges,patch,denyNewAuthority} from './policy.js';
+import {target,hash,sha,validateManifest,validateChanges,patch,denyNewAuthority,isolatedPath,baseManifest} from './policy.js';
 import {validateProgram} from './program.js';
 import {publicationControls} from './controls.js';
 import {trustedReview} from './review-evidence.js';
@@ -22,7 +22,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
  async function bound(scope,id){
   deploymentId(id);const c=await context(scope);if(c.deployment===id)return {c,manifest:c.manifest};
   const r=await repository.byDeployment(scope,id);if(!r)fail('deployment_unbound');
-  const manifest=r.base_deployment===id?r.manifest.map(f=>{const old=r.files.find(x=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;}):r.manifest;
+  const manifest=r.base_deployment===id?baseManifest(r):r.manifest;
   validateManifest(manifest);return {c,r,manifest};
  }
  async function reviewed(r,c){
@@ -31,7 +31,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
   validateChanges(r.scope,r.changes);validateManifest(r.manifest);
   if(!Array.isArray(r.files)||r.files.length!==r.changes.length||new Set(r.files.map(f=>f.path)).size!==r.files.length)fail('files_invalid');
   const expected=structuredClone(c.manifest);
-  for(const change of r.changes){const file=r.files.find(f=>f.path===change.path),ref=expected.find(f=>f.path===change.path);if(!file||!ref||sha(file.before)!==ref.sha||Buffer.byteLength(file.before)!==ref.size||patch(file.before,change)!==file.content)fail('source_binding');denyNewAuthority(file.before,file.content);if(r.scope!=='web')validateProgram(file.path==='src/application/main.js'?{version:2,lines:file.content.split('\n')}:JSON.parse(file.content));ref.sha=sha(file.content);ref.size=Buffer.byteLength(file.content);}
+  for(const change of r.changes){const file=r.files.find(f=>f.path===change.path);let ref=expected.find(f=>f.path===change.path);if(!file||(!ref?(file.created!==true||file.before!==''||change.before!==''):(file.created===true||sha(file.before)!==ref.sha||Buffer.byteLength(file.before)!==ref.size))||patch(file.before,change)!==file.content)fail('source_binding');if(!ref){ref={path:file.path,sha:sha(file.content),size:Buffer.byteLength(file.content)};expected.push(ref);}if(r.scope!=='web'&&isolatedPath(file.path)){denyNewAuthority(file.before,file.content);validateProgram(file.path==='src/application/main.js'?{version:2,lines:file.content.split('\n')}:JSON.parse(file.content));}ref.sha=sha(file.content);ref.size=Buffer.byteLength(file.content);}
   if(!equal(expected,r.manifest)||hash(expected)!==r.source_hash)fail('manifest_binding');
   const e=await repository.review(r.review_effect);if(!e||e.project_id!==r.build_id||e.kind!=='model'||e.status!=='completed')fail('review_incomplete');
   const output=await reviewEvidence(e,'operational');
@@ -63,7 +63,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
  }
  return {async call(operation,scope,args){
   if(!Array.isArray(args))fail('input_invalid');target(scope);
-  const arities={project:0,baseline:2,read:2,deployment:1,reconcile:3,verify:3,deploy:5,promote:2,restored:1,activate:1,finishRollback:1,adopt:1};
+  const arities={diagnostics:0,project:0,baseline:2,read:2,deployment:1,reconcile:3,verify:3,deploy:5,promote:2,restored:1,activate:1,finishRollback:1,adopt:1};
   if(!Object.hasOwn(arities,operation)||args.length!==arities[operation])fail('operation_denied');
   const c=await context(scope);
   if(operation==='adopt'){if(scope!=='native'||args[0]!==c.deployment||(await host.project(scope)).targets?.production?.id!==args[0])fail('base_changed');return control().adoptNative(args[0]);}
@@ -78,7 +78,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
     if(!journal||!['reserved','completed'].includes(journal.status))fail('publication_not_proven');
     if(r.promote_started&&journal.input_hash!==hash({scope,base:r.base_deployment,target:r.deployment.id}))fail('release_binding');
     if(!r.promote_started&&journal.input_hash!==hash({scope,base:r.base_deployment,sourceHash:r.source_hash}))fail('release_binding');
-    id=r.base_deployment;manifest=r.manifest.map(f=>{const old=r.files.find(x=>x.path===f.path);return old?{path:f.path,sha:sha(old.before),size:Buffer.byteLength(old.before)}:f;});
+    id=r.base_deployment;manifest=baseManifest(r);
    }else{
     await reviewed(r,c);if(r.state!=='verified'||!r.promote_started)fail('publication_not_proven');
     const deployed=await reconcileDeployment(r,true);if(deployed.id!==id)fail('release_binding');
@@ -96,6 +96,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
    if(!equal(schedules(live.crons?.definitions),schedules(c.crons)))fail('schedule_changed');
    return rollback?control().rollbackOperation(c,r,manifest,{passed:true,rollback:{completedAt:new Date().toISOString(),verification:proof},standby}):control().activateOperation(c,r,{passed:true,sourceHash:r.source_hash,reviewEffect:r.review_effect,production:proof,standby,verifiedBy:'fixed-publisher'});
   }
+  if(operation==='diagnostics'){const p=await host.project(scope),d=await host.api('/v13/deployments/'+c.deployment,{},scope);return {observedAt:new Date().toISOString(),project:projectView(p),deployment:deploymentView(d),errorCode:typeof d.errorCode==='string'?d.errorCode.slice(0,120):null,controlMatchesProduction:p.targets?.production?.id===c.deployment};}
   if(operation==='project')return projectView(await host.project(scope));
   if(operation==='baseline'){const [id,manifest]=args;if(id!==c.deployment||!equal(manifest,c.manifest))fail('base_changed');return projectView(await host.baseline(scope,id,c.manifest));}
   if(operation==='read'){const [id,file]=args,b=await bound(scope,id);if(!target(scope).paths.some(p=>p.test(file?.path))||!b.manifest.some(f=>equal(f,file)))fail('file_denied');return host.read(scope,id,file);}

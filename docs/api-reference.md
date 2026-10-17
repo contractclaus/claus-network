@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.40.0 with 288 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.40.0 with 292 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -23,6 +23,10 @@ This source describes API 0.40.0 with 288 operations. Endpoint availability and 
 | `resource_grant_set` | PUT | `/v1/infrastructure/controls/{profileId}/grants/{projectId}` | Assigned infrastructure operator or network owner session |
 | `resource_release_prepare` | POST | `/v1/projects/{projectId}/infrastructure/releases` | Bearer credential |
 | `resource_release_get` | GET | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}` | Bearer credential |
+| `resource_release_owner_review` | POST | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-review` | Bearer credential |
+| `resource_release_owner_inspect` | GET | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-review` | Bearer credential |
+| `resource_release_owner_approve` | POST | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-approval` | Bearer credential |
+| `public_resource_owner_review` | GET | `/v1/public/infrastructure/owner-reviews/{reviewId}` | Public |
 | `resource_release_inspect` | GET | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/review` | Claus owner session |
 | `resource_release_approve` | POST | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval` | Claus owner session |
 | `resource_release_revoke` | DELETE | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval` | Project infrastructure.manage or Claus owner session |

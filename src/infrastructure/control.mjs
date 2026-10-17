@@ -1,3 +1,4 @@
+import {operatingProject} from '../operating-access/index.mjs';
 import {amount,copy,digest,integer,requireThat,shape,text,sourceText} from '../shared/index.mjs';
 import {balance} from '../billing/index.mjs';
 import {validateProfile} from './manifest.mjs';
@@ -28,8 +29,8 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
   }
   function publicPolicy(row) {
     const {profileId,enabled,expiresAt,totalLimit,perProjectLimit,dailyLimit,allocated}=row.value;
-    return {profileId,enabled:enabled&&(expiresAt===null||expiresAt>now()),expiresAt,totalLimit,
-      perProjectLimit,dailyLimit,allocated,remaining:(amount(totalLimit)-amount(allocated)).toString(),revision:row.revision};
+    return {pooledFunding:row.value.pooledFunding===true,allocationMeaning:row.value.pooledFunding?'Overlapping own-project ceilings; all reservations share the single real provider balance and custody daily budget.':'Exclusive project allocations',profileId,enabled:enabled&&(expiresAt===null||expiresAt>now()),expiresAt,totalLimit,
+      perProjectLimit,dailyLimit,allocated,remaining:row.value.pooledFunding?null:(amount(totalLimit)-amount(allocated)).toString(),revision:row.revision};
   }
   return {
     async configure(actor,input) {
@@ -62,9 +63,9 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
           for (const r of rows) if(r.id!==profile.id&&r.value.fundingAccount===profile.fundingAccount&&r.value.asset===profile.asset)otherLimits+=amount(r.value.totalLimit);
           if(rows.length<100)break;after=rows.at(-1).id;
         }
-        requireThat(amount(totalLimit)+otherLimits<=amount(funds.available)+amount(funds.reserved)+amount(funds.spent),'infrastructure_funding_insufficient');
+        requireThat(amount(totalLimit)+(old?.value.pooledFunding?0n:otherLimits)<=amount(funds.available)+amount(funds.reserved)+amount(funds.spent),'infrastructure_funding_insufficient');
         await tx.write('infrastructure-profiles',profile.id,profile,priorProfile?.revision??0);
-        const result=await tx.write('infrastructure-controls',profile.id,{profileId:profile.id,fundingAccount:profile.fundingAccount,asset:profile.asset,operators,enabled,expiresAt,totalLimit,perProjectLimit,dailyLimit,allocated},expectedRevision);
+        const result=await tx.write('infrastructure-controls',profile.id,{profileId:profile.id,fundingAccount:profile.fundingAccount,asset:profile.asset,operators,enabled,expiresAt,totalLimit,perProjectLimit,dailyLimit,allocated,...(old?.value.pooledFunding?{pooledFunding:true}:{})},expectedRevision);
         await tx.event({type:'infrastructure.policy_changed',profileId:profile.id,at:now(),revision:result.revision});
         return publicPolicy(result);
       });
@@ -77,7 +78,7 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
       shape(input,['profileId','enabled','expiresAt','limit','expectedRevision','idempotencyKey','reason']);
       const {profileId,enabled,expiresAt,limit,expectedRevision,idempotencyKey,reason}=input;
       text(projectId);text(profileId);text(idempotencyKey);sourceText(reason,1000);integer(expectedRevision);amount(limit);
-      requireThat(reason.length<=1000&&typeof enabled==='boolean'&&Number.isSafeInteger(expiresAt),'invalid_infrastructure_grant');
+      requireThat(reason.length<=1000&&typeof enabled==='boolean'&&(expiresAt===null||Number.isSafeInteger(expiresAt)),'invalid_infrastructure_grant');
       const fingerprint=digest({projectId,profileId,enabled,expiresAt,limit,expectedRevision,reason});
       return store.transaction(async tx=>{
         const {id,row}=await issuer(actor,profileId,tx),policy=row.value;
@@ -93,13 +94,13 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
         const exposure=amount(reserved)+amount(spent),nextLimit=amount(limit),oldLimit=amount(old?.value.limit??'0');
         requireThat(nextLimit>=exposure,'infrastructure_allowance_below_exposure');
         requireThat(!enabled||policy.enabled&&(policy.expiresAt===null||policy.expiresAt>now())&&profile.enabled,'infrastructure_policy_unavailable');
-        requireThat(!enabled||expiresAt>now()&&(policy.expiresAt===null||expiresAt<=policy.expiresAt),'invalid_profile_expiry');
+        requireThat(!enabled||(expiresAt===null?policy.expiresAt===null:expiresAt>now()&&(policy.expiresAt===null||expiresAt<=policy.expiresAt)),'invalid_profile_expiry');
         // Revocation releases only unspent/unreserved allocation. Old pending
         // effects still settle against the same allowance and money account.
         requireThat(enabled||nextLimit===exposure,'revoked_infrastructure_grant_must_preserve_exposure');
         requireThat(nextLimit<=amount(policy.perProjectLimit)||nextLimit<=oldLimit,'infrastructure_project_limit');
         const allocated=amount(policy.allocated)-oldLimit+nextLimit;
-        requireThat(allocated>=0n&&allocated<=amount(policy.totalLimit),'infrastructure_budget_exhausted');
+        requireThat(allocated>=0n&&(policy.pooledFunding===true||allocated<=amount(policy.totalLimit)),'infrastructure_budget_exhausted');
         const value={projectId,profileId,enabled,expiresAt,limit,reserved,spent,issuerId:id,reason,updatedAt:now()};
         const saved=await tx.write('infrastructure-grants',key,value,expectedRevision);
         const result={...copy(value),revision:saved.revision};
@@ -114,7 +115,8 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
       const rows=await store.list('infrastructure-grants',{after,limit});
       return {items:rows.filter(row=>row.value.profileId===profileId).map(row=>({...row.value,revision:row.revision})),nextCursor:rows.length===limit?rows.at(-1).id:null};
     },
-    async checkSpend(reader,profileId,additional){
+    async checkSpend(reader,profileId,additional,projectId){
+      if(projectId&&await operatingProject(reader,projectId))return; // Shared custody gate now includes every lease with model and API spend.
       const policy=(await reader.read('infrastructure-controls',profileId))?.value;
       if(!policy)return;
       let committed=0n,after='';

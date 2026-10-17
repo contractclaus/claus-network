@@ -17,6 +17,7 @@ export class OperationsHost{
  async activate(scope:string,id:string){return this.call('activate',scope,[id]);}
  async finishRollback(scope:string,id:string){return this.call('finishRollback',scope,[id]);}
  async adopt(deployment:string){return this.call('adopt','native',[deployment]);}
+ async diagnostics(scope:string){return this.call('diagnostics',scope,[]);}
  async project(scope:string){return this.call('project',scope,[]);}
  async baseline(scope:string,deployment:string,manifest:FileRef[]){return this.call('baseline',scope,[deployment,manifest]);}
  async read(scope:string,deployment:string,file:FileRef){return this.call('read',scope,[deployment,file]);}

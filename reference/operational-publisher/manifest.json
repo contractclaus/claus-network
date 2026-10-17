@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_3pxnEqa8KyhjSdhyViDgJyJvnFHj",
-  "source": "2026-10-17-operating-limits",
+  "deployed": "dpl_E7cmunqx5PpSxXzUUYC1nJwzTri6",
+  "source": "owner-autonomous-operation-20261018",
   "files": {
     "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
     "package.json": "b43eac6342727358a28af7d38a781577e63397bd39c3d263182e42b86c86e9f7",
@@ -10,11 +10,11 @@
     "src/configuration/validation.js": "f7518c04a32c7aa4a007fbb8bac218f8f2ee6b21aea0b468d2ddb9486b99e6f8",
     "src/github/oci-routes.mjs": "1d09052957188ee1265a12220d80111b45f415aecf5cf82de0c0e24014d148f1",
     "src/github/oci.mjs": "ae67b8edc94c169e89e45c5c65d7a2559462c265c4b061ef61e00562726506ff",
-    "src/github/publication.mjs": "a6999b09b01bfd5c9d10bdb4bc68a98c946a652e1e92a388f625e4ce5f105a3f",
+    "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
     "src/index.js": "4bdfce1d5928f3f5cf75f501687e94f8aa5f92e785b58cb246b09192bdc16d05",
-    "src/infrastructure/broker.mjs": "0b5e1e22c638ec0821a2c61c110f546731c57851c73d70a16e4406818487ba06",
+    "src/infrastructure/broker.mjs": "dd2f519a789c55d48faadf3b777ff0005b0ff08085f8b26d16efed1398152549",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
     "src/infrastructure/providers.mjs": "1f65a51bcb7d414442f0ef16da870eea2c98859b98e923d05176c667d18bb5df",
     "src/infrastructure/release.mjs": "59cde463509df28234cc4f121d8f7ac639415a58ea6336f0e3a991e5afafde5e",
@@ -27,13 +27,13 @@
     "src/publisher/controls.js": "b899403662a96fda5b85c9376406f6a2c4c4553de4b72c6cc53eea44dff425ae",
     "src/publisher/host.js": "f89f7ca0715b26415d2a6f6bdc83e0ddae888bd9c55d3f7d0cdde58dded9540f",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
-    "src/publisher/policy.js": "20d4c036d928916c4f45f06462a393b8b3720d877bdce36169fa66296c9643e6",
+    "src/publisher/policy.js": "4e37847baa6690f435bc377c924b8d1d4e379dab80c52f93a7b5ef474aac2dc8",
     "src/publisher/program.js": "2037abc8fc8d73d33f51a2f72c1c6da8353b87b103890b5d0eff354c68db61a0",
     "src/publisher/repository.js": "003b5eacfba6a0424a5d8df538e905f5afda7e5008901ed9749db1963d2368dc",
     "src/publisher/review-evidence.js": "2fb68224e62e34c1a0669d93b5db558eec2bf3ecf0b3185a8a175ed0dfe67ad7",
-    "src/publisher/review-prompts.json": "bf234f8cd5bcb17ea04bb877c3fb4b1783e818cad85e2dc2f4ca504fd03469a9",
+    "src/publisher/review-prompts.json": "b47f55494ac325f7610326d0fc76257e5da72f1a9aa69a52530191b8722b41e6",
     "src/publisher/routes.js": "e8d2a49bd3bfc7ef299147006741dd5c15b9af791b0f7787f2b42703e5aea298",
-    "src/publisher/service.js": "33d263733ce0603be14c9b22e72545dbdb5a53467d5e76ad8ab2b153d83cd1c9",
+    "src/publisher/service.js": "907ff7ffa179b6c65553eb542fe341cf12cd14993f02285359e9735b57e0a74d",
     "src/runtime-guardian.mjs": "d4980e6982268b32fc46043d04093e09c9c0608a7f3b93c7ca1b4afc954981b9",
     "src/search/policy.js": "70fc0f77ff1c055cdd442463be849f44fbf207abf692e0cb77e9fad094ff06f0",
     "src/search/provider.js": "4813e8d9e836a90dc6fa2b634250c8cc59b2368a980cce360367b2086f46a726",
@@ -54,7 +54,8 @@
     "tests/oci-route.test.js": "b9f5ff825c5266106dfc2e3de185c7279970c708d0de5727340fe9697d04183e",
     "tests/oci.test.js": "4badcf959c6333ee1d76688a0a06c586d697e0d0b34230c96c0aee2c948a8f73",
     "tests/runtime-release.test.mjs": "30818da643b26e5b653741d2c03cd54ff6887f72a9c2798b541d46b40f8f7bd4",
-    "vercel.json": "2a2d11258b6ebbe0c404c975ea627baa0fd5f03f9bace0ba09257a88a9718790"
+    "vercel.json": "2a2d11258b6ebbe0c404c975ea627baa0fd5f03f9bace0ba09257a88a9718790",
+    "src/infrastructure/operating-budget.mjs": "00474cd181fd51feedf70bbb6059c14694060ec14627bc6d7ce222ae26f5c265"
   },
   "referenceSubset": true
 }
