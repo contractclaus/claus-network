@@ -82,7 +82,7 @@ its original ID after a timeout. `resource_status`, `resource_renew` and
 
 A service that stops unexpectedly can resume on its existing provider resource while its original lease and approval remain valid. Explicitly stopped services and completed one-shot jobs do not restart. Repeated start failures are bounded; no replacement resource is created behind the same request.
 
-The active CPU profile reports the current provider CPU type, available regions, memory per vCPU and a price in micro-USD. Check this before submitting a paid runtime review. The GPU profile being enabled does not mean that a model has been deployed or that a particular GPU is available.
+The active CPU profile reports the current provider CPU type, available regions, memory per vCPU and a price in micro-USD. The GPU profile reports each permitted GPU type, its available regions and its own price in micro-USD. A failed catalog read stays explicitly unavailable; it is never reported as free capacity. Check the relevant catalog before submitting a paid runtime review. An enabled GPU profile does not mean that a model has been deployed or capacity reserved.
 
 The standard runner allows two builds globally in a rolling 25-hour window, with one in-flight build per project. A completed build does not block a corrected source snapshot from using the remaining global slot. Unknown or running builds retain their slot and are never replaced.
 

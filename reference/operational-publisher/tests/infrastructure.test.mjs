@@ -109,3 +109,18 @@ test('readiness exposes real CPU regions before a paid runtime review',async()=>
  const calls=[];const d=runpodDriver({token:()=> 'private',now:()=>123,request:async(url,options)=>{calls.push({url,method:options.method});return new Response(JSON.stringify(url.includes('/catalog/')?{id:'cpu3c',vcpu:{min:2,max:32},ramGbPerVcpu:2,price:{securePerVcpu:0.03},dataCenters:[{id:'US-GA-2',availability:'HIGH'},{id:'EU-NL-1',availability:'NONE'}]}:{pods:[]}));}});
  const r=await d.readiness({cpuType:'cpu3c'});assert.equal(r.authenticated,true);assert.deepEqual(r.capacity.availableRegions,['US-GA-2']);assert.equal(r.capacity.hourlyMicroUsdPerVcpu,'30000');assert(calls.every(x=>x.method==='GET'));
 });
+
+test('GPU readiness reads only configured GPU types and preserves partial catalog failures',async()=>{
+ const urls=[];
+ const driver=runpodDriver({token:()=> 'private',now:()=>1234,request:async url=>{
+  urls.push(url);
+  if(url.endsWith('/pods?limit=1'))return Response.json({pods:[]});
+  if(url.includes('missing'))return Response.json({error:'unavailable'},{status:503});
+  assert(url.includes('/catalog/gpus/'));
+  return Response.json({id:'GPU A',price:{secure:0.245},dataCenters:[{id:'US-GA-2',availability:'HIGH'},{id:'EU-NL-1',availability:'NONE'}]});
+ }});
+ const result=await driver.readiness({cpuType:'cpu3c',gpuTypes:['GPU A','missing','GPU A']});
+ assert.equal(result.authenticated,true);assert.equal(result.capacity.kind,'gpu');
+ assert.deepEqual(result.capacity.items,[{gpuType:'GPU A',availableRegions:['US-GA-2'],hourlyMicroUsd:'245000',catalogAvailable:true},{gpuType:'missing',catalogAvailable:false,error:'catalog_unavailable'}]);
+ assert.equal(urls.length,3);assert(!urls.some(u=>u.includes('/catalog/cpus/')));
+});
