@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_6cgunTG31sEKNZWP2xWvDriJ7qSX",
-  "source": "claus-autonomy-access-payer-20261017",
+  "deployed": "dpl_8t2McCuDrBtstP2APgHRoski64bd",
+  "source": "claus-autonomy-access-payer-r2-20261017",
   "files": {
     "src/index.js": "2c6cc8f5898e00a6f7e8889140aa8716d3054174b77b7fc29df20a6ecf87908c",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
@@ -37,7 +37,7 @@
     "src/capital/store.mjs": "0b43fd729641235801d227af51bf4da014b9a20d445e114c213574448d2a5879",
     "vendor/src/outcomes.js": "eeab785b68adbcd9d4d2fe051a62b3c343c9cd334792c6da3558f851e75bf8c8",
     "vendor-manifest.json": "1b1078957e0fb3dac74cfb9ded458c1c8950590e4a68e39eb4c7ba5ea30fe4e6",
-    "src/external-services.js": "120da7540285336f3bec0a73b34ab733b35d265173d9e38b876b08baba13a833"
+    "src/external-services.js": "0da7b7f482e3f611ddd5e05a122aac146b0cc095c5fd6704aba89f5861695069"
   },
   "referenceSubset": true
 }

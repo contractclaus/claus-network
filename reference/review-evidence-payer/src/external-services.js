@@ -39,23 +39,23 @@ export function createExternalServices({db,env=process.env,request=fetch,reserve
    const [old]=await db`SELECT request_hash,status,response FROM claus_inference WHERE id=${id}`;
    if(old){check(old.request_hash===binding,'id_conflict');return {id,status:old.status,response:old.response??null,replay:false};}
    const rows=await reserve(db,{id,hash:binding,maximum:String(parsed.spec.maximum),isImage:false,activeMs:180000});check(rows.length,'reservation_unavailable');
-   let signed=false;
+   let signed=false,stage='quote';
    try{
     const q=await quote(input),account=derive(env.SIGNER_PRIVATE_KEY);check(account.address.toLowerCase()===servicePayer.toLowerCase(),'payer_mismatch');
-    check((await funding(q.requirement,undefined,servicePayer)).sufficient,'funding_required');
+    stage='funding';check((await funding(q.requirement,undefined,servicePayer)).sufficient,'funding_required');
     const claimed=await db`UPDATE claus_inference SET status='authorizing' WHERE id=${id} AND status='reserved' AND (outcome->>'activeUntil')::timestamptz>now() RETURNING id`;check(claimed.length,'reservation_fenced');
     // Once signing starts an exception is uncertain, even if the signer throws.
-    signed=true;
+    stage='signing';signed=true;
     const payload=await new Scheme(account).createPaymentPayload(2,q.requirement),payment={...payload,accepted:q.requirement,resource:q.challenge.resource};
     const saved=await db`UPDATE claus_inference SET status='signed',payment_payload=${JSON.stringify(payment)}::jsonb WHERE id=${id} AND status='authorizing' RETURNING id`;check(saved.length,'authorization_fenced');
-    const r=await request(q.spec.url,{method:'POST',headers:{'content-type':'application/json','payment-signature':Buffer.from(JSON.stringify(payment)).toString('base64')},body:JSON.stringify(q.body),redirect:'error',signal:AbortSignal.timeout(45000)});
-    check(r.ok,'paid_response_unavailable');const body=await json(r),raw=r.headers.get('payment-response');let receipt=null;if(raw&&raw.length<=8192){try{receipt=JSON.parse(Buffer.from(raw,'base64'));}catch{}}
+    stage='provider_request';const r=await request(q.spec.url,{method:'POST',headers:{'content-type':'application/json','payment-signature':Buffer.from(JSON.stringify(payment)).toString('base64')},body:JSON.stringify(q.body),redirect:'error',signal:AbortSignal.timeout(45000)});
+    check(r.ok,'paid_response_unavailable');stage='provider_body';const body=await json(r),raw=r.headers.get('payment-response');let receipt=null;if(raw&&raw.length<=8192){try{receipt=JSON.parse(Buffer.from(raw,'base64'));}catch{}}
     const response={service:input.service,body,receipt,instructionAuthority:false};
-    const finished=await db`UPDATE claus_inference SET status='completed',response=${JSON.stringify(response)}::jsonb,outcome=jsonb_build_object('providerResponseReceived',true,'service',${input.service}) WHERE id=${id} AND status='signed' RETURNING id`;check(finished.length,'receipt_fenced');
+    stage='recording_response';const finished=await db`UPDATE claus_inference SET status='completed',response=${JSON.stringify(response)}::jsonb,outcome=jsonb_build_object('providerResponseReceived',true,'service',${input.service}::text) WHERE id=${id} AND status='signed' RETURNING id`;check(finished.length,'receipt_fenced');
     await reconcile(db,id,{payer:servicePayer}).catch(()=>{});return {id,status:'completed',response};
    }catch(error){
     const reason=/^external_service_[a-z_]+$/.test(error?.message??'')?error.message:'external_service_outcome_unknown';
-    await db`UPDATE claus_inference SET status=${signed?'uncertain':'failed'},outcome=${JSON.stringify({failure:reason,...(!signed?{payment:'not_signed'}:{})})}::jsonb WHERE id=${id} AND status IN ('reserved','authorizing','signed')`;
+    await db`UPDATE claus_inference SET status=${signed?'uncertain':'failed'},outcome=${JSON.stringify({failure:reason,stage,...(!signed?{payment:'not_signed'}:{})})}::jsonb WHERE id=${id} AND status IN ('reserved','authorizing','signed')`;
     await reconcile(db,id,{payer:servicePayer}).catch(()=>{});return {id,status:signed?'uncertain':'failed',reason,replay:false};
    }
   }
