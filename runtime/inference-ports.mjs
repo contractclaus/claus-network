@@ -7,7 +7,7 @@ const wire=(profile,request)=>({model:profile.model,provider:'openai',stream:fal
   reasoning:{effort:'low',context:'all_turns'},max_output_tokens:request.maxOutputTokens,
   input:typeof request.input==='string'?[{role:'user',content:request.input}]:request.input,
   ...(request.tools?{tools:request.tools,parallel_tool_calls:false}:{})});
-const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
+const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&Buffer.byteLength(a)===Buffer.byteLength(b)&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 export function inferencePorts({env=process.env,fetcher=fetch,now=()=>Date.now()}={}) {
   const secret=env.CLAUS_COMPUTE_SECRET,model=env.CLAUS_COMPUTE_MODEL;
   const configured=typeof secret==='string'&&secret.length>=32&&/^gpt-[a-z0-9.-]+$/.test(model??'');
