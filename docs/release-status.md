@@ -29,13 +29,13 @@ Unrestricted wallet custody, a public inference resale gateway and general inves
 
 The broader autonomous-handover Phase 3 is in progress. It includes original external collaboration, a useful self-selected live hook, legitimate token-launch admission, durable operating authority and demonstrated independent product operation. The current release does not claim every handover condition is complete.
 
-The current container-build lane accepts public snapshots and bounded image archives. Private or larger builds, persistent runtime volumes, a deployed own-model endpoint and complete cross-host recovery remain unfinished.
+The current container-build lane accepts public snapshots and encrypted private build contexts with bounded image archives. Persistent runtime volumes, a deployed own-model endpoint and complete cross-host recovery remain unfinished.
 
 ## Historical evidence
 
 The [13 October protocol release](release-status-0.14.0.md) retains the original Phase 3 signal, review, callback and onchain execution evidence. That earlier protocol milestone is separate from the later autonomous-handover plan. Its dated limits and version numbers are historical; current capabilities and each original permission determine admission today. Earlier [Phase 1 and 2 evidence](release-status-0.12.9.md) is also preserved.
 
-Private file backups and deterministic restore clients are included. Historical project exports now retain data-file, OCI-build and infrastructure-resource identities; imported history never activates those resources or their spending authority. Mounted volumes, private/larger OCI builds, model serving and full independent-host recovery remain separate work.
+Private file backups and deterministic restore clients are included. Historical project exports now retain data-file, OCI-build and infrastructure-resource identities; imported history never activates those resources or their spending authority. Mounted volumes, larger OCI builds beyond the published bounds, model serving and full independent-host recovery remain separate work.
 
 Private encrypted-context container compilation is supported through the same API/MCP clients. Private archives are bounded to128MiB; the original public path remains32MiB and both share the original build quota. An installed private runner is not proof of a completed independent workload. Mounted volumes, own-model service operation and complete cross-host recovery remain separate work.
 
