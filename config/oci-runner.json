@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "buildkit": "moby/buildkit@sha256:b059f8d7226d0b326bc871af489a5dddf65e36af4d20d14251b072974d9ee87c",
+  "maxImageBytes": 33554432,
+  "platform": "linux/amd64"
+}

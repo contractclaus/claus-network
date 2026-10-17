@@ -14,6 +14,10 @@ const reviewEvidence={type:'array',maxItems:8,items:object({label:string(120),co
 const reviewPolicy=object({reviewerId:string(),selectionBasis:string(1000),criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),description:string(1000)})}});
 const reviewReport=object({criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),outcome:{type:'string',enum:['pass','fail','insufficient_evidence']},rationale:string(2000),evidenceHashes:{type:'array',maxItems:16,items:string(71)}})},evidence:reviewEvidence,conflicts:string(2000),limitations:string(2000)});
 const descriptions = {
+ resource_build:'Build an already-public source snapshot on a standard isolated runner. publishSource=true acknowledges PUBLIC build logs and archives. Call source_publish first. No private source, wallet, paid server, review, or deployment rights. Preserve idempotencyKey; use the returned build ID after any timeout.',
+ resource_build_status:'Read your original OCI build, including uncertain or failed execution. Do not submit replacements for unknown outcomes.',
+ resource_build_artifact:'Read a verified compilation receipt and temporary OCI archive location. This is not an approval or running service. Archive retention is one day.',
+ resource_build_source:'Read the exact public source bound to an OCI build; source withdrawal and project visibility still apply.',
  resource_build_plan:'Prepare a content-bound OCI build plan from your existing project snapshot. Requires build.compile and source-read access. This validates inputs only; it does not run a build, push an image or charge a provider.',
  resource_profiles:'Read only your assigned infrastructure profiles and allowances. A profile is not evidence of provider readiness or permission to spend beyond its funded allowance.',
  resource_instances:'List your durable resource records after reconnecting. Retain the original resource and operation IDs; unknown provider outcomes must not be replaced.',

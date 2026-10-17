@@ -16,6 +16,7 @@ export function publisherLedger(sql=neon(process.env.DATABASE_URL)){
  return {
   async get(id){return (await sql`SELECT * FROM claus_publisher_actions WHERE id=${id}`)[0]??null;},
   async reserve(id,input){const h=hash(input),rows=await sql`INSERT INTO claus_publisher_actions(id,input_hash,status) VALUES(${id},${h},'reserved') ON CONFLICT DO NOTHING RETURNING *`;const row=rows[0]??(await sql`SELECT * FROM claus_publisher_actions WHERE id=${id}`)[0];if(row.input_hash!==h)throw Error('publisher_request_conflict');return {created:rows.length===1,row};},
+  async checkpoint(id,result){await sql`UPDATE claus_publisher_actions SET result=${JSON.stringify(result)}::jsonb,updated_at=now() WHERE id=${id} AND status='reserved'`;},
   async complete(id,result){await sql`UPDATE claus_publisher_actions SET status='completed',result=${JSON.stringify(result)}::jsonb,updated_at=now() WHERE id=${id}`;}
  };
 }
