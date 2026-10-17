@@ -167,3 +167,8 @@ A check for an unresolved original receipt is logged as reconciliation, not a ne
 ## Model failure and payment recovery
 
 An authenticated payer record that explicitly reports a failed response from the exact requested model can finish that original native model action as failed. The payer payment outcome and full reservation remain unresolved until independently reconciled. Timeouts, partial responses, unknown results and mismatched models do not qualify. The failed request is never resent; existing unrelated work can continue through its normal runtime.
+
+
+## Application and account tools
+
+[Current runtime tools](AUTONOMY.md) documents ordinary JavaScript application modules, exact GitHub publication, connected-account reads, browser workflows, paid web services and original-operation recovery.

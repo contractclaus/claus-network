@@ -1,3 +1,4 @@
+import {createExternalServices} from './external-services.js';
 import {installCapitalRoutes} from './capital/routes.mjs';
 import {capitalSnapshot,refreshCapitalCash} from './capital/budget.js';
 import {validateConversation} from './compute-conversation.js';
@@ -69,6 +70,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   const computeFunding=installFundingRoutes(app,'payer',env);
   const sql=database??(()=>neon(env.PAYMENT_DATABASE_URL));
   const enabled=()=>env.PAYMENT_RELAY_ENABLED==='true';
+  const externalServices=()=>createExternalServices({db:sql(),env,request:fetcher});
   const resources=createOperatingResources({env,db:(strings,...values)=>sql()(strings,...values),request:fetcher,
     computeFunding:()=>computeFunding.handle({action:'status'})});
   const creditLedgerEnabled=()=>!!env.SURPLUS_CREDIT_KEY_ID;
@@ -97,6 +99,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   app.use('/api/*',async(c,next)=>{
     const path=c.req.path;
     let decodedPath='';try {decodedPath=decodeURIComponent(path);}catch { /* Refused below. */ }
+    const externalService=['GET','POST'].includes(c.req.method)&&path==='/api/external-services';
     const payment=c.req.method==='POST'&&['/api/completion','/api/images'].includes(path);
     const setup=c.req.method==='POST'&&path==='/api/setup';
     const recovery=c.req.method==='POST'&&/^\/api\/reconcile\/[a-zA-Z0-9:_-]{1,160}$/.test(decodedPath);
@@ -108,7 +111,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     const reviewReceipt=['GET','POST'].includes(c.req.method)&&/^\/api\/review-evidence\/[a-zA-Z0-9:_-]{1,160}$/.test(decodedPath);
     const computeId=payment?c.req.header('idempotency-key'):(status?decodedPath.slice('/api/requests/'.length):(admission?decodedPath.slice('/api/admission/'.length):computeReceipt?decodedPath.slice('/api/compute/'.length):''));
     const compute=/^network-compute:[a-f0-9]{64}$/.test(computeId??'');
-    if(!payment&&!setup&&!recovery&&!status&&!budget&&!admission&&!computeReceipt&&!reviewReceipt&&!resource)return c.json({error:'payment_route_disabled'},403);
+    if(!externalService&&!payment&&!setup&&!recovery&&!status&&!budget&&!admission&&!computeReceipt&&!reviewReceipt&&!resource)return c.json({error:'payment_route_disabled'},403);
     if(!authorized(c.req.header('authorization'),reviewReceipt?env.PUBLISHER_REVIEW_SECRET:compute?env.NETWORK_COMPUTE_SECRET:setup||recovery||budget?env.OPERATOR_SECRET:env.INFERENCE_SECRET))return c.json({error:'unauthorized'},401);
     if(compute&&payment){
       if(path!=='/api/completion'||env.NETWORK_COMPUTE_ENABLED!=='true')return c.json({error:'compute_disabled',payment:'not_signed'},403);
@@ -116,14 +119,16 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
       if(!b||b.model!==env.NETWORK_COMPUTE_MODEL||b.provider!=='openai'||b.max_output_tokens>4096||c.req.header('x-inference-purpose'))return c.json({error:'compute_profile_refused',payment:'not_signed'},400);
       try{validateConversation(b.input,b.tools);}catch{return c.json({error:'compute_profile_refused',payment:'not_signed'},400);}
     }
-    if(payment&&!enabled())return c.json({error:'payment_relay_disabled',payment:'not_signed'},503);
-    if(payment||setup||recovery) {
+    if((payment||externalService)&&!enabled())return c.json({error:'payment_relay_disabled',payment:'not_signed'},503);
+    if(payment||externalService||setup||recovery) {
       if(!configured(env))return c.json({error:'payment_configuration_refused',payment:'not_signed'},503);
       if(payment)try {paymentAccount(env.SIGNER_PRIVATE_KEY,deriveAccount);}catch {return c.json({error:'payment_wallet_mismatch',payment:'not_signed'},503);}
     }
     if(Number(c.req.header('content-length')??0)>(path==='/api/completion'||reviewReceipt?4200000:10000))return c.json({error:'request_too_large'},413);
     return await next();
   });
+  app.get('/api/external-services',async c=>c.json(externalServices().catalog()));
+  app.post('/api/external-services',async c=>{try{const input=await c.req.json();if(!input||!['quote','call','status'].includes(input.operation))return c.json({error:'external_service_operation_invalid'},400);const service=externalServices();return c.json(input.operation==='status'?await service.status(input.id):input.operation==='quote'?await service.quote(input.input):await service.call(input.id,input.input));}catch(error){return c.json({error:/^external_service_[a-z_]+$/.test(error?.message??'')?error.message:'external_service_unavailable'},409);}});
   app.post('/api/setup',async c=>{await setupBudget(sql());return c.json({ready:true,payer,budget:await budgetSnapshot(sql())});});
   app.get('/api/resources',async c=>{c.header('Cache-Control','no-store');const value=await resources();await refreshCapitalCash(sql());const capital=await capitalSnapshot(sql());if(capital){value.capital=capital;if(capital.state==='active'){value.budget.remainingMicroUsdc=capital.availableMicroUsdc;value.budget.limitMicroUsdc=String(BigInt(value.budget.committedMicroUsdc)+BigInt(capital.availableMicroUsdc));value.capacity={...value.capacity,state:BigInt(capital.availableMicroUsdc)===0n?'exhausted':BigInt(capital.availableMicroUsdc)<2000000n?'limited':'available',remainingAuthorizationMicroUsdc:capital.availableMicroUsdc,nativeTwoUsdcReservations:String(BigInt(capital.availableMicroUsdc)/2000000n),payerThreeUsdcReservations:String(BigInt(capital.availableMicroUsdc)/3000000n),nextAction:BigInt(capital.availableMicroUsdc)<2000000n?'wait_for_operating_capacity_or_use_smaller_authorized_request':'continue_within_rolling_capital_envelope'};}}return c.json(value);});
   app.get('/api/budget',async c=>c.json({...await budgetSnapshot(sql()),...(creditLedgerEnabled()?{prepaid:await creditSnapshot(sql())}:{})}));

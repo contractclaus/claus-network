@@ -1,15 +1,15 @@
 {
-  "deployed": "dpl_CAdd2VPKj5ga6Ez1ESk4EnqqWYUy",
-  "source": "claus-active-work-signer-r2-20261016",
+  "deployed": "dpl_AqeAvoofqNWpNcPZGQEknAe4ZevL",
+  "source": "claus-autonomy-access-signer-r2-20261017",
   "files": {
-    "src/index.js": "1a7b28c0bb5d55523cacb229c80c08f9f24b7577e735dbb46802a3884a0a13c1",
+    "src/index.js": "efe8b79ab7db9cc92cf02f7d901f7c218936d35fff0fe15e18d87b4d915d777e",
     "src/publisher/host.js": "c59603df1592e5b418d6eb44bc4deab0d8028e6fbf9527df9c5d04fdc092197b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
-    "src/publisher/policy.js": "1ea8a68136ce4615eddcf8623f4ca34d9fd8eddface64923642a12c814bbc9ce",
-    "src/publisher/program.js": "447b9e5865e9afe65abb2d141a0f997985c67242162709bf0069c9d68049c5f1",
+    "src/publisher/policy.js": "6b7f2b07f2aba6348e4e61db6b0f72c5889836230b13e2b5afbe1883760450d5",
+    "src/publisher/program.js": "2037abc8fc8d73d33f51a2f72c1c6da8353b87b103890b5d0eff354c68db61a0",
     "src/publisher/repository.js": "6a527f2578e7192672942e3b11858fde8c71783be98790b9a3cd918dc34e87b7",
     "src/publisher/routes.js": "50796ff35d6a07e31237ba1bd3f4dc2de0e52b8a3b79ce41bc5706df38c6125c",
-    "src/publisher/service.js": "13e7754ca3b2b3ee8ad7e4ba5b6cf50890682959e12445c32dd9aeaa1fe035f3",
+    "src/publisher/service.js": "0a5b2d3a6ebe47c6ae7dde642356f1c1d8d7e67e5fc7a223618305b73909e92a",
     "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
     "package.json": "b43eac6342727358a28af7d38a781577e63397bd39c3d263182e42b86c86e9f7",
     "src/surface-publisher/host.js": "ab1ee1877a0977a7ef6be49ed11dfed5193c75336bd9e07af9516968fff121c8",
@@ -37,7 +37,9 @@
     "src/search/provider.js": "4813e8d9e836a90dc6fa2b634250c8cc59b2368a980cce360367b2086f46a726",
     "src/search/repository.js": "c62a5a37253ad46208c8129251e0683f70f3dbedad0bd77171de000ed0f360f3",
     "src/search/service.js": "8f3016ce4ec353c80a0b2dd7069b34b2c60064e079174e0475e32247dbd86118",
-    "src/search/routes.js": "0563bfb04479ba743a7ab8506377650f86a19f53508c167b9b0569a74677d620"
+    "src/search/routes.js": "0563bfb04479ba743a7ab8506377650f86a19f53508c167b9b0569a74677d620",
+    "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
+    "src/github/service.mjs": "b7a7d87972423c85d750e9bbf4cd58361e290bf09e7e6345c626ac947cf662be"
   },
   "referenceSubset": true
 }

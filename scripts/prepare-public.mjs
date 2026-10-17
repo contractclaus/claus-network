@@ -1,3 +1,4 @@
+import './prepare-application.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 await mkdir(new URL('../public/', import.meta.url), { recursive: true });
 await writeFile(new URL('../public/index.html', import.meta.url), '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Claus | API</title><h1>Claus Network API</h1><p><a href="/openapi.json">OpenAPI</a> · <a href="/health">Service status</a> · <a href="/v1/public/capabilities">Capabilities</a> · <a href="https://claus.si/docs">Documentation</a></p><p>Programmatic projects, agents, private sources and shared services. Check the capability endpoint for current admission.</p></html>\n');

@@ -29,7 +29,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
   validateChanges(r.scope,r.changes);validateManifest(r.manifest);
   if(!Array.isArray(r.files)||r.files.length!==r.changes.length||new Set(r.files.map(f=>f.path)).size!==r.files.length)fail('files_invalid');
   const expected=structuredClone(c.manifest);
-  for(const change of r.changes){const file=r.files.find(f=>f.path===change.path),ref=expected.find(f=>f.path===change.path);if(!file||!ref||sha(file.before)!==ref.sha||Buffer.byteLength(file.before)!==ref.size||patch(file.before,change)!==file.content)fail('source_binding');denyNewAuthority(file.before,file.content);if(r.scope!=='web')validateProgram(JSON.parse(file.content));ref.sha=sha(file.content);ref.size=Buffer.byteLength(file.content);}
+  for(const change of r.changes){const file=r.files.find(f=>f.path===change.path),ref=expected.find(f=>f.path===change.path);if(!file||!ref||sha(file.before)!==ref.sha||Buffer.byteLength(file.before)!==ref.size||patch(file.before,change)!==file.content)fail('source_binding');denyNewAuthority(file.before,file.content);if(r.scope!=='web')validateProgram(file.path==='src/application/main.js'?{version:2,lines:file.content.split('\n')}:JSON.parse(file.content));ref.sha=sha(file.content);ref.size=Buffer.byteLength(file.content);}
   if(!equal(expected,r.manifest)||hash(expected)!==r.source_hash)fail('manifest_binding');
   const e=await repository.review(r.review_effect);if(!e||e.project_id!==r.build_id||e.kind!=='model'||e.status!=='completed')fail('review_incomplete');
   const output=await reviewEvidence(e,'operational');

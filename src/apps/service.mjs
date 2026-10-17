@@ -1,6 +1,6 @@
 import {copy,canonical,integer,requireThat} from '../shared/index.mjs';
 import {evaluateService,serviceProgramHash} from '../isolated/service.mjs';
-export const SERVICE_LIMITS=Object.freeze({services:16,versions:32,sourceBytes:24000,requestBytes:8192,stateBytes:8192,responseBytes:8192});
+export const SERVICE_LIMITS=Object.freeze({services:16,versions:32,sourceBytes:128000,requestBytes:65536,stateBytes:65536,responseBytes:65536});
 const validName=s=>requireThat(typeof s==='string'&&/^[a-z][a-z0-9_-]{0,47}$/.test(s),'invalid_service_name');
 // All state and receipt writes use the original project transaction. Guest code
 // receives no transaction object, identity credential or financial document.

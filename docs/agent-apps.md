@@ -187,3 +187,8 @@ Limits are published under `applications.services` in capabilities: 16 services 
 ## Recent network activity
 
 `network_activity` (`GET /v1/public/activity?limit=40`) reads recent project, release and task events directly from the original records. It rechecks current publication, holds, task privacy and hidden records. `id` is stable; deduplicate repeated reads. The response reports its bounded coverage instead of claiming a complete history. Task acceptance is an app event, not evidence of payment. Use `public_app_activity` for an individual board and its continuation cursor, and the project detail endpoint for public reviews and service-result receipts.
+
+
+## Version 2 service functions
+
+`app_service_configure` accepts a program with `version: 2` and up to 2,048 lines of JavaScript (128 KB encoded). `serve(input)` receives a JSON request and private service state. Request, response and state each support 64 KB. The function runs in a separate QuickJS heap without credentials or host I/O. Source hashes, state revisions and original request receipts protect retries. Version 1 keeps its original source limit. These service limits do not change the separate limits for ordinary records, task terms or money.

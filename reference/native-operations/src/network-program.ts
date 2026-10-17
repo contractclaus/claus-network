@@ -1,5 +1,7 @@
 import {receiptRoute,readOriginalAppResult} from './isolated/app-receipt.mjs';
 import program from './isolated/network.json' with {type:'json'};
+import applicationProgram from './application/source.json' with {type:'json'};
+const selectedProgram=(input:any)=>input.application===true?applicationProgram:program;
 import {runNetworkProgram,PROGRAM_READS,PROGRAM_WRITES} from './isolated/operations.mjs';
 import {networkRoutes,validate} from './network-routes.js';
 import {createNetworkAccess} from './network-access.js';
@@ -13,14 +15,14 @@ import {admitProgramRun,withProgramRun,programRunId,isProgramRun,canonicalProgra
 import {productionLabDatabase} from './lab-db.js';
 
 const access=createNetworkAccess({extraRoutes:{app_request_receipt:receiptRoute}});
-export const networkProgramDefinitions=[{type:'function',function:{name:'run_network_program',description:'Run operate(input) from your reviewed editable src/isolated/network.json in the credential-free engine. Supply an existing network_work id/revision and a project you can access. input contains projectId, your JSON request, and original receipts from up to four sealed API operations. Return {operation,input} or {result}. Allowed reads: '+PROGRAM_READS.join(', ')+'. With allowWrites=true, allowed writes: '+PROGRAM_WRITES.join(', ')+'. Project identity and original idempotency keys are fixed by the host. This cannot grant permissions, sign, spend, post on X, modify database records directly or change its operation allowlist. Missing operate leaves existing analysis unchanged. Review current receipts before another run; never replace an uncertain run.',parameters:{type:'object',properties:{workId:{type:'string'},expectedRevision:{type:'integer',minimum:1},projectId:{type:'string'},request:{type:'string',description:'JSON object for your program, at most 8000 bytes.'},allowWrites:{type:'boolean'}},required:['workId','expectedRevision','projectId','request','allowWrites'],additionalProperties:false}}}];
+export const networkProgramDefinitions=[{type:'function',function:{name:'run_network_program',description:'Run operate(input) from your reviewed editable src/isolated/network.json, or use application:true for your plain-JavaScript src/application/main.js in the credential-free engine. Supply an existing network_work id/revision and a project you can access. input contains projectId, your JSON request, and original receipts from up to four sealed API operations. Return {operation,input} or {result}. Allowed reads: '+PROGRAM_READS.join(', ')+'. With allowWrites=true, allowed writes: '+PROGRAM_WRITES.join(', ')+'. Project identity and original idempotency keys are fixed by the host. This cannot grant permissions, sign, spend, post on X, modify database records directly or change its operation allowlist. Missing operate leaves existing analysis unchanged. Review current receipts before another run; never replace an uncertain run.',parameters:{type:'object',properties:{workId:{type:'string'},expectedRevision:{type:'integer',minimum:1},projectId:{type:'string'},request:{type:'string',description:'JSON object for your program, at most 8000 bytes.'},allowWrites:{type:'boolean'},application:{type:'boolean',description:'Use your reviewed src/application/main.js operate function instead of the legacy network JSON program.'}},required:['workId','expectedRevision','projectId','request','allowWrites'],additionalProperties:false}}}];
 
 export async function networkProgram(actionId:string,args:any){
- if(!args||Object.keys(args).some(k=>!['workId','expectedRevision','projectId','request','allowWrites'].includes(k))||typeof args.workId!=='string'||args.workId.length>200||!Number.isSafeInteger(args.expectedRevision)||args.expectedRevision<1||typeof args.projectId!=='string'||args.projectId.length>256||typeof args.request!=='string'||Buffer.byteLength(args.request)>8000||typeof args.allowWrites!=='boolean')throw Error('network_program_input');
+ if(!args||Object.keys(args).some(k=>!['workId','expectedRevision','projectId','request','allowWrites','application'].includes(k))||typeof args.workId!=='string'||args.workId.length>200||!Number.isSafeInteger(args.expectedRevision)||args.expectedRevision<1||typeof args.projectId!=='string'||args.projectId.length>256||typeof args.request!=='string'||Buffer.byteLength(args.request)>8000||typeof args.allowWrites!=='boolean'||args.application!==undefined&&typeof args.application!=='boolean')throw Error('network_program_input');
  const request=JSON.parse(args.request);if(!request||typeof request!=='object'||Array.isArray(request))throw Error('network_program_input');
  await currentAuthority(args.workId,args.expectedRevision);
  await access.call('project_get',{projectId:args.projectId});
- const id=programRunId(actionId),input={...args,request,sourceHash:programHash(program)};
+ const id=programRunId(actionId),input={...args,request,sourceHash:programHash(selectedProgram(args))};
  const admitted=await admitProgramRun(productionLabDatabase(),id,input);
  if(admitted.state==='busy')return {state:'waiting',success:false,reason:'admission_busy'};
  if(admitted.state==='held')return {state:'waiting',success:false,originalRunId:admitted.id,reason:'original_action_requires_reconciliation'};
@@ -36,13 +38,13 @@ async function executeOriginalRun(id:string){
   if(['completed','failed'].includes(row.status))return row.result;
   const saved=row.input;
   // An update may stop a saved program, but cannot silently change its code.
-  if(saved.sourceHash!==programHash(program))return stopOriginalRun(id,'original_program_source_changed');
+  if(saved.sourceHash!==programHash(selectedProgram(saved)))return stopOriginalRun(id,'original_program_source_changed');
   try{await currentAuthority(saved.workId,saved.expectedRevision);}
   catch(error){
    if(['network_program_work_changed','network_program_disabled'].includes((error as Error)?.message))return stopOriginalRun(id,(error as Error).message);
    throw error;
   }
-  const result=await runNetworkProgram({program,projectId:saved.projectId,runId:id,context:saved.request,allowWrites:saved.allowWrites,route:(name:string)=>networkRoutes[name],validate,invoke:access.call,record:async(stepId:string,input:any,fn:()=>Promise<any>)=>{
+  const result=await runNetworkProgram({program:selectedProgram(saved),projectId:saved.projectId,runId:id,context:saved.request,allowWrites:saved.allowWrites,route:(name:string)=>networkRoutes[name],validate,invoke:access.call,record:async(stepId:string,input:any,fn:()=>Promise<any>)=>{
    await alive();
    await currentAuthority(saved.workId,saved.expectedRevision);
    const original=canonicalProgramValue({...input,workId:saved.workId,workRevision:saved.expectedRevision,journalVersion:2});
