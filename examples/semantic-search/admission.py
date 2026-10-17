@@ -98,6 +98,16 @@ class Admission:
             if not caller['active'] or caller['tokens'] < cost - 1:
                 raise AdmissionError(429, 'caller_cost_budget')
             caller['tokens'] -= cost - 1
+        refunded = False
+
+        def refund():
+            nonlocal refunded
+            with self.lock:
+                if not refunded:
+                    caller['tokens'] = min(120, caller['tokens'] + cost - 1)
+                    refunded = True
+
+        return refund
 
     def verify_body(self, claims, body):
         if hashlib.sha256(body).hexdigest() != claims['bodyHash'] or claims['exp'] <= self.now_ms():

@@ -70,11 +70,14 @@ class Engine:
         encoded = self.tokenizer.encode_batch(examples)
         if any(not any(i not in (0, 101, 102) for i in value.ids) for value in encoded):
             raise ValueError('text_requires_content_tokens')
-        if meter is not None:
-            meter(max(1, (sum(sum(v.attention_mask) for v in encoded) + 63) // 64))
         if not self.lock.acquire(timeout=3):
             raise BlockingIOError('inference_busy')
+        refund = None
         try:
+            # Busy callers spend only the admission unit. Reserve the model
+            # cost only once the worker is ours, and return it on failure.
+            if meter is not None:
+                refund = meter(max(1, (sum(sum(v.attention_mask) for v in encoded) + 63) // 64))
             with self.state_lock:
                 self.inference_started = time.monotonic()
             # Reuse is confined to this request; another caller's input cannot
@@ -91,7 +94,12 @@ class Engine:
             if vectors.shape != (len(examples), DIMENSIONS) or not np.isfinite(vectors).all():
                 raise RuntimeError('model_output_invalid')
             answers = dict(zip(examples, vectors.astype(np.float32).tolist()))
+            refund = None
             return [answers[text] for text in texts]
+        except BaseException:
+            if refund is not None:
+                refund()
+            raise
         finally:
             with self.state_lock:
                 self.inference_started = None
@@ -152,9 +160,12 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
         # Incomplete requests never occupy application workers, even when
         # their headers contain a valid admission ticket.
         if len(self.pending_headers) >= self.max_pending_headers:
-            # Prefer new progress over a connection that has occupied the
-            # header queue longest. No admitted request is evicted here.
-            oldest = next(iter(self.pending_headers))
+            # Anonymous arrivals cannot evict signature-verified requests.
+            oldest = next((sock for sock, entry in self.pending_headers.items()
+                           if entry[3] is None), None)
+            if oldest is None:
+                self.reject_connection(request, 503)
+                return
             self.remove_pending(oldest)
             self.reject_connection(oldest, 503)
         request.setblocking(False)
@@ -166,8 +177,10 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
         super().serve_forever(poll_interval=min(poll_interval, 0.02))
 
     def reject_connection(self, request, status):
-        response = ('HTTP/1.1 %d Unavailable\r\nContent-Length: 0\r\n'
-                    'Connection: close\r\nRetry-After: 1\r\n\r\n' % status).encode()
+        reason = BaseHTTPRequestHandler.responses[status][0]
+        retry = 'Retry-After: 1\r\n' if status in (408, 429, 503) else ''
+        response = (f'HTTP/1.1 {status} {reason}\r\nContent-Length: 0\r\n'
+                    f'Connection: close\r\n{retry}\r\n').encode()
         try:
             request.setblocking(False)
             request.send(response)
