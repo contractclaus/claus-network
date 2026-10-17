@@ -8,6 +8,7 @@ import {createJobs} from '../src/jobs/index.mjs';
 import {createBuilds} from '../src/builds/index.mjs';
 import {createArtifactStore} from '../src/artifact-store/index.mjs';
 import {createR2Objects} from '../adapters/r2-objects.mjs';
+import {inferencePorts} from '../runtime/inference-ports.mjs';
 import {ociPorts} from '../runtime/oci-ports.mjs';
 import {canonical} from '../src/shared/index.mjs';
 import {errorBody,errorStatus} from '../interfaces/http.mjs';
@@ -64,4 +65,11 @@ test('compiler cron rejects malformed unicode credentials without a crash or dat
  const old=process.env.CRON_SECRET;process.env.CRON_SECRET='aa';let status,body;
  try{await compileHandler({method:'GET',headers:{authorization:'Bearer üü'}},{setHeader(){},status(s){status=s;return this;},json(b){body=b;}});assert.equal(status,401);assert.equal(body.error,'unauthenticated');}
  finally{if(old===undefined)delete process.env.CRON_SECRET;else process.env.CRON_SECRET=old;}
+});
+
+test('inference quote verification rejects malformed multibyte signatures',async()=>{
+ const ports=inferencePorts({env:{CLAUS_COMPUTE_SECRET:'a'.repeat(32),CLAUS_COMPUTE_MODEL:'gpt-test'}});
+ const profile={providerId:'surplus',accountId:'claus-network-x402-v1',model:'gpt-test',providers:['openai'],asset:'base-usdc-micro',maxOutputTokens:1024,maximumPerRequest:'1000',expiresAt:null};
+ const quote=await ports.provider.quote({profile,requestHash:'request'});assert(await ports.verifyQuote(quote,profile));
+ assert.equal(await ports.verifyQuote({...quote,proofHash:'ü'.repeat(quote.proofHash.length)},profile),false);
 });
