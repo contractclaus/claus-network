@@ -1,9 +1,38 @@
 # API reference
 
-This source describes API 0.32.0 with 242 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.33.0 with 271 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `resource_control_set` | PUT | `/v1/admin/infrastructure/controls` | Network owner session |
+| `resource_control` | GET | `/v1/infrastructure/controls/{profileId}` | Assigned infrastructure operator or network owner session |
+| `resource_grants` | GET | `/v1/infrastructure/controls/{profileId}/grants` | Assigned infrastructure operator or network owner session |
+| `resource_grant_set` | PUT | `/v1/infrastructure/controls/{profileId}/grants/{projectId}` | Assigned infrastructure operator or network owner session |
+| `resource_release_prepare` | POST | `/v1/projects/{projectId}/infrastructure/releases` | Bearer credential |
+| `resource_release_get` | GET | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}` | Bearer credential |
+| `resource_release_inspect` | GET | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/review` | Claus owner session |
+| `resource_release_approve` | POST | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval` | Claus owner session |
+| `resource_release_revoke` | DELETE | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/approval` | Project infrastructure.manage or Claus owner session |
+| `public_resource_release` | GET | `/v1/public/infrastructure/releases/{releaseId}` | Public |
+| `resource_image_publish` | PUT | `/v1/projects/{projectId}/infrastructure/builds/{buildId}/image` | Bearer credential |
+| `resource_build` | POST | `/v1/projects/{projectId}/infrastructure/builds` | Bearer credential |
+| `resource_build_status` | GET | `/v1/projects/{projectId}/infrastructure/builds/{buildId}` | Bearer credential |
+| `resource_build_artifact` | GET | `/v1/projects/{projectId}/infrastructure/builds/{buildId}/artifact` | Bearer credential |
+| `resource_build_source` | GET | `/v1/public/infrastructure/builds/{buildId}/source` | Public |
+| `resource_build_plan` | POST | `/v1/projects/{projectId}/infrastructure/build-plan` | Bearer credential |
+| `resource_readiness` | GET | `/v1/projects/{projectId}/infrastructure/readiness` | Bearer credential |
+| `resource_renew` | POST | `/v1/projects/{projectId}/infrastructure/instances/{resourceId}/renew` | Bearer credential |
+| `resource_profiles` | GET | `/v1/projects/{projectId}/infrastructure/profiles` | Bearer credential |
+| `resource_instances` | GET | `/v1/projects/{projectId}/infrastructure` | Bearer credential |
+| `resource_quote` | POST | `/v1/projects/{projectId}/infrastructure/quotes` | Bearer credential |
+| `resource_request` | POST | `/v1/projects/{projectId}/infrastructure` | Bearer credential |
+| `resource_status` | GET | `/v1/projects/{projectId}/infrastructure/instances/{resourceId}` | Bearer credential |
+| `resource_logs` | GET | `/v1/projects/{projectId}/infrastructure/instances/{resourceId}/logs` | Bearer credential |
+| `resource_stop` | POST | `/v1/projects/{projectId}/infrastructure/instances/{resourceId}/stop` | Bearer credential |
+| `resource_delete` | DELETE | `/v1/projects/{projectId}/infrastructure/instances/{resourceId}` | Bearer credential |
+| `resource_update` | POST | `/v1/projects/{projectId}/infrastructure/instances/{resourceId}/replacement` | Bearer credential |
+| `resource_profile_set` | PUT | `/v1/admin/infrastructure/profiles` | Network owner session |
+| `resource_allowance_set` | PUT | `/v1/admin/infrastructure/allowances/{projectId}` | Network owner session |
 | `workflow_revise` | PATCH | `/v1/projects/{projectId}/workflows/{workflowId}` | Bearer credential |
 | `webhook_create` | POST | `/v1/projects/{projectId}/webhooks` | Bearer credential |
 | `webhook_list` | GET | `/v1/projects/{projectId}/webhooks` | Bearer credential |

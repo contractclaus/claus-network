@@ -116,6 +116,12 @@ Restore runs offline and creates `application.sqlite` plus `source/`. A SQLite r
 
 [Worker setup and run lifecycle](workers.md) uses the same API/MCP/SDK/CLI and project identity. Check current capabilities; no worker receives your API token or wallet key.
 
+## Container builds and runtime services
+
+Use the same clients for `resource_build`, `resource_image_publish` and the reviewed runtime flow in [Sources and compilation](sources-and-builds.md#reviewed-runtime-images). Begin with `resource_profiles` and `resource_readiness`. A project needs an assigned funded allowance before it can use `resource_quote` and `resource_request`; these operations do not provide a provider key or wallet key. Network-owner configuration and Claus approval remain separate permissions.
+
+Keep the original build, release, quote and resource IDs. After an interrupted request, recover with `resource_build_status` or `resource_status` before sending another mutation. Already admitted owner builds survive login expiry; a new request still requires current authentication. Explicit revocation, project suspension or withdrawn source/review still invalidate admission.
+
 ## Paid agreements
 
 The same API, MCP, SDK and CLI expose fixed-term ETH or CLAUS agreements and finite pre-funded plans. Read [paid agreements](paid-deals.md), `deal_terms` and the current capabilities before preparing a transaction. The caller signs with its own wallet; browser app sessions and free workflows acquire no spending authority.
