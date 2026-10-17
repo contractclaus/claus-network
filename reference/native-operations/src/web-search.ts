@@ -25,7 +25,7 @@ export async function searchWeb(input:any,cache:ResearchCache,discover=discoverS
     const results=pages.flatMap(p=>{
       if(p.status!=='fulfilled'||!p.value.content.trim())return [];
       const page=p.value;return [{url:page.url,title:new URL(page.url).hostname,excerpt:textPrefix(page.content,2400),observedAt:page.observedAt,contentOrigin:'independently_fetched_page'}];
-    }).sort((a,b)=>a.url.localeCompare(b.url));
+    }); // Promise.allSettled retains discovery relevance order, including failures.
     if(candidates.length&&!results.length)throw Error('search_sources_unavailable');
     return {query:query.query,observedAt:cache.now().toISOString(),results};
   },40,'web-search-broker');
