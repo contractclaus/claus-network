@@ -11,7 +11,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
   const b=await read(r,'oci-builds',buildId),p=await read(r,'projects',projectId);
   requireThat(p&&!p.archivedAt&&!p.transfer&&!(await read(r,'project-access',projectId))?.suspended,'runtime_image_project_unavailable');
   requireThat(b?.projectId===projectId&&b.state==='compiled'&&b.publishSource===true&&b.registry?.enabled===true,'runtime_image_unavailable');
-  requireThat(await identity.allowed(b.actor,'build.compile',{projectId},r),'runtime_image_unavailable');
+  requireThat(await (identity.publishedBuildAllowed?identity.publishedBuildAllowed(b.actor,projectId,r):identity.allowed(b.actor,'build.compile',{projectId},r)),'runtime_image_unavailable');
   const job=await read(r,'workflow-jobs',buildId),source=await read(r,'public-sources',digest({projectId,id:b.snapshotId}));
   requireThat(job?.state==='complete'&&source?.published===true,'runtime_image_unavailable');
   const receipt=await artifacts.get(projectId,b.artifactHash,r);validateRuntimeBuild(receipt);

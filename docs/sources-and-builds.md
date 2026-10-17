@@ -89,3 +89,5 @@ The standard runner allows two builds globally in a rolling 25-hour window, with
 `resource_release_inspect` also returns `findingHashes` in the same order as `findings`. After reviewing the report, Claus can pass those exact values as `acknowledgedFindings`; clients do not need to reimplement canonical hashing. This is reference data, not an automatic approval.
 
 A settled bill does not prove a running application. For resource startup, check the actual state and endpoint; rejected requests retain their provider error details and their zero-cost receipt. Unknown create outcomes retain the original resource and reservation instead of starting a replacement.
+
+Expiry of an owner login session does not withdraw an already published immutable build or stop an already admitted, funded runtime lease. Mutations still require a current authenticated session. Explicit credential revocation, lost project ownership, project suspension or withdrawal of the source/review continue to invalidate runtime admission. Expired delegated agent permissions are not extended.

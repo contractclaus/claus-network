@@ -81,11 +81,33 @@ export function createIdentity({ store, verifySignature = async () => false,
       throw error;
     }
   }
+  // A published immutable build must not disappear when an owner's login
+  // session expires. This checks retained ownership, not caller authentication.
+  // Explicit credential revocation and all project/authority changes still stop it.
+  async function retainedOwnerAllowed(actor, projectId, reader = store) {
+    try {
+      text(actor);text(projectId);
+      const who=(await reader.read('credentials',actor))?.value;
+      if(who?.kind!=='owner'||who.revokedAt)return false;
+      const project=(await reader.read('projects',projectId))?.value;
+      return !!project&&!project.archivedAt&&!project.transfer&&project.ownerId===who.principalId&&
+        !(await reader.read('project-access',projectId))?.value.suspended&&await writesEnabled(reader);
+    } catch(error) {
+      if(['unauthenticated','not_found','invalid_identifier'].includes(error.code))return false;
+      throw error;
+    }
+  }
+  async function publishedBuildAllowed(actor,projectId,reader=store) {
+    return await allowed(actor,'build.compile',{projectId},reader)||await retainedOwnerAllowed(actor,projectId,reader);
+  }
+  async function ongoingInfrastructureAllowed(actor,projectId,reader=store) {
+    return await allowed(actor,'infrastructure.manage',{projectId},reader)||await retainedOwnerAllowed(actor,projectId,reader);
+  }
   async function authorize(actor, action, scope, reader = store) {
     requireThat(await allowed(actor, action, scope, reader), 'scope_denied');
   }
   const api = {
-    allowed, authorize, credential, owner, scopes: PROJECT_SCOPES,
+    allowed, publishedBuildAllowed, ongoingInfrastructureAllowed, authorize, credential, owner, scopes: PROJECT_SCOPES,
     async listAccess(actor, projectId, { kind, after = '', limit = 100 }) {
       await owner(actor, projectId); integer(limit, 1, 100);
       requireThat(['agents', 'mandates', 'credentials'].includes(kind), 'invalid_resource_kind');
