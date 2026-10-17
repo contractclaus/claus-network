@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_EteaCmw1NFZR87eB5yjyytTfHcsc",
-  "source": "claus-knowledge-capacity-20261017",
+  "deployed": "dpl_3pxnEqa8KyhjSdhyViDgJyJvnFHj",
+  "source": "2026-10-17-operating-limits",
   "files": {
     "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
     "package.json": "b43eac6342727358a28af7d38a781577e63397bd39c3d263182e42b86c86e9f7",
@@ -35,9 +35,9 @@
     "src/publisher/routes.js": "e8d2a49bd3bfc7ef299147006741dd5c15b9af791b0f7787f2b42703e5aea298",
     "src/publisher/service.js": "33d263733ce0603be14c9b22e72545dbdb5a53467d5e76ad8ab2b153d83cd1c9",
     "src/runtime-guardian.mjs": "d4980e6982268b32fc46043d04093e09c9c0608a7f3b93c7ca1b4afc954981b9",
-    "src/search/policy.js": "8ff880d14f3fd5dc85d43b1dd50d12c0be278b6ab1db5165f4e00b47c6db0d83",
+    "src/search/policy.js": "70fc0f77ff1c055cdd442463be849f44fbf207abf692e0cb77e9fad094ff06f0",
     "src/search/provider.js": "4813e8d9e836a90dc6fa2b634250c8cc59b2368a980cce360367b2086f46a726",
-    "src/search/repository.js": "c62a5a37253ad46208c8129251e0683f70f3dbedad0bd77171de000ed0f360f3",
+    "src/search/repository.js": "2ed3188ed5a74db0f0999b089fa220cedc3d99c3bd8df7527d888bd1e030fbed",
     "src/search/routes.js": "0563bfb04479ba743a7ab8506377650f86a19f53508c167b9b0569a74677d620",
     "src/search/service.js": "8f3016ce4ec353c80a0b2dd7069b34b2c60064e079174e0475e32247dbd86118",
     "src/social/policy.js": "14a29a18e50609260a24908c22fa3c164252bf0004e47bf1be342d6ac904f624",

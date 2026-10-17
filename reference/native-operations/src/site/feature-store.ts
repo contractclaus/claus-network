@@ -138,7 +138,7 @@ export class SiteFeatureStore{
    await q.query('UPDATE claus_site_intake SET status=$2,wait_reason=$3,next_at=$4 WHERE id=$1',[intake.id,status,reason,nextAt]);
    return {...await this.intakeResult(q,intake.id),requestId:intake.request_id};
   };
-  if(usage.sharedDailyModelRequestsRemaining<1)return wait('waiting_model_quota','builder_daily_model_budget',usage.resetsAt);
+  if(usage.sharedDailyModelRequestsRemaining!==null&&usage.sharedDailyModelRequestsRemaining<1)return wait('waiting_model_quota','builder_daily_model_budget',usage.resetsAt);
   if((await q.query('SELECT id FROM claus_builds WHERE lease_until>now() LIMIT 1')).rows.length)return wait('waiting_builder','builder_busy',new Date(Date.now()+60000).toISOString());
   try{
    const job=await this.createUsing(scoped,intake.brief_id,intake.project_request_id);

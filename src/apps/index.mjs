@@ -1,3 +1,4 @@
+import {operatingProject,operatingPrincipal} from '../operating-access/index.mjs';
 import {createAppDatabaseBackup} from './database-backup.mjs';
 import {createAppServices} from './service.mjs';
 import {readAppRequestReceipt} from './request-receipt.mjs';
@@ -41,9 +42,11 @@ export function createApps({storage,identity,store,taskPayments,schemaDefinition
   }
   async function participant(tx,projectId,actor){const who=await visitor(actor,tx.network,projectId),a=await app(tx,projectId);const own=typeof actor==='string'&&await identity.allowed(actor,'app.manage',{projectId},tx.network);const member=(await tx.read('members',who))?.value;requireThat(own||member?.active||(await tx.network.read('projects',projectId))?.value.ownerId===who,'app_membership_required');return {who,a,own};}
   async function writable(tx,projectId,actor){requireThat(writesEnabled,'app_writes_paused');await admit(projectId,tx.network);
-    const usage=await tx.read('meta','usage'),day=Math.floor(now()/86400000),count=usage?.value.day===day?usage.value.count:0;
-    requireThat(count<APP_LIMITS.mutationsPerDay,'capacity_reached');await tx.write('meta','usage',{day,count:count+1},usage?.revision??0);
-    const row=await tx.read('usage',actor),own=row?.value.day===day?row.value.count:0;requireThat(own<APP_LIMITS.mutationsPerActorDay,'capacity_reached');await tx.write('usage',actor,{day,count:own+1},row?.revision??0);
+    const operating=await operatingProject(tx.network,projectId)&&await operatingPrincipal(tx.network,actor);
+    const usageKey=operating?'operating-usage':'usage';
+    const usage=await tx.read('meta',usageKey),day=Math.floor(now()/86400000),count=usage?.value.day===day?usage.value.count:0;
+    requireThat(operating||count<APP_LIMITS.mutationsPerDay,'capacity_reached');await tx.write('meta',usageKey,{day,count:count+1},usage?.revision??0);
+    const row=await tx.read('usage',actor),own=row?.value.day===day?row.value.count:0;requireThat(operating||own<APP_LIMITS.mutationsPerActorDay,'capacity_reached');await tx.write('usage',actor,{day,count:own+1},row?.revision??0);
   }
   async function effect(tx,projectId,actor,op,key,input,run){bounded(key,128);const p=await visitor(actor,tx.network,projectId),k=digest({p,op,key}),hash=digest(input),old=await tx.read('requests',k);if(old){requireThat(old.value.hash===hash,'idempotency_conflict');return copy(old.value.result);}if(!['moderate','withdraw','revoke'].includes(op))await writable(tx,projectId,p);const result=await run(p);await tx.write('requests',k,{hash,result},0);return result;}
   async function event(tx,value){const seq=await tx.read('meta','sequence'),next=(seq?.value.next??0)+1;requireThat(next<=APP_LIMITS.events,'capacity_reached');await tx.write('meta','sequence',{next},seq?.revision??0);await tx.write('events',String(next).padStart(12,'0'),{...value,sequence:next,at:now()},0);}

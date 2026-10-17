@@ -68,7 +68,7 @@ import {createPublicAppearances} from '../src/releases/appearance.mjs';
 export function createApplication({dataObjects=null,registryOrigin='https://claus-network-api.vercel.app',imageArchive=null,ociBuildPorts={},ociBuildEnabled=false,ociPrivateEnabled=false,ociPrivateSecret=null,infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
- const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
+ const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:(tx,principalId)=>access.consumeProjects(tx,principalId),
   writesEnabled:async reader=>!(await access.policy(reader)).config.paused,domain:new URL(origin).host,now,verifySignature:({address,message,signature})=>verifyMessage({address,message,signature})});
  access=createAccess({store,identity,now,inferenceDiscovery:()=>inference.discovery(),reviewAdmission:reader=>reviewSystem.flow.admission.active(reader),
   managedDiscovery:()=>Promise.all([11155111,1].map(async chainId=>{

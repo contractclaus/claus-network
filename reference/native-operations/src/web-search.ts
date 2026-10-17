@@ -28,6 +28,6 @@ export async function searchWeb(input:any,cache:ResearchCache,discover=discoverS
     }); // Promise.allSettled retains discovery relevance order, including failures.
     if(candidates.length&&!results.length)throw Error('search_sources_unavailable');
     return {query:query.query,observedAt:cache.now().toISOString(),results};
-  },40,'web-search-broker');
+  },null,'web-search-broker');
   return {...read,instructionAuthority:false,meaning:'Web search followed by direct page reads. Excerpts come from the source pages; use read_url for full context before relying on a material claim.'};
 }

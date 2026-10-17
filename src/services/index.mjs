@@ -1,3 +1,4 @@
+import { operatingProject } from '../operating-access/index.mjs';
 import { randomBytes } from 'node:crypto';
 import { amount, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
 import { schemaDefinition, schemaValue, schemaSample } from './schema.mjs';
@@ -18,10 +19,10 @@ export function createServices({ store, identity, artifacts, admit = async () =>
     const row = await reader.read('service-orders', text(id));
     requireThat(row?.value.projectId === projectId, 'not_found'); return row;
   }
-  async function capacity(tx, kind, subject, maximum) {
+  async function capacity(tx, kind, subject, maximum, projectId) {
     maximum = await limit({ versions: 'serviceVersionsPerProject', quotes: 'quotesPerProjectDay', orders: 'ordersPerProjectDay' }[kind], tx) ?? maximum;
     const key = digest({ kind, subject }), row = await tx.read('service-capacity', key);
-    requireThat((row?.value.count ?? 0) < maximum, 'capacity_reached');
+    requireThat(await operatingProject(tx, projectId) || (row?.value.count ?? 0) < maximum, 'capacity_reached');
     await tx.write('service-capacity', key, { count: (row?.value.count ?? 0) + 1 }, row?.revision ?? 0);
   }
   function manifest(value) {
@@ -54,7 +55,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
         if (clean.dataPolicy === PUBLIC_DATA_POLICY.id) await admitPublicData(projectId, tx);
         const old = await tx.read('service-versions', id);
         if (old) { requireThat(digest(old.value.manifest) === digest(clean), 'service_version_conflict'); return old.value; }
-        await capacity(tx, 'versions', projectId, 64);
+        await capacity(tx, 'versions', projectId, 64, projectId);
         const saved = { id, projectId, manifest: clean, manifestHash: digest(clean), state: 'proposed', createdAt: now() };
         await tx.write('service-versions', id, saved, 0); return saved;
       });
@@ -159,7 +160,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
         requireThat(Array.isArray(sourceResults) && (publicData || sourceResults.length === 0), 'result_policy_mismatch');
         if (publicData) await admitPublicData(projectId, tx);
         const lineage = await results.sources(tx, sourceResults);
-        await capacity(tx, 'quotes', projectId + ':' + Math.floor(now() / 86400000), 64);
+        await capacity(tx, 'quotes', projectId + ':' + Math.floor(now() / 86400000), 64, projectId);
         const inputHash = await artifacts.put(tx, projectId, input);
         const value = { id, projectId, requestHash, serviceId, providerProjectId: version.projectId,
           manifestHash: version.manifestHash, inputHash, chainId: 11155111, asset: 'native',
@@ -181,7 +182,7 @@ export function createServices({ store, identity, artifacts, admit = async () =>
         requireThat(version.state === 'available' && version.manifestHash === quote.manifestHash && quote.expiresAt > now() &&
           await availableProject(tx, version.projectId), 'quote_expired');
         if (quote.dataPolicy === PUBLIC_DATA_POLICY.id) { await admitPublicData(projectId, tx); await results.sources(tx, quote.sourceResults); }
-        await capacity(tx, 'orders', projectId + ':' + Math.floor(now() / 86400000), 16);
+        await capacity(tx, 'orders', projectId + ':' + Math.floor(now() / 86400000), 16, projectId);
         const free = quote.maximumWei === '0';
         const value = { id: quoteId, projectId, providerProjectId: quote.providerProjectId, serviceId: quote.serviceId,
           quoteHash: digest(quote), inputHash: quote.inputHash, buyerActor: actor, state: free ? 'queued' : 'awaiting_payment',

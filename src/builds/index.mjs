@@ -1,3 +1,4 @@
+import { operatingProject } from '../operating-access/index.mjs';
 import { digest, requireThat, text } from '../shared/index.mjs';
 
 export function createBuilds({ store, identity, projects, jobs, artifacts, now = () => Date.now(),
@@ -36,10 +37,11 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
           const job = (await tx.read('workflow-jobs', active.id))?.value;
           requireThat(!job || ['complete', 'failed', 'blocked', 'cancelled'].includes(job.state), 'build_in_progress');
         }
+        const operating = await operatingProject(tx, projectId);
         for (const [scope, maximum] of [[projectId, await limit('buildsPerProjectDay', tx) ?? limits.projectPerDay], ['global', await limit('buildsPerDay', tx) ?? limits.globalPerDay]]) {
-          const key = digest({ scope, day: Math.floor(now() / 86400000), version: limits.version });
+          const key = digest({ scope, day: Math.floor(now() / 86400000), version: limits.version, ...(operating ? { lane: 'operating' } : {}) });
           const count = await tx.read('build-admission', key);
-          requireThat((count?.value.count ?? 0) < maximum, 'capacity_reached');
+          requireThat(operating || (count?.value.count ?? 0) < maximum, 'capacity_reached');
           await tx.write('build-admission', key, { count: (count?.value.count ?? 0) + 1 }, count?.revision ?? 0);
         }
         // Old workers claim only `compile`. Keep new-profile jobs outside that

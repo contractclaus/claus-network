@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-export const dailyLimit=40;
+export const dailyLimit=null;
 export class SearchError extends Error {
  constructor(code,status=503){super(code);this.status=status;}
 }

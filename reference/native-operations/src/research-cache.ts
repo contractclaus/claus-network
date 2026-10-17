@@ -5,7 +5,7 @@ import {hash} from './lab-schema.js';
 // external request, so an interrupted request still counts against its limit.
 export class ResearchCache {
   constructor(readonly db:LabDatabase,readonly now=()=>new Date()){}
-  async read(kind:string,key:string,ttlMs:number,load:()=>Promise<any>,dailyLimit=100,accountingKind=kind){
+  async read(kind:string,key:string,ttlMs:number,load:()=>Promise<any>,dailyLimit:number|null=null,accountingKind=kind){
     const id=kind+':'+hash(key);
     const entry=await this.db.transaction(async q=>{
       await q.query('SELECT pg_advisory_xact_lock(7439094)');
@@ -13,7 +13,7 @@ export class ResearchCache {
       const {rows:[old]}=await q.query('SELECT * FROM claus_research_cache WHERE id=$1',[id]);
       if(old&&new Date(old.next_at)>now)return {load:false,result:old.result,error:old.error};
       const {rows:[count]}=await q.query("SELECT count(*)::int AS n FROM claus_research_reads WHERE kind=$1 AND created_at >= $2",[accountingKind,new Date(now.toISOString().slice(0,10)+'T00:00:00Z')]);
-      if(count.n>=dailyLimit)return {load:false,result:old?.result,error:'daily_read_limit'};
+      if(dailyLimit!==null&&count.n>=dailyLimit)return {load:false,result:old?.result,error:'daily_read_limit'};
       await q.query('INSERT INTO claus_research_reads(kind,created_at) VALUES($1,$2)',[accountingKind,now]);
       await q.query("INSERT INTO claus_research_cache(id,next_at,error) VALUES($1,$2,'read_in_progress') ON CONFLICT(id) DO UPDATE SET next_at=$2,error='read_in_progress'",[id,lease]);
       return {load:true,lease};
