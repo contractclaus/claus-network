@@ -1,4 +1,4 @@
-import {runtimeResourceView} from './runtime-resource-view.js';
+import {loadRuntimeResourceView} from './runtime-resource-view.js';
 import {custodyClient} from './custody-client.js';
 import {networkFailure} from './network-failure.js';
 import {projectPagePath} from '../reference/project-path.mjs';
@@ -115,7 +115,7 @@ export async function networkContext(){
 }
 export async function networkOperatingContext(){
  const context=await networkContext();
- const fleet=access.call('resource_fleet',{limit:10}).then(value=>({available:true as const,value})).catch(e=>({available:false as const,...networkFailure(e)}));
+ const infrastructureRead=loadRuntimeResourceView(access.call);
  const boards=(context.inventory?.projects??[]).filter((p:any)=>p.application?.available&&p.application?.tasks===true);
  const selected=boards.slice(0,8);
  const opportunities=await Promise.all(selected.map(async(p:any)=>{
@@ -124,8 +124,6 @@ export async function networkOperatingContext(){
    return {projectId:p.id,url:p.url,status:'available',items:result.items.map((r:any)=>({id:r.id,revision:r.revision,state:r.state,authorId:r.authorId,assigneeId:r.assigneeId??null,agreement:r.agreement??null,title:String(r.input?.title??'').slice(0,160)})),nextCursor:result.nextCursor};
   }catch{return {projectId:p.id,url:p.url,status:'unavailable'};}
  }));
- const own=await fleet;
- const infrastructure=runtimeResourceView(own,{available:false});
- if(own.available){infrastructure.complete=own.value.complete===true;Object.assign(infrastructure,{nextProjectCursor:own.value.nextProjectCursor,resourceCursors:own.value.resourceCursors,unavailable:own.value.unavailable});}
+ const infrastructure=await infrastructureRead;
  return {...context,infrastructure,opportunities,opportunityScope:{boardsInspected:selected.length,boardsInInventory:boards.length,complete:context.inventory?.detailsComplete===true&&context.inventory?.nextCursor===null&&selected.length===boards.length&&opportunities.every((b:any)=>b.status==='available'&&!b.nextCursor),meaning:'Public open task headers only, including your own commissions. An offer in the title is not proof of funding. Read the full task, author identity, current revision and app rules before deciding to claim; payment status requires public_task_payment. Keep checking saved claimed/delivered work by its original id even when it leaves this open list. Other work or private tasks may exist.'}};
 }

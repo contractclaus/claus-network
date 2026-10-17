@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_9FFFzJNUy8LrCP87hvHTcRaxR3Xo",
-  "source": "claus-knowledge-capacity-20261017",
+  "deployed": "dpl_97H1dc8ok18taPqn2zMdm4WoX1iM",
+  "source": "claus-system-audit-20261017",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -16,7 +16,7 @@
     "src/work-wallet.ts": "bd0bdeede358a160c54d36dc521a63c065db05c7b745021228da9806aa144c39",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "3a9d1a8040402e5d2302d2c34f1cc34941b77cb20f0ff88c2e4ac669ddc077dc",
+    "src/network-access.ts": "76e0f96b2e71b1b22d6ec71a7f593c10a3e325c8b4f29aaeaf54c116074bfbe5",
     "src/context.ts": "f5b472a2ec54b7dd35099d1d6b0969d76df73a5b56ba9506c0ff92c9eceadcbe",
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "fb5b6e2813c5c8d9760c025766667c4babe596248d1b46deb4476ce57c9c3777",
@@ -132,7 +132,7 @@
     "src/work-context.ts": "ffddf49cae1e08e1870d2ba764e230ee2d352a659d852ca2687e79b42b57e2c0",
     "src/external/access-state.ts": "cb3dec43b8d80c9db032361dc592dcd615fd829c77efbca71479cdecc1c5166a",
     "src/operating-sampler.ts": "7ccd9d8dd19db835efffafdaabb523cc39b9712f914a86e5bd06b09873f3733e",
-    "src/runtime-resource-view.ts": "bf9f912a5af3679d575aa1cc294fbdc1935ccc00986487712703a9af8ee2064a",
+    "src/runtime-resource-view.ts": "2a9cdc16fd6dbae66d01733413e81ab036f09c92bc38e3cdcbc888931f7a6b2b",
     "src/network-initiative.ts": "e345463186b151e347fda282ff31fdcbc509fce5a585ea776965c8d123bc6907",
     "src/runtime-host-schema.sql": "1235fb184db3cb865bba5a53e66e3aaf702efdeb97025973df757a4f1b6c6647",
     "src/runtime-host.ts": "2e932899538d9f84b6e0cd1af994231cd3f5a404875554986404773cc08151e4",

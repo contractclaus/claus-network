@@ -37,7 +37,10 @@ export function createClient({origin=DEFAULT_API_ORIGIN,token,fetch:request=glob
    }
    if(!response.ok){
     const declared=response.headers.get('retry-after'),retry=Number.isSafeInteger(result?.retryAfterSeconds)&&result.retryAfterSeconds>0?Math.min(3600,result.retryAfterSeconds):/^\d{1,5}$/.test(declared??'')?Math.min(3600,Number(declared)):null;
-    const details={...(result&&typeof result==='object'&&!Array.isArray(result)?result:{}),outcome:route.method==='GET'?'read_failed':response.status>=500?'unknown':'rejected',automaticRetry:false,...(retry!==null?{retryAfterSeconds:retry}:{})};
+    // A conflict can refer to an effect that already reached its provider.
+    // HTTP 409 alone is not evidence that a mutation was rejected unsent.
+    const uncertain=response.status>=500||result?.category==='unknown_outcome'||result?.outcome==='unknown'||result?.error==='effect_requires_reconciliation';
+    const details={...(result&&typeof result==='object'&&!Array.isArray(result)?result:{}),outcome:route.method==='GET'?'read_failed':uncertain?'unknown':'rejected',automaticRetry:false,...(retry!==null?{retryAfterSeconds:retry}:{})};
     throw new ClausNetworkError(typeof result?.error==='string'?result.error:'request_failed',response.status,details);
    }
    return result;
