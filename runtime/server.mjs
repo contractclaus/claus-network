@@ -22,13 +22,10 @@ import serviceProgram from '../src/application/source.json' with {type:'json'};
 import {createApps} from '../src/apps/index.mjs';
 import {createDeals} from '../src/deals/index.mjs';
 import {createTaskPayments} from '../src/deals/task-payments.mjs';
-import {dealPorts as configuredDealPorts} from './deal-ports.mjs';
 import {createContentAdmin} from '../src/content-admin/index.mjs';
 import {schemaDefinition,schemaValue} from '../src/services/schema.mjs';
 import {createServer} from 'node:http';
 import {pathToFileURL} from 'node:url';
-import {Pool,neonConfig} from '@neondatabase/serverless';
-import ws from 'ws';
 import {verifyMessage,createPublicClient,http as rpcHttp} from 'viem';
 import {createAccess} from '../src/access/index.mjs';
 import {createIdentity} from '../src/identity/index.mjs';
@@ -37,8 +34,6 @@ import {createWorkConnections} from '../src/collaboration/connections.mjs';
 import {createJobs} from '../src/jobs/index.mjs';
 import {createArtifactStore,createSourceFiles} from '../src/artifact-store/index.mjs';
 import {createBuilds} from '../src/builds/index.mjs';
-import {openStore} from '../src/storage/index.mjs';
-import {openPostgresStore} from '../src/postgres/index.mjs';
 import {createService} from '../interfaces/service.mjs';
 import {createHttp} from '../interfaces/http.mjs';
 import {createMcp} from '../interfaces/mcp.mjs';
@@ -60,13 +55,10 @@ import {createInference} from '../src/inference/index.mjs';
 import {createContractIntake} from '../src/contract-intake/index.mjs';
 import {createProjectArchives} from '../src/portability/index.mjs';
 import {createProjectTransfers} from '../src/transfers/index.mjs';
-import {readonlyPorts} from './readonly-ports.mjs';
 import {createSignals} from '../src/signals/index.mjs';
 import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
 import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {createPublicAppearances} from '../src/releases/appearance.mjs';
-import {sourceObjects as configuredSourceObjects} from './source-objects.mjs';
-import {operatorConfig} from './operator-config.mjs';
 
 export function createApplication({imageArchive=null,ociBuildPorts={},ociBuildEnabled=false,infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
@@ -191,7 +183,7 @@ export function createApplication({imageArchive=null,ociBuildPorts={},ociBuildEn
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{
-  const controller=new AbortController();req.on('aborted',()=>controller.abort());
+  const controller=new AbortController();req.on('aborted',()=>controller.abort());res.once('close',()=>controller.abort());
   try{
    const request=new Request('http://localhost'+req.url,{method:req.method,headers:req.headers,
     ...(req.method==='GET'||req.method==='HEAD'?{}:{body:req,duplex:'half'}),signal:controller.signal});
@@ -202,19 +194,26 @@ export function listen(application,{host='127.0.0.1',port=0}={}){
  });
  return new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,host,()=>resolve(server));});
 }
+export async function startRuntimeServer({env=process.env}={}){
+ const [{openRuntime},{runtimeHealth}]=await Promise.all([import('./bootstrap.mjs'),import('./health.mjs')]);
+ const runtime=await openRuntime({env,allowLocal:true});
+ let server;
+ try{
+  server=await listen({fetch:(request,context)=>new URL(request.url).pathname==='/health'&&['GET','HEAD'].includes(request.method)?runtimeHealth(runtime,env):runtime.app.fetch(request,context)},
+   {host:env.HOST??'0.0.0.0',port:Number(env.PORT??8787)});
+ }catch(error){await runtime.close();throw error;}
+ server.requestTimeout=60000;server.headersTimeout=15000;server.keepAliveTimeout=5000;
+ let closing;
+ const close=()=>closing??=(async()=>{
+  const forced=setTimeout(()=>server.closeAllConnections(),15000);forced.unref();
+  try{await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
+  finally{clearTimeout(forced);await runtime.close();}
+ })();
+ return {server,close};
+}
 async function main(){
- const origin=process.env.CLAUS_NETWORK_ORIGIN??'https://claus.si';
- let store;
- if(process.env.CLAUS_NETWORK_DATABASE_URL){
-  neonConfig.webSocketConstructor=ws;
-  store=await openPostgresStore({pool:new Pool({connectionString:process.env.CLAUS_NETWORK_DATABASE_URL,max:6,connectionTimeoutMillis:10000}),schema:'claus_network'});
- }else{
-  requireThat(process.env.CLAUS_NETWORK_LOCAL==='1','database_required');
-  store=openStore(process.env.CLAUS_NETWORK_LOCAL_FILE??'network-local.sqlite');
- }
- const application=createApplication({sourceObjects:await configuredSourceObjects(),arbitrationEnabled:process.env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:process.env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:process.env.CLAUS_DOMAINS_ENABLED==='1',store,origin,rateSalt:process.env.CLAUS_NETWORK_RATE_SALT,operatorPorts:operatorConfig(),chainPorts:readonlyPorts(),dealPorts:configuredDealPorts()});
- const server=await listen(application,{port:Number(process.env.PORT??8787)});
- console.log('Claus Network listening on '+server.address().address+':'+server.address().port);
- for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(async()=>{await store.close();process.exit(0);}));
+ const runtime=await startRuntimeServer();
+ console.log('Claus Network listening on '+runtime.server.address().address+':'+runtime.server.address().port);
+ for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{runtime.close().then(()=>{process.exitCode=0;},()=>{process.exitCode=1;});});
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(error=>{console.error(error.code??'startup_failed');process.exitCode=1;});
