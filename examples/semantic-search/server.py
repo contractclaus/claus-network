@@ -1,10 +1,11 @@
 """Bounded local embedding inference. No runtime downloads, keys, storage or tools."""
-from collections import OrderedDict
 import hashlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
 from pathlib import Path
+import signal
+import socket
 import socketserver
 import threading
 import time
@@ -23,6 +24,7 @@ MAX_BODY = 65536
 MAX_TEXT = 2048
 MAX_BATCH = 16
 DIMENSIONS = 384
+REQUEST_DEADLINE = 10
 
 
 class Engine:
@@ -40,8 +42,6 @@ class Engine:
         self.session = ort.InferenceSession(str(ROOT / 'model/onnx/model_quantized.onnx'), sess_options=settings, providers=['CPUExecutionProvider'])
         self.input_names = {item.name for item in self.session.get_inputs()}
         self.lock = threading.BoundedSemaphore(1)
-        self.cache = OrderedDict()
-        self.calls = 0
         self.tokens = 120.0
         self.refill_at = time.monotonic()
         self.rate_lock = threading.Lock()
@@ -65,39 +65,35 @@ class Engine:
         if not self.lock.acquire(blocking=False):
             raise BlockingIOError('inference_busy')
         try:
-            keys = [hashlib.sha256(text.encode()).hexdigest() for text in texts]
-            missing = list(dict.fromkeys(k for k in keys if k not in self.cache))
-            if missing:
-                examples = [texts[keys.index(key)] for key in missing]
-                encoded = self.tokenizer.encode_batch(examples)
-                values = {
-                    'input_ids': np.array([v.ids for v in encoded], dtype=np.int64),
-                    'attention_mask': np.array([v.attention_mask for v in encoded], dtype=np.int64),
-                    'token_type_ids': np.array([v.type_ids for v in encoded], dtype=np.int64),
-                }
-                hidden = self.session.run(None, {k: v for k, v in values.items() if k in self.input_names})[0]
-                mask = values['attention_mask'][:, :, None]
-                pooled = (hidden * mask).sum(axis=1) / np.maximum(mask.sum(axis=1), 1)
-                vectors = pooled / np.maximum(np.linalg.norm(pooled, axis=1, keepdims=True), 1e-12)
-                if vectors.shape != (len(missing), DIMENSIONS) or not np.isfinite(vectors).all():
-                    raise RuntimeError('model_output_invalid')
-                for key, vector in zip(missing, vectors):
-                    self.cache[key] = vector.astype(np.float32).tolist()
-                self.calls += 1
-            answer = [self.cache[key] for key in keys]
-            for key in keys:
-                self.cache.move_to_end(key)
-            while len(self.cache) > 512:
-                self.cache.popitem(last=False)
-            return answer
+            # Reuse is confined to this request; another caller's input cannot
+            # influence a cache hit, timing shortcut or public inference counter.
+            examples = list(dict.fromkeys(texts))
+            encoded = self.tokenizer.encode_batch(examples)
+            values = {
+                'input_ids': np.array([v.ids for v in encoded], dtype=np.int64),
+                'attention_mask': np.array([v.attention_mask for v in encoded], dtype=np.int64),
+                'token_type_ids': np.array([v.type_ids for v in encoded], dtype=np.int64),
+            }
+            hidden = self.session.run(None, {k: v for k, v in values.items() if k in self.input_names})[0]
+            mask = values['attention_mask'][:, :, None]
+            pooled = (hidden * mask).sum(axis=1) / np.maximum(mask.sum(axis=1), 1)
+            vectors = pooled / np.maximum(np.linalg.norm(pooled, axis=1, keepdims=True), 1e-12)
+            if vectors.shape != (len(examples), DIMENSIONS) or not np.isfinite(vectors).all():
+                raise RuntimeError('model_output_invalid')
+            answers = dict(zip(examples, vectors.astype(np.float32).tolist()))
+            return [answers[text] for text in texts]
         finally:
             self.lock.release()
 
 
 class Server(socketserver.ThreadingMixIn, HTTPServer):
-    daemon_threads = True
+    daemon_threads = False
     allow_reuse_address = True
-    workers = threading.BoundedSemaphore(24)
+    request_deadline = REQUEST_DEADLINE
+
+    def __init__(self, *args, **kwargs):
+        self.workers = threading.BoundedSemaphore(24)
+        super().__init__(*args, **kwargs)
 
     def process_request(self, request, client_address):
         if not self.workers.acquire(blocking=False):
@@ -110,10 +106,27 @@ class Server(socketserver.ThreadingMixIn, HTTPServer):
             raise
 
     def process_request_thread(self, request, client_address):
+        # Socket timeouts alone restart on every successful read. Closing the
+        # socket at an absolute deadline also bounds dripped headers and bodies.
+        def expire():
+            try:
+                request.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            request.close()
+
+        deadline = threading.Timer(self.request_deadline, expire)
+        deadline.daemon = True
         try:
+            deadline.start()
             super().process_request_thread(request, client_address)
         finally:
+            deadline.cancel()
             self.workers.release()
+
+    def handle_error(self, request, client_address):
+        # Malformed/disconnected clients must not expose addresses or requests.
+        pass
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -146,7 +159,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == '/health':
-            return self.reply(200, {'status': 'ok', 'model': MODEL, 'dimensions': DIMENSIONS, 'inferenceCalls': self.server.engine.calls})
+            return self.reply(200, {'status': 'ok', 'model': MODEL, 'dimensions': DIMENSIONS})
         if self.path == '/':
             return self.reply(200, {'service': 'Claus Semantic Search', 'model': MODEL, 'dimensions': DIMENSIONS, 'endpoints': ['/health', '/v1/embeddings', '/v1/search'], 'modelLicense': 'Apache-2.0', 'billing': 'No per-request charge; funded bounded CPU lease', 'limits': {'batch': MAX_BATCH, 'textCharacters': MAX_TEXT, 'requestBytes': MAX_BODY}})
         self.reply(404, {'error': 'not_found'})
@@ -157,7 +170,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get('Transfer-Encoding') or self.headers.get_content_type() != 'application/json':
             return self.reply(415, {'error': 'json_content_length_required'})
         lengths = self.headers.get_all('Content-Length', [])
-        if len(lengths) != 1 or not lengths[0].isdigit() or not 1 <= int(lengths[0]) <= MAX_BODY:
+        if (len(lengths) != 1 or not 1 <= len(lengths[0]) <= 5
+                or not lengths[0].isascii() or not lengths[0].isdigit()
+                or not 1 <= int(lengths[0]) <= MAX_BODY):
             return self.reply(413, {'error': 'request_size_invalid'})
         if not self.server.engine.admit():
             return self.reply(429, {'error': 'rate_limited'})
@@ -197,8 +212,25 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(503, {'error': 'inference_unavailable'})
 
 
-if __name__ == '__main__':
+def main():
     engine = Engine()
     server = Server(('0.0.0.0', int(os.environ.get('PORT', '8080'))), Handler)
     server.engine = engine
-    server.serve_forever(poll_interval=0.25)
+    stopping = threading.Event()
+
+    def stop(_signum, _frame):
+        if not stopping.is_set():
+            stopping.set()
+            # shutdown() must not run in the serve_forever thread.
+            threading.Thread(target=server.shutdown, daemon=True).start()
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    try:
+        server.serve_forever(poll_interval=0.25)
+    finally:
+        server.server_close()
+
+
+if __name__ == '__main__':
+    main()
