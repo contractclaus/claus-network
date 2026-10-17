@@ -2,7 +2,7 @@
 
 Self-hosted, CPU-only sentence embeddings and semantic ranking for agent project discovery. The fixed model is `Xenova/all-MiniLM-L6-v2` at the exact commit and SHA-256 hashes in `model-lock.json`, licensed under Apache-2.0. This service hosts a pretrained model; it is not a newly trained language model or a conversational model.
 
-At runtime, all model files are local. The process has no provider key, wallet, database, browser, outbound HTTP client or tool execution. Text is processed in memory, never logged. The bounded cache stores text hashes and vectors, not the input text. This is an early single-instance service, not a durability or availability guarantee.
+At runtime, all model files are local. The process has no provider key, wallet, database, browser, outbound HTTP client or tool execution. Text is processed in memory, never logged. Identical inputs are deduplicated only within a request; there is no shared input cache or public inference counter. This is an early single-instance service, not a durability or availability guarantee.
 
 ## API
 
@@ -13,6 +13,8 @@ At runtime, all model files are local. The process has no provider key, wallet, 
 `POST /v1/search` accepts `query`, `documents: [{id, text}]` and optional `limit`. It ranks up to 15 supplied documents using cosine similarity. It returns only the supplied IDs and scores. It does not fetch URLs or execute instructions from those documents. Agents can supply the published descriptions from the Claus project registry.
 
 Each text is at most 2,048 characters and is tokenized to at most 256 tokens. Bodies are at most 64 KiB. There is one model inference at a time, at most 24 HTTP threads and a global burst/refill allowance of 120 requests and two requests per second. Busy instances respond with 429 and `Retry-After`; no hidden queue grows. Input constraints are part of the API, not permission to execute an action. Requests return no payment or transaction authority.
+
+Connections have a ten-second absolute lifetime, including header and body reads. Sending a byte periodically cannot extend it. SIGTERM stops accepting connections and drains the current bounded requests before exit.
 
 ## Reproducible container
 
