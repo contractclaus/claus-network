@@ -1,19 +1,19 @@
 {
   "version": 1,
   "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
-  "snapshotId": "sha256:81f952b96e85fa15b151cd35a1231c78d82085958c9926200da432eb422e502b",
+  "snapshotId": "sha256:00ee2e2b05c280452679a060390e7a7a053e979e49fd0551ec5b4a3b33907751",
   "files": [
     {
       "path": "examples/semantic-search/Dockerfile",
-      "sha256": "83187b811896ff40e99a13a24da827140b4529e7c51e55cb22e3e3fcf45e4061"
+      "sha256": "b0ec4d6983ae3ca50dc009fb376d0b627afc4452358dd1a3a61e99a803bf38b2"
     },
     {
       "path": "examples/semantic-search/server.py",
-      "sha256": "603c76aefe2a0abb8496516efa3a8701d2b870d36f5bcfec351e6b53b5735886"
+      "sha256": "0ce93eb4df6978b281a19e9eedd539cb1cbca1487fef59d03623e962e614df61"
     },
     {
       "path": "examples/semantic-search/admission.py",
-      "sha256": "53247ab0902363a0acf3fb8c75d5d73634f0d15ac3699377e93cdf4e0461180d"
+      "sha256": "c3e7efe78e01e68fab298d2c2fb1cf9f18c59c4731903f625a5a294e4d6d908f"
     },
     {
       "path": "examples/semantic-search/admission-key.json",
@@ -33,67 +33,96 @@
     },
     {
       "path": "examples/semantic-search/README.md",
-      "sha256": "cedc8dc0475dd4d2edc76a007d523f9ee068197d56e835f2d5948afdfaa39514"
+      "sha256": "d23a36bbd03efa339509b7744f80808c8b5ecb7e790402f87e9a3bf4effd347b"
     },
     {
       "path": "examples/semantic-search/test_service.py",
-      "sha256": "fbf1d50dcfe1de5afca14513ea27fcd338b8d17e5d535520890adabcee9520e0"
+      "sha256": "40078db46e276e20960fe65dc777d0bf93001583cc7f57f57c8b3743f2474555"
     }
   ],
   "plan": {
-    "id": "sha256:804693eaf107dce21402ed05584d6ce2d98d461a001d6f11bac0049268f4b81d",
-    "sourceHash": "sha256:d0f29abf88c09f85bfde48ae005c3905b76d13e256bc2180f42826976e8f6731",
-    "sourceBytes": 58968
+    "id": "sha256:ee7a5418485cb1158222fb4e3b3079be4990ded711290aaeaac0a651f42ac17d",
+    "sourceHash": "sha256:a04eb8f05a9a23c62d2fad1b4c8be593d56959517740d742c4915cd76c0bb903",
+    "sourceBytes": 63698
   },
   "build": {
-    "id": "sha256:e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0",
-    "snapshotId": "sha256:81f952b96e85fa15b151cd35a1231c78d82085958c9926200da432eb422e502b",
-    "planId": "sha256:804693eaf107dce21402ed05584d6ce2d98d461a001d6f11bac0049268f4b81d",
-    "sourceHash": "sha256:d0f29abf88c09f85bfde48ae005c3905b76d13e256bc2180f42826976e8f6731",
-    "artifactHash": "sha256:ce889f21571c34b68f34d4ba87b9ea3275d4e9b055b47af46207155cc2a3279d",
+    "id": "sha256:893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e",
+    "snapshotId": "sha256:00ee2e2b05c280452679a060390e7a7a053e979e49fd0551ec5b4a3b33907751",
+    "planId": "sha256:ee7a5418485cb1158222fb4e3b3079be4990ded711290aaeaac0a651f42ac17d",
+    "sourceHash": "sha256:a04eb8f05a9a23c62d2fad1b4c8be593d56959517740d742c4915cd76c0bb903",
+    "artifactHash": "sha256:4a05929b1ea42474cec4b19d1b201d60cfec93a8593924a3b62cdf0bd438fb35",
     "sourceVisibility": "private",
-    "receipt": null
+    "receipt": {
+      "archiveBytes": 113182720,
+      "archiveHash": "sha256:d14c779cc27cc6bf702577383ccf34132c70ca97cab652040922e1d18e495fdd",
+      "artifact": {
+        "digest": "sha256:460064553a88cbee82dfbac4269606a77ba41bd98c323268e45c1125dcc3e622",
+        "expiresAt": "2026-10-18T18:52:45Z",
+        "id": 12110488125,
+        "url": "https://github.com/contractclaus/claus-private-builds/actions/runs/39059988702/artifacts/12110488125"
+      },
+      "buildId": "sha256:893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e",
+      "evidence": "compiled_only",
+      "imageDigest": "sha256:07a1e3d9ff3725ef34d64c860ac956017260df7b11b840921410aa7f166c961e",
+      "planId": "sha256:ee7a5418485cb1158222fb4e3b3079be4990ded711290aaeaac0a651f42ac17d",
+      "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
+      "runId": "39059988702",
+      "runnerSha": "c3ae7e469c5aa72cbea77ef25cb10c055f9973d6",
+      "sourceHash": "sha256:a04eb8f05a9a23c62d2fad1b4c8be593d56959517740d742c4915cd76c0bb903",
+      "storage": {
+        "archiveHash": "sha256:d14c779cc27cc6bf702577383ccf34132c70ca97cab652040922e1d18e495fdd",
+        "bytes": 113182720,
+        "expiresAt": null,
+        "profile": "private-r2-oci-v1",
+        "state": "verified",
+        "verifiedAt": 1792263265332
+      },
+      "verification": false,
+      "version": 1
+    }
   },
   "release": {
-    "id": "sha256:5c56727b6d5d56c9ce2f56504dd09ef392600dbec7aad5ecc1844475e2b2925b",
-    "buildId": "sha256:e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0",
-    "buildHash": "sha256:ce889f21571c34b68f34d4ba87b9ea3275d4e9b055b47af46207155cc2a3279d",
-    "sourceHash": "sha256:81f952b96e85fa15b151cd35a1231c78d82085958c9926200da432eb422e502b",
+    "id": "sha256:212bc9f9bfc4444303ca06df1465b58557b36eb29705e46a8fff674c0b4bfcc7",
+    "buildId": "sha256:893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e",
+    "buildHash": "sha256:4a05929b1ea42474cec4b19d1b201d60cfec93a8593924a3b62cdf0bd438fb35",
+    "sourceHash": "sha256:00ee2e2b05c280452679a060390e7a7a053e979e49fd0551ec5b4a3b33907751",
     "profile": "claus-runtime-image-v1",
     "manifest": {
       "command": [],
       "cpu": 2,
       "gpu": null,
       "healthPath": "/health",
-      "image": "claus-network-api.vercel.app/claus/e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0@sha256:25d46d1e403f7f96f88acc0aae45b3346e026e5cd24b6f12f727ebe5b6ca2560",
+      "image": "claus-network-api.vercel.app/claus/893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e@sha256:07a1e3d9ff3725ef34d64c860ac956017260df7b11b840921410aa7f166c961e",
       "memoryMiB": 4096,
       "mode": "model",
       "port": 8080,
       "region": "EU-NL-1",
       "storageGiB": 0,
       "version": 1,
-      "releaseHash": "sha256:5c56727b6d5d56c9ce2f56504dd09ef392600dbec7aad5ecc1844475e2b2925b"
+      "releaseHash": "sha256:212bc9f9bfc4444303ca06df1465b58557b36eb29705e46a8fff674c0b4bfcc7"
     }
   },
-  "image": "claus-network-api.vercel.app/claus/e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0@sha256:25d46d1e403f7f96f88acc0aae45b3346e026e5cd24b6f12f727ebe5b6ca2560",
-  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/e18abba342287f5878e9b42ead03663599614ae7dbcab9e5739e9341d83ca7a0/manifests/sha256:25d46d1e403f7f96f88acc0aae45b3346e026e5cd24b6f12f727ebe5b6ca2560",
+  "image": "claus-network-api.vercel.app/claus/893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e@sha256:07a1e3d9ff3725ef34d64c860ac956017260df7b11b840921410aa7f166c961e",
+  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e/manifests/sha256:07a1e3d9ff3725ef34d64c860ac956017260df7b11b840921410aa7f166c961e",
   "runtimeProviderProfile": "claus-runpod-cpu-v1",
   "reviewProfile": "claus-runtime-image-v1",
-  "interpretation": "The review profile evaluates the image. The provider profile grants CPU resources; their names intentionally differ. Published source, compiled image and source hashes are evidence, not approval or hosting.",
+  "interpretation": "The immutable build receipt links the compiled image to its source. The image build runs a real local-model warmup as its runtime user. Neither is independent approval or proof of hosting.",
   "reproduction": "node scripts/verify-semantic-search-release.mjs",
-  "priorReview": {
-    "caseId": "sha256:f8e55e6cccabea6c606fe3d815170fb7ac4f763174db5f1daa2b3c918fd8e48b",
-    "providerJobId": "bf415c0b-adac-441d-8c5d-1e1cbe1b84a3",
-    "approval": false,
-    "mediumFindings": 2
-  },
+  "priorReviews": [
+    {
+      "providerJobId": "bf415c0b-adac-441d-8c5d-1e1cbe1b84a3",
+      "approval": false
+    },
+    {
+      "providerJobId": "4771a9e3-28f6-4444-8bb2-dc7b24309bdf",
+      "approval": false
+    }
+  ],
   "changes": [
-    "All agents, keys and projects share registered-owner capacity",
-    "Nonblocking short header admission and separate health workers",
-    "Monotonic expiry and replay retention",
-    "Reject invalid Unicode and excessive JSON depth as client errors",
-    "UTF-8 byte-sized catalogue batches",
-    "JSON protocol errors without interpreter version"
+    "Shed oldest idle header connections and interleave bounded accept bursts with ready work",
+    "Steady ticket clock anchored at synchronized startup prevents transient clock poisoning and expired-ticket reopening",
+    "Real dependency import and local-model embedding during image build",
+    "Exact build receipt binds snapshot, plan, image and private archive"
   ],
   "approvalGranted": false,
   "modelHosted": false
