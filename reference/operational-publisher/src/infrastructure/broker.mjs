@@ -73,7 +73,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
       await record({...observed,deletionRequested:true});
       observed=await driver.stop(c.work,get(),true,c.providerConfig);
     }
-    if(!mustStop&&!releaseRevoked&&observed.stopped&&!observed.terminal&&!c.stopRequested&&work.manifest.mode!=='job'&&driver.resume){
+    if(!mustStop&&!releaseRevoked&&c.leaseUntil>now()&&observed.stopped&&!observed.terminal&&!c.stopRequested&&work.manifest.mode!=='job'&&driver.resume){
       const attempts=(c.resumeAttempts??[]).filter(at=>at>now()-3600000);
       if(attempts.length<3&&(!c.resumeAttemptedAt||c.resumeAttemptedAt<=now()-60000)){
         // Keep the existing resource ID and original paid lease. Record intent

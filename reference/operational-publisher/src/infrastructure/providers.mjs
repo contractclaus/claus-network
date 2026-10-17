@@ -44,7 +44,13 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
     return value;
   }
   return {
-    async readiness(){const list=await api('/pods?limit=1');check(Array.isArray(list.pods),'provider_shape_invalid');return {authenticated:true};},
+    async readiness(config={}){
+      const list=await api('/pods?limit=1');check(Array.isArray(list.pods),'provider_shape_invalid');
+      if(!config.cpuType)return {authenticated:true};
+      const item=await api('/catalog/cpus/'+encodeURIComponent(config.cpuType)+'?include=AVAILABILITY&product=POD&cloud=SECURE');
+      check(item.id===config.cpuType&&Array.isArray(item.dataCenters)&&Number.isFinite(item.price?.securePerVcpu)&&item.price.securePerVcpu>0,'provider_shape_invalid');
+      return {authenticated:true,capacity:{observedAt:now(),cpuType:item.id,minVcpu:item.vcpu?.min??null,maxVcpu:item.vcpu?.max??null,ramGbPerVcpu:item.ramGbPerVcpu??null,availableRegions:item.dataCenters.filter(d=>['LOW','MEDIUM','HIGH'].includes(d.availability)).map(d=>d.id),hourlyMicroUsdPerVcpu:microUsd(item.price.securePerVcpu).toString(),meaning:'Current capacity only; select a permitted available region before preparing the exact runtime release and its independent review.'}};
+    },
     async quote(work,config){
       const m=work.manifest;check(m.storageGiB===0,'persistent_storage_requires_profile');
       const gpu=m.gpu!==null;check(gpu||config.cpuType,'cpu_type_not_configured');
