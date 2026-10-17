@@ -45,7 +45,8 @@ export const errorBody=error=>{
   code==='decision_capacity_reached'?'capacity':code==='effect_requires_reconciliation'?'unknown_outcome':status>=500?'availability':'state';
  return {error:code,category,retryable:status>=500||status===429,
   ...(status===429&&Number.isSafeInteger(error.retryAt)?{retryAt:error.retryAt}:{}),
-  ...(status===429?{retryAfterSeconds:Number.isSafeInteger(error.retryAfterSeconds)&&error.retryAfterSeconds>0?Math.min(300,error.retryAfterSeconds):60}:{}),
+  ...(status===429?{retryAfterSeconds:Number.isSafeInteger(error.retryAfterSeconds)&&error.retryAfterSeconds>0?(Number.isSafeInteger(error.retryAt)?error.retryAfterSeconds:Math.min(300,error.retryAfterSeconds)):60}:{}),
+  ...(code==='oci_build_capacity_reached'&&['project_concurrency','global_concurrency','public_window'].includes(error.capacityScope)?{capacityScope:error.capacityScope}:{}),
   ...(status===400&&typeof error.field==='string'&&error.field.length<200?{field:error.field}:{})};
 };
 const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}});

@@ -3,6 +3,7 @@ import {openStore} from '../src/storage/index.mjs';
 import {createArtifactStore} from '../src/artifact-store/index.mjs';
 import {createJobs} from '../src/jobs/index.mjs';
 import {createOciBuilds} from '../src/infrastructure/builds.mjs';
+import {createHttp,errorBody} from '../interfaces/http.mjs';
 
 const address='0x1111111111111111111111111111111111111111';
 async function setup(t){
@@ -41,8 +42,46 @@ test('reserved private entries cannot shorten another owners standard capacity w
   await tx.write('workflow-jobs',reserved.id,{...j.value,state:'complete'},j.revision);
  });
  await assert.rejects(f.api.submit('other','another',{...f.input,idempotencyKey:'another'}),error=>{
-  assert.equal(error.code,'oci_build_capacity_reached');assert.equal(error.retryAt,f.time()+90000000);return true;
+  assert.equal(error.code,'oci_build_capacity_reached');assert.equal(error.retryAt,f.time()+90000000);
+  assert.equal(error.retryAfterSeconds,90000);assert.equal(error.capacityScope,'public_window');
+  assert.equal(errorBody(error).retryAfterSeconds,90000);return true;
  });
+});
+
+test('legacy operating builds do not consume public admissions, but retain concurrency and identity',async t=>{
+ const f=await setup(t);
+ await f.store.transaction(async tx=>{
+  await tx.write('network-capabilities','continuous-operation',{enabled:true,profile:'claus-operation-v1',expiresAt:null},0);
+  await tx.write('network','authority',{ownerAddress:address},0);
+  await tx.write('projects','old',{ownerId:'claus'},0);
+ });
+ const first=await f.api.submit('other','new',{snapshotId:'s',publishSource:true,idempotencyKey:'public-original'});
+ assert.equal((await f.api.submit('other','new',{snapshotId:'s',publishSource:true,idempotencyKey:'public-original'})).id,first.id);
+ assert.deepEqual((await f.store.read('oci-capacity','standard')).value.entries.slice(0,2),f.entries);
+ await f.store.transaction(async tx=>{
+  for(const e of f.entries){const b=await tx.read('oci-builds',e.id);await tx.write('oci-builds',e.id,{...b.value,state:'unknown'},b.revision);}
+ });
+ await assert.rejects(f.api.submit('other','new',{snapshotId:'s',publishSource:true,idempotencyKey:'another'}),e=>e.capacityScope==='project_concurrency'&&e.retryAt===undefined);
+ await f.store.transaction(async tx=>{const b=await tx.read('oci-builds',first.id);await tx.write('oci-builds',first.id,{...b.value,state:'compiled'},b.revision);});
+ await assert.rejects(f.api.submit('other','new',{snapshotId:'s',publishSource:true,idempotencyKey:'another'}),e=>e.capacityScope==='global_concurrency'&&e.retryAt===undefined);
+});
+
+test('inactive or transferring projects cannot claim legacy operating admission',async t=>{
+ const f=await setup(t);
+ await f.store.transaction(async tx=>{
+  await tx.write('network-capabilities','continuous-operation',{enabled:true,profile:'claus-operation-v1',expiresAt:null},0);
+  await tx.write('network','authority',{ownerAddress:address},0);
+  await tx.write('projects','old',{ownerId:'claus',transfer:{id:'pending'}},0);
+ });
+ await assert.rejects(f.api.submit('other','new',{snapshotId:'s',publishSource:true,idempotencyKey:'public'}),e=>e.capacityScope==='public_window');
+});
+
+test('HTTP Retry-After preserves the actual public-window wait',async()=>{
+ const error=Object.assign(Error('capacity'),{code:'oci_build_capacity_reached',retryAt:290000000,retryAfterSeconds:90000,capacityScope:'public_window'});
+ const handle=createHttp({service:{routes:[{name:'resource_build_submit',method:'POST',path:'/builds',inputSchema:{properties:{}}}],execute:async()=>{throw error;}}});
+ const response=await handle(new Request('https://claus.si/builds',{method:'POST'}));
+ assert.equal(response.status,429);assert.equal(response.headers.get('retry-after'),'90000');
+ assert.deepEqual(await response.json(),{error:'oci_build_capacity_reached',category:'capacity',retryable:true,retryAt:290000000,retryAfterSeconds:90000,capacityScope:'public_window'});
 });
 
 test('Claus gets one private reserved slot while original slots and request identity remain intact',async t=>{
