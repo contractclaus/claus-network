@@ -750,7 +750,7 @@ export const networkRoutes:Record<string,any>={
           "type": "boolean"
         },
         "expiresAt": {
-          "type": "integer",
+          "type": ["integer", "null"],
           "minimum": 0,
           "maximum": 9007199254740991
         },
@@ -1405,7 +1405,7 @@ export const networkRoutes:Record<string,any>={
           ],
           "properties": {
             "until": {
-              "type": "integer",
+              "type": ["integer", "null"],
               "minimum": 0,
               "maximum": 9007199254740991
             },
@@ -1420,7 +1420,7 @@ export const networkRoutes:Record<string,any>={
               "maximum": 1800
             },
             "maxTotalCost": {
-              "type": "string",
+              "type": ["string", "null"],
               "minLength": 1,
               "maxLength": 78
             }

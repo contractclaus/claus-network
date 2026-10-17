@@ -1,3 +1,4 @@
+import {infrastructureBudget} from './operating-budget.mjs';
 import {flyTarget} from './fly-target.mjs';
 import {runtimeReleaseApproved} from './release.mjs';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
@@ -10,7 +11,8 @@ const key=id=>'infrastructure:'+id;
 const safeWork=w=>({id:w.id,projectId:w.projectId,profile:w.profile,manifest:w.manifest,quote:w.quote,createdAt:w.createdAt,leaseUntil:w.leaseUntil,extensions:w.extensions??[]});
 const original=w=>{const {leaseUntil,extensions,...rest}=w;return rest;};
 
-export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus}={}){
+export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus,budget}={}){
+  budget??=infrastructureBudget({request});
   drivers??={runpod:runpodDriver({token:()=>process.env.CLAUS_RUNPOD_API_KEY,request,now}),fly:flyDriver({token:()=>process.env.CLAUS_FLY_API_TOKEN,request})};
   function profile(p,projectId){
     const c=config(),found=c.profiles?.find(x=>x.id===p.id);
@@ -65,6 +67,8 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     if(c.phase==='prepared')return result(work,{...c,outcome:'not_started'});
     const driver=drivers[c.providerConfig.provider];
     let observed=await driver.inspect(c.work,c,c.providerConfig);
+    if(observed.providerResourceId)await budget('commit',c.work);
+    for(const extension of c.work.extensions??[])await budget('commit',c.work,extension);
     const overPrice=observed.hourlyMicroUsd&&BigInt(observed.hourlyMicroUsd)>BigInt(c.price.hourlyMicroUsd);
     const revoked=!config().enabled||!config().profiles?.some(p=>p.id===c.providerConfig.id&&p.enabled&&p.profileHash===c.providerConfig.profileHash);
     const mustStop=c.leaseUntil<=now()||revoked||overPrice||c.deletionRequested;
@@ -94,14 +98,15 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     return locked(work,async(get,record)=>{
       const c=get();if(c.phase!=='prepared')return inspectLocked(work,get,record);
       profile(work.profile,work.projectId);await validateQuote(work);check(await releaseApproved(work),'release_not_approved');check(c.leaseUntil>now(),'lease_expired');
+      await budget('reserve',work);
       await record({phase:'dispatching'});
-      try{return result(work,await record(await drivers[c.providerConfig.provider].create(c.work,c.price,c.providerConfig)));}
+      try{const observed=await record(await drivers[c.providerConfig.provider].create(c.work,c.price,c.providerConfig));if(observed.providerResourceId)await budget('commit',work);return result(work,observed);}
       catch(e){
         // Only a definite request rejection proves no resource was created.
         // A timeout or 5xx keeps the original operation and all reserved money.
         if([400,401,402,403,413,422].includes(e.status)){
           const receipt={id:'provider-rejected:'+work.id,resourceId:work.id,accountId:work.profile.accountId,asset:work.profile.asset,final:true,actual:'0'};
-          return result(work,await record({state:'rejected',terminal:true,ready:false,receipt,error:e.message,errorDetails:e.details??null}));
+          const observed=await record({state:'rejected',terminal:true,ready:false,receipt,error:e.message,errorDetails:e.details??null});await budget('cancel',work);return result(work,observed);
         }
         await record({state:'unknown',outcome:'unknown',ready:false,error:'provider_create_outcome_unknown'});throw e;
       }
@@ -126,13 +131,14 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
       if(operation==='inspect')return inspectLocked(work,get,record);
       if(operation==='extend'){
         check(!c.terminal&&!c.stopped&&!c.deletionRequested&&c.providerResourceId,'resource_not_running');profile(work.profile,work.projectId);check(await releaseApproved(work),'release_not_approved');
-        if(c.leaseUntil===work.leaseUntil){check(digest(c.work)===digest(work),'extension_invalid');return result(work,c);}
+        if(c.leaseUntil===work.leaseUntil){check(digest(c.work)===digest(work),'extension_invalid');for(const e of work.extensions??[])await budget('commit',work,e);return result(work,c);}
         check(c.leaseUntil>now()&&work.leaseUntil>c.leaseUntil&&work.leaseUntil<=now()+work.profile.maxLeaseSeconds*1000,'lease_invalid');
         const before=c.work.extensions??[],added=work.extensions.at(-1);
         check(work.extensions.length===1&&added.sequence===(before.at(-1)?.sequence??0)+1&&added.previousUntil===c.leaseUntil,'extension_invalid');
         const price=await validateQuote(work,added.quote);
         check(work.leaseUntil===c.leaseUntil+added.quote.leaseSeconds*1000,'extension_invalid');
-        return result(work,await record({work,leaseUntil:work.leaseUntil,price:{...c.price,hourlyMicroUsd:BigInt(price.hourlyMicroUsd)>BigInt(c.price.hourlyMicroUsd)?price.hourlyMicroUsd:c.price.hourlyMicroUsd}}));
+        await budget('reserve',work,added);
+        const extended=await record({work,leaseUntil:work.leaseUntil,price:{...c.price,hourlyMicroUsd:BigInt(price.hourlyMicroUsd)>BigInt(c.price.hourlyMicroUsd)?price.hourlyMicroUsd:c.price.hourlyMicroUsd}});await budget('commit',work,added);return result(work,extended);
       }
       if(operation==='stop'||operation==='delete'){
         if(c.terminal)return result(work,c);

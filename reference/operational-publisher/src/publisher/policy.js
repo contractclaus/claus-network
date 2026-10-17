@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 const OPS_TARGETS = {
- repository: { project: "contractclaus/claus-network", name: "claus-network", origin: "https://github.com/contractclaus/claus-network", probe: "/README.md", paths: [/^README\.md$/, /^docs\/[a-z0-9-]+\.md$/] },
-  web: { project: "prj_3EPhg3tuhf5oHU9sw2Butj9eRegy", name: "claus", origin: "https://claus.si", probe: "/Network", paths: [/^docs\/[a-z0-9-]+\.(?:html|md)$/, /^assets\/network-[a-z0-9-]+\.(?:css|js)$/] },
-  api: { project: "prj_rGom8c2zwC8zztmqsSFPaAJj7fXs", name: "claus-network-api", origin: "https://claus-network-api.vercel.app", probe: "/health", paths: [/^src\/isolated\/network\.json$/, /^src\/application\/main\.js$/] },
-  native: { project: "prj_JQEQJQb3Obhgas8Dtx0FIe1Zokah", name: "claus-agent", origin: "https://claus-agent.vercel.app", probe: "/health", paths: [/^src\/isolated\/(?:network|work)\.json$/, /^src\/application\/main\.js$/] }
+ repository: { project: "contractclaus/claus-network", name: "claus-network", origin: "https://github.com/contractclaus/claus-network", probe: "/README.md", paths: [/^(?:README\.md|(?:src|runtime|api|adapters|interfaces|scripts|test|tests|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|tsx|jsx|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] },
+  web: { project: "prj_3EPhg3tuhf5oHU9sw2Butj9eRegy", name: "claus", origin: "https://claus.si", probe: "/Network", paths: [/^(?:(?:src|api|components|pages|app|network|public|assets|docs|styles|scripts|tests?)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|tsx|jsx|json|md|html|css|svg)|[A-Za-z0-9_-]+\.(?:html|css|js)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] },
+  api: { project: "prj_rGom8c2zwC8zztmqsSFPaAJj7fXs", name: "claus-network-api", origin: "https://claus-network-api.vercel.app", probe: "/health", paths: [/^(?:(?:src|runtime|api|adapters|interfaces|scripts|tests?|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] },
+  native: { project: "prj_JQEQJQb3Obhgas8Dtx0FIe1Zokah", name: "claus-agent", origin: "https://claus-agent.vercel.app", probe: "/health", paths: [/^(?:(?:src|api|scripts|tests?|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] }
 };
 function target(value) {
   if (!Object.hasOwn(OPS_TARGETS, value)) throw Error("operations_target_invalid");
@@ -16,14 +16,15 @@ function validateManifest(v) {
 }
 function validateChanges(scope, changes) {
   const p = target(scope);
-  if (!Array.isArray(changes) || !changes.length || changes.length > 8 || new Set(changes.map((x) => x.path)).size !== changes.length) throw Error("operations_changes_invalid");
-  for (const c of changes) if (!c || typeof c.path !== "string" || !p.paths.some((r) => r.test(c.path)) || typeof c.before !== "string" || !c.before || typeof c.after !== "string" || c.before === c.after || Buffer.byteLength(c.before) + Buffer.byteLength(c.after) > 4e4) throw Error("operations_path_or_change_denied");
+  if (!Array.isArray(changes) || !changes.length || changes.length > 64 || new Set(changes.map((x) => x.path)).size !== changes.length) throw Error("operations_changes_invalid");
+  for (const c of changes) if (!c || typeof c.path !== "string" || (c.path.split('/').some(x=>!x||x==='.'||x==='..')||!p.paths.some((r) => r.test(c.path))) || typeof c.before !== "string"  || typeof c.after !== "string" || c.before === c.after || Buffer.byteLength(c.before) + Buffer.byteLength(c.after) > 1e6) throw Error("operations_path_or_change_denied");
 }
 function patch(content, c) {
+  if(c.before===''){if(content!=='')throw Error('operations_new_file_conflict');return c.after;}
   const at = content.indexOf(c.before);
   if (at < 0 || content.indexOf(c.before, at + c.before.length) >= 0) throw Error("operations_patch_not_unique");
   const result = content.slice(0, at) + c.after + content.slice(at + c.before.length);
-  if (Buffer.byteLength(result) > 4e5) throw Error("operations_source_too_large");
+  if (Buffer.byteLength(result) > 2e6) throw Error("operations_source_too_large");
   return result;
 }
 function denyNewAuthority(before, after) {
@@ -40,3 +41,7 @@ export {
   validateChanges,
   validateManifest
 };
+
+export const isolatedPath=path=>/^src\/isolated\/(?:network|work)\.json$/.test(path)||path==='src/application/main.js';
+export const gitBlobSha=content=>{const bytes=Buffer.from(content);return createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');};
+export function baseManifest(release){return release.manifest.filter(f=>!release.files.some(x=>x.path===f.path&&x.created===true)).map(f=>{const old=release.files.find(x=>x.path===f.path);return old?{...f,sha:sha(old.before),size:Buffer.byteLength(old.before),...(release.scope==='repository'?{gitSha:gitBlobSha(old.before)}:{})}:f;});}

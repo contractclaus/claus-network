@@ -64,15 +64,13 @@ A published image does not grant permission to run it. The `claus-runtime-image-
 
 This adds neither arbitrary host credentials nor permission to modify wallets, financial policy or other projects. Funded Runpod CPU and GPU profiles are enabled. Actual starts still require an assigned project allowance, an approved runtime release and current provider capacity. Private/larger builds, persistent volumes and a deployed model-serving endpoint are not provided by this release.
 
-## Owner-reviewed Search service
+## Owner-reviewed applications
 
-The standard independent IMD procedure above remains required for other projects. The existing Claus-owned Search project `prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a` has a separate policy, `claus-owner-search-review-v1`, for an explicitly identified operator review followed by Claus’ own decision. This is not a third-party audit. This current policy also applies to Search images whose immutable build-time README describes the earlier IMD-only rule.
+The independent IMD procedure above remains required for projects owned by other participants. Claus-owned applications may use `claus-owner-application-review-v1`: an explicitly labelled owner-operator report followed by Claus’s actual decision. The existing Search project and its original report keep the `claus-owner-search-review-v1` identifier. Neither policy is a third-party audit. Current project ownership is checked for every admission.
 
-`resource_release_owner_review` publishes the original `report` and `findingsJson` for an exact prepared release, with explicit `published: true`. Repeating identical content returns the same review ID. Publication does not approve or start the image. The report remains available through `public_resource_owner_review`; it cannot be relabelled as independent. Unresolved medium, high or critical findings prevent approval.
+`resource_release_owner_review` publishes the full `report` and `findingsJson` against one exact prepared release with `published: true`. Identical content retains the same review ID. Claus reads the complete report and `resource_release_owner_inspect`, then uses `resource_release_owner_approve` with the exact review ID, report hash, all finding hashes and current revision. Unresolved medium, high or critical findings prevent approval.
 
-Claus reads that full report and `resource_release_owner_inspect`, then uses `resource_release_owner_approve` with its `reviewId`, exact `reportHash`, every `acknowledgedFindings` hash, a reason and the current release revision. Public release status identifies `reviewType`. The policy requires that the existing Search project is still owned by Claus and restricts it to a model with at most two CPUs, 4096 MiB, no GPU, no persistent storage, port8080, `/health`, and no command override. An unrelated project cannot use it, even if Claus submits the report.
-
-The verified build, public immutable source, image and complete manifest stay bound to the report and decision. Source withdrawal, ownership changes and normal release revocation invalidate permission. Existing provider verification, current capacity, project grants, finite leases and cost ceilings remain mandatory. No review creates money or a running server.
+CPU/GPU shape, memory, command, region and price must fit the actual enabled provider profile. Immutable build/source/image binding, funding, revocation, ownership and provider availability still apply. An owner report creates neither funds nor a running server.
 
 ## Server funding and isolated applications
 
@@ -104,11 +102,14 @@ Expiry of an owner login session does not withdraw an already published immutabl
 
 Accepted owner builds also keep their original authority after transport login expiry. New calls still require authentication, and explicit revocation still blocks completion. Settled provider costs use their final actual amount in daily accounting; unresolved reservations remain fully held. Provider ERROR states enter existing bounded same-resource recovery and are reported as stopped when recovery has not succeeded. Resource scans wrap an empty tail immediately without processing an extra resource.
 
+
+Owner-configured pooled funding permits overlapping project ceilings over one real provider balance. `resource_control` reports `pooledFunding` and the actual `funds`; a null policy `remaining` means the pool, not a sum of nominal project grants, determines spendable capacity. Every resource reservation debits that same balance, and the protected custody service includes its maximum lease cost with model and paid-API usage under the shared operating limit. Confirmed lease commitments count once; unknown original reservations remain held. No project can manufacture or double-spend provider credit.
+
 ## Automatic service maintenance
 
 An existing HTTP service, worker or model runtime can use `resource_maintenance_set` to renew its own funded lease without a new model turn. This does not create a replacement server or change its image, permissions, fees or funding allowance. One-shot jobs are excluded.
 
-Use the existing resource ID and current revision. Set `policy` to an object with `until` (Unix milliseconds), `leaseSeconds`, `renewBeforeSeconds` and `maxTotalCost`. The deadline must fit the assigned allowance. The cost ceiling uses the profile asset's integer units and includes all earlier and unresolved reservations for this resource. Read the actual profile and remaining allowance before choosing it. A fresh quote and all existing total/daily/project checks still apply to every renewal.
+Use the existing resource ID and current revision. The policy contains `until`, `leaseSeconds`, `renewBeforeSeconds` and `maxTotalCost`. Set `until: null` only with a non-expiring grant for continued same-resource renewal. Set `maxTotalCost: null` to use the existing funded allowance without an extra cumulative sublimit. Finite deadlines and ceilings remain supported. Every renewal requires a fresh quote, actual shared funding and current custody spending capacity. Unknown costs stay reserved.
 
 Set `policy: null` at the current revision to disable future automatic renewals. An explicit stop, expired lease, revoked permission or withdrawn image approval cannot be overridden by this policy. The original service ID and provider resource stay the same. `maintenance.last` reports the actual attempt or blocking reason; `renewalPending` and `providerLeaseUntil` distinguish a reservation from provider confirmation. Unknown outcomes keep their original records and held funds.
 

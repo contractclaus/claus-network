@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {hash,sha,patch,validateChanges,validateManifest} from '../publisher/policy.js';
+import {hash,sha,patch,validateChanges,validateManifest,target,gitBlobSha} from '../publisher/policy.js';
 import {trustedReview} from '../publisher/review-evidence.js';
 import {publicationControls} from '../publisher/controls.js';
 const repo='contractclaus/claus-network';
@@ -7,7 +7,7 @@ const author={name:'Claus',email:'341484431+contractclaus@users.noreply.github.c
 const fail=code=>{throw Error('publisher_'+code);};
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const git=id=>{if(!/^git_[a-f0-9]{40}$/.test(id??''))fail('commit_invalid');return id.slice(4);};
-const permitted=p=>p==='README.md'||/^docs\/[a-z0-9-]+\.md$/.test(p);
+const permitted=p=>typeof p==='string'&&!p.split('/').some(x=>!x||x==='.'||x==='..')&&target('repository').paths.some(r=>r.test(p));
 export function createRepositoryPublisher({repository,ledger,controls,reviewEvidence=trustedReview,request=fetch,token=()=>process.env.CLAUS_GITHUB_TOKEN}){
  const control=()=>controls??=publicationControls();
  async function api(path,{method='GET',body,missing=false}={}){
@@ -17,15 +17,15 @@ export function createRepositoryPublisher({repository,ledger,controls,reviewEvid
   if(!response.ok)fail('github_request_failed');const text=await response.text();if(Buffer.byteLength(text)>4000000)fail('source_size');return JSON.parse(text);
  }
  async function head(){const r=await api('/repos/'+repo);if(r.owner?.login!=='contractclaus')fail('github_identity');const ref=await api('/repos/'+repo+'/git/ref/heads/'+encodeURIComponent(r.default_branch));return{branch:r.default_branch,commit:ref.object.sha};}
- async function file(id,path){git(id);if(!permitted(path))fail('file_denied');const r=await api('/repos/'+repo+'/contents/'+path+'?ref='+git(id));if(r.type!=='file'||r.encoding!=='base64'||r.size>400000)fail('file_invalid');return Buffer.from(r.content,'base64').toString('utf8');}
- async function verify(id,manifest,production=false){validateManifest(manifest);if(manifest.some(f=>!permitted(f.path)))fail('file_denied');if(production&&(await head()).commit!==git(id))fail('production_changed');await Promise.all(manifest.map(async ref=>{const value=await file(id,ref.path);if(sha(value)!==ref.sha||Buffer.byteLength(value)!==ref.size)fail('source_binding');}));return {passed:true,sourceHash:hash(manifest),commit:git(id),production};}
+ async function file(id,path){git(id);if(!permitted(path))fail('file_denied');const r=await api('/repos/'+repo+'/contents/'+path+'?ref='+git(id));if(r.type!=='file'||r.encoding!=='base64'||r.size>2000000)fail('file_invalid');return Buffer.from(r.content,'base64').toString('utf8');}
+ async function verify(id,manifest,production=false){validateManifest(manifest);if(manifest.some(f=>!permitted(f.path)))fail('file_denied');if(production&&(await head()).commit!==git(id))fail('production_changed');const tree=await api('/repos/'+repo+'/git/trees/'+git(id)+'?recursive=1');if(tree.truncated)fail('source_tree_truncated');const blobs=new Map(tree.tree.filter(f=>f.type==='blob').map(f=>[f.path,f]));await Promise.all(manifest.map(async ref=>{if(ref.gitSha){const f=blobs.get(ref.path);if(!f||f.sha!==ref.gitSha||f.size!==ref.size)fail('source_binding');}else{const value=await file(id,ref.path);if(sha(value)!==ref.sha||Buffer.byteLength(value)!==ref.size)fail('source_binding');}}));return {passed:true,sourceHash:hash(manifest),commit:git(id),production};}
  async function current(){const c=await repository.current('repository');if(!c)fail('scope_missing');return c;}
  async function release(id){if(!/^op_[a-f0-9]{24}$/.test(id??''))fail('release_invalid');const r=await repository.release(id);if(r?.scope!=='repository')fail('release_missing');return r;}
  async function reviewed(r,c){
   if(!c.enabled||c.revision!==r.base_revision||c.deployment!==r.base_deployment||!(await repository.settings()).enabled)fail('base_changed');
   validateChanges('repository',r.changes);validateManifest(r.manifest);const expected=structuredClone(c.manifest);
   if(r.files.length!==r.changes.length||new Set(r.files.map(f=>f.path)).size!==r.files.length)fail('files_invalid');
-  for(const change of r.changes){const f=r.files.find(f=>f.path===change.path),ref=expected.find(f=>f.path===change.path);if(!f||!ref||sha(f.before)!==ref.sha||Buffer.byteLength(f.before)!==ref.size||patch(f.before,change)!==f.content)fail('source_binding');ref.sha=sha(f.content);ref.size=Buffer.byteLength(f.content);}
+  for(const change of r.changes){const f=r.files.find(f=>f.path===change.path);let ref=expected.find(f=>f.path===change.path);if(!f||(!ref?(f.created!==true||f.before!==''||change.before!==''):(f.created===true||sha(f.before)!==ref.sha||Buffer.byteLength(f.before)!==ref.size))||patch(f.before,change)!==f.content)fail('source_binding');if(!ref){ref={path:f.path};expected.push(ref);}ref.sha=sha(f.content);ref.size=Buffer.byteLength(f.content);ref.gitSha=gitBlobSha(f.content);}
   if(!equal(expected,r.manifest)||hash(expected)!==r.source_hash)fail('manifest_binding');
   const effect=await repository.review(r.review_effect);if(!effect||effect.project_id!==r.build_id||effect.status!=='completed'||effect.kind!=='model')fail('review_incomplete');const output=await reviewEvidence(effect,'operational');
   let input,result;try{input=JSON.parse(effect.input.input[0].content);const value=output.message.content;result=JSON.parse((Array.isArray(value)?value.map(x=>x.text??'').join(''):String(value)).replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,''));}catch{fail('review_invalid');}
@@ -33,7 +33,7 @@ export function createRepositoryPublisher({repository,ledger,controls,reviewEvid
   if(result.approved!==true||result.withinScope!==true||result.preservesBehaviour!==true)fail('review_rejected');
  }
  const branch=r=>'claus/docs-'+r.id;
- async function recover(r){const ref=await api('/repos/'+repo+'/git/ref/heads/'+branch(r),{missing:true});if(!ref)return null;const commit=await api('/repos/'+repo+'/git/commits/'+ref.object.sha);if(commit.parents?.length!==1||commit.parents[0].sha!==git(r.base_deployment)||commit.author.email!==author.email||commit.committer.email!==author.email||commit.message!=='Update documentation: '+r.title+'\n\nOperation: '+r.id+'\nSource: '+r.source_hash)fail('commit_binding');const delta=await api('/repos/'+repo+'/compare/'+git(r.base_deployment)+'...'+commit.sha);if(delta.commits?.length!==1||delta.files?.length!==r.files.length||delta.files.some(f=>!r.files.some(w=>w.path===f.filename)||!['modified'].includes(f.status)))fail('commit_files_mismatch');await verify('git_'+commit.sha,r.manifest);return{id:'git_'+commit.sha,url:'github.com/'+repo+'/commit/'+commit.sha,state:'READY',readyState:'READY',projectId:repo,meta:{clausOperationId:r.id,clausSourceHash:r.source_hash}};}
+ async function recover(r){const ref=await api('/repos/'+repo+'/git/ref/heads/'+branch(r),{missing:true});if(!ref)return null;const commit=await api('/repos/'+repo+'/git/commits/'+ref.object.sha);if(commit.parents?.length!==1||commit.parents[0].sha!==git(r.base_deployment)||commit.author.email!==author.email||commit.committer.email!==author.email||commit.message!=='Update documentation: '+r.title+'\n\nOperation: '+r.id+'\nSource: '+r.source_hash)fail('commit_binding');const delta=await api('/repos/'+repo+'/compare/'+git(r.base_deployment)+'...'+commit.sha);if(delta.commits?.length!==1||delta.files?.length!==r.files.length||delta.files.some(f=>!r.files.some(w=>w.path===f.filename)||!r.files.some(w=>w.path===f.filename&&f.status===(w.created?'added':'modified'))))fail('commit_files_mismatch');await verify('git_'+commit.sha,r.manifest);return{id:'git_'+commit.sha,url:'github.com/'+repo+'/commit/'+commit.sha,state:'READY',readyState:'READY',projectId:repo,meta:{clausOperationId:r.id,clausSourceHash:r.source_hash}};}
  async function deploy(r,c){
   await reviewed(r,c);if((await head()).commit!==git(c.deployment))fail('base_changed');
   const key='repository:deploy:'+r.id,saved=await ledger.reserve(key,{base:r.base_deployment,hash:r.source_hash});
@@ -49,6 +49,7 @@ export function createRepositoryPublisher({repository,ledger,controls,reviewEvid
  }
  return {async call(operation,scope,args){
   if(scope!=='repository'||!Array.isArray(args))fail('operation_denied');const c=await current();
+  if(operation==='diagnostics'){const h=await head();return {observedAt:new Date().toISOString(),commit:h.commit,branch:h.branch,controlMatchesProduction:'git_'+h.commit===c.deployment};}
   if(operation==='project'){const h=await head();return{id:repo,name:'claus-network',targets:{production:{id:'git_'+h.commit}},crons:{definitions:[]}};}
   if(operation==='baseline'){if(args[0]!==c.deployment||!equal(args[1],c.manifest))fail('base_changed');return verify(c.deployment,c.manifest,true);}
   if(operation==='read'){const[id,ref]=args;if(id!==c.deployment||!c.manifest.some(f=>equal(f,ref)))fail('file_denied');const value=await file(id,ref.path);if(sha(value)!==ref.sha)fail('source_binding');return value;}

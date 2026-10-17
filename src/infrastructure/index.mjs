@@ -23,7 +23,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
     const row=await reader.read('infrastructure-profiles',profileId),profile=validateProfile(row?.value);
     requireThat(profile.enabled&&await control.active(reader,profileId),'infrastructure_profile_disabled');
     const grant=await reader.read('infrastructure-grants',grantKey(projectId,profileId));
-    requireThat(grant?.value.enabled&&grant.value.expiresAt>now(),'infrastructure_allowance_unavailable');
+    requireThat(grant?.value.enabled&&(grant.value.expiresAt===null||grant.value.expiresAt>now()),'infrastructure_allowance_unavailable');
     return {profile,profileRevision:row.revision,grant};
   }
   async function resource(reader,projectId,id){const r=await reader.read('infrastructure-resources',text(id));requireThat(r?.value.projectId===projectId,'not_found');return r;}
@@ -72,7 +72,7 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
         if(prior){requireThat(prior.value.quoteId===quoteId,'idempotency_conflict');return visible(r);}
         requireThat(r.revision===expectedRevision,'revision_conflict');
         requireThat(!v.controllerLease||v.controllerLease.until<=now()||internal.leaseToken===v.controllerLease.token,'resource_busy');
-        if(internal.policyHash)requireThat(v.maintenance?.policyHash===internal.policyHash&&v.maintenance.until>now(),'maintenance_changed');
+        if(internal.policyHash)requireThat(v.maintenance?.policyHash===internal.policyHash&&(v.maintenance.until===null||v.maintenance.until>now()),'maintenance_changed');
         requireThat(v.state==='running'&&v.desired==='running'&&!v.renewalPending&&v.leaseUntil>now(),'resource_not_running');
         requireThat(typeof ports.extend==='function','infrastructure_provider_unavailable');
         const q=(await tx.read('infrastructure-quotes',quoteId))?.value;
@@ -82,9 +82,9 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
         const {profile,grant}=await admission(tx,actor,projectId,v.profile.id,internal.retained===true);
         requireThat(v.leaseUntil+q.leaseSeconds*1000<=now()+profile.maxLeaseSeconds*1000,'infrastructure_lease_too_long');
         requireThat(amount(grant.value.limit)>=amount(grant.value.reserved)+amount(grant.value.spent)+amount(q.maximum),'infrastructure_allowance_exhausted');
-        if(internal.policyHash)requireThat(amount(maximum(v))+amount(q.maximum)<=amount(v.maintenance.maxTotalCost),'maintenance_budget_exhausted');
-        if(internal.policyHash)requireThat(v.leaseUntil+q.leaseSeconds*1000<=v.maintenance.until,'maintenance_deadline');
-        await control.checkSpend(tx,profile.id,q.maximum);
+        if(internal.policyHash&&v.maintenance.maxTotalCost!==null)requireThat(amount(maximum(v))+amount(q.maximum)<=amount(v.maintenance.maxTotalCost),'maintenance_budget_exhausted');
+        if(internal.policyHash&&v.maintenance.until!==null)requireThat(v.leaseUntil+q.leaseSeconds*1000<=v.maintenance.until,'maintenance_deadline');
+        await control.checkSpend(tx,profile.id,q.maximum,projectId);
         await reserve(tx,profile.fundingAccount,profile.asset,q.maximum);await adjustGrant(tx,v,amount(q.maximum),0n);
         const extension={id:renewalId,sequence:(v.extensions?.at(-1)?.sequence??0)+1,previousUntil:v.leaseUntil,quote:q};
         await tx.write('infrastructure-renewals',renewalId,{resourceId:id,quoteId,extension},0);
@@ -154,7 +154,7 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
         requireThat(amount(grant.value.limit)>=amount(grant.value.reserved)+amount(grant.value.spent)+amount(q.maximum),'infrastructure_allowance_exhausted');
         const capacityId=grantKey(projectId,profile.id),capacity=await tx.read('infrastructure-capacity',capacityId),active=capacity?.value.active??[];
         requireThat(active.length<profile.maxActive,'infrastructure_capacity_reached');
-        await control.checkSpend(tx,profile.id,q.maximum);
+        await control.checkSpend(tx,profile.id,q.maximum,projectId);
         await reserve(tx,profile.fundingAccount,profile.asset,q.maximum);
         const globalId='profile:'+profile.id,global=await tx.read('infrastructure-capacity',globalId),globalActive=global?.value.active??[];
         requireThat(globalActive.length<profile.maxActive,'infrastructure_capacity_reached');
