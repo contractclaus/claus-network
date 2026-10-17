@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1152.0",
+    "@aws-sdk/s3-request-presigner": "3.1152.0",
     "@jitl/quickjs-singlefile-cjs-release-sync": "0.31.0",
     "@neondatabase/serverless": "1.2.0",
     "@x402/evm": "2.28.0",

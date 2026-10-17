@@ -79,9 +79,24 @@ export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret
     }
     const receipt=await receiptFile(receipts[0]),archive=archives[0];
     check(receipt.buildId===work.id&&receipt.projectId===work.projectId&&receipt.planId===work.planId&&receipt.sourceHash===work.sourceHash&&receipt.runId===String(run.id)&&receipt.runnerSha===c.sha&&receipt.evidence==='compiled_only','receipt_binding_mismatch');
-    check(hash.test(receipt.imageDigest)&&hash.test(receipt.archiveHash)&&Number.isSafeInteger(receipt.archiveBytes)&&receipt.archiveBytes>0&&receipt.archiveBytes<=33554432&&archive.size_in_bytes<=34000000,'receipt_invalid');
+    check(hash.test(receipt.imageDigest)&&hash.test(receipt.archiveHash)&&Number.isSafeInteger(receipt.archiveBytes)&&receipt.archiveBytes>0&&receipt.archiveBytes<=33554432&&Number.isSafeInteger(archive.id)&&archive.id>0&&hash.test(archive.digest??'')&&archive.size_in_bytes>0&&archive.size_in_bytes<=33619968&&Number.isFinite(Date.parse(archive.expires_at)),'receipt_invalid');
     receipt.artifact={id:archive.id,digest:archive.digest,expiresAt:archive.expires_at,url:'https://github.com/'+repository+'/actions/runs/'+run.id+'/artifacts/'+archive.id};
     return finish({...result,state:'compiled',receipt});
+  }
+  async function download(work){
+    const prior=await ledger.get('oci:'+sha(work.id)),checkpoint=prior?.result;
+    check(checkpoint?.work&&canonical(checkpoint.work)===canonical(work),'request_changed');
+    const completed=checkpoint.completed,receipt=completed?.receipt;
+    check(completed?.state==='compiled'&&receipt?.buildId===work.id&&receipt.projectId===work.projectId&&receipt.planId===work.planId&&receipt.sourceHash===work.sourceHash,'image_not_complete');
+    check(Number.isSafeInteger(receipt.artifact?.id)&&receipt.artifact.id>0&&hash.test(receipt.artifact?.digest??''),'image_metadata_invalid');
+    check(Date.parse(receipt.artifact.expiresAt)>now(),'result_expired');
+    const r=await request('https://api.github.com/repos/'+repository+'/actions/artifacts/'+receipt.artifact.id+'/zip',{redirect:'manual',signal:AbortSignal.timeout(15000),headers:{authorization:'Bearer '+token(),accept:'application/vnd.github+json'}});
+    check(![404,410].includes(r.status),'result_expired');check(r.status===302,'image_download_unavailable');
+    const url=new URL(r.headers.get('location'));
+    check(url.protocol==='https:'&&!url.username&&!url.password&&url.href.length<=12000&&['.blob.core.windows.net','.githubusercontent.com'].some(s=>url.hostname.endsWith(s)),'image_redirect_invalid');
+    // Signed short-lived provider URL is returned only to the authenticated API.
+    // It is never saved to the ledger or sent to a project owner.
+    return {buildId:work.id,state:'compiled',receipt,url:url.href};
   }
   async function dispatch(work){
     const key='oci:'+sha(work.id),prior=await ledger.get(key);
@@ -107,7 +122,7 @@ export function createOciBroker({token=()=>process.env.CLAUS_GITHUB_TOKEN,secret
     return {buildId:work.id,state:'running'};
   }
   return async({operation,work})=>{
-    check(['dispatch','inspect'].includes(operation)&&work&&hash.test(work.id)&&hash.test(work.planId)&&hash.test(work.sourceHash)&&typeof work.projectId==='string'&&work.projectId.length<=128,'request_invalid');
-    return signed(work,await(operation==='inspect'?inspect(work):dispatch(work)));
+    check(['dispatch','inspect','download'].includes(operation)&&work&&hash.test(work.id)&&hash.test(work.planId)&&hash.test(work.sourceHash)&&typeof work.projectId==='string'&&work.projectId.length<=128,'request_invalid');
+    return signed(work,await(operation==='inspect'?inspect(work):operation==='download'?download(work):dispatch(work)));
   };
 }

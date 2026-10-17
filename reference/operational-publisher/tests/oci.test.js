@@ -28,6 +28,7 @@ test('lost workflow dispatch keeps one intent; original runner and completed rec
    if(url.includes('/workflows/')&&url.includes('/runs?'))return Response.json({workflow_runs:run?[r]:[]});
    if(url.endsWith('/actions/runs/42'))return Response.json(r);
    if(url.endsWith('/runs/42/artifacts?per_page=100'))return Response.json({artifacts:[{id:1,name:'oci-receipt',digest:h(archive),size_in_bytes:archive.length},{id:2,name:'oci-image',digest:h('image zip'),size_in_bytes:200,expires_at:'2026-10-18T00:00:00Z'}]});
+   if(url.endsWith('/artifacts/2/zip'))return new Response(null,{status:302,headers:{location:'https://example.blob.core.windows.net/image.zip'}});
    if(url.endsWith('/artifacts/1/zip'))return new Response(null,{status:302,headers:{location:'https://example.blob.core.windows.net/receipt.zip'}});
    if(url==='https://example.blob.core.windows.net/receipt.zip'){assert.equal(opts.headers,undefined);return new Response(archive);}
    throw Error('unexpected URL '+url);
@@ -35,6 +36,8 @@ test('lost workflow dispatch keeps one intent; original runner and completed rec
  const broker=createOciBroker({token:()=> 'test',secret:()=> 'test-secret',config:()=>c,request,ledger});
  assert.equal((await broker({operation:'dispatch',work})).state,'unknown');
  const result=await broker({operation:'inspect',work});assert.equal(result.state,'compiled');assert.equal(dispatches,1);assert.equal(result.receipt.imageDigest,receipt.imageDigest);
+ const download=await broker({operation:'download',work});assert.equal(download.url,'https://example.blob.core.windows.net/image.zip');assert.equal(download.receipt.archiveHash,receipt.archiveHash);
+ await assert.rejects(broker({operation:'download',work:{...work,projectId:'other'}}),/oci_request_changed/);
  delete c.sha;delete c.ref;c.enabled=false;
  assert.equal((await broker({operation:'inspect',work})).state,'compiled');assert.equal(dispatches,1);
 });
