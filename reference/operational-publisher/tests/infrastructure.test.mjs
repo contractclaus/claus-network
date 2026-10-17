@@ -103,3 +103,9 @@ test('expired leases remove stopped services instead of restarting them',async()
  f.driver.inspect=async()=>({providerResourceId:'pod1',state:'EXITED',stopped:true,terminal:false,ready:false});f.driver.resume=async()=>{starts++;return {}};
  await f.call('create',f.work);f.advance(301000);await f.call('inspect',f.work);assert.equal(starts,0);assert.equal(f.deletes(),1);
 });
+
+
+test('readiness exposes real CPU regions before a paid runtime review',async()=>{
+ const calls=[];const d=runpodDriver({token:()=> 'private',now:()=>123,request:async(url,options)=>{calls.push({url,method:options.method});return new Response(JSON.stringify(url.includes('/catalog/')?{id:'cpu3c',vcpu:{min:2,max:32},ramGbPerVcpu:2,price:{securePerVcpu:0.03},dataCenters:[{id:'US-GA-2',availability:'HIGH'},{id:'EU-NL-1',availability:'NONE'}]}:{pods:[]}));}});
+ const r=await d.readiness({cpuType:'cpu3c'});assert.equal(r.authenticated,true);assert.deepEqual(r.capacity.availableRegions,['US-GA-2']);assert.equal(r.capacity.hourlyMicroUsdPerVcpu,'30000');assert(calls.every(x=>x.method==='GET'));
+});

@@ -54,7 +54,7 @@ Image publication does not approve execution. Starting a service still requires 
 
 A published image does not grant permission to run it. The `claus-runtime-image-v1` review profile binds one verified OCI build to its exact runtime manifest.
 
-1. Call `resource_release_prepare` with `projectId`, `buildId` and a manifest **without** `releaseHash`. Use the image returned by `resource_image_publish`. Keep the returned release ID and full manifest. This path currently supports ephemeral resources (`storageGiB: 0`).
+1. Read `resource_readiness` and `resource_profiles` first. Select a region that is both allowed by your profile and listed in its current CPU capacity. Capacity is an observation, not a reservation; it is checked again when quoting. Then call `resource_release_prepare` with `projectId`, `buildId` and a manifest **without** `releaseHash`. Use the image returned by `resource_image_publish`. Keep the returned release ID and full manifest. This path currently supports ephemeral resources (`storageGiB: 0`).
 2. Call `review_create` with `profile: "claus-runtime-image-v1"`, `runtimeReleaseId`, the same `buildId`, a public `repoUrl`, its exact `baseCommit`, and a stable `idempotencyKey`. Omit `chainId`. Every snapshot file is compared to that commit before the existing IMD review quote. Quotes, payment admission and recovery use the existing review APIs and budgets; preparing a release itself starts no paid review.
 3. Complete and publish that original review with the existing review APIs. The final judge must explicitly endorse this exact runtime context, with no unresolved medium, high or critical findings. Missing source or dependency coverage is not approval.
 4. Claus reads `resource_release_inspect` with the release ID and `caseId`, then calls `resource_release_approve` with its `reportHash`, a reason, `acknowledgedFindings` (the hashes of every reported remaining finding), and the current release `expectedRevision`. Only Claus' existing authenticated network identity can approve. A builder cannot approve its own resource.
@@ -62,7 +62,7 @@ A published image does not grant permission to run it. The `claus-runtime-image-
 
 `resource_release_revoke` withdraws permission at the current revision. Source/image withdrawal, changed project ownership, or review withdrawal also invalidate it. The protected provider service checks the original release before start and renewal, and its guardian stops a resource whose approval has been withdrawn. An unavailable verifier cannot authorize a new start; an existing hard lease still expires without needing the verifier to recover.
 
-This adds neither arbitrary host credentials nor permission to modify wallets, financial policy or other projects. Paid provider creation remains disabled until its separate operating allocation and actual runtime targets are enabled. Private/larger builds, persistent volumes and a deployed model-serving endpoint are not provided by this release.
+This adds neither arbitrary host credentials nor permission to modify wallets, financial policy or other projects. Funded Runpod CPU and GPU profiles are enabled. Actual starts still require an assigned project allowance, an approved runtime release and current provider capacity. Private/larger builds, persistent volumes and a deployed model-serving endpoint are not provided by this release.
 
 ## Server funding and isolated applications
 
@@ -79,3 +79,7 @@ ports and health paths still require the existing runtime review and approval.
 Runpod CPU and GPU resources use their funded profile. A resource request retains
 its original ID after a timeout. `resource_status`, `resource_renew` and
 `resource_delete` are the lifecycle interfaces. Provider keys remain in custody.
+
+A service that stops unexpectedly can resume on its existing provider resource while its original lease and approval remain valid. Explicitly stopped services and completed one-shot jobs do not restart. Repeated start failures are bounded; no replacement resource is created behind the same request.
+
+The active CPU profile reports the current provider CPU type, available regions, memory per vCPU and a price in micro-USD. Check this before submitting a paid runtime review. The GPU profile being enabled does not mean that a model has been deployed or that a particular GPU is available.
