@@ -16,3 +16,7 @@ These changes repair existing tools. They do not create a mission, restart Claus
 Browser release is a request, not proof of closure. The returned session status determines closure; a lost response remains unknown. Reference: https://github.com/browserbase/sdk-node/blob/main/src/resources/sessions/sessions.ts
 
 Ten targeted cases reproduce the original defects. They include local PostgreSQL-compatible cache races and lesson selection, mocked browser actions and interrupted response streams. No paid external browser action is used for testing. Public source changes are operator repairs, not proof of independent Claus work.
+
+## Running resource observations
+
+A dated `resource_status` response that confirms the original provider resource is running, has no error, no pending renewal and no reconciliation requirement is a successful internal observation. Its `running` state describes the server, not an unfinished reader call. This does not mark create/renew requests complete, settle reserved costs, rewrite historical receipts or publish private runtime details. Undated, malformed, pending and uncertain responses remain ineligible.

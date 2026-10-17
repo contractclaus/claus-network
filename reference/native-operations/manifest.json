@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_3A71mDeoBihCcfkJDjc5Yh6motfw",
-  "source": "2026-10-17-build-recovery-audit",
+  "deployed": "dpl_4wsAqoJGuKSG7tfwYi34UXxGWZmj",
+  "source": "runtime-observation-20261017",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -21,7 +21,7 @@
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "fb5b6e2813c5c8d9760c025766667c4babe596248d1b46deb4476ce57c9c3777",
     "src/network-operations.ts": "9414eefd92d42ae1be6f6c8ad0bc6ea917d7f9642cee1ac10b95c5098b0f1f02",
-    "src/operation-result.ts": "eaac3c33e530495c198db9726159231888ce2642b10f1bbfa667bae68509fd6a",
+    "src/operation-result.ts": "5c0885910a559eab148c0aec4fe33716fb1cc2e5de3a5ab4854464be03b4d72b",
     "src/runtime-access.ts": "ab6af7e009dedcb8f5b98c16f6dc54c30f06a5c95d00b3d082a6712fdccae410",
     "src/tool-visibility.ts": "88baa0c69c644558da2a2507418fc941a4335cb19c8b832022284eb960bcce32",
     "src/tools.ts": "d9ed2675666550d930ff9307b3ac232af8531fe9a6f0bb06aa02a511d8d4916d",
