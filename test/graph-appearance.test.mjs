@@ -33,7 +33,7 @@ test('appearance uses bounded batches and denies hidden, mismatched, expired or 
   const ids=Array.from({length:100},(_,i)=>'p'+i),data=new Map(),calls=[];let time=100;
   const set=(collection,id,value)=>data.set(collection+':'+id,{value});
   for(const id of ids){
-    const releaseId=digest({id}),snapshotId=digest({snapshot:id}),hash=digest({file:id});
+    const releaseId=digest({id}),snapshotId=digest({snapshot:id}),hash=digest({path:'claus.json',content:JSON.stringify({schema:'claus-project/1',logo:'logo.svg'})});
     set('project-site-selection',id,{releaseId});
     set('release-publications',releaseId,{projectId:id,published:true,expiresAt:1000});
     set('project-releases',releaseId,{id:releaseId,projectId:id,snapshotId,paths:['claus.json','logo.svg'],url:'https://claus-network-sites.vercel.app/r/'+releaseId.slice(7)+'/index.html'});

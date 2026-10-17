@@ -1,3 +1,4 @@
+import {createSourceFiles} from '../artifact-store/index.mjs';
 import { createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
 import { canonical, contentHash, copy, digest, integer, requireThat, shape, text } from '../shared/index.mjs';
 
@@ -82,7 +83,7 @@ async function all(reader, collection, accept, add) {
   }
 }
 
-export function createProjectArchives({ store, identity, operatorId, signingKey, now = () => Date.now() }) {
+export function createProjectArchives({ store, identity, sourceFiles = createSourceFiles({store}), operatorId, signingKey, now = () => Date.now() }) {
   origin(operatorId);
   const key = signingKey?.type === 'private' ? signingKey : createPrivateKey(signingKey);
   requireThat(key.asymmetricKeyType === 'ed25519', 'invalid_archive_key');
@@ -107,11 +108,11 @@ export function createProjectArchives({ store, identity, operatorId, signingKey,
         }
         add('projects', { id: projectId, ...project });
         for (const [collection, fields] of Object.entries(FIELDS)) {
-          await all(tx, collection, row => row.value.projectId === projectId, row => {
+          await all(tx, collection, row => row.value.projectId === projectId, async row => {
             // An imported header's Ed25519 signature is public attestation,
             // not reusable wallet authority. Keep it for subsequent moves.
             const value = ['artifacts', 'snapshots', 'imported-history'].includes(collection)
-              ? select(row.value, fields) : redact(select(row.value, fields));
+              ? select(collection === 'artifacts' ? await sourceFiles.resolve(row.value) : row.value, fields) : redact(select(row.value, fields));
             add(collection, row, value, digest(value) === digest(row.value) ? 'complete' : 'safe-fields');
             if (collection === 'review-jobs') jobIds.add(row.id);
             if (collection === 'review-cases') caseIds.add(row.id);

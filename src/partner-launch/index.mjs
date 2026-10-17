@@ -1,8 +1,9 @@
+import {createSourceFiles} from '../artifact-store/index.mjs';
 import { digest, requireThat, shape, contentHash } from '../shared/index.mjs';
 import { PROFILE, PROFILE_ID, CLAUS_IDENTITY, context, assignment, bindAssignment, validateRequest, endorsement } from './policy.mjs';
 import { validateCapitalBuild } from '../capital/review.mjs';
 
-export function createPartnerLaunches({store, identity, builds, artifacts, pins, now = Date.now}) {
+export function createPartnerLaunches({store, identity, builds, artifacts, sourceFiles = createSourceFiles({store}), pins, now = Date.now}) {
   const trusted = assignment(pins);
   const read = async (reader, collection, id) => (await reader.read(collection,id))?.value;
   async function party(reader, v) {
@@ -20,7 +21,7 @@ export function createPartnerLaunches({store, identity, builds, artifacts, pins,
   async function requestSource(reader,v,snapshotId) {
     const snapshot=await read(reader,'snapshots',digest({projectId:v.projectId,id:snapshotId}));
     const file=snapshot?.files?.find(f=>f.path===v.requestFile);
-    const stored=file && await read(reader,'artifacts',digest({projectId:v.projectId,id:file.hash}));
+    const stored=file && await sourceFiles.get(v.projectId,file.hash,reader);
     requireThat(stored?.path===v.requestFile && digest({path:stored.path,content:stored.content})===file.hash,'partner_request_source_missing');
     return validateRequest(stored.content,v);
   }

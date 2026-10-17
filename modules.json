@@ -104,7 +104,8 @@
       "id": "projects",
       "path": "src/projects/",
       "imports": [
-        "shared"
+        "shared",
+        "artifact-store"
       ],
       "builtins": []
     },
@@ -124,7 +125,9 @@
       "imports": [
         "shared"
       ],
-      "builtins": []
+      "builtins": [
+        "node:crypto"
+      ]
     },
     {
       "id": "builds",
@@ -184,7 +187,8 @@
       "id": "releases",
       "path": "src/releases/",
       "imports": [
-        "shared"
+        "shared",
+        "artifact-store"
       ],
       "builtins": []
     },
@@ -192,7 +196,8 @@
       "id": "portability",
       "path": "src/portability/",
       "imports": [
-        "shared"
+        "shared",
+        "artifact-store"
       ],
       "builtins": [
         "node:crypto"
@@ -254,7 +259,8 @@
       "id": "content-admin",
       "path": "src/content-admin/",
       "imports": [
-        "shared"
+        "shared",
+        "artifact-store"
       ],
       "builtins": []
     },
