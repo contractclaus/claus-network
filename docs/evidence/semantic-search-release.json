@@ -140,10 +140,9 @@
     },
     {
       "providerJobId": "eaef7f5e-650d-4359-855e-fd17dc680d3c",
-      "reportHash": null,
       "releaseId": "sha256:cd2ef93906caf6ee064ec9dae7a95a3a1d3cecad4ba40612005c046d903e654b",
       "approval": false,
-      "state": "executing"
+      "reportHash": "sha256:49b71b48d75cdd9cfa210525bdc969641b497695d0d2c0b083a01a6e80adc81e"
     }
   ],
   "changes": [
@@ -164,6 +163,14 @@
     "issuer": "semantic-search-image-coverage.json",
     "reproduce": "node scripts/inspect-semantic-search-image.mjs /tmp/search-image-inventory.json"
   },
-  "approvalGranted": false,
-  "modelHosted": false
+  "approvalGranted": true,
+  "modelHosted": true,
+  "liveEvidence": "semantic-search-live.json",
+  "review": {
+    "reviewId": "sha256:d75a60a8fde96652cf7119e94d3343a31e8af4509376cf912ae98659d5706237",
+    "profile": "claus-owner-search-review-v1",
+    "independent": false,
+    "reportHash": "sha256:4367e12e4073eec20a97ad1ef5478ef3f27a513f2c4f6d88e0f2b5afc180c751",
+    "decisionHash": "sha256:b5bc4423e77e7e9d8b36fac90dbc5a8a1339698c44f76b068eac6ff2b818bedd"
+  }
 }
