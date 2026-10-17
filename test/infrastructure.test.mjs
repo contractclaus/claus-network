@@ -53,6 +53,13 @@ test('a stopped provider without a final bill cannot release unknown costs',asyn
   await f.api.reconcile(r.id);assert.equal((await f.api.get('owner','project',r.id)).state,'stopped');assert.equal((await f.balance()).reserved,'100');
   await assert.rejects(f.api.update('owner','project',r.id,{quoteId:q.id,idempotencyKey:'replace',expectedRevision:(await f.api.get('owner','project',r.id)).revision}),{code:'resource_must_stop_and_settle'});
 });
+test('an explicit provider stopped observation is not reported as provisioning',async t=>{
+ const f=await fixture(t),q=await f.quote(),r=await f.api.request('owner','project',{quoteId:q.id,idempotencyKey:'create'});
+ await f.api.reconcile(r.id);
+ f.ports.inspect=async()=>({operationId:r.id,accountId:'account',providerResourceId:'instance',state:'ERROR',stopped:true,ready:false,terminal:false});
+ await f.api.reconcile(r.id);const state=await f.api.get('owner','project',r.id);
+ assert.equal(state.state,'stopped');assert.equal(state.terminal,false);assert.equal(state.cost.state,'reserved');assert.equal((await f.balance()).reserved,'100');
+});
 
 test('authority and manifests cannot silently change while reservations exist',async t=>{
   const f=await fixture(t),q=await f.quote();await f.api.request('owner','project',{quoteId:q.id,idempotencyKey:'create'});

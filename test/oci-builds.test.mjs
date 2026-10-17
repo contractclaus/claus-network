@@ -7,6 +7,7 @@ import {createOciBuilds} from '../src/infrastructure/builds.mjs';
 import {createOciBuildPlan} from '../src/infrastructure/build-plan.mjs';
 import {digest} from '../src/shared/index.mjs';
 import {ROUTES,validate} from '../interfaces/contract.mjs';
+import {createIdentity} from '../src/identity/index.mjs';
 
 export async function fixture(t,{lost=false,enabled=true,images=null}={}){
  const store=openStore(':memory:');t.after(()=>store.close());let at=1000000,allowed=true,published=true,calls=0,inspection=0,seen;
@@ -18,6 +19,18 @@ export async function fixture(t,{lost=false,enabled=true,images=null}={}){
  const api=createOciBuilds({store,identity,projects,jobs,artifacts,ports,enabled,images,now:()=>at});
  return {api,store,jobs,ports,projects,identity,input:{snapshotId:'s',publishSource:true,idempotencyKey:'same'},advance:()=>at+=61000,revoke:()=>allowed=false,withdraw:()=>published=false,calls:()=>calls,inspections:()=>inspection};
 }
+test('accepted build survives owner login expiry while new actions and explicit revocation remain blocked',async t=>{
+ const f=await fixture(t);let at=1000000;
+ await f.store.transaction(async tx=>{await tx.write('credentials','owner',{kind:'owner',principalId:'person',expiresAt:at+3600000,revokedAt:null},0);await tx.write('projects','p',{ownerId:'person'},0);});
+ const identity=createIdentity({store:f.store,now:()=>at});Object.assign(f.identity,identity);
+ const build=await f.api.submit('owner','p',f.input);await f.api.runOne();at+=3600001;f.advance();
+ await f.api.runOne();assert.equal((await f.store.read('oci-builds',build.id)).value.state,'compiled');
+ assert((await f.store.read('oci-builds',build.id)).value.artifactHash);
+ await assert.rejects(f.api.submit('owner','p',{...f.input,idempotencyKey:'new'}),{code:'scope_denied'});
+ await f.store.transaction(async tx=>{const r=await tx.read('credentials','owner');await tx.write('credentials','owner',{...r.value,revokedAt:at},r.revision);});
+ await assert.rejects(f.api.publicSource(build.id),{code:'not_found'});
+ assert.equal(f.calls(),1);
+});
 test('lost dispatch reconciles the original build once, preserving source and result binding',async t=>{
  const f=await fixture(t,{lost:true}),a=await f.api.submit('owner','p',f.input);
  assert.equal((await f.api.submit('owner','p',f.input)).id,a.id);

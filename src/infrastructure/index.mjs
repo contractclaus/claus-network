@@ -208,7 +208,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
           }
           await update(async(tx,r)=>{
             const endpoint=observed.endpoint??null;requireThat(endpoint===null||typeof endpoint==='string'&&/^https:\/\/[a-z0-9.-]+\/?$/.test(endpoint),'infrastructure_endpoint_invalid');
-            const state=observed.outcome==='unknown'?'unknown':observed.terminal||['stopped','suspended','EXITED'].includes(observed.state)?'stopped':observed.ready?'running':observed.providerResourceId?'provisioning':'unknown';
+            const state=observed.outcome==='unknown'?'unknown':observed.terminal||observed.stopped===true||['stopped','suspended','EXITED'].includes(observed.state)?'stopped':observed.ready?'running':observed.providerResourceId?'provisioning':'unknown';
             return {state,terminal:observed.terminal===true,storageRetained:observed.storageRetained??null,providerLeaseUntil:observed.providerLeaseUntil??r.value.providerLeaseUntil??null,renewalPending:r.value.renewalPending===true&&observed.providerLeaseUntil!==r.value.leaseUntil,failures:0,nextAttemptAt:null,...(costObservation?{costObservation}:{}),providerResourceId:observed.providerResourceId??r.value.providerResourceId??null,endpoint,observedAt:now(),controllerLease:null,error:observed.error??null,errorDetails:observed.errorDetails??null,...(observed.receipt?await settle(tx,r,observed.receipt):{})};
           });
           }

@@ -85,6 +85,11 @@ test('Runpod CPU requests use v2 shape and a public application must pass health
  await d.create(gpuWork,{bootDiskGiB:30,cpuType:null});
  const gpuBody=JSON.parse(calls[2].init.body);assert.equal(gpuBody.globalNetworking,false);assert.equal(gpuBody.cpu,undefined);
 });
+test('Runpod ERROR is a stopped recoverable state, not an indefinitely provisioning pod',async()=>{
+ const work={id:digest('error-pod'),manifest:{image:'example.com/claus/app@sha256:'+'a'.repeat(64),port:8080,healthPath:'/health'}};
+ const d=runpodDriver({token:()=> 'fixture',request:async()=>Response.json({id:'pod1',name:'claus-'+work.id.slice(-40),image:work.manifest.image,status:'ERROR',cost:0.06})});
+ const r=await d.inspect(work,{providerResourceId:'pod1'});assert.equal(r.stopped,true);assert.equal(r.terminal,false);assert.equal(r.ready,false);
+});
 
 test('oversized log responses fail closed and do not return partial secret-bearing payloads',async()=>{
  await assert.rejects(providerRequest(async()=>new Response('x'.repeat(17000)),'https://example.com','key',{stream:true}),/too_large/);

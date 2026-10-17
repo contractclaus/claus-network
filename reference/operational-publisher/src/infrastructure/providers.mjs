@@ -42,7 +42,7 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
   function observation(pod,work){
     matches(pod,work);
     const terminated=pod.status==='TERMINATED',running=pod.status==='RUNNING';
-    const stopped=terminated||pod.status==='EXITED';
+    const stopped=terminated||pod.status==='EXITED'||pod.status==='ERROR';
     const endpoint=work.manifest.port&&!terminated?'https://'+pod.id+'-'+work.manifest.port+'.proxy.runpod.net':null;
     const rate=pod.cost===undefined?null:microUsd(pod.cost).toString();
     return {providerResourceId:pod.id,state:pod.status,ready:running&&!work.manifest.port,terminal:terminated,stopped,endpoint,hourlyMicroUsd:rate,storageRetained:!terminated,costFinal:false};

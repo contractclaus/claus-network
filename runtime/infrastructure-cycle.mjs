@@ -14,7 +14,11 @@ export async function infrastructureCycle({infrastructure,store,now=()=>Date.now
  });
  if(!work)return {state:'running',processed:0};
  try{
-  const result=await infrastructure.tick({after:work.after,limit:1});
+  let result=await infrastructure.tick({after:work.after,limit:1});
+  // Reaching the end of the list must not consume a whole scheduled minute.
+  // The first pass did no work, so wrapping retains the one-resource limit.
+  if(work.after&&result.processed===0&&result.nextCursor===null)
+    result=await infrastructure.tick({after:'',limit:1});
   await store.transaction(async tx=>{
    const row=await tx.read('controller-cursors',key);if(row?.value.token!==token)return;
    await tx.write('controller-cursors',key,{after:result.nextCursor??'',token:null,leaseUntil:0,observedAt:now()},row.revision);

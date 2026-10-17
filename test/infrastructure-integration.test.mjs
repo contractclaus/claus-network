@@ -37,3 +37,14 @@ test('the controller excludes concurrent observers and resumes its existing curs
  assert.equal((await infrastructureCycle({infrastructure,store})).state,'unavailable');
  assert.deepEqual(seen,['','original-resource']);assert.equal((await store.read('controller-cursors','infrastructure')).value.after,'original-resource');
 });
+
+test('the controller wraps an exhausted cursor in the same pass without exceeding one resource',async t=>{
+ const store=openStore(':memory:');t.after(()=>store.close());
+ await store.transaction(tx=>tx.write('controller-cursors','infrastructure',{after:'last-resource',token:null,leaseUntil:0},0));
+ const seen=[];const infrastructure={discovery:async()=>({reconciliation:true}),tick:async input=>{
+  seen.push(input);return input.after?{processed:0,nextCursor:null}:{processed:1,nextCursor:'first-resource'};
+ }};
+ const result=await infrastructureCycle({infrastructure,store});
+ assert.equal(result.processed,1);assert.deepEqual(seen,[{after:'last-resource',limit:1},{after:'',limit:1}]);
+ assert.equal((await store.read('controller-cursors','infrastructure')).value.after,'first-resource');
+});
