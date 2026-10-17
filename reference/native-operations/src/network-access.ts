@@ -33,7 +33,7 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
   const chunks:Uint8Array[]=[];let size=0;
   try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>3200000){await reader.cancel();throw Error('network_response_too_large');}chunks.push(part.value);}}finally{reader.releaseLock();}
   let result;try{result=JSON.parse(Buffer.concat(chunks).toString());}catch{throw Error('network_response_invalid');}
-  if(!response.ok)throw Object.assign(Error('network_request_failed'),{status:response.status,field:typeof result.field==='string'&&/^[A-Za-z0-9_.]{1,240}$/.test(result.field)?result.field:undefined,code:typeof result.error==='string'?result.error.slice(0,100):'request_failed',retryAfterSeconds:/^[0-9]{1,5}$/.test(response.headers.get('retry-after')??'')?Math.min(3600,Number(response.headers.get('retry-after'))):undefined});
+  if(!response.ok)throw Object.assign(Error('network_request_failed'),{status:response.status,field:typeof result.field==='string'&&/^[A-Za-z0-9_.]{1,240}$/.test(result.field)?result.field:undefined,code:typeof result.error==='string'?result.error.slice(0,100):'request_failed',retryAt:Number.isSafeInteger(result.retryAt)&&result.retryAt>0?result.retryAt:undefined,retryAfterSeconds:/^[0-9]{1,5}$/.test(response.headers.get('retry-after')??'')?Math.min(3600,Number(response.headers.get('retry-after'))):undefined});
   return result;
  }
  async function token(){
