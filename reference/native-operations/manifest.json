@@ -148,6 +148,5 @@
     "tests/network-semantic-search.test.ts": "103f94aaaca98561c7718ee3608c47771967496bbec6d8c4aa83103686003e1d"
   },
   "referenceSubset": true,
-  "baselineDeployment": "dpl_7anrLgYRqXnU5uiaVmtKRQDN8iok",
-  "deploymentState": "Matching client prepared; image remains subject to independent review and genuine approval"
+  "deployed": "dpl_639WE9xUUuS1odQp8Qbd4gWbZAtm"
 }

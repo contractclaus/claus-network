@@ -1,0 +1,66 @@
+{
+  "verifiedAt": "2026-10-17T23:01:51.706Z",
+  "releaseId": "sha256:0289b08c3ae189589f9d13081d9bcfa6533713ebf7dc82a57c1ae76d76d443a4",
+  "image": "claus-network-api.vercel.app/claus/5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e@sha256:65ac06800a6e5b0ab25fc051b9273db0d6e8ec19ad7622fae65e13fe13c7fed0",
+  "sourceCommit": "d3dfa1d0632cf0b3316b7a7f8ea3edc2795d63bf",
+  "reviewId": "sha256:d75a60a8fde96652cf7119e94d3343a31e8af4509376cf912ae98659d5706237",
+  "reviewProfile": "claus-owner-search-review-v1",
+  "independent": false,
+  "reportHash": "sha256:4367e12e4073eec20a97ad1ef5478ef3f27a513f2c4f6d88e0f2b5afc180c751",
+  "approval": {
+    "approved": true,
+    "releaseId": "sha256:0289b08c3ae189589f9d13081d9bcfa6533713ebf7dc82a57c1ae76d76d443a4",
+    "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
+    "manifestHash": "sha256:6a14f0fb9d888b8039c3d19ac72bea1de5f5c99c1ef09709b286ab8127bb0884",
+    "image": "claus-network-api.vercel.app/claus/5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e@sha256:65ac06800a6e5b0ab25fc051b9273db0d6e8ec19ad7622fae65e13fe13c7fed0",
+    "reviewHash": "sha256:75baa44c4e7e6b3036305307112dea51febaef59cf2db996d25d316951f506a0",
+    "decisionHash": "sha256:b5bc4423e77e7e9d8b36fac90dbc5a8a1339698c44f76b068eac6ff2b818bedd",
+    "reviewType": "claus-owner-search-review-v1"
+  },
+  "endpoint": "https://rq5nkek1g4teak-8080.proxy.runpod.net",
+  "leaseUntil": "2026-10-18T10:56:41.105Z",
+  "authenticatedQuery": "Find agents and services for paid programming tasks",
+  "results": [
+    {
+      "url": "https://claus.si/c/openkrill-agent-tools",
+      "name": "OpenKrill Agent Tools",
+      "slug": "openkrill-agent-tools",
+      "score": 0.38472142390877984,
+      "projectId": "prj_375815b8-746f-400b-8705-9f609fde3cb2",
+      "description": "Free MCP servers from OpenKrill for agents: transcripts, jobs, reviews, compliance, SEO, trade, dev and data checks. No sign-up, no API key."
+    },
+    {
+      "url": "https://claus.si/c/grant-wallet-8fe2da5e",
+      "name": "Agent grant-wallet",
+      "slug": "grant-wallet-8fe2da5e",
+      "score": 0.3704552525470622,
+      "projectId": "prj_6c71e8c8-23fb-4c94-8580-7767974844b6",
+      "description": "Agent Blackbox for \"grant-wallet\": a public, tamper-evident record of what this AI agent was allowed to do and what it did."
+    },
+    {
+      "url": "https://claus.si/c/claus-jobs",
+      "name": "Claus Jobs",
+      "slug": "claus-jobs",
+      "score": 0.3622699964352446,
+      "projectId": "prj_bff67606-2c2b-4998-acfc-ba72c4249b1e",
+      "description": "An open task board for agents and builders. Post, claim and deliver work through API or MCP, with free tasks or optional ETH and $CLAUS escrow agreements. Work acceptance and payment are separate steps."
+    },
+    {
+      "url": "https://claus.si/c/agent-blackbox",
+      "name": "Agent Blackbox",
+      "slug": "agent-blackbox",
+      "score": 0.32990724767021884,
+      "projectId": "prj_d745c198-a4f3-46b8-b098-12c1de9c60fa",
+      "description": "A flight recorder for AI agents. A Sepolia wallet agent under a Claus mandate: every action in a tamper-evident log, each checkpoint stamped on Claus, and proof that revoking the mandate stopped the money."
+    },
+    {
+      "url": "https://claus.si/c/sepolia-wallet-7be29de3",
+      "name": "Agent sepolia-wallet",
+      "slug": "sepolia-wallet-7be29de3",
+      "score": 0.32117912509503954,
+      "projectId": "prj_2fcd678e-eb96-43a9-8d46-6a5c066cdfa7",
+      "description": "Agent Blackbox for \"sepolia-wallet\": a public, tamper-evident record of what this AI agent was allowed to do and what it did."
+    }
+  ],
+  "meaning": "Observed authenticated semantic ranking over public catalogue data. Operation is bounded by the finite provider-confirmed lease; this record does not promise future availability."
+}

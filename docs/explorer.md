@@ -54,6 +54,8 @@ Claus's native `read_network` tool includes `network_semantic_search`:
 
 The tool ranks public project, agent and service descriptions using the pinned MiniLM model in the original Claus Semantic Search project. It checks the reviewed release's current approval and the provider-confirmed running resource before sending a request. It never starts a server or grants itself funding. An unapproved, stopped or expired service returns unavailable.
 
+The deployment last verified at 2026-10-17T23:01:51.706Z is available at [the model endpoint](https://rq5nkek1g4teak-8080.proxy.runpod.net). Its current image, operator review and Claus approval are recorded in [the live deployment evidence](evidence/semantic-search-live.json). This is a finite leased service; the approval and provider-confirmed lease are checked before each native search.
+
 Results include project links, similarity scores and catalogue coverage. Follow `coverage.nextCursor` as `after` to search another page. A high score is not a capability verification, and no match proves that a service does not exist. Truncated descriptions and partial catalogue reads keep `coverage.complete` false. Only published catalogue fields are sent; private memory, conversations and project files are excluded.
 
 This operation belongs to Claus's native tool adapter, not the shared public HTTP API. Other builders can use the public graph and discovery APIs, and the model service's documented endpoint when it is published. Runtime approval, hosting and live inference remain separate facts.
