@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "nitro dev",
-    "build": "nitro build",
+    "build": "node scripts/prepare-application.mjs && nitro build",
     "check": "node ../tools/ecosystem/prepare-site-runtime.mjs --check && tsc --noEmit && tsx --no-wasm-code-gc --test --test-concurrency=2 tests/*.test.ts"
   },
   "dependencies": {

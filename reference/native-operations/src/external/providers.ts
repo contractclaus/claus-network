@@ -5,21 +5,22 @@ import {readPublicUrl} from '../research.js';
 import {browserDiagnostics} from './browser-diagnostics.js';
 
 export type ToolRule={toolkit:string;account?:string;effect:'read'|'write';fixed?:Record<string,unknown>};
-export type ExternalPolicy={version:1;composio?:{sessionId:string;userId:string;tools:Record<string,ToolRule>;connectToolkits?:string[]};browser?:{projectId:string;origins:string[];contextId?:string;seconds:number;mode?:'single-request'|'persistent'}};
+export type ExternalPolicy={version:1;composio?:{sessionId:string;userId:string;tools:Record<string,ToolRule>;connectToolkits?:string[];readToolkits?:string[]};browser?:{projectId:string;origins:string[];contextId?:string;seconds:number;mode?:'single-request'|'persistent'}};
 export class ProviderFailure extends Error {constructor(message:string,readonly confirmed:boolean,readonly retryAfter?:string){super(message);}}
 const object=(v:any)=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 export function externalPolicy(env:NodeJS.ProcessEnv=process.env):ExternalPolicy {
  const raw=env.CLAUS_EXTERNAL_TOOL_POLICY;if(!raw)return {version:1};
  const p=JSON.parse(raw);if(p?.version!==1)throw Error('external_policy_invalid');
  if(p.composio&&(!/^trs_[A-Za-z0-9_-]+$/.test(p.composio.sessionId)||typeof p.composio.userId!=='string'||!object(p.composio.tools)))throw Error('external_policy_invalid');
+ if(p.composio&&[p.composio.connectToolkits??[],p.composio.readToolkits??[]].some(v=>!Array.isArray(v)||v.length>32||v.some((x:any)=>typeof x!=='string'||!/^([a-z][a-z0-9_]{0,63})$/.test(x))))throw Error('external_policy_invalid');
  for(const [slug,r]of Object.entries(p.composio?.tools??{}) as [string,ToolRule][]){if(!/^[A-Z][A-Z0-9_]{1,159}$/.test(slug)||slug.startsWith('COMPOSIO_')||!r.toolkit||!['read','write'].includes(r.effect)||r.fixed!==undefined&&!object(r.fixed))throw Error('external_policy_invalid');}
  if(p.browser&&(!p.browser.projectId||(p.browser.mode!==undefined&&!['single-request','persistent'].includes(p.browser.mode))||!Array.isArray(p.browser.origins)||!p.browser.origins.length||p.browser.origins.some((x:any)=>typeof x!=='string'||new URL(x).origin!==x||!x.startsWith('https://'))||!Number.isInteger(p.browser.seconds)||p.browser.seconds<60||p.browser.seconds>600))throw Error('external_policy_invalid');
  return p;
 }
 export const externalStatus=(p=externalPolicy(),env:NodeJS.ProcessEnv=process.env)=>({
- profile:'claus-external-tools/2',adapters:{available:true,immutable:true,permissions:'current-provider-policy',scope:'claus-library-and-own-project'},development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,bazaar:{discovery:true,payments:false},
- composio:{configured:!!env.COMPOSIO_API_KEY&&!!p.composio,tools:Object.keys(p.composio?.tools??{}),missing:env.COMPOSIO_API_KEY&&p.composio?[]:['connected-provider-session']},
- browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',diagnostics:true,missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
+ profile:'claus-external-tools/3',adapters:{available:true,immutable:true,permissions:'current-provider-policy',scope:'claus-library-and-own-project'},development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,paidServices:{configured:!!env.INFERENCE_SECRET,accounting:'existing-operating-budget',services:['exa_search','exa_contents'],maximumMicroUsdc:'20000',replay:false},github:{configured:!!env.PUBLISHER_SECRET,identity:'contractclaus',repositories:['contractclaus/claus-network','contractclaus/claus-network-contracts'],operations:['status','tree','file','pulls','publish','recover']},bazaar:{discovery:true,payments:false},
+ composio:{configured:!!env.COMPOSIO_API_KEY&&!!p.composio,tools:Object.keys(p.composio?.tools??{}),readToolkits:p.composio?.readToolkits??[],connectToolkits:p.composio?.connectToolkits??[],missing:env.COMPOSIO_API_KEY&&p.composio?[]:['connected-provider-session']},
+ browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',diagnostics:true,workflows:true,contextPersistence:true,secretsExposed:false,missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
  secretsExposed:false,instructionAuthority:false
 });
 export function boundedObject(value:any,max=24000):Record<string,any>{if(!object(value)||Buffer.byteLength(JSON.stringify(value))>max)throw new ProviderFailure('external_input_invalid',true);return value;}
@@ -43,7 +44,9 @@ export async function composioRequest(p:ExternalPolicy,operation:string,input:an
  const base=composioOrigin+'/tool_router/session/'+p.composio.sessionId;
  const headers={'x-api-key':env.COMPOSIO_API_KEY,'content-type':'application/json'};
  let path='',method='POST',body:any,readOnly=true;
- if(operation==='search'){if(typeof input.query!=='string'||!input.query.trim()||input.query.length>1000)throw new ProviderFailure('external_query_invalid',true);path='/search';body={queries:[{use_case:input.query}],search_strategy:'tool_search'};}
+ if(operation==='connections'){const params=new URLSearchParams({user_ids:p.composio.userId,limit:'50'});if(input.cursor){if(typeof input.cursor!=='string'||input.cursor.length>2000)throw new ProviderFailure('external_cursor_invalid',true);params.set('cursor',input.cursor);}const result=await providerJson(composioOrigin+'/connected_accounts?'+params,{headers},true,fetcher);return {items:(result.items??[]).map((a:any)=>({id:a.id,toolkit:a.toolkit?.slug??a.toolkit,status:a.status,createdAt:a.created_at,updatedAt:a.updated_at})),nextCursor:result.next_cursor??null,userId:p.composio.userId,meaning:'Connections are separate from granted tool scopes. Non-active accounts need their original owner to reconnect.'};}
+ if(operation==='toolkits'){path='/toolkits';method='GET';}
+ else if(operation==='search'){if(typeof input.query!=='string'||!input.query.trim()||input.query.length>1000)throw new ProviderFailure('external_query_invalid',true);path='/search';body={queries:[{use_case:input.query}],search_strategy:'tool_search'};}
  else if(operation==='describe'){
   if(input.tool){if(!/^[A-Z][A-Z0-9_]{1,159}$/.test(input.tool))throw new ProviderFailure('external_tool_invalid',true);path='/execute';body={tool_slug:'COMPOSIO_GET_TOOL_SCHEMAS',arguments:{tool_slugs:[input.tool]},enable_auto_workbench_offload:false};}
   else{const params=new URLSearchParams({limit:'20'});if(input.cursor){if(typeof input.cursor!=='string'||input.cursor.length>2000)throw new ProviderFailure('external_cursor_invalid',true);params.set('cursor',input.cursor);}path='/tools?'+params;method='GET';}

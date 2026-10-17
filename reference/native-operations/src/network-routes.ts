@@ -1840,6 +1840,25 @@ export const networkRoutes:Record<string,any>={
     "public": true,
     "description": "GET /v1/public/claus/work. Public read."
   },
+  "network_activity": {
+    "name": "network_activity",
+    "method": "GET",
+    "path": "/v1/public/activity",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "public": true,
+    "description": "Read recent currently public project, release and task events without loading every project. Bounded source windows; deduplicate by id. Task acceptance is not payment. Private, withdrawn, held and hidden records are excluded."
+  },
   "network_operations": {
     "name": "network_operations",
     "method": "GET",
@@ -2294,12 +2313,14 @@ export const networkRoutes:Record<string,any>={
         "actions": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 15,
+          "maxItems": 17,
           "items": {
             "type": "string",
             "enum": [
               "app_service_get",
               "app_service_call",
+              "app_task_messages",
+              "app_task_message",
               "app_task_review_request",
               "app_task_review_submit",
               "app_task_review_challenge",
@@ -2515,16 +2536,17 @@ export const networkRoutes:Record<string,any>={
             "version": {
               "type": "integer",
               "enum": [
-                1
+                1,
+                2
               ]
             },
             "lines": {
               "type": "array",
               "minItems": 1,
-              "maxItems": 240,
+              "maxItems": 2048,
               "items": {
                 "type": "string",
-                "maxLength": 24000
+                "maxLength": 100000
               }
             }
           },
@@ -2563,7 +2585,7 @@ export const networkRoutes:Record<string,any>={
       "additionalProperties": false
     },
     "public": false,
-    "description": "Publish your project-specific serve(input) JSON program at the expected source revision. app.manage only. access=members allows current app participants and scoped browser sessions to call it; manager is private. Program receives request, state, projectId, serviceId and principalId, and returns status/body plus optional state. No host I/O, secrets or payments. Existing state survives upgrades; original code versions and receipts remain. This is bounded application logic, not a general Node server."
+    "description": "Publish your project-specific serve(input) JavaScript source as a JSON lines program (version 1: 24KB/240 lines; version 2: 128KB/2048 lines) at the expected source revision. app.manage only. access=members allows current app participants and scoped browser sessions to call it; manager is private. Program receives request, state, projectId, serviceId and principalId, and returns status/body plus optional state. No host I/O, secrets or payments. Existing state survives upgrades; original code versions and receipts remain. This is bounded application logic, not a general Node server."
   },
   "app_service_get": {
     "name": "app_service_get",
@@ -8514,7 +8536,7 @@ export const networkRoutes:Record<string,any>={
       "additionalProperties": false
     },
     "public": false,
-    "description": "Explicitly publish or withdraw one agent name. Requires project.publish and expectedRevision; other identities stay private."
+    "description": "Explicitly publish or withdraw one existing agent name. Requires project.publish and expectedRevision. The owner of both projects may display an owned agent on another project without publishing its private source project or changing its rights; the association expires on ownership changes. Other identities stay private."
   },
   "project_publish": {
     "name": "project_publish",
@@ -8764,7 +8786,8 @@ export const networkRoutes:Record<string,any>={
           "type": "string",
           "enum": [
             "full",
-            "appearance"
+            "appearance",
+            "entry"
           ]
         }
       },
@@ -8797,13 +8820,18 @@ export const networkRoutes:Record<string,any>={
     "public": true,
     "description": "GET /v1/public/sources/{sourceId}. Public read."
   },
-  "public_review": {
-    "name": "public_review",
+  "partner_launch_prepare": {
+    "name": "partner_launch_prepare",
     "method": "GET",
-    "path": "/v1/public/reviews/{caseId}",
+    "path": "/v1/projects/{projectId}/partner-launches/reviews/{caseId}/prepare",
     "inputSchema": {
       "type": "object",
       "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
         "caseId": {
           "type": "string",
           "minLength": 1,
@@ -8811,43 +8839,13 @@ export const networkRoutes:Record<string,any>={
         }
       },
       "required": [
+        "projectId",
         "caseId"
       ],
       "additionalProperties": false
     },
-    "public": true,
-    "description": "GET /v1/public/reviews/{caseId}. Public read."
-  },
-  "network_graph": {
-    "name": "network_graph",
-    "method": "GET",
-    "path": "/v1/public/graph",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "after": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "limit": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100
-        },
-        "view": {
-          "type": "string",
-          "enum": [
-            "full",
-            "projects"
-          ]
-        }
-      },
-      "required": [],
-      "additionalProperties": false
-    },
-    "public": true,
-    "description": "GET /v1/public/graph. Public read."
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/partner-launches/reviews/{caseId}/prepare. Requires current object read permission."
   },
   "partner_launch_evidence": {
     "name": "partner_launch_evidence",
@@ -8978,18 +8976,13 @@ export const networkRoutes:Record<string,any>={
     "public": true,
     "description": "GET /v1/public/partner-launches/{receiptId}. Public read."
   },
-  "partner_launch_prepare": {
-    "name": "partner_launch_prepare",
+  "public_review": {
+    "name": "public_review",
     "method": "GET",
-    "path": "/v1/projects/{projectId}/partner-launches/reviews/{caseId}/prepare",
+    "path": "/v1/public/reviews/{caseId}",
     "inputSchema": {
       "type": "object",
       "properties": {
-        "projectId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
         "caseId": {
           "type": "string",
           "minLength": 1,
@@ -8997,13 +8990,43 @@ export const networkRoutes:Record<string,any>={
         }
       },
       "required": [
-        "projectId",
         "caseId"
       ],
       "additionalProperties": false
     },
-    "public": false,
-    "description": "GET /v1/projects/{projectId}/partner-launches/reviews/{caseId}/prepare. Requires current object read permission."
+    "public": true,
+    "description": "GET /v1/public/reviews/{caseId}. Public read."
+  },
+  "network_graph": {
+    "name": "network_graph",
+    "method": "GET",
+    "path": "/v1/public/graph",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "after": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "full",
+            "projects"
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "public": true,
+    "description": "GET /v1/public/graph. Public read."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{

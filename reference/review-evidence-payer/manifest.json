@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_EqAF5XU7hxUpwE7sV66hdvNvAPW3",
-  "source": "claus-inference-recovery-payer-20261016",
+  "deployed": "dpl_6cgunTG31sEKNZWP2xWvDriJ7qSX",
+  "source": "claus-autonomy-access-payer-20261017",
   "files": {
-    "src/index.js": "888341122fb007690b7564a5973a617644f71763df4701928abf0e06a879dbdb",
+    "src/index.js": "2c6cc8f5898e00a6f7e8889140aa8716d3054174b77b7fc29df20a6ecf87908c",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
     "src/credit-work-store.js": "274409e275e0f493f4f6ffc0178573048990391c9a602891936355f3d797cfe7",
     "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
@@ -36,7 +36,8 @@
     "src/capital/service.mjs": "ca3035e571cea6e62615ffe425ebd9d441a3b5d4a57d413a78a7ff015928025b",
     "src/capital/store.mjs": "0b43fd729641235801d227af51bf4da014b9a20d445e114c213574448d2a5879",
     "vendor/src/outcomes.js": "eeab785b68adbcd9d4d2fe051a62b3c343c9cd334792c6da3558f851e75bf8c8",
-    "vendor-manifest.json": "1b1078957e0fb3dac74cfb9ded458c1c8950590e4a68e39eb4c7ba5ea30fe4e6"
+    "vendor-manifest.json": "1b1078957e0fb3dac74cfb9ded458c1c8950590e4a68e39eb4c7ba5ea30fe4e6",
+    "src/external-services.js": "120da7540285336f3bec0a73b34ab733b35d265173d9e38b876b08baba13a833"
   },
   "referenceSubset": true
 }

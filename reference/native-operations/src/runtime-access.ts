@@ -2,7 +2,7 @@ import type {Configuration} from './config.js';
 import {externalStatus} from './external/providers.js';
 const groups:Record<string,string[]>={
  external:['external_tools'],
- business:['capital_execution','investment_proposal','programmable_api'],
+ business:['capital_execution','investment_proposal','programmable_api','partner_launch'],
  development:['develop_project','stage_development','run_experiment'],
  network:['read_network','build_network','network_work','network_care','run_network_program','resume_network_operation'],
  publishing:['read_network_code','change_network_code','read_operational_code','change_operational_code','rollback_operational_code'],

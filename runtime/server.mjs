@@ -16,7 +16,7 @@ import {createWorkers} from '../src/workers/index.mjs';
 import {createDomains} from '../src/domains/index.mjs';
 import {createDiscovery} from '../src/discovery/index.mjs';
 import {createWorkflows} from '../src/workflows/index.mjs';
-import serviceProgram from '../src/isolated/network.json' with {type:'json'};
+import serviceProgram from '../src/application/source.json' with {type:'json'};
 import {createApps} from '../src/apps/index.mjs';
 import {createDeals} from '../src/deals/index.mjs';
 import {createTaskPayments} from '../src/deals/task-payments.mjs';

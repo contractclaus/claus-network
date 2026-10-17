@@ -1,0 +1,3 @@
+// Editable application logic. This runs only in an isolated JavaScript heap.
+function operate(input) { return { result: { available: false, reason: "application_not_configured" } }; }
+function serve(input) { return { status: 503, body: { error: "application_not_configured" } }; }

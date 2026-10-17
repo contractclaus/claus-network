@@ -1,13 +1,18 @@
+import {connectedReadPolicy} from './connected-read.js';
+import {paidServiceRequest,paidServiceIdentity} from './paid.js';
+import {externalHealth} from './health.js';
+import {browserContext,browserWorkflow,workflowInput} from './browser-workflow.js';
+import {githubRequest} from './github.js';
 import {digest} from '../config.js';
-import {once,sql,ConfirmedFailure} from '../store.js';
+import {once,sql,ConfirmedFailure,settleAction} from '../store.js';
 import {externalPolicy,externalStatus,ProviderFailure,boundedObject,composioRequest,bazaarRequest,browserRequest,publicWeb,selectTool} from './providers.js';
 import {saveAdapter,getAdapter,listAdapters,renderAdapter} from './adapters.js';
 
-export const externalOperations=['status','search','describe','call','connect','read','receipt','adapter_save','adapter_list','adapter_read','adapter_call','browser_open','browser_navigate','browser_read','browser_action','browser_close'] as const;
+export const externalOperations=['status','health','quote','connections','toolkits','search','describe','call','connect','read','receipt','adapter_save','adapter_list','adapter_read','adapter_call','browser_context_create','browser_workflow','browser_open','browser_navigate','browser_read','browser_action','browser_close'] as const;
 type Call={operation:string;provider?:string;input?:string;actionId?:string;offset?:number};
 export function externalInput(raw:any):Call {
  const value=boundedObject(raw,32000);
- if(Object.keys(value).some(k=>!['operation','provider','input','actionId','offset'].includes(k))||!externalOperations.includes(value.operation)||value.provider!==undefined&&!['web','bazaar','composio','browserbase'].includes(value.provider)||value.input!==undefined&&typeof value.input!=='string'||value.actionId!==undefined&&(typeof value.actionId!=='string'||value.actionId.length>300)||value.offset!==undefined&&(!Number.isSafeInteger(value.offset)||value.offset<0))throw new ProviderFailure('external_request_invalid',true);
+ if(Object.keys(value).some(k=>!['operation','provider','input','actionId','offset'].includes(k))||!externalOperations.includes(value.operation)||value.provider!==undefined&&!['web','bazaar','composio','browserbase','github','paid'].includes(value.provider)||value.input!==undefined&&typeof value.input!=='string'||value.actionId!==undefined&&(typeof value.actionId!=='string'||value.actionId.length>300)||value.offset!==undefined&&(!Number.isSafeInteger(value.offset)||value.offset<0))throw new ProviderFailure('external_request_invalid',true);
  return value as Call;
 }
 export function resultPage(actionId:string,value:unknown,offset=0){
@@ -20,8 +25,9 @@ function safeResult(value:any):any {
  return value;
 }
 export async function externalTool(id:string,raw:any,principal='claus',libraryOwner=principal){
- let call=externalInput(raw);const policy=externalPolicy(),db=sql();
+ let call=externalInput(raw);let policy=externalPolicy();const db=sql();
  if(call.operation==='status')return externalStatus(policy);
+ if(call.operation==='health'){if(principal!=='claus')throw new ConfirmedFailure('external_health_owner_scope_required');return externalHealth();}
  if(call.operation==='receipt'){
   if(!call.actionId)throw new ConfirmedFailure('external_action_id_required');
   const row=(await db`SELECT id,status,result,input FROM claus_actions WHERE id=${call.actionId} AND kind IN ('external_tools','external_adapter')`)[0];
@@ -29,6 +35,10 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
   return {status:row.status,...resultPage(row.id,row.result??{status:row.status,retry:false},call.offset)};
  }
  let input:any;try{input=boundedObject(JSON.parse(call.input??'{}'));}catch{throw new ConfirmedFailure('external_input_invalid');}
+ if(call.provider==='paid'&&principal!=='claus')throw new ConfirmedFailure('paid_service_owner_scope_required');
+ if(call.provider==='github'&&principal!=='claus')throw new ConfirmedFailure('github_owner_scope_required');
+ if(call.provider==='composio'&&principal!=='claus'&&['connections','toolkits','connect'].includes(call.operation))throw new ConfirmedFailure('external_account_owner_scope_required');
+ if(call.provider==='browserbase'&&call.operation==='browser_workflow'){workflowInput(policy,input);if(input.contextId){const own=(await db`SELECT id FROM claus_actions WHERE kind='external_tools' AND status='completed' AND input->>'principal'=${principal} AND input->>'operation'='browser_context_create' AND result->>'contextId'=${input.contextId}`)[0];if(!own)throw new ConfirmedFailure('browser_context_not_owned');}}
  if(call.operation==='adapter_save')return resultPage(id,await saveAdapter(id,input,principal,libraryOwner,db),call.offset);
  if(call.operation==='adapter_list')return listAdapters(libraryOwner,call.offset,db);
  let adapterTrace:unknown;
@@ -36,11 +46,13 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
   if(Object.keys(input).some(k=>!['adapterId','parameters'].includes(k)))throw new ConfirmedFailure('adapter_request_invalid');
   const saved=await getAdapter(input.adapterId,libraryOwner,db);
   if(call.operation==='adapter_read')return {...saved,instructionAuthority:false};
+  if(principal==='claus'&&saved.definition.provider==='composio')policy=await connectedReadPolicy(policy,saved.definition.input.tool as string);
   adapterTrace={adapterId:saved.adapterId,parameters:input.parameters??{}};
   call={...renderAdapter(saved.definition,input.parameters??{},policy),offset:call.offset};
   input=JSON.parse(call.input!);
  }
- const readOnly=call.provider==='web'||call.provider==='bazaar'||call.provider==='browserbase'&&call.operation==='browser_read'||call.provider==='composio'&&(['search','describe'].includes(call.operation)||call.operation==='call'&&selectTool(policy,input.tool,input.arguments??{}).rule.effect==='read');
+ if(principal==='claus'&&call.provider==='composio'&&call.operation==='call')policy=await connectedReadPolicy(policy,input.tool);
+ const readOnly=call.provider==='paid'&&['quote','read','describe'].includes(call.operation)||call.provider==='github'&&['status','tree','file','pulls','recover'].includes(input.operation)||call.provider==='web'||call.provider==='bazaar'||call.provider==='browserbase'&&call.operation==='browser_read'||call.provider==='composio'&&(['connections','toolkits','search','describe'].includes(call.operation)||call.operation==='call'&&selectTool(policy,input.tool,input.arguments??{}).rule.effect==='read');
  const original={...call,principal,readOnly,...(adapterTrace?{adapter:adapterTrace}:{})};
  const admit=async()=>{
   const [,rows]=await db.transaction([db`SELECT pg_advisory_xact_lock(746201605)`,db`INSERT INTO claus_actions(id,kind,input_hash,status,input,visibility) SELECT ${id},'external_tools',${digest(original)},'pending',${JSON.stringify(original)}::jsonb,'private_network' WHERE ${readOnly} OR NOT EXISTS(SELECT 1 FROM claus_actions WHERE kind='external_tools' AND status NOT IN ('completed','failed') AND input->>'provider'=${call.provider??''} AND input->>'readOnly'='false') ON CONFLICT DO NOTHING RETURNING id`]);
@@ -49,16 +61,22 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
  const value=await once(id,'external_tools',original,async()=>{
   try{
    let result:any;
-   if(call.provider==='web'&&call.operation==='read')result=await publicWeb(input);
+   if(call.provider==='paid'){
+    if(call.operation==='read'&&input.actionId){const [original]=await db`SELECT id,input,status FROM claus_actions WHERE id=${input.actionId} AND kind='external_tools'`;if(!original||original.input?.provider!=='paid'||original.input?.operation!=='call'||original.input?.principal!==principal)throw new ProviderFailure('paid_service_original_not_owned',true);}
+    result=await paidServiceRequest(call.operation,input,id);
+    if(call.operation==='read'&&input.actionId&&['completed','failed'].includes(result.status)&&result.paymentId===paidServiceIdentity(input.actionId))await settleAction(input.actionId,result,'completed',db);
+   }
+   else if(call.provider==='github')result=await githubRequest({...input,...(input.operation==='publish'?{id}: {})});
+   else if(call.provider==='web'&&call.operation==='read')result=await publicWeb(input);
    else if(call.provider==='bazaar')result=await bazaarRequest(call.operation,input);
    else if(call.provider==='composio')result=await composioRequest(policy,call.operation,input);
    else if(call.provider==='browserbase'){
-    if(call.operation!=='browser_open'){
+    if(!['browser_open','browser_context_create','browser_workflow'].includes(call.operation)){
      // A guessed provider session ID never grants access to another task's browser.
      const owner=(await db`SELECT id FROM claus_actions WHERE kind='external_tools' AND status='completed' AND input->>'principal'=${principal} AND input->>'operation'='browser_open' AND result->>'sessionId'=${input.sessionId??''} LIMIT 1`)[0];
      if(!owner)throw new ProviderFailure('browser_session_not_owned',true);
     }
-    result=await browserRequest(policy,call.operation,input,id);
+    result=call.operation==='browser_context_create'?await browserContext(policy,id):call.operation==='browser_workflow'?await browserWorkflow(policy,input,id):await browserRequest(policy,call.operation,input,id);
    }else throw new ProviderFailure('external_operation_invalid',true);
    const safe=safeResult(result);if(Buffer.byteLength(JSON.stringify(safe))>1000000)throw new ProviderFailure('external_response_too_large',false);
    return safe;
