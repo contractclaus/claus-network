@@ -27,8 +27,8 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
  let login:Promise<string>|null=null;
  let rejectedSession:string|undefined;
  const publicReads=new Map<string,Promise<any>>();
- async function json(path:string,method='GET',body?:any,token?:string,base=origin){
-  const response=await request(base+path,{method,redirect:'error',signal:AbortSignal.timeout(base===origin?30000:15000),headers:{accept:'application/json',...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
+ async function json(path:string,method='GET',body?:any,token?:string,base=origin,timeoutMs=base===origin?30000:15000){
+  const response=await request(base+path,{method,redirect:'error',signal:AbortSignal.timeout(timeoutMs),headers:{accept:'application/json',...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
   const reader=response.body?.getReader();if(!reader)throw Error('network_response_empty');
   const chunks:Uint8Array[]=[];let size=0;
   try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>3200000){await reader.cancel();throw Error('network_response_too_large');}chunks.push(part.value);}}finally{reader.releaseLock();}
@@ -89,7 +89,7 @@ export function createNetworkAccess({request=fetch,key=()=>undefined,now=()=>Dat
   const path=route.path.replace(/\{(\w+)\}/g,(_:string,k:string)=>{const value=input[k];delete input[k];return encodeURIComponent(String(value));});
   const query=route.method==='GET'?new URLSearchParams(Object.entries(input).map(([k,v])=>[k,Array.isArray(v)?JSON.stringify(v):String(v)])).toString():'';
   const bearer=route.public?undefined:await token();
-  try{return await json(path+(query?'?'+query:''),route.method,route.method==='GET'?undefined:input,bearer);}
+  try{return await json(path+(query?'?'+query:''),route.method,route.method==='GET'?undefined:input,bearer,origin,name==='resource_image_publish'?75000:30000);}
   catch(e:any){
    // Invalidate only the session used by this request. A late response must
    // not discard a newer login, and writes are never automatically replayed.
