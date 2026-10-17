@@ -369,6 +369,7 @@ export async function replyDeliveryOverview() {
 export async function wakeDecision(generation:number) {
   const config=await configuration(),current=await state();
   if(current.generation!==generation)return {run:false,nextAt:null};
+  if(!await import('./runtime-host.js').then(m=>m.runtimeHostPulse(generation)))return {run:false,nextAt:null};
   if(!config.settings.enabled){await pauseIdle(generation);return {run:false,nextAt:null};}
   if(current.status==='paused'||current.status==='blocked')return {run:false,nextAt:null};
   if(current.lease_until&&Date.parse(current.lease_until)>Date.now())return {run:false,nextAt:new Date(Date.now()+15000).toISOString()};

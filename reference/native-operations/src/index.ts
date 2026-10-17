@@ -244,12 +244,20 @@ app.get('/api/recover',async c=>{
   if(!process.env.DATABASE_URL)return c.json({status:'waiting_for_database_setup'});
   const config=await store.configuration();
   if(!config.settings.enabled||!modelReady()) return c.json({status:'paused'});
+  const host=await import('./runtime-host.js').then(m=>m.resumePrimaryHost());
+  if(host.status==='resume'){
+   const run=await start(life,[host.generation]);
+   await store.journal('recovery','Resumed the original state after standby execution',{generation:host.generation,runId:run.runId});
+   return c.json({status:'resumed',runId:run.runId});
+  }
+  if(host.status!=='primary')return c.json({status:host.status});
   if(process.env.PUBLISHER_SECRET){
    try{const {operationalHandoff}=await import('./operations/handoff.js');const {OperationsHost}=await import('./operations/host.js');const handoff=await operationalHandoff(productionLabDatabase(),new OperationsHost(),async generation=>(await start(life,[generation])).runId);if(handoff)return c.json({status:'operational_handoff',...handoff});}catch{/* Existing recovery still handles overdue work. */}
   }
   const state=await store.state();
   if(state.status==='paused') return c.json({status:'paused'});
   if(state.status==='blocked') return c.json({status:'requires_reconciliation'});
+  await import('./runtime-host.js').then(m=>m.runtimeHostPulse(state.generation));
   const mentions=config.policy.capabilities.xRead&&config.policy.capabilities.xReply;
   const poll=mentions?(await store.sql()`SELECT next_poll_at,lease_until FROM claus_x_poll WHERE id=1`)[0]??null:null;
   if(!recoveryCandidate({status:state.status,next_at:state.next_at,updated_at:state.updated_at,lease_until:state.lease_until},poll?{next_poll_at:poll.next_poll_at,lease_until:poll.lease_until}:null,mentions))return c.json({status:'healthy_or_waiting'});

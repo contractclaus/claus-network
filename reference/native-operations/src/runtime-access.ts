@@ -15,6 +15,7 @@ export function runtimeAccess(config:Configuration,channel:'public'|'club',expos
  const names=[...new Set(exposed)].sort(),allowed=names.filter(permitted),blocked=names.filter(n=>!allowed.includes(n));
  const services=Object.fromEntries(Object.entries(groups).map(([group,tools])=>[group,{exposed:tools.filter(n=>names.includes(n)),executionGateOpen:tools.filter(n=>allowed.includes(n))}]));
  return {observedAt:new Date().toISOString(),channel,configurationRevision:(config as any).revision??null,
+  executionHost:process.env.CLAUS_RUNTIME_HOST==='standby'?'standby':'primary',
   externalProviders:channel==='club'?null:externalStatus(),exposedTools:names,executionGateOpen:allowed,executionGateClosed:blocked,services,
   operationalScopes:channel==='club'?[]:['web','api','native','repository'].map(scope=>{const c=controls.find(x=>x?.scope===scope);return c&&typeof c.enabled==='boolean'?{scope,observation:'available',enabled:c.enabled,revision:c.revision,deployment:c.deployment}:{scope,observation:'unavailable',enabled:null};}),
   costSources:channel==='club'?[]:[

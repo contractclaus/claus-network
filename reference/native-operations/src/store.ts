@@ -78,10 +78,12 @@ export async function beginGeneration(expected:number) {
   return rows[0]?.generation as number|undefined;
 }
 export async function recoverGeneration(expected:number,mentions=false) {
+ if(!await import('./runtime-host.js').then(m=>m.runtimeHostPermit(expected)))return undefined;
  return recoverOverdueGeneration({query:async<T=any>(statement:string,params?:any[])=>({rows:await sql().query(statement,params) as T[]})},expected,mentions);
 }
 
-export async function acquire(id: string, generation:number,waitingOnly=false) {
+export async function acquire(id: string, generation:number,waitingOnly=false):Promise<any> {
+ if(!await import('./runtime-host.js').then(m=>m.runtimeHostPermit(generation)))return null;
   const rows=await sql()`UPDATE claus_state SET lease_until=now()+interval '15 minutes',lease_owner=${id},status='working',updated_at=now() WHERE id=1 AND generation=${generation} AND status NOT IN ('paused','blocked') AND (lease_until IS NULL OR lease_until<now()) AND (NOT ${waitingOnly} OR status='waiting') RETURNING *`;
   return rows[0] ?? null;
 }
