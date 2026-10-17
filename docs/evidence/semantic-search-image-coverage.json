@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "runtimeRelease": "sha256:cd2ef93906caf6ee064ec9dae7a95a3a1d3cecad4ba40612005c046d903e654b",
+  "apiDeployment": "dpl_3tLDuuuV9QJB6XmZDVY4p5QEHgMC",
+  "issuer": {
+    "path": "src/discovery/admission.mjs",
+    "sha256": "7a4778ff09de04c73cec3de275b6447d60c848921f1e7ad2d8afac1b2ed5f3ac"
+  },
+  "issuerSignatureProof": "semantic-search-admission-key.json",
+  "registryInventory": "semantic-search-image-inventory.json",
+  "verificationScope": "Exact deployed issuer source hash; expired issuer signature matching the image public key; digest-verified static image contents. Independent security assessment remains separate."
+}

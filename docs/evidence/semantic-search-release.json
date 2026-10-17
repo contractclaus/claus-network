@@ -134,10 +134,9 @@
     },
     {
       "providerJobId": "23937976-5f02-4196-916a-92dccd5a4a87",
+      "releaseId": "sha256:d7b3dc015e611fa0acc0ae37ea914af91e73cce2b0a47c27b6736a99cdd51d2a",
       "approval": false,
-      "reportStatus": "final_judge_pending",
-      "specialistsAccepted": true,
-      "releaseId": "sha256:d7b3dc015e611fa0acc0ae37ea914af91e73cce2b0a47c27b6736a99cdd51d2a"
+      "reportHash": "sha256:0b9369422ade038b49e996b372838f55c5ec9ac32be47198c9c1a0e0a056eadb"
     }
   ],
   "changes": [
@@ -153,5 +152,11 @@
     "Exact deployed provider broker source and exact executing private build-runner revision included"
   ],
   "approvalGranted": false,
-  "modelHosted": false
+  "modelHosted": false,
+  "imageCoverage": {
+    "guide": "semantic-search-image-coverage.md",
+    "inventory": "semantic-search-image-inventory.json",
+    "issuer": "semantic-search-image-coverage.json",
+    "reproduce": "node scripts/inspect-semantic-search-image.mjs /tmp/search-image-inventory.json"
+  }
 }
