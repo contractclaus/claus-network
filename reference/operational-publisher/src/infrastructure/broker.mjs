@@ -73,6 +73,15 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
       await record({...observed,deletionRequested:true});
       observed=await driver.stop(c.work,get(),true,c.providerConfig);
     }
+    if(!mustStop&&!releaseRevoked&&observed.stopped&&!observed.terminal&&!c.stopRequested&&work.manifest.mode!=='job'&&driver.resume){
+      const attempts=(c.resumeAttempts??[]).filter(at=>at>now()-3600000);
+      if(attempts.length<3&&(!c.resumeAttemptedAt||c.resumeAttemptedAt<=now()-60000)){
+        // Keep the existing resource ID and original paid lease. Record intent
+        // before the network call; a lost response does not create a replacement.
+        await record({...observed,resumeAttempts:[...attempts,now()],resumeAttemptedAt:now()});
+        observed=await driver.resume(c.work,get(),c.providerConfig);
+      }
+    }
     return result(work,await record({...observed,outcome:observed.outcome??null}));
   }
   async function create(work){
@@ -127,7 +136,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
       }
       if(operation==='stop'||operation==='delete'){
         if(c.terminal)return result(work,c);
-        if(operation==='delete')await record({deletionRequested:true});
+        await record({stopRequested:true,...(operation==='delete'?{deletionRequested:true}:{})});
         return result(work,await record(await driver.stop(c.work,get(),operation==='delete',c.providerConfig)));
       }
       if(operation==='logs')return {content:await driver.logs(c.work,c,c.providerConfig),instructionAuthority:false};

@@ -85,3 +85,21 @@ test('Runpod CPU requests use v2 shape and a public application must pass health
 test('oversized log responses fail closed and do not return partial secret-bearing payloads',async()=>{
  await assert.rejects(providerRequest(async()=>new Response('x'.repeat(17000)),'https://example.com','key',{stream:true}),/too_large/);
 });
+
+test('unexpected service stop resumes the same resource within its original funded lease',async()=>{
+ const f=await fixture();f.work.manifest.mode='http';f.config.releases[0].manifestHash=digest(f.work.manifest);f.work.quote=await f.quote();let starts=0;
+ f.driver.inspect=async()=>({providerResourceId:'pod1',state:'EXITED',stopped:true,terminal:false,ready:false});
+ f.driver.resume=async w=>{assert.equal(w.id,f.work.id);starts++;return {providerResourceId:'pod1',state:'RUNNING',ready:true,terminal:false};};
+ await f.call('create',f.work);const result=await f.call('inspect',f.work);assert.equal(result.ready,true);assert.equal(starts,1);assert.equal(f.creates(),1);
+ await f.call('inspect',f.work);assert.equal(starts,1);
+});
+test('requested stops and one-shot jobs are not automatically restarted',async()=>{
+ for(const mode of ['http','job']){const f=await fixture();f.work.manifest.mode=mode;f.config.releases[0].manifestHash=digest(f.work.manifest);f.work.quote=await f.quote();let starts=0;
+ f.driver.inspect=async()=>({providerResourceId:'pod1',state:'EXITED',stopped:true,terminal:false,ready:false});f.driver.stop=f.driver.inspect;f.driver.resume=async()=>{starts++;return {}};
+ await f.call('create',f.work);if(mode==='http')await f.call('stop',f.work);await f.call('inspect',f.work);assert.equal(starts,0);}
+});
+test('expired leases remove stopped services instead of restarting them',async()=>{
+ const f=await fixture();f.work.manifest.mode='http';f.config.releases[0].manifestHash=digest(f.work.manifest);f.work.quote=await f.quote();let starts=0;
+ f.driver.inspect=async()=>({providerResourceId:'pod1',state:'EXITED',stopped:true,terminal:false,ready:false});f.driver.resume=async()=>{starts++;return {}};
+ await f.call('create',f.work);f.advance(301000);await f.call('inspect',f.work);assert.equal(starts,0);assert.equal(f.deletes(),1);
+});
