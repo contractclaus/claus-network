@@ -9538,7 +9538,7 @@ export const networkRoutes:Record<string,any>={
       "additionalProperties": false
     },
     "public": false,
-    "description": "Read a verified compilation receipt and temporary OCI archive location. This is not an approval or running service. Archive retention is one day."
+    "description": "Read a verified compilation receipt. Retained images use private storage and a 60-second download URL; older temporary artifacts report their actual expiry. This is not an approval or running service."
   },
   "resource_build_source": {
     "name": "resource_build_source",
@@ -9626,6 +9626,43 @@ export const networkRoutes:Record<string,any>={
     },
     "public": false,
     "description": "Reserve a fresh quote for the same running resource and extend its funded lease. Keep the same idempotency key; renewalPending remains true until the provider controller acknowledges it. Requires infrastructure.manage."
+  },
+  "resource_image_publish": {
+    "name": "resource_image_publish",
+    "method": "PUT",
+    "path": "/v1/projects/{projectId}/infrastructure/builds/{buildId}/image",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "publishImage": {
+          "type": "boolean"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "buildId",
+        "publishImage",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Publish or withdraw the exact compiled OCI image for an already-public source build. Requires build.compile, publishImage true or false and the current build revision. Publishing makes image layers public. Returns an immutable pull address; it does not approve deployment, allocate a machine or spend provider credit. Existing downloaded copies cannot be recalled."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{
