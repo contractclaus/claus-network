@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_AcdWkuVQ84TTCXikV8zJWTkkCWE7",
-  "source": "2026-10-17-provider-rejection-diagnostics",
+  "deployed": "dpl_9weyb2KcELCEhe6Q2mkfSEo2amPd",
+  "source": "2026-10-17-cpu-create-fields",
   "files": {
     "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
     "package.json": "b43eac6342727358a28af7d38a781577e63397bd39c3d263182e42b86c86e9f7",
@@ -16,7 +16,7 @@
     "src/index.js": "4bdfce1d5928f3f5cf75f501687e94f8aa5f92e785b58cb246b09192bdc16d05",
     "src/infrastructure/broker.mjs": "0b5e1e22c638ec0821a2c61c110f546731c57851c73d70a16e4406818487ba06",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
-    "src/infrastructure/providers.mjs": "45e5e4b7b6e1d16bbaf6331d386055d37d62655deb038f4f29d1e8a90cdc0dbb",
+    "src/infrastructure/providers.mjs": "76bdfa98f9c950b1e76ac93ea28f9354bb199cb5703a7c8c5bbac1ddca5ca31b",
     "src/infrastructure/release.mjs": "59cde463509df28234cc4f121d8f7ac639415a58ea6336f0e3a991e5afafde5e",
     "src/infrastructure/routes.mjs": "9be80153654305b23fd064db79dc754374edf1c31dc4c24f993f146c11c81b1a",
     "src/jobs-wallet/network.js": "3f2f96d7e37226694942a80a2f1918ae7690582fab8195b9b11ac7c3223671e3",
@@ -50,7 +50,7 @@
     "src/surface-publisher/service.js": "362de09ecda7d6861b1813f32db9e7b7870fab4d070cb36ebbf139ddb685dcb8",
     "src/surface-publisher/source.js": "5870c1dc4f8dfe4f49c42532e1a5046a607aed88a4bf2a0dd7eee31cc9c2357d",
     "tests/fly-target.test.mjs": "15eeab695cfe1e3d469d3275e7ce37c5fd0ab049837156330b2535aa0666bdec",
-    "tests/infrastructure.test.mjs": "30d980c90cbaef83de8ce0b86319540ab438b931a0b9931f1ad14edb0bc0c9dd",
+    "tests/infrastructure.test.mjs": "7c097de1b5963fb43be030066e8b3e37fe264cec871c9f9aaae95893477271b6",
     "tests/oci-route.test.js": "b9f5ff825c5266106dfc2e3de185c7279970c708d0de5727340fe9697d04183e",
     "tests/oci.test.js": "4badcf959c6333ee1d76688a0a06c586d697e0d0b34230c96c0aee2c948a8f73",
     "tests/runtime-release.test.mjs": "30818da643b26e5b653741d2c03cd54ff6887f72a9c2798b541d46b40f8f7bd4",

@@ -90,7 +90,7 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
     },
     async create(work,quote){
       const m=work.manifest;
-      const pod=await api('/pods',{method:'POST',body:{name:'claus-'+work.id.slice(-40),image:m.image,cloud:'SECURE',dataCenterIds:[m.region],disk:quote.bootDiskGiB,ports:m.port?[m.port+'/http']:[],entrypoint:m.command.length?m.command:undefined,startSsh:false,startJupyter:false,globalNetworking:false,...(m.gpu?{gpu:{id:m.gpu,count:1,minVcpuCountPerGpu:m.cpu,minRamPerGpu:Math.ceil(m.memoryMiB/1024)}}:{cpu:{id:quote.cpuType,vcpuCount:m.cpu}})}});
+      const pod=await api('/pods',{method:'POST',body:{name:'claus-'+work.id.slice(-40),image:m.image,cloud:'SECURE',dataCenterIds:[m.region],disk:quote.bootDiskGiB,ports:m.port?[m.port+'/http']:[],entrypoint:m.command.length?m.command:undefined,startSsh:false,startJupyter:false,...(m.gpu?{globalNetworking:false}:{}),...(m.gpu?{gpu:{id:m.gpu,count:1,minVcpuCountPerGpu:m.cpu,minRamPerGpu:Math.ceil(m.memoryMiB/1024)}}:{cpu:{id:quote.cpuType,vcpuCount:m.cpu}})}});
       return observe(pod,work);
     },
     async inspect(work,checkpoint){
