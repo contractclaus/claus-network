@@ -6,7 +6,7 @@ const code=(name,details)=>Object.assign(Error(name),{code:name,...details});
 
 // The controller owns this adapter and authorizes the project before calling it.
 // It exposes no bucket listing, delete, copy, public ACL or arbitrary object key.
-export async function createR2Objects({accountId,bucket,accessKeyId,secretAccessKey,maxBytes=67108864,timeoutMs=30000,sdk,transport}){
+export async function createR2Objects({accountId,bucket,accessKeyId,secretAccessKey,maxBytes=67108864,timeoutMs=30000,sdk,transport,uploads=false}){
  requireThat(/^[a-f0-9]{32}$/.test(accountId)&&/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket),'r2_target_invalid');
  requireThat(Number.isSafeInteger(maxBytes)&&maxBytes>0&&maxBytes<=268435456,'r2_size_limit_invalid');
  requireThat(Number.isSafeInteger(timeoutMs)&&timeoutMs>=1000&&timeoutMs<=30000,'r2_timeout_invalid');
@@ -36,11 +36,28 @@ export async function createR2Objects({accountId,bucket,accessKeyId,secretAccess
  }
  return {
   read,
+  async upload(projectId,sha256,{bytes,expiresIn=60}={}){
+   requireThat(uploads&&Number.isSafeInteger(bytes)&&bytes>0&&bytes<=maxBytes&&Number.isSafeInteger(expiresIn)&&expiresIn>=1&&expiresIn<=60,'r2_upload_invalid');
+   const Key=key(projectId,sha256),{getSignedUrl}=await import('@aws-sdk/s3-request-presigner');
+   const command=new S.PutObjectCommand({Bucket:bucket,Key,ContentLength:bytes,ContentType:'application/octet-stream',IfNoneMatch:'*',Metadata:{sha256},CacheControl:'private, no-store'});
+   const url=await getSignedUrl(client,command,{expiresIn,signableHeaders:new Set(['content-length','content-type','if-none-match'])});
+   const signed=new URL(url).searchParams.get('X-Amz-SignedHeaders')?.split(';')??[];
+   requireThat(['content-length','content-type','if-none-match'].every(h=>signed.includes(h)),'r2_upload_headers_not_signed');
+   return {url,expiresAt:Date.now()+expiresIn*1000,method:'PUT',headers:{'content-length':String(bytes),'content-type':'application/octet-stream','if-none-match':'*','cache-control':'private, no-store'}};
+  },
+  async remove(projectId,sha256){
+   requireThat(uploads,'r2_delete_unavailable');const Key=key(projectId,sha256);
+   try{await send(new S.DeleteObjectCommand({Bucket:bucket,Key}));}
+   catch{throw code('r2_delete_outcome_unknown',{projectId,key:Key});}
+   try{await send(new S.HeadObjectCommand({Bucket:bucket,Key}));}
+   catch(e){if(e?.$metadata?.httpStatusCode===404||e?.name==='NotFound'||e?.name==='NoSuchKey')return {removed:true};throw code('r2_delete_outcome_unknown',{projectId,key:Key});}
+   throw code('r2_delete_not_confirmed',{projectId,key:Key});
+  },
   async download(projectId,sha256,{filename,contentType,expiresIn=60}={}){
    requireThat(expiresIn===60&&(filename==='image.tar'&&contentType==='application/x-tar'||filename===sha256&&contentType==='application/octet-stream'),'r2_download_invalid');
    const Key=key(projectId,sha256);
    const {getSignedUrl}=await import('@aws-sdk/s3-request-presigner');
-   const url=await getSignedUrl(client,new S.GetObjectCommand({Bucket:bucket,Key,ResponseContentType:contentType,ResponseContentDisposition:`attachment; filename="${filename}"`}),{expiresIn});
+   const url=await getSignedUrl(client,new S.GetObjectCommand({Bucket:bucket,Key,ResponseContentType:contentType,ResponseContentDisposition:`attachment; filename="${filename}"`,...(uploads?{ResponseCacheControl:'private, no-store'}:{})}),{expiresIn});
    return {url,expiresAt:Date.now()+expiresIn*1000,method:'GET'};
   },
   async put(projectId,bytes){

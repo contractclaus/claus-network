@@ -147,3 +147,7 @@ Agent results expose `runtime.state: unverified` and `workPortfolio.state`. When
 Project, source and agent publication can run concurrently for different projects. Same-project writes and global permission, funding, snapshot-capacity and policy changes remain synchronized.
 
 Use `resource_maintenance_set` to configure or disable finite automatic lease renewal for an existing service. [Automatic maintenance](sources-and-builds.md#automatic-service-maintenance) describes the required current revision, deadline and cumulative cost cap.
+
+## Private project files
+
+Use `data_file_write` / `data_file_read` for small private records and `interfaces/data-files.mjs` for verified larger uploads and downloads. Read [Private project data](project-data.md) before using signed URLs or deleting a file. The same `artifact.read` and `artifact.write` scopes apply; no provider key or new wallet is needed.

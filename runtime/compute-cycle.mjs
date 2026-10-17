@@ -11,18 +11,20 @@ export async function computeCycle({app,store,now=()=>Date.now(),release=null}) 
    return {enabled:true,completedWorkers:workers.filter(r=>r.status==='fulfilled').length,failedWorkers:workers.filter(r=>r.status==='rejected').length};
   })(),
   app.infrastructure?infrastructureCycle({infrastructure:app.infrastructure,store,now}):Promise.resolve({state:'not_configured',processed:0}),
-  app.ociBuilds?app.ociBuilds.runOne():Promise.resolve({idle:true})
+  app.ociBuilds?app.ociBuilds.runOne():Promise.resolve({idle:true}),
+  app.dataFiles?app.dataFiles.clean():Promise.resolve({enabled:false,removed:0})
  ]);
  const runtime=outcomes[0].status==='fulfilled'?{state:'observed',processed:outcomes[0].value.processed}:{state:'unavailable'};
  const inference=outcomes[1].status==='fulfilled'?{state:'observed',...outcomes[1].value}:{state:'unavailable'};
  const infrastructure=outcomes[2].status==='fulfilled'?outcomes[2].value:{state:'unavailable'};
  const oci=outcomes[3].status==='fulfilled'?{state:'observed',...outcomes[3].value}:{state:'unavailable'};
+ const dataFiles=outcomes[4].status==='fulfilled'?{state:'observed',...outcomes[4].value}:{state:'unavailable'};
  const observedAt=now();
  await store.transaction(async tx=>{
-  for(const [role,state]of [['runtimes',runtime],['inference',inference],['infrastructure',infrastructure],['oci-builds',oci]]){
+  for(const [role,state]of [['runtimes',runtime],['inference',inference],['infrastructure',infrastructure],['oci-builds',oci],['data-files',dataFiles]]){
    const old=await tx.read('worker-health',role);
    await tx.write('worker-health',role,{...state,observedAt,durationMs:Math.max(0,observedAt-started),release},old?.revision??0);
   }
  });
- return {ok:runtime.state==='observed'&&inference.state==='observed'&&inference.failedWorkers===0&&infrastructure.state!=='unavailable'&&oci.state!=='unavailable',runtime,inference,infrastructure,oci};
+ return {ok:runtime.state==='observed'&&inference.state==='observed'&&inference.failedWorkers===0&&infrastructure.state!=='unavailable'&&oci.state!=='unavailable'&&dataFiles.state!=='unavailable',runtime,inference,infrastructure,oci,dataFiles};
 }

@@ -46,6 +46,11 @@ export function openStore(path) {
       return new Map(ids.map(id => [id,read(collection,id)]).filter(([,row]) => row));
     }),
     list: (...args) => enqueue(() => list(...args)),
+    pendingDataFiles: ({at,limit=4}) => enqueue(() => {
+      integer(at);integer(limit,1,10);
+      return db.prepare("SELECT id,revision,body FROM documents WHERE collection='data-files' AND ((json_extract(body,'$.state')='uploading' AND json_extract(body,'$.uploadDeadline')<=?) OR json_extract(body,'$.state')='deleting') AND COALESCE(json_extract(body,'$.nextCleanupAt'),0)<=? ORDER BY id LIMIT ?")
+        .all(at,at,limit).map(r=>({id:r.id,revision:r.revision,value:JSON.parse(r.body)}));
+    }),
     pendingInfrastructure: ({after='',limit=20}={}) => enqueue(() => {
       requireThat(typeof after==='string','invalid_cursor');integer(limit,1,100);
       return db.prepare("SELECT id,revision,body FROM documents WHERE collection='infrastructure-resources' AND id>? AND json_extract(body,'$.billing')='reserved' ORDER BY id LIMIT ?")

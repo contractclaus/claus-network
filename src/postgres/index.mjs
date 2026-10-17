@@ -42,6 +42,11 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
         const { rows } = await client.query(`SELECT sequence,body FROM ${eventTable} WHERE sequence>$1 ORDER BY sequence LIMIT $2`, [after, limit]);
         return rows.map(row => ({ sequence: integer(Number(row.sequence), 1), ...row.body }));
       },
+      async pendingDataFiles({at,limit=4}) {
+        assertActive();integer(at);integer(limit,1,10);
+        const {rows}=await client.query(`SELECT id,revision,body FROM ${documents} WHERE collection='data-files' AND ((body->>'state'='uploading' AND (body->>'uploadDeadline')::bigint<=$1) OR body->>'state'='deleting') AND COALESCE((body->>'nextCleanupAt')::bigint,0)<=$1 ORDER BY id LIMIT $2`,[at,limit]);
+        return rows.map(r=>({id:r.id,revision:integer(Number(r.revision),1),value:r.body}));
+      },
       async pendingInfrastructure({after='',limit=20}={}) {
         assertActive();requireThat(typeof after==='string','invalid_cursor');integer(limit,1,100);
         const {rows}=await client.query(`SELECT id,revision,body FROM ${documents} WHERE collection='infrastructure-resources' AND id>$1 AND body->>'billing'='reserved' ORDER BY id LIMIT $2`,[after,limit]);
