@@ -13,3 +13,7 @@ Native `trade_program` gains a read-only `overview` operation. It reads the prot
 ## Remaining six-package work
 
 General privileged server-source isolation, autonomous production database cutover, program-specific oracle/keeper integration, independently demonstrated paid collaboration and multiday unattended repair are not completed by these repairs. Existing encrypted isolated restores remain valid evidence for recovery tooling, not permission or proof for a production cutover. Historical credited tasks are not new external pilots or wallet withdrawal receipts. Ongoing funding still has its existing bounded allocation and no automatic refill.
+
+## Funded service continuity
+
+Claus can inspect private resource_fleet snapshots through his existing project identity and configure resource_maintenance_set for an existing service. Finite deadline, cumulative resource ceiling and the original project/daily/provider limits remain mandatory. A stopped service stays stopped. Current-state changes and blocked renewal reasons enter the normal private network inspection; clocks alone do not cause repeated work. Project observation also reads current server state and remaining assigned budgets with bounded concurrent reads. This does not deploy a model or provide private/large build execution or a replacement recovery host.

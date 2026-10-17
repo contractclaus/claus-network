@@ -5,6 +5,7 @@ export function infrastructureRoutes(route,string,integer,boolean,object){
   const runtimeManifest=object(runtimeProperties),release={...project,releaseId:string(71)};
   const profile=object({id:string(),enabled:boolean,provider:{type:'string',enum:['fly','runpod']},accountId:string(),asset:string(),fundingAccount:string(),permissionHash:string(71),maxLeaseSeconds:{type:'integer',minimum:60,maximum:86400},maxPerLease:string(18),maxActive:{type:'integer',minimum:1,maximum:100},imagePrefixes:{type:'array',minItems:1,maxItems:100,items:string(200)},regions:{type:'array',minItems:1,maxItems:100,items:string(200)},maxCpu:{type:'integer',minimum:1,maximum:64},maxMemoryMiB:{type:'integer',minimum:256,maximum:524288},maxStorageGiB:{type:'integer',minimum:0,maximum:2000},gpuTypes:{type:'array',maxItems:100,items:string(200)}});
   return [
+    route('resource_fleet','GET','/v1/infrastructure',{after:string(),limit:{type:'integer',minimum:1,maximum:10}},[]),
     route('resource_control_set','PUT','/v1/admin/infrastructure/controls',{profile,operators:{type:'array',items:string(),minItems:1,maxItems:16},enabled:boolean,expiresAt:{type:['integer','null']},totalLimit:string(78),perProjectLimit:string(78),dailyLimit:string(78),expectedRevision:integer}),
     route('resource_control','GET','/v1/infrastructure/controls/{profileId}',{profileId:string()}),
     route('resource_grants','GET','/v1/infrastructure/controls/{profileId}/grants',{profileId:string(),after:string(),limit:{type:'integer',minimum:1,maximum:100}},['profileId']),
@@ -23,6 +24,7 @@ export function infrastructureRoutes(route,string,integer,boolean,object){
     route('resource_build_plan','POST','/v1/projects/{projectId}/infrastructure/build-plan',{...project,snapshotId:string(71),dockerfile:string(200)},['projectId','snapshotId']),
     route('resource_readiness','GET','/v1/projects/{projectId}/infrastructure/readiness',project),
     route('resource_renew','POST','/v1/projects/{projectId}/infrastructure/instances/{resourceId}/renew',{...id,expectedRevision:integer,quoteId:string(71),idempotencyKey:string(128)}),
+    route('resource_maintenance_set','PUT','/v1/projects/{projectId}/infrastructure/instances/{resourceId}/maintenance',{...id,expectedRevision:integer,policy:{type:['object','null'],properties:{until:integer,leaseSeconds:{type:'integer',minimum:60,maximum:86400},renewBeforeSeconds:{type:'integer',minimum:60,maximum:1800},maxTotalCost:string(78)},required:['until','leaseSeconds','renewBeforeSeconds','maxTotalCost'],additionalProperties:false}}),
     route('resource_profiles','GET','/v1/projects/{projectId}/infrastructure/profiles',project),
     route('resource_instances','GET','/v1/projects/{projectId}/infrastructure',{...project,after:string(),limit:{type:'integer',minimum:1,maximum:100}},['projectId']),
     route('resource_quote','POST','/v1/projects/{projectId}/infrastructure/quotes',{...project,profileId:string(),manifest,leaseSeconds:{type:'integer',minimum:60,maximum:86400},idempotencyKey:string(128)}),

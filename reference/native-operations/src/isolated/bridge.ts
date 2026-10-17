@@ -5,7 +5,7 @@ import {workPlannerHealth} from './work.js';
 const readState=(read:any)=>read?.available===true?'available':read?.available===false?'unavailable':'unknown';
 // Pass availability only, never private projects, runtime inputs, jobs, keys or balances.
 export function analyzeProducts(snapshot:any){
- const subjects=Array.isArray(snapshot.items)?snapshot.items.map((item:any)=>({id:item.project.id,reads:Object.fromEntries(['metrics','publicView','runtimes','inference'].map(key=>[key,readState(item[key])]))})):[];
+ const subjects=Array.isArray(snapshot.items)?snapshot.items.map((item:any)=>({id:item.project.id,reads:Object.fromEntries(['metrics','publicView','runtimes','inference','resources','resourceProfiles'].map(key=>[key,readState(item[key])]))})):[];
  return analyzeProjection(program,{kind:'projects',observedAt:Date.now(),subjects});
 }
 export async function isolatedHealth(){

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.33.0"
+    "version": "0.34.0"
   },
   "servers": [
     {
@@ -10,6 +10,62 @@
     }
   ],
   "paths": {
+    "/v1/infrastructure": {
+      "get": {
+        "operationId": "resource_fleet",
+        "description": "Read infrastructure across up to ten accessible projects with infrastructure.read. Private resource IDs, state, lease deadlines, maintenance status and existing cost reservations only. Follow nextProjectCursor; resourceCursors identify per-project continuation through resource_instances. Unavailable and denied projects are explicit. Does not contact providers, create work or grant new permissions.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
     "/v1/admin/infrastructure/controls": {
       "put": {
         "operationId": "resource_control_set",
@@ -1458,6 +1514,119 @@
                   "expectedRevision",
                   "quoteId",
                   "idempotencyKey"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/infrastructure/instances/{resourceId}/maintenance": {
+      "put": {
+        "operationId": "resource_maintenance_set",
+        "description": "Enable finite automatic lease renewal for this existing service, or disable it with policy=null. Requires infrastructure.manage. The deadline may not exceed the project allowance; maxTotalCost includes all original and outstanding reservations. The controller uses fresh quotes and existing daily, project and funding limits. It never replaces a resource, revives an explicitly stopped service or extends an expired lease. Inspect maintenance.last and providerLeaseUntil; configuration is not a completed renewal.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 71
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "policy": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "until": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "leaseSeconds": {
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 86400
+                      },
+                      "renewBeforeSeconds": {
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 1800
+                      },
+                      "maxTotalCost": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 78
+                      }
+                    },
+                    "required": [
+                      "until",
+                      "leaseSeconds",
+                      "renewBeforeSeconds",
+                      "maxTotalCost"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "expectedRevision",
+                  "policy"
                 ],
                 "additionalProperties": false
               }

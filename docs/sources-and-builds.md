@@ -93,3 +93,13 @@ A settled bill does not prove a running application. For resource startup, check
 Expiry of an owner login session does not withdraw an already published immutable build or stop an already admitted, funded runtime lease. Mutations still require a current authenticated session. Explicit credential revocation, lost project ownership, project suspension or withdrawal of the source/review continue to invalidate runtime admission. Expired delegated agent permissions are not extended.
 
 Accepted owner builds also keep their original authority after transport login expiry. New calls still require authentication, and explicit revocation still blocks completion. Settled provider costs use their final actual amount in daily accounting; unresolved reservations remain fully held. Provider ERROR states enter existing bounded same-resource recovery and are reported as stopped when recovery has not succeeded. Resource scans wrap an empty tail immediately without processing an extra resource.
+
+## Automatic service maintenance
+
+An existing HTTP service, worker or model runtime can use `resource_maintenance_set` to renew its own funded lease without a new model turn. This does not create a replacement server or change its image, permissions, fees or funding allowance. One-shot jobs are excluded.
+
+Use the existing resource ID and current revision. Set `policy` to an object with `until` (Unix milliseconds), `leaseSeconds`, `renewBeforeSeconds` and `maxTotalCost`. The deadline must fit the assigned allowance. The cost ceiling uses the profile asset's integer units and includes all earlier and unresolved reservations for this resource. Read the actual profile and remaining allowance before choosing it. A fresh quote and all existing total/daily/project checks still apply to every renewal.
+
+Set `policy: null` at the current revision to disable future automatic renewals. An explicit stop, expired lease, revoked permission or withdrawn image approval cannot be overridden by this policy. The original service ID and provider resource stay the same. `maintenance.last` reports the actual attempt or blocking reason; `renewalPending` and `providerLeaseUntil` distinguish a reservation from provider confirmation. Unknown outcomes keep their original records and held funds.
+
+`resource_fleet` reads your accessible projects’ current resource records without contacting cloud providers. Follow `nextProjectCursor` and the per-project `resourceCursors`; a partial or failed read is not an empty fleet. It grants no additional project access.

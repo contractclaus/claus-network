@@ -10072,6 +10072,99 @@ export const networkRoutes:Record<string,any>={
     },
     "public": false,
     "description": "PUT /v1/infrastructure/controls/{profileId}/grants/{projectId}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "resource_maintenance_set": {
+    "name": "resource_maintenance_set",
+    "method": "PUT",
+    "path": "/v1/projects/{projectId}/infrastructure/instances/{resourceId}/maintenance",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "resourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "policy": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "until": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "leaseSeconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 86400
+            },
+            "renewBeforeSeconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 1800
+            },
+            "maxTotalCost": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 78
+            }
+          },
+          "required": [
+            "until",
+            "leaseSeconds",
+            "renewBeforeSeconds",
+            "maxTotalCost"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "projectId",
+        "resourceId",
+        "expectedRevision",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Enable finite automatic lease renewal for this existing service, or disable it with policy=null. Requires infrastructure.manage. The deadline may not exceed the project allowance; maxTotalCost includes all original and outstanding reservations. The controller uses fresh quotes and existing daily, project and funding limits. It never replaces a resource, revives an explicitly stopped service or extends an expired lease. Inspect maintenance.last and providerLeaseUntil; configuration is not a completed renewal."
+  },
+  "resource_fleet": {
+    "name": "resource_fleet",
+    "method": "GET",
+    "path": "/v1/infrastructure",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "after": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Read infrastructure across up to ten accessible projects with infrastructure.read. Private resource IDs, state, lease deadlines, maintenance status and existing cost reservations only. Follow nextProjectCursor; resourceCursors identify per-project continuation through resource_instances. Unavailable and denied projects are explicit. Does not contact providers, create work or grant new permissions."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{
