@@ -4,6 +4,7 @@ import ws from 'ws';
 import { openPostgresStore } from '../src/postgres/index.mjs';
 import { createApplication } from '../runtime/server.mjs';
 import { compileSnapshot } from '../adapters/compiler.mjs';
+import { sourceObjects } from '../runtime/source-objects.mjs';
 
 neonConfig.webSocketConstructor = ws;
 let loaded;
@@ -19,7 +20,8 @@ export default async function handler(req, res) {
     loaded ??= (async () => {
       const store = await openPostgresStore({ pool: new Pool({ connectionString: process.env.CLAUS_NETWORK_DATABASE_URL,
         max: 2, connectionTimeoutMillis: 8000 }) });
-      const app = createApplication({ store, origin: process.env.CLAUS_NETWORK_ORIGIN, rateSalt: process.env.CLAUS_NETWORK_RATE_SALT });
+      const app = createApplication({ sourceObjects: await sourceObjects(), store,
+        origin: process.env.CLAUS_NETWORK_ORIGIN, rateSalt: process.env.CLAUS_NETWORK_RATE_SALT });
       return { store, app };
     })().catch(error => { loaded = null; throw error; });
     const { store, app } = await loaded;
