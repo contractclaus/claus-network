@@ -79,3 +79,12 @@ test('review host resolves public R2 snapshots without storage credentials',asyn
  await assert.rejects(loadReviewSource('other',snapshotId,{request:async()=>Response.json({projectId,snapshotId,files})}),e=>e.code==='source_mismatch');
  await assert.rejects(loadReviewSource(projectId,snapshotId,{request:async()=>new Response('',{status:404})}),e=>e.code==='source_unavailable');
 });
+
+
+test('inspection supplies exact finding hashes without weakening the approval decision',async t=>{
+ const f=await fixture(t),report=structuredClone(f.report);report.submissions.submissions[0].findings=[{severity:'low',title:'Optional cleanup'}];
+ const hash=await f.store.transaction(tx=>f.artifacts.put(tx,f.projectId,report));await f.update('review-cases',f.caseId,{artifactHash:hash});
+ const inspected=await f.service.inspect('claus',f.projectId,f.release.id,f.caseId);assert.deepEqual(inspected.findingHashes,inspected.findings.map(digest));
+ await assert.rejects(f.service.approve('claus',f.projectId,f.release.id,f.decision),/decision_invalid/);
+ const approved=await f.service.approve('claus',f.projectId,f.release.id,{...f.decision,acknowledgedFindings:inspected.findingHashes});assert.equal(approved.approved,true);
+});
