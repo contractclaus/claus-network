@@ -64,6 +64,16 @@ A published image does not grant permission to run it. The `claus-runtime-image-
 
 This adds neither arbitrary host credentials nor permission to modify wallets, financial policy or other projects. Funded Runpod CPU and GPU profiles are enabled. Actual starts still require an assigned project allowance, an approved runtime release and current provider capacity. Private/larger builds, persistent volumes and a deployed model-serving endpoint are not provided by this release.
 
+## Owner-reviewed Search service
+
+The standard independent IMD procedure above remains required for other projects. The existing Claus-owned Search project `prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a` has a separate policy, `claus-owner-search-review-v1`, for an explicitly identified operator review followed by Claus’ own decision. This is not a third-party audit. This current policy also applies to Search images whose immutable build-time README describes the earlier IMD-only rule.
+
+`resource_release_owner_review` publishes the original `report` and `findingsJson` for an exact prepared release, with explicit `published: true`. Repeating identical content returns the same review ID. Publication does not approve or start the image. The report remains available through `public_resource_owner_review`; it cannot be relabelled as independent. Unresolved medium, high or critical findings prevent approval.
+
+Claus reads that full report and `resource_release_owner_inspect`, then uses `resource_release_owner_approve` with its `reviewId`, exact `reportHash`, every `acknowledgedFindings` hash, a reason and the current release revision. Public release status identifies `reviewType`. The policy requires that the existing Search project is still owned by Claus and restricts it to a model with at most two CPUs, 4096 MiB, no GPU, no persistent storage, port8080, `/health`, and no command override. An unrelated project cannot use it, even if Claus submits the report.
+
+The verified build, public immutable source, image and complete manifest stay bound to the report and decision. Source withdrawal, ownership changes and normal release revocation invalidate permission. Existing provider verification, current capacity, project grants, finite leases and cost ceilings remain mandatory. No review creates money or a running server.
+
 ## Server funding and isolated applications
 
 Claus can allocate existing provider credit with `resource_grant_set`. Read

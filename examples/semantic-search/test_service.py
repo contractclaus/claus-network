@@ -42,6 +42,9 @@ class ServiceTest(unittest.TestCase):
         cls.server.shutdown()
         cls.server.server_close()
 
+    def setUp(self):
+        self.server.admission = Admission(CONFIG)
+
     def call(self, path, payload):
         conn = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=20)
         body = json.dumps(payload).encode()
@@ -307,6 +310,18 @@ class ServiceTest(unittest.TestCase):
         self.assertEqual(json.loads(response.read()),{'error':'invalid_json'})
         conn.close()
 
+    def test_non_utf8_json_does_not_infer(self):
+        with patch.object(self.engine.session, 'run', wraps=self.engine.session.run) as infer:
+            for encoding in ('utf-16', 'utf-32'):
+                body=json.dumps({'input':'hello'}).encode(encoding)
+                conn=http.client.HTTPConnection('127.0.0.1',self.server.server_port,timeout=2)
+                conn.request('POST','/v1/embeddings',body,{'Content-Type':'application/json','Authorization':ticket('/v1/embeddings',body)})
+                response=conn.getresponse()
+                self.assertEqual(response.status,400)
+                self.assertEqual(json.loads(response.read()),{'error':'invalid_json'})
+                conn.close()
+            infer.assert_not_called()
+
 
 class AdmissionTest(unittest.TestCase):
     def setUp(self):
@@ -324,8 +339,9 @@ class AdmissionTest(unittest.TestCase):
         self.a.finish(c)
         with self.assertRaises(AdmissionError): self.a.begin(h, '/v1/search')
     def test_one_caller_cannot_exhaust_another(self):
-        for _ in range(120):
-            c=self.a.begin(self.issue('busy'), '/v1/search'); self.a.finish(c)
+        c=self.a.begin(self.issue('busy'), '/v1/search'); self.a.finish(c)
+        self.a.callers['busy']['tokens'] = 1
+        c=self.a.begin(self.issue('busy'), '/v1/search'); self.a.finish(c)
         with self.assertRaises(AdmissionError) as caught: self.a.begin(self.issue('busy'), '/v1/search')
         self.assertEqual(caught.exception.status,429)
         c=self.a.begin(self.issue('other'), '/v1/search'); self.a.verify_body(c,self.body); self.a.finish(c)
@@ -347,10 +363,9 @@ class AdmissionTest(unittest.TestCase):
 
     def test_many_owners_cannot_fill_another_owners_replay_storage(self):
         for owner in range(35):
-            for _ in range(120):
-                claims=self.a.begin(self.issue('owner-'+str(owner)),'/v1/search')
-                with self.assertRaises(AdmissionError):self.a.verify_body(claims,b'{"different":true}')
-                self.a.finish(claims)
+            claims=self.a.begin(self.issue('owner-'+str(owner)),'/v1/search')
+            self.a.finish(claims)
+            self.a.callers[claims['owner']]['used'].update({str(i):self.now+20 for i in range(119)})
         victim=self.a.begin(self.issue('victim'),'/v1/search')
         self.a.verify_body(victim,self.body)
         self.a.finish(victim)
@@ -365,14 +380,72 @@ class AdmissionTest(unittest.TestCase):
         other=self.a.begin(self.issue('unrelated',owner='other-owner'),'/v1/search')
         self.a.finish(other)
         self.a.finish(c)
-        for i in range(119):
-            c=self.a.begin(self.issue('agent-'+str(i+10),owner='same-owner'),'/v1/search')
-            self.a.finish(c)
+        self.a.callers['same-owner']['tokens'] = 1
+        c=self.a.begin(self.issue('agent-10',owner='same-owner'),'/v1/search'); self.a.finish(c)
         with self.assertRaises(AdmissionError) as caught:
             self.a.begin(self.issue('another-new-agent',owner='same-owner'),'/v1/search')
         self.assertEqual(caught.exception.status,429)
         self.assertEqual(set(self.a.callers),{'same-owner','other-owner'})
 
+    def test_global_budget_bounds_aggregate_work_and_refunds_both_buckets(self):
+        first=self.a.begin(self.issue('first'),'/v1/search')
+        refund=self.a.charge(first,64)
+        self.assertEqual(self.a.capacity['tokens'],32)
+        self.a.finish(first)
+        second=self.a.begin(self.issue('second'),'/v1/search')
+        with self.assertRaises(AdmissionError) as error:self.a.charge(second,64)
+        self.assertEqual(error.exception.code,'service_cost_budget')
+        self.assertEqual(self.a.callers['second']['tokens'],119)
+        refund();refund()
+        self.assertEqual(self.a.capacity['tokens'],94)
+        self.assertEqual(self.a.callers['first']['tokens'],119)
+        self.a.charge(second,64)
+        self.assertEqual(self.a.capacity['tokens'],31)
+        self.a.finish(second)
+
+    def test_global_receive_rate_prevents_unbounded_owner_churn(self):
+        for i in range(96):
+            c=self.a.begin(self.issue('owner'+str(i)),'/v1/search');self.a.finish(c)
+        with self.assertRaises(AdmissionError) as error:self.a.begin(self.issue('overflow'),'/v1/search')
+        self.assertEqual(error.exception.code,'service_cost_budget')
+        self.assertEqual(len(self.a.callers),96)
+        self.now += 1
+        for i in range(8):
+            c=self.a.begin(self.issue('refill'+str(i)),'/v1/search');self.a.finish(c)
+        with self.assertRaises(AdmissionError):self.a.begin(self.issue('overflow'),'/v1/search')
+
+    def test_charge_credits_refill_earned_while_waiting(self):
+        c=self.a.begin(self.issue(),'/v1/search')
+        self.a.callers['caller']['tokens']=0
+        self.a.capacity['tokens']=0
+        self.now += 3
+        self.a.charge(c,5)
+        self.assertEqual(self.a.callers['caller']['tokens'],2)
+        self.assertEqual(self.a.capacity['tokens'],20)
+        self.a.finish(c)
+
+    def test_complete_body_mismatch_does_not_consume_ticket_or_budget(self):
+        h=self.issue()
+        with self.assertRaises(AdmissionError):self.a.begin(h,'/v1/search',b'{"wrong":true}')
+        self.assertEqual(self.a.callers,{})
+        self.assertEqual(self.a.capacity['tokens'],96)
+        c=self.a.begin(h,'/v1/search',self.body)
+        self.a.finish(c)
+
+    def test_advertised_budget_wait_admits_a_fresh_attempt(self):
+        for owner_tokens, host_tokens in ((0, 95), (119, 0)):
+            self.setUp()
+            c=self.a.begin(self.issue(),'/v1/search')
+            self.a.callers['caller']['tokens']=owner_tokens
+            self.a.capacity['tokens']=host_tokens
+            with self.assertRaises(AdmissionError) as error:self.a.charge(c,64)
+            wait=error.exception.retry_after
+            self.assertGreaterEqual(wait,1)
+            self.a.finish(c)
+            self.now += wait
+            fresh=self.a.begin(self.issue(),'/v1/search')
+            self.a.charge(fresh,64)
+            self.a.finish(fresh)
     def test_old_ticket_without_owner_is_not_accepted(self):
         with self.assertRaises(AdmissionError):
             self.a.begin(self.issue(v=1),'/v1/search')
@@ -442,7 +515,8 @@ class ReviewRegressionTest(ServiceTest):
         self.assertTrue(self.engine.ready())
 
     def test_review_cost_budget_is_per_owner_and_consumed_before_inference(self):
-        meter = Admission(CONFIG)
+        tick = [0]
+        meter = Admission(CONFIG, monotonic=lambda:tick[0])
         body=b'{"input":"hello"}'
         first=meter.begin(ticket('/v1/embeddings',body,subject='large'),'/v1/embeddings')
         meter.charge(first,64); meter.finish(first)
@@ -451,10 +525,13 @@ class ReviewRegressionTest(ServiceTest):
             meter.charge(second,64)
         self.assertEqual(error.exception.code,'caller_cost_budget');meter.finish(second)
         other=meter.begin(ticket('/v1/embeddings',body,subject='other'),'/v1/embeddings')
+        with self.assertRaises(AdmissionError) as error:meter.charge(other,64)
+        self.assertEqual(error.exception.code,'service_cost_budget')
+        tick[0] += 2
         meter.charge(other,64);meter.finish(other)
 
     def test_review_busy_worker_preserves_inference_budget(self):
-        self.server.admission = Admission(CONFIG)
+        self.server.admission = Admission(CONFIG, monotonic=lambda:0)
         payload = {'input': [('word%d ' % i) * 250 for i in range(16)]}
         with patch.object(self.engine.lock, 'acquire', return_value=False), \
              patch.object(self.engine.session, 'run', wraps=self.engine.session.run) as run:
@@ -464,7 +541,7 @@ class ReviewRegressionTest(ServiceTest):
         run.assert_not_called()
 
     def test_review_failed_inference_refunds_budget(self):
-        self.server.admission = Admission(CONFIG)
+        self.server.admission = Admission(CONFIG, monotonic=lambda:0)
         payload = {'input': [('word%d ' % i) * 250 for i in range(16)]}
         with patch.object(self.engine.session, 'run', side_effect=RuntimeError('test_failure')):
             status, result = self.call('/v1/embeddings', payload)
@@ -473,7 +550,7 @@ class ReviewRegressionTest(ServiceTest):
         self.assertTrue(self.engine.ready())
 
     def test_review_successful_inference_charges_token_cost(self):
-        self.server.admission = Admission(CONFIG)
+        self.server.admission = Admission(CONFIG, monotonic=lambda:0)
         status, result = self.call('/v1/embeddings', {'input': [('word%d ' % i) * 250 for i in range(16)]})
         self.assertEqual(status, 200)
         self.assertEqual(len(result['data']), 16)
@@ -504,6 +581,10 @@ class ReviewRegressionTest(ServiceTest):
             authorization = ticket('/v1/embeddings', body, subject='over-body-capacity')
             newcomer.sendall(('POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %d\r\nAuthorization: %s\r\n\r\n' % (len(body), authorization)).encode())
             self.assertIn(b'503', newcomer.recv(1024).split(b'\r\n')[0])
+            with socket.create_connection(server.server_address, timeout=2) as complete:
+                authorization = ticket('/v1/embeddings',body,subject='complete-victim')
+                complete.sendall(('POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %d\r\nAuthorization: %s\r\n\r\n' % (len(body),authorization)).encode()+body)
+                self.assertIn(b'200',complete.recv(1024).split(b'\r\n')[0])
             health = http.client.HTTPConnection(*server.server_address, timeout=2)
             health.request('GET', '/health')
             response = health.getresponse()
@@ -548,6 +629,9 @@ class ReviewRegressionTest(ServiceTest):
         self.assertNotIn('pending-owner', server.pending_owners)
         with socket.create_connection(server.server_address, timeout=2) as retry:
             retry.sendall(headers(authorization) + body)
+            self.assertIn(b'401', retry.recv(1024).split(b'\r\n')[0])
+        with socket.create_connection(server.server_address, timeout=2) as retry:
+            retry.sendall(headers(ticket('/v1/embeddings',body,subject='pending-owner')) + body)
             self.assertIn(b'200', retry.recv(1024).split(b'\r\n')[0])
 
     def test_review_receive_timeout_releases_reservations(self):
@@ -563,18 +647,21 @@ class ReviewRegressionTest(ServiceTest):
             self.assertNotIn('timed-out-owner', server.pending_owners)
             self.assertFalse(any(c['owner'] == 'timed-out-owner' for c in list(server.pending_claims.values())))
             self.assertFalse(any(owner == 'timed-out-owner' for owner, _ in server.pending_nonces.copy()))
+            with socket.create_connection(server.server_address, timeout=2) as replay:
+                replay.sendall(('POST /v1/embeddings HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %d\r\nAuthorization: %s\r\n\r\n' % (len(body),auth)).encode())
+                self.assertIn(b'401',replay.recv(1024).split(b'\r\n')[0])
         finally:
             server.body_deadline = prior
 
     def test_review_mixed_lengths_pay_for_padded_tensor(self):
-        self.server.admission = Admission(CONFIG)
+        self.server.admission = Admission(CONFIG, monotonic=lambda:0)
         long = 'alpha beta gamma delta ' * 70
         status, _ = self.call('/v1/embeddings', {'input': [long] + ['word%d' % i for i in range(15)]})
         self.assertEqual(status, 200)
         self.assertEqual(self.server.admission.callers['test-caller']['tokens'], 56)
 
     def test_review_deduplication_charges_only_executed_rows(self):
-        self.server.admission = Admission(CONFIG)
+        self.server.admission = Admission(CONFIG, monotonic=lambda:0)
         status, _ = self.call('/v1/embeddings', {'input': ['alpha beta gamma delta ' * 70] * 16})
         self.assertEqual(status, 200)
         self.assertEqual(self.server.admission.callers['test-caller']['tokens'], 116)

@@ -1,33 +1,20 @@
 # Corrected semantic-search release
 
-This source also corrects the two material findings from review 23937976-5f02-4196-916a-92dccd5a4a87. Every prior report remains valid for its original bytes; none is presented as approval of this revision.
+This immutable revision addresses the new capacity findings from the previous paid review. Every prior report and declined image remains bound to its original bytes; none approves this revision. The owner selected a distinct documented operator-review path for this own Search service. Other projects retain independent IMD review. The current policy in docs/sources-and-builds.md supersedes the earlier admission paragraph retained in the immutable build snapshot README.
 
-The model's immutable build, source and manifest are in semantic-search-release.json. The reference client now pins that same release. No runtime approval or hosting is inferred from a build.
+## Current corrections
 
-## Latest review corrections
+- A host-wide bucket admits a 96-unit burst and refills eight units per second, shared by all owners. Receive admission and actual padded inference cost debit both owner and host budgets. New owner accounts cannot multiply the admitted host workload. The finite host budget is shared capacity, not guaranteed service under arbitrary load.
+- Reserving a partial body immediately consumes its nonce and one unit. Replay, an already active owner, a timeout and reconnect cannot obtain repeated free reservations. The same owner reservation transfers into the worker and is released on completion, rejection, disconnect or shutdown.
+- Complete bytes already available on the socket are drained within the body limit and hash-checked before ticket consumption. They can proceed without a partial-body slot. An incomplete receive attempt still spends its ticket even if its later body is invalid.
+- Charge time credits refill earned while waiting. Failed inference refunds all additional charged units to both budgets exactly once, retaining the one receive unit. Successfully completed model work stays charged after a client disconnects or cannot receive the response, so disconnects cannot bypass the CPU budget.
+- A fifteen-second absolute lifetime accommodates the two-second receive window, three-second worker wait, measured 6.3-second contended full batch and response. The shared refill allows one full batch per eight seconds. JSON request bytes must decode as UTF-8.
+- Deadline timers shut down sockets and leave descriptor closure to the handler. Budget responses advertise refill delay. The client preserves successful batches, obtains a fresh ticket for each throttled retry, waits for Retry-After and stops within a sixty-second model phase and four retries per batch. Empty HTTP capacity responses retain their status and delay.
 
-- The inference meter counts padded tensor positions, since ONNX computes the padded rows too. A mixed long/short batch cannot obtain full-batch computation for the short-text price. Deduplicated rows are still charged only once.
-- Temporary receive reservations are limited to one per owner and nonce and at most half the overall queue. Header and health capacity remains available; dispatch, timeout, disconnect and shutdown free the reservations. The ticket remains unconsumed until its complete body is admitted.
-- Verified incomplete requests cannot be evicted by anonymous connections. At saturation an unverified request is evicted, or the newcomer is refused when all queued requests are verified.
-- Token cost is reserved after acquiring the inference worker and is returned if inference fails. A rejected busy request consumes only its one admission unit and one-use ticket.
-- Granting service.call explicitly includes the owner's shared search capacity. Pre-dispatch status reasons are canonical; deterministic 4xx rejections do not instruct clients to retry.
+## Preserved properties
 
-## Preserved prior fixes
+Padded tensor positions remain metered after within-request deduplication. Request lines are canonical ASCII. Invalid signatures are rejected before body buffering. Two CPU inference threads, bounded workers, separate health capacity, absolute deadlines, immutable download hashes and the existing CPU provider contract remain unchanged. There is no runtime download, secret, wallet, outbound HTTP client or persistent volume in the image.
 
-1. Canonical ASCII HTTP lines are enforced before body routing. Signature verification happens before anonymous body buffering; nonce consumption stays after the complete body.
-2. The CPU reference adapter accepts an explicit host-owned CPU configuration, exposes the 8080 HTTPS proxy, checks health and preserves the original pod on repeated create/stop. The actual deployed broker and driver are in reference/runtime-custody, with exact source hashes and deployment identity. They were already the production path; no provider keys enter the image.
-3. The reference client pins the release above.
-4. Inputs normalizing to only special/padding tokens are rejected.
-5. Cosine is clamped to [-1,1].
-6. Noncanonical health lines are rejected consistently.
-7. Readiness becomes 503 for inference stuck beyond the bounded request deadline.
-8. Admission meters executed padded model work, per owner across projects, with a finite burst and refill. The model uses its two allocated CPU threads. This bounds abuse; it does not promise unlimited multi-tenant capacity.
-9. Native packages use immutable Debian snapshot file URLs with unchanged SHA-256 and length verification.
-10. Invalid or missing admission signatures fail before body buffering.
-11. The actual private-runner source at c3ae7e469c5aa72cbea77ef25cb10c055f9973d6 is included, rather than the older reference revision. Its authenticated build receipt names run 39072928811. All published OCI layers can be checked against the registry's digest graph. The expired real issuer signature in semantic-search-admission-key.json verifies with the image's public key. Base-image package/CVE assessment is still an independent review responsibility; an operator statement is not an audit.
+## Evidence
 
-Focused validation reused the existing model and environment: five focused cases for owner/nonce limits, health headroom, cleanup, padded tensor costs and deduplication; prior budget and protocol regression evidence is retained. Previously completed model/protocol and provider checks remain evidence for unchanged behavior. No unrelated full suite was repeated. A new immutable image and exact-source review are required because the runtime source changed; all prior paid reviews remain retained.
-
-## Exact image and issuer coverage
-
-The same compiled image now has a digest-verified filesystem inventory and a portable registry inspection command in [the image evidence guide](semantic-search-image-coverage.md). The prior final report remains bound to its original image. This supplement changes no executable model bytes and grants no approval.
+The immutable source, verified build receipt and manifest are in semantic-search-release.json. The image inventory was reproduced from the exact new registry digest; its guide and issuer evidence are linked there. Completed prior report hashes are retained in priorReviews. The previous paid review remains preserved and is marked pending until its final report arrives. Sixteen focused model cases and two focused client cases cover the changed receive, budget, refill, refund and owner-sharing behavior using the existing pinned model. Unchanged full suites were not repeated. Compilation and operator-produced evidence do not confer approval. The owner review is published separately as semantic-search-owner-review.json, with honest scope and remaining findings; a genuine Claus decision through the narrowly scoped owner-review route is still required. The admission boundary passed twelve focused cases, including unchanged third-party IMD requirements.

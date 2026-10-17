@@ -1,0 +1,200 @@
+{
+  "schema": "claus-operator-search-review/1",
+  "at": "2026-10-17T22:48:00.331109+00:00",
+  "reviewer": "Codex operator",
+  "independentThirdPartyReview": false,
+  "status": "code_review_complete",
+  "releaseId": "sha256:0289b08c3ae189589f9d13081d9bcfa6533713ebf7dc82a57c1ae76d76d443a4",
+  "buildId": "sha256:5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e",
+  "image": "claus-network-api.vercel.app/claus/5c7053e9e54111f7bba640d7af191ebc5982e2a50aecbb48adf9f3bcff35e51e@sha256:65ac06800a6e5b0ab25fc051b9273db0d6e8ec19ad7622fae65e13fe13c7fed0",
+  "sourceFiles": [
+    {
+      "path": "examples/semantic-search/Dockerfile",
+      "sha256": "974c4020c32312745201e73c0951a9b41e9ff9af12f1c49ca2fbedba6ebcbf3f"
+    },
+    {
+      "path": "examples/semantic-search/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "examples/semantic-search/README.md",
+      "sha256": "1e20ebec940236c5ce7e9370a9dc4e35a5bd0f94878c6c4ca6abf896eea47817"
+    },
+    {
+      "path": "examples/semantic-search/admission-key.json",
+      "sha256": "cc398827eead0852e3ef4d8a17b00f47a912fb565f3148d596151ae3e30e6dfb"
+    },
+    {
+      "path": "examples/semantic-search/admission.py",
+      "sha256": "e90dd7ef3f4f86dc861d59d5cdc59e24cafbe17e7911f727e05ceea93f515948"
+    },
+    {
+      "path": "examples/semantic-search/fetch_assets.py",
+      "sha256": "e3321d2d5fe9d4b8e635af8975b07672c15c9efb3f0ef750709c69eef5588178"
+    },
+    {
+      "path": "examples/semantic-search/model-lock.json",
+      "sha256": "3ea22af0a27600e6293b32a3acc5d23dec704e6b0cb13b96f46fbd9ec6c082ba"
+    },
+    {
+      "path": "examples/semantic-search/server.py",
+      "sha256": "bddb21940bc333e4c520b12258b5b79707f9810f4f5a588d2319509622870e7e"
+    },
+    {
+      "path": "examples/semantic-search/test_service.py",
+      "sha256": "4322054bf4d8a105406d7163f151d39770abb670420aa7c73375fcb89638d6d3"
+    },
+    {
+      "path": "reference/native-operations/src/network-semantic-search.ts",
+      "sha256": "6da1146d7dd5d5d5b79fa48d10fc0a6020f08a4ab027a7b3160fb34e7e11a659"
+    },
+    {
+      "path": "reference/native-operations/src/network-access.ts",
+      "sha256": "09e001976956345276df06d56b597ca8a70a41647eaba7e0da7b7f559428718e"
+    },
+    {
+      "path": "reference/native-operations/src/network-routes.ts",
+      "sha256": "c85da12d4521e54fcba75c658712b6003290eb930c2ea5cf6bf135cee5f94072"
+    },
+    {
+      "path": "reference/native-operations/tests/network-semantic-search.test.ts",
+      "sha256": "103f94aaaca98561c7718ee3608c47771967496bbec6d8c4aa83103686003e1d"
+    },
+    {
+      "path": "src/discovery/admission.mjs",
+      "sha256": "7a4778ff09de04c73cec3de275b6447d60c848921f1e7ad2d8afac1b2ed5f3ac"
+    },
+    {
+      "path": "src/infrastructure/runtime-release.mjs",
+      "sha256": "c9a619d3d22329dd1329b7659264b1b7fe2a5334af1bb1a272b0461dca758e1f"
+    },
+    {
+      "path": "interfaces/infrastructure-routes.mjs",
+      "sha256": "ccec857f8520811bc1f2daa02445a6841b06e1c21d192c46336a2d326bc2f196"
+    },
+    {
+      "path": "interfaces/service.mjs",
+      "sha256": "86ba24a6fb39c5f01ce2f8c9f19cdaaa68fda3929b4ee5a1029c07f35eb430bf"
+    },
+    {
+      "path": "interfaces/http.mjs",
+      "sha256": "d4151354fc9df016fdb66a466e32141c7fd503e4164f7a4165105e22348b578a"
+    },
+    {
+      "path": "test/runtime-image.test.mjs",
+      "sha256": "1c0cb3f203fdb98cce7bd6c073935437864ea303a5f8ef843dead0581f15885f"
+    }
+  ],
+  "scope": [
+    "Model request parsing, signed admission, replay protection, per-owner and host budgets, receive queues and inference lifetime",
+    "Docker build, immutable dependency/model downloads, runtime entrypoint and resource manifest",
+    "Native discovery of exactly approved image, authenticated body-bound requests, bounded capacity retry and result validation",
+    "Actual new-image registry digests and application file hashes"
+  ],
+  "resolved": [
+    "Shared 96-unit burst and8-unit/s refill bound aggregate work across owner identities",
+    "Receive attempts consume one-use ticket and admission unit; pending reservations are transferred and released",
+    "Cost includes padded tensor positions; charge-time refill and symmetric inference-failure refund",
+    "15-second request lifetime accommodates the independent two-core measurements; handler owns descriptor closure",
+    "Explicit UTF-8 JSON decoding",
+    "Capacity Retry-After includes next admission; native client preserves completed batches and mints fresh tickets during bounded retries"
+  ],
+  "verification": {
+    "modelCases": 16,
+    "seconds": 0.674,
+    "passed": true,
+    "realPinnedModel": true,
+    "areas": [
+      "host-wide owner-independent capacity and symmetric refunds",
+      "host-wide receive rate and owner churn",
+      "refill while waiting",
+      "complete-body hash before ticket consumption",
+      "complete clients progress when partial-body slots are full",
+      "one-use pending tickets after timeout and disconnect",
+      "pending reservations released and owner transferred through worker",
+      "prior per-owner sharing and replay storage remain isolated",
+      "padded inference cost preserved",
+      "UTF-16 and UTF-32 bodies rejected before inference"
+    ],
+    "priorValidationReused": true,
+    "fullUnchangedSuiteRepeated": false,
+    "additionalRun": {
+      "cases": 3,
+      "seconds": 0.155,
+      "passed": true,
+      "reason": "8-unit/s shared refill and strict UTF-8 request decoding"
+    },
+    "capacitySizing": {
+      "globalBurstUnits": 96,
+      "globalRefillUnitsPerSecond": 8,
+      "absoluteRequestSeconds": 15,
+      "evidence": "Third specialist measured full 64-unit batch in 6.3 seconds under contention; allow receive2s + worker3s + inference6.3s + write1s.",
+      "additionalEvidence": "Flow specialist measured maximum6.7s; fifteen-second window leaves receive2+wait3+model6.7+write1=12.7s."
+    },
+    "nativeCases": 2,
+    "laterRuns": [
+      {
+        "cases": 2,
+        "seconds": 0.001,
+        "passed": true,
+        "reason": "Budget wait includes a fresh receive unit; original body-binding case intact"
+      },
+      {
+        "cases": 1,
+        "seconds": 0.946,
+        "passed": true,
+        "reason": "Deadline shutdown without cross-thread descriptor close"
+      },
+      {
+        "cases": 2,
+        "seconds": 1.245,
+        "passed": true,
+        "reason": "Fresh ticket after empty HTTP429, preserved successful batches, bounded Retry-After handling"
+      }
+    ]
+  },
+  "imageEvidence": {
+    "layers": 10,
+    "selectedEntries": 54,
+    "applicationSourcesMatch": true,
+    "independentApproval": false
+  },
+  "remainingBoundaries": [
+    "No production search request has yet succeeded: the new model is not provisioned",
+    "Review covers the reachable Search implementation; it is not a vulnerability audit of every third-party binary or unrelated network contract",
+    "Completed inference retains its CPU budget charge when a client disconnects",
+    "Finite single-instance capacity can reject load; no uptime guarantee"
+  ],
+  "nativeSourceRetained": false,
+  "externalApproval": false,
+  "genuineClausDecision": false,
+  "deploymentApproved": false,
+  "policy": "claus-owner-search-review-v1",
+  "policyDecision": "Owner requested the cleanest and fastest process; this review is explicitly an owner-operator review for the existing Search service. Other projects retain independent IMD review.",
+  "policyValidation": {
+    "cases": 12,
+    "newOwnerCases": 4,
+    "existingIndependentGateCases": 8,
+    "seconds": 0.0796,
+    "passed": true,
+    "scope": "Only runtime-image admission boundary; full suite not run."
+  },
+  "nativeDeployment": "Prepared; separate deployment evidence and genuine Claus approval are still required.",
+  "remainingFindings": [
+    {
+      "severity": "info",
+      "title": "Finite single-instance capacity",
+      "description": "The service rejects excess load and depends on its funded lease. No universal uptime guarantee is made."
+    },
+    {
+      "severity": "info",
+      "title": "Explicit scope of operator review",
+      "description": "The reachable Search implementation, immutable image inventory, admission and client paths were reviewed. This is not independent IMD approval or a full vulnerability audit of every third-party binary."
+    },
+    {
+      "severity": "info",
+      "title": "Executed inference stays charged",
+      "description": "Successful model execution keeps its CPU budget charge if the client disconnects; otherwise disconnects could evade the shared capacity bound."
+    }
+  ]
+}
