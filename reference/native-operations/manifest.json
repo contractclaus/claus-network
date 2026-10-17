@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_4wsAqoJGuKSG7tfwYi34UXxGWZmj",
-  "source": "runtime-observation-20261017",
+  "deployed": "dpl_BeJsCvMRGJ6CCDXbPudAnH3YBBzA",
+  "source": "claus-payment-readiness-20261017",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -33,7 +33,7 @@
     "src/network-products.ts": "b6d829c3ce9b8ced6c1c4ca2b488d1bef809481d39416e473ae196fc1ea2bc94",
     "src/network-routes.ts": "1fca92f67e6cef5a226b76765d5a1ce9e2fa4f50c5557d768516a0c8312c13c0",
     "src/operational-capabilities.ts": "1da5f353b4f5ddb22b212aa948dcee33fea56736d30424f3ed15416621962770",
-    "src/cycle.ts": "2b9370e3d81d3122f61c8975c6f2ca10a5727d3fc996f98e906ee0cd885a693f",
+    "src/cycle.ts": "9a1c3844294ff4f596501b7e913fab7c30bbd548760ddfe7af3a6c78a8d28a69",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
     "src/social.ts": "1a5a82476b22a5b4de0dceaee1f07821569109e0eb35cfd739593a953fcadda7",
     "src/store.ts": "f83c46041ef0450a9074f7a622d1faee4c3b240e11690b8ce36bc8e1141ff2b5",
@@ -62,7 +62,7 @@
     "src/workspaces/continuity.ts": "f38b72950a98ff4eecaf684619880d4ca18f02f038cd7b774c8c354bba78651a",
     "src/workspaces/contributions.ts": "58e30e278efd14ac06e37596673a50661bdd72d24c5e8b9d70856850940e2dd5",
     "src/workspaces/packages.ts": "1cff67a7a7231139bd09ff8cce80575bb6388810d203d4dbcc0afbe22065623f",
-    "src/operating-resources.ts": "84c2c143619013744037a51cfe41cec16189b1f37fabb6afe209a558028d28a2",
+    "src/operating-resources.ts": "21a472a04bd6c94f1b5268cef4c16e53c67ec33e9ad420a3f20ed8e91558adde",
     "src/missions.ts": "2953ba58944c45fc2b3fba4895578f5279ddfad47f56310da546f3e80e53a829",
     "src/x.ts": "7e52e37958b017eb70ed47bc8e28f9120ee7d78782805b5fae94944451946055",
     "src/visuals.ts": "d1ecd46b0299f3a843e071ee8bb3177d8dd99c08968e096db20e0c3b1a25f354",
@@ -127,7 +127,7 @@
     "src/external/github.ts": "7a4b80556e67b262be7ddd74743d7915fff8d6ef63be37a5092259f34ce58335",
     "src/external/health.ts": "c33f618b5af895307a39bd96c962c124cbd38a697bfd4e8900ebd09f1a72a56b",
     "src/external/paid.ts": "590617231d96f4cc583fa98897375cd03d18f1db44303d1659bcccbcaffa8a37",
-    "src/operating-assessment.ts": "3425053cdee98afea126ff53eda5c2fbac93251caabdd36bc5c3571f1285afc8",
+    "src/operating-assessment.ts": "b127d7dcb6149bf90139c56887b82e6506786b366026bee6c1f4e4f94d17def1",
     "src/operating-lessons.ts": "064eb92a7ac70b6f0b903d762c95d0f431cdd491ab9b1d0548d645a797e03223",
     "src/work-context.ts": "ffddf49cae1e08e1870d2ba764e230ee2d352a659d852ca2687e79b42b57e2c0",
     "src/external/access-state.ts": "cb3dec43b8d80c9db032361dc592dcd615fd829c77efbca71479cdecc1c5166a",
@@ -138,7 +138,8 @@
     "src/runtime-host.ts": "2e932899538d9f84b6e0cd1af994231cd3f5a404875554986404773cc08151e4",
     "src/standby.ts": "5481d3c1916e56266835b023e9c352b3e198e71d273af102127f64c53a99aceb",
     "src/builder-model-profile.ts": "1c58285832895fbc48c247310843f1f050417fc689b96972ebb606a05e20bf71",
-    "src/builder-worker.ts": "daf0f57e472d66f64fa7ba3b8c3044e80e589ad52deda0e4edb9c1080e47033f"
+    "src/builder-worker.ts": "daf0f57e472d66f64fa7ba3b8c3044e80e589ad52deda0e4edb9c1080e47033f",
+    "src/payment-readiness.ts": "719957d3bc97572fa956bb98066592e59b297cb9323c9ff9c2c0fcb3aabbffba"
   },
   "referenceSubset": true
 }

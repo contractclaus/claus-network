@@ -20,3 +20,7 @@ Ten targeted cases reproduce the original defects. They include local PostgreSQL
 ## Running resource observations
 
 A dated `resource_status` response that confirms the original provider resource is running, has no error, no pending renewal and no reconciliation requirement is a successful internal observation. Its `running` state describes the server, not an unfinished reader call. This does not mark create/renew requests complete, settle reserved costs, rewrite historical receipts or publish private runtime details. Undated, malformed, pending and uncertain responses remain ineligible.
+
+## Payment readiness
+
+Operating cash, authorized budget and the Base USDC allowance to Permit2 are separate observations. A terminal unsigned allowance failure now retains its original request and waits for a fresh same-block balance/allowance read before a new model call. Unknown or signed payments continue through the original reconciliation path. Recovery resumes ordinary work without a new mission or restart. This read-only gate does not sign approvals, refill funds or increase budgets. The operating view reports the payment rail separately, including unavailable observations.
