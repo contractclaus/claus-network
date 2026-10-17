@@ -11,7 +11,7 @@ export class OperationsHost{
  constructor(readonly fetcher:typeof fetch=fetch,readonly secret=()=>process.env.PUBLISHER_SECRET){}
  private async call(operation:string,scope:string,args:any[]){
   const secret=this.secret();if(!secret)throw Error('operations_host_not_connected');
-  const r=await this.fetcher('https://claus-inference.vercel.app/api/publisher',{method:'POST',headers:{authorization:'Bearer '+secret,'content-type':'application/json'},body:JSON.stringify({operation,scope,args}),redirect:'error',signal:AbortSignal.timeout(90000)});
+  const r=await this.fetcher('https://claus-inference.vercel.app/api/'+(scope==='repository'?'repository-publisher':'publisher'),{method:'POST',headers:{authorization:'Bearer '+secret,'content-type':'application/json'},body:JSON.stringify({operation,scope,args}),redirect:'error',signal:AbortSignal.timeout(90000)});
   const body=await r.json();if(!r.ok){if(body.error==='publisher_provider_error')throw new OperationsHostError(body.providerStatus,body.providerCode??null);throw Error(/^(publisher|operations|isolated)_[a-z_]+$/.test(body.error)?body.error:'operations_host_unavailable');}return body.result;
  }
  async activate(scope:string,id:string){return this.call('activate',scope,[id]);}

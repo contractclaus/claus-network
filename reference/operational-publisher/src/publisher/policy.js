@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 const OPS_TARGETS = {
+ repository: { project: "contractclaus/claus-network", name: "claus-network", origin: "https://github.com/contractclaus/claus-network", probe: "/README.md", paths: [/^README\.md$/, /^docs\/[a-z0-9-]+\.md$/] },
   web: { project: "prj_3EPhg3tuhf5oHU9sw2Butj9eRegy", name: "claus", origin: "https://claus.si", probe: "/Network", paths: [/^docs\/[a-z0-9-]+\.(?:html|md)$/, /^assets\/network-[a-z0-9-]+\.(?:css|js)$/] },
   api: { project: "prj_rGom8c2zwC8zztmqsSFPaAJj7fXs", name: "claus-network-api", origin: "https://claus-network-api.vercel.app", probe: "/health", paths: [/^src\/isolated\/network\.json$/, /^src\/application\/main\.js$/] },
   native: { project: "prj_JQEQJQb3Obhgas8Dtx0FIe1Zokah", name: "claus-agent", origin: "https://claus-agent.vercel.app", probe: "/health", paths: [/^src\/isolated\/(?:network|work)\.json$/, /^src\/application\/main\.js$/] }
