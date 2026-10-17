@@ -1,4 +1,4 @@
-// Generated from the shared Claus Network interface contract.
+// Generated from the shared Claus Network contract.
 export const networkRoutes:Record<string,any>={
   "data_file_write": {
     "name": "data_file_write",
@@ -9361,6 +9361,14 @@ export const networkRoutes:Record<string,any>={
         "initialState": true,
         "enabled": {
           "type": "boolean"
+        },
+        "dataAccess": {
+          "type": "string",
+          "enum": [
+            "none",
+            "read",
+            "read_write"
+          ]
         },
         "expectedRevision": {
           "type": "integer",

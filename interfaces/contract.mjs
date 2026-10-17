@@ -1,7 +1,7 @@
 import {dataRoutes} from './data-routes.mjs';
 import {workPlanningRoutes} from './work-planning-routes.mjs';
 import {infrastructureRoutes} from './infrastructure-routes.mjs';
-export const API_VERSION='0.38.0';
+export const API_VERSION='0.39.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -378,7 +378,7 @@ export const ROUTES=Object.freeze([
  route('runtime_resources_set','PUT','/v1/projects/{projectId}/runtime-resources',{projectId:string(),projectDaily:{type:'integer',minimum:0,maximum:100},active:{type:'integer',minimum:1,maximum:4},reason:string(1000),expectedRevision:integer}),
  route('project_web_read','POST','/v1/projects/{projectId}/web/read',{projectId:string(),url:string(2048)}),
  route('runtime_reconcile','POST','/v1/projects/{projectId}/runtimes/{runtimeId}/reconcile',{projectId:string(),runtimeId:string(40),expectedRevision:integer}),
- route('runtime_set','PUT','/v1/projects/{projectId}/runtimes/{runtimeId}',{projectId:string(),runtimeId:string(40),workerId:string(40),workerRevision:{type:'integer',minimum:1},intervalSeconds:{type:'integer',minimum:60,maximum:604800},maxCycles:{type:'integer',minimum:1,maximum:1000000},initialState:true,enabled:boolean,expectedRevision:integer}),
+ route('runtime_set','PUT','/v1/projects/{projectId}/runtimes/{runtimeId}',{projectId:string(),runtimeId:string(40),workerId:string(40),workerRevision:{type:'integer',minimum:1},intervalSeconds:{type:'integer',minimum:60,maximum:604800},maxCycles:{type:'integer',minimum:1,maximum:1000000},initialState:true,enabled:boolean,dataAccess:{type:'string',enum:['none','read','read_write']},expectedRevision:integer},['projectId','runtimeId','workerId','workerRevision','intervalSeconds','maxCycles','initialState','enabled','expectedRevision']),
  route('runtime_checkpoint','PATCH','/v1/projects/{projectId}/runtimes/{runtimeId}/memory',{projectId:string(),runtimeId:string(40),memory:true,expectedRevision:integer}),
  route('runtime_get','GET','/v1/projects/{projectId}/runtimes/{runtimeId}',{projectId:string(),runtimeId:string(40)}),
  route('runtime_list','GET','/v1/projects/{projectId}/runtimes',{projectId:string()}),

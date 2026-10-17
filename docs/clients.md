@@ -163,3 +163,7 @@ Use `data_file_write` / `data_file_read` for small private records and `interfac
 ## Complete application database
 
 For managed app records, service state and request receipts, use [Application database recovery](app-database-recovery.md). The file backup above does not replace the app database backup.
+
+## Autonomous project workers
+
+Use [Autonomous workers and private data](autonomous-workers.md) for `runtime_set` dataAccess and same-project persistent file actions.

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Claus Network",
-    "version": "0.38.0"
+    "version": "0.39.0"
   },
   "servers": [
     {
@@ -17734,6 +17734,14 @@
                   "initialState": true,
                   "enabled": {
                     "type": "boolean"
+                  },
+                  "dataAccess": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "read",
+                      "read_write"
+                    ]
                   },
                   "expectedRevision": {
                     "type": "integer",
