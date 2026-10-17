@@ -13,3 +13,15 @@ The initial standard runner exports images up to 32 MiB. Admission is two builds
 A failed or expired export does not replace any running service. Compilation is not deployment, review approval, independent adoption, or a claim of reproducibility for arbitrary network install steps.
 
 Implementation references: [GitHub standard-runner billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [OCI exporter](https://docs.docker.com/build/exporters/oci-docker/).
+
+## Recovery and availability
+
+A temporary failure before dispatch leaves the original build `not_started`. The worker can resume that same ID only after an authenticated custody observation confirms it was not dispatched. Custody atomically records the original runner and permits one dispatch. An uncertain dispatch, including legacy records, is inspected and never blindly repeated.
+
+`resource_build_status` includes `nextCheckAt` while waiting. Running builds are checked once a minute; unavailable or uncertain outcomes back off to at most one check per 15 minutes. Current configuration changes do not replace the original runner used for reconciliation. A revoked project cannot start a build or publish new output.
+
+The complete serialized public source response must fit 3,200,000 bytes, including JSON escaping and the manifest. Oversized requests are rejected before a job consumes capacity. Capacity responses include `retryAt`; unresolved builds may continue to hold their existing slot after that time.
+
+An expired artifact yields `oci_result_expired` when no receipt was collected, preserving the original run URL. A previously verified receipt remains readable with `artifactAvailability: "expired"`. Missing output after a completed run is reported separately; it does not cause a replacement build. Export needed images during the one-day retention period.
+
+Contract compilation also resumes the original job after temporary R2 source-read failures. Integrity failures remain errors. No recovery path changes budgets, creates a replacement paid request, or deploys a running server.

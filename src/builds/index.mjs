@@ -9,7 +9,7 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
   }
   async function visible(reader, record) {
     const job = (await reader.read('workflow-jobs', record.value.jobId ?? record.value.id))?.value;
-    return job?.state === 'cancelled' ? { ...record.value, state: 'cancelled', completedAt: job.updatedAt } : record.value;
+    return job?.state === 'waiting' ? { ...record.value, nextCheckAt: job.availableAt } : job?.state === 'cancelled' ? { ...record.value, state: 'cancelled', completedAt: job.updatedAt } : record.value;
   }
   return {
     async submit(actor, projectId, { snapshotId, entry, contract, idempotencyKey, compilerProfile, sourceRoot }) {
@@ -87,16 +87,21 @@ export function createBuilds({ store, identity, projects, jobs, artifacts, now =
           const old = await find(tx, projectId, buildId);
           const artifactHash = await artifacts.put(tx, projectId, result);
           await tx.write('builds', buildId, { ...old.value, state: result.status, artifactHash,
-            completedAt: now(), evidenceLevel: 'compiled_only' }, old.revision);
+            completedAt: now(), error: null, evidenceLevel: 'compiled_only' }, old.revision);
         });
       } catch (error) {
         if (error.code === 'lease_lost') return { stale: true };
+        const transient = ['r2_read_unavailable','r2_source_read_unavailable'].includes(error.code);
         const code = ['scope_denied', 'effect_not_authorized', 'unauthenticated'].includes(error.code) ? 'authorization_revoked' :
-          ['compiler_timeout', 'compiler_failed', 'artifact_too_large'].includes(error.code) ? error.code : 'build_failed';
-        return jobs.finish(claim, { state: code === 'authorization_revoked' ? 'blocked' : 'failed', result: { error: code } }, async tx => {
-          const old = await find(tx, projectId, buildId);
-          await tx.write('builds', buildId, { ...old.value, state: 'failed', error: code, completedAt: now() }, old.revision);
-        });
+          transient ? 'source_temporarily_unavailable' : ['compiler_timeout', 'compiler_failed', 'artifact_too_large'].includes(error.code) ? error.code : 'build_failed';
+        const state = transient ? 'waiting' : code === 'authorization_revoked' ? 'blocked' : 'failed';
+        const retryAt = transient ? now() + Math.min(900000,30000*2**Math.min(5,Math.max(0,claim.job.attempts-1))) : null;
+        try {
+          return await jobs.finish(claim, { state, retryAt, result: { error: code } }, async tx => {
+            const old = await find(tx, projectId, buildId);
+            await tx.write('builds', buildId, { ...old.value, state, error: code, ...(transient ? {} : { completedAt: now() }) }, old.revision);
+          });
+        } catch (finishError) { if (finishError.code === 'lease_lost') return { stale: true }; throw finishError; }
       }
     }
   };

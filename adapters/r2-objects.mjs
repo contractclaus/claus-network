@@ -19,13 +19,18 @@ export async function createR2Objects({accountId,bucket,accessKeyId,secretAccess
  };
  const send=command=>client.send(command,{abortSignal:AbortSignal.timeout(timeoutMs)});
  async function read(projectId,sha256){
-  const Key=key(projectId,sha256);let r;
-  try{r=await send(new S.GetObjectCommand({Bucket:bucket,Key}));}
+  const Key=key(projectId,sha256);let r;const signal=AbortSignal.timeout(timeoutMs);
+  try{r=await client.send(new S.GetObjectCommand({Bucket:bucket,Key}),{abortSignal:signal});}
   catch(e){if(e?.$metadata?.httpStatusCode===404||e?.name==='NoSuchKey')return {state:'not_found',key:Key};throw code('r2_read_unavailable',{key:Key});}
-  requireThat(!r.ContentLength||r.ContentLength<=maxBytes,'r2_object_too_large');
   const parts=[];let length=0;
-  try{for await(const part of r.Body){length+=part.length;requireThat(length<=maxBytes,'r2_object_too_large');parts.push(part);}}
-  finally{r.Body?.destroy?.();}
+  const abort=()=>r.Body?.destroy?.(code('r2_read_unavailable',{key:Key}));
+  signal.addEventListener('abort',abort,{once:true});
+  try{
+   signal.throwIfAborted();requireThat(!r.ContentLength||r.ContentLength<=maxBytes,'r2_object_too_large');
+   for await(const part of r.Body){signal.throwIfAborted();length+=part.length;requireThat(length<=maxBytes,'r2_object_too_large');parts.push(part);}
+   signal.throwIfAborted();
+  }catch(e){if(e?.code==='r2_object_too_large')throw e;throw code('r2_read_unavailable',{key:Key});}
+  finally{signal.removeEventListener('abort',abort);r.Body?.destroy?.();}
   const bytes=Buffer.concat(parts);requireThat(hash(bytes)===sha256,'r2_object_integrity_failed');
   return {state:'verified',key:Key,sha256,bytes,length};
  }

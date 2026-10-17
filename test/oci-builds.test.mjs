@@ -8,7 +8,7 @@ import {createOciBuildPlan} from '../src/infrastructure/build-plan.mjs';
 import {digest} from '../src/shared/index.mjs';
 import {ROUTES,validate} from '../interfaces/contract.mjs';
 
-async function fixture(t,{lost=false,enabled=true}={}){
+export async function fixture(t,{lost=false,enabled=true}={}){
  const store=openStore(':memory:');t.after(()=>store.close());let at=1000000,allowed=true,published=true,calls=0,inspection=0,seen;
  const identity={authorize:async a=>{assert.equal(a,'owner');},allowed:async()=>allowed};
  const files=[{path:'Dockerfile',content:'FROM scratch\nCOPY index.html /index.html\n'},{path:'index.html',content:'hi'}];
@@ -16,7 +16,7 @@ async function fixture(t,{lost=false,enabled=true}={}){
  const jobs=createJobs({store,identity,now:()=>at});const artifacts=createArtifactStore({store});
  const ports={dispatch:async v=>{calls++;seen=v;if(lost)throw Error('response lost');return {buildId:v.id,state:'running'};},inspect:async v=>{inspection++;return {buildId:v.id,state:'compiled',runUrl:'https://github.com/contractclaus/claus-network/actions/runs/1',receipt:{buildId:v.id,projectId:v.projectId,planId:v.planId,sourceHash:v.sourceHash,imageDigest:digest('image'),archiveHash:digest('archive'),archiveBytes:200,evidence:'compiled_only'}};},verify:async()=>true};
  const api=createOciBuilds({store,identity,projects,jobs,artifacts,ports,enabled,now:()=>at});
- return {api,store,jobs,ports,input:{snapshotId:'s',publishSource:true,idempotencyKey:'same'},advance:()=>at+=61000,revoke:()=>allowed=false,withdraw:()=>published=false,calls:()=>calls,inspections:()=>inspection};
+ return {api,store,jobs,ports,projects,input:{snapshotId:'s',publishSource:true,idempotencyKey:'same'},advance:()=>at+=61000,revoke:()=>allowed=false,withdraw:()=>published=false,calls:()=>calls,inspections:()=>inspection};
 }
 test('lost dispatch reconciles the original build once, preserving source and result binding',async t=>{
  const f=await fixture(t,{lost:true}),a=await f.api.submit('owner','p',f.input);
