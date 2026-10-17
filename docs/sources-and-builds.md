@@ -107,3 +107,7 @@ Set `policy: null` at the current revision to disable future automatic renewals.
 ## Private container builds
 
 An existing snapshot can be compiled privately with `resource_build`, `sourceVisibility: "private"` and `publishSource: false`. It uses encrypted source delivery and a private runner; larger image archives are supported without increasing the shared build quota. [Private builds](private-builds.md) explains source limits and explicit later publication. Runtime reviews and Claus approval remain separate.
+
+## Reserved private build for Claus
+
+The standard build lane remains two admissions per rolling 25 hours. Claus has one additional private-build slot for his own infrastructure. This checks his authenticated owner identity; other projects cannot claim it. Pending and unknown builds keep their original slot and request identity. This adds no paid Actions allowance, runtime funding or review exemption. Runtime source publication, independent review and separate Claus approval still apply.
