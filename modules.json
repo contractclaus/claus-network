@@ -341,6 +341,17 @@
       "builtins": [
         "node:crypto"
       ]
+    },
+    {
+      "id": "infrastructure",
+      "path": "src/infrastructure/",
+      "imports": [
+        "shared",
+        "billing"
+      ],
+      "builtins": [
+        "node:crypto"
+      ]
     }
   ],
   "planned": [
