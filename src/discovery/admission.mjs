@@ -20,9 +20,10 @@ export function createSearchAdmission({store,identity,signingKey,now=Date.now}) 
         const id=digest({protocol:'search-admission/1',principal:who.principalId});
         const old=await tx.read('search-admission',id);
         const at=Math.max(now(),old?.value.at??0);
-        const available=Math.min(120,(old?.value.tokens??120)+Math.max(0,at-(old?.value.at??at))*0.002);
-        if(available<1)throw Object.assign(Error('rate_limited'),{code:'rate_limited',retryAfterSeconds:1});
-        await tx.write('search-admission',id,{tokens:available-1,at},old?.revision??0);
+        const previous=old?.value.units??Math.round((old?.value.tokens??120)*1000);
+        const available=Math.min(120000,previous+Math.max(0,at-(old?.value.at??at))*2);
+        if(available<1000)throw Object.assign(Error('rate_limited'),{code:'rate_limited',retryAfterSeconds:1});
+        await tx.write('search-admission',id,{units:available-1000,at},old?.revision??0);
         return who.principalId;
       });
       const at=now();
