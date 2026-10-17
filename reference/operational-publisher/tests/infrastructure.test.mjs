@@ -79,7 +79,11 @@ test('Runpod CPU requests use v2 shape and a public application must pass health
  const d=runpodDriver({token:()=> 'private',request});const r=await d.create(work,{bootDiskGiB:10,cpuType:'cpu5c'});
  assert.equal(r.ready,false);assert.equal(calls[0].url,'https://api.runpod.io/v2/pods');
  const body=JSON.parse(calls[0].init.body);assert.deepEqual(body.cpu,{id:'cpu5c',vcpuCount:2});assert.equal(body.startSsh,false);assert.equal(body.env,undefined);
+ assert.equal(Object.hasOwn(body,'globalNetworking'),false);
  assert.equal(calls[1].url,'https://pod123-8080.proxy.runpod.net/health');assert.equal(calls[1].init.headers,undefined);
+ const gpuWork={...work,manifest:{...work.manifest,gpu:'NVIDIA A40'}};
+ await d.create(gpuWork,{bootDiskGiB:30,cpuType:null});
+ const gpuBody=JSON.parse(calls[2].init.body);assert.equal(gpuBody.globalNetworking,false);assert.equal(gpuBody.cpu,undefined);
 });
 
 test('oversized log responses fail closed and do not return partial secret-bearing payloads',async()=>{
