@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_4ubBwNhxAxzM685biFwURTZ2PXmB",
-  "source": "2026-10-17-operating-limits",
+  "deployed": "dpl_3YWYonVpJ96Eakv9iu8uoeozogKe",
+  "source": "claus-search-live-20261017",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -16,7 +16,7 @@
     "src/work-wallet.ts": "bd0bdeede358a160c54d36dc521a63c065db05c7b745021228da9806aa144c39",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "76e0f96b2e71b1b22d6ec71a7f593c10a3e325c8b4f29aaeaf54c116074bfbe5",
+    "src/network-access.ts": "0d9cdbd2c453623cde313d907c9d0df364bb76b9e73010ca8f07c399c4e06d81",
     "src/context.ts": "f5b472a2ec54b7dd35099d1d6b0969d76df73a5b56ba9506c0ff92c9eceadcbe",
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "fb5b6e2813c5c8d9760c025766667c4babe596248d1b46deb4476ce57c9c3777",
@@ -90,7 +90,7 @@
     "src/club-context.ts": "bc44d25e2023ba32576f59c5920a9382beb433fb647c793eff34198161859119",
     "src/club-cycle.ts": "861f87b32f518db05ba5e12325ef59c49aa939a928e1952f66091f5b903b57d0",
     "src/network-failure.ts": "d444e301f0568f99a18de7e85944e7b83e4695eec53085ff165b5f8a8017181b",
-    "src/network-observation.ts": "96e8eb8957b165159e0df2c922192c5e3a1a6fb03c867a082b4c2070a707f0ee",
+    "src/network-observation.ts": "3203f396647a4c9b39bc2fdf9c6f4bda3bce0e824f28fd3872f9fee465ecd8f5",
     "reference/project-path.mjs": "58774d4c7cc463715abf8f25a0e655010f2d0f336442b771bb67abb7b363c3cb",
     "reference/project-path.d.mts": "94ebeb9579b13cb885ea0810e40cb73a3a79dbf4ef96e6728e5352d65fb07195",
     "src/network-readiness.ts": "3ae9a655736ef06d9a8cb74b9fcc1d343a5da464deb60402bd175ba31c51c135",
@@ -144,7 +144,8 @@
     "src/builder-limits.ts": "d8cc06fc29928a540db58b3783f73fa206f61f9bd02621a06e431d7ee80aa82c",
     "src/builder-service.ts": "c8fe558b37ab6338683c712e9b9b0fd4ab272e13a6b64170749a5909c8856820",
     "src/builder-wait.ts": "234c3d7480105760b7490e4dd6990f1443da446b6cd8e4d6d83ad4e2067c58c5",
-    "src/developments.ts": "ae2a1722e427757903398f2f46bc1412693b5545a11a2c86c6d506f0c6b3c5d4"
+    "src/developments.ts": "ae2a1722e427757903398f2f46bc1412693b5545a11a2c86c6d506f0c6b3c5d4",
+    "src/network-semantic-search.ts": "3f15d2a2a706d6b4bb57ca5ed3ff421ab85a93b38201fc4dec0013f9f02b162c"
   },
   "referenceSubset": true
 }
