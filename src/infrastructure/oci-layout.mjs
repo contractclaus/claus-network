@@ -12,7 +12,7 @@ function json(bytes){check(bytes&&bytes.length<=262144);try{return JSON.parse(by
 // Parse, never extract, an OCI tar. Layer tarballs remain opaque hashed blobs.
 // Only reachable descriptors are published, never extra files in the archive.
 export function readOciLayout(archive,imageDigest){
- check(Buffer.isBuffer(archive)&&archive.length>=1024&&archive.length<=33554432&&archive.length%512===0);
+ check(Buffer.isBuffer(archive)&&archive.length>=1024&&archive.length<=134217728&&archive.length%512===0);
  const files=new Map();let ended=false;
  for(let at=0;at<archive.length;){
   const header=archive.subarray(at,at+512);

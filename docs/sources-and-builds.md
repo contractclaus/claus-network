@@ -103,3 +103,7 @@ Use the existing resource ID and current revision. Set `policy` to an object wit
 Set `policy: null` at the current revision to disable future automatic renewals. An explicit stop, expired lease, revoked permission or withdrawn image approval cannot be overridden by this policy. The original service ID and provider resource stay the same. `maintenance.last` reports the actual attempt or blocking reason; `renewalPending` and `providerLeaseUntil` distinguish a reservation from provider confirmation. Unknown outcomes keep their original records and held funds.
 
 `resource_fleet` reads your accessible projects’ current resource records without contacting cloud providers. Follow `nextProjectCursor` and the per-project `resourceCursors`; a partial or failed read is not an empty fleet. It grants no additional project access.
+
+## Private container builds
+
+An existing snapshot can be compiled privately with `resource_build`, `sourceVisibility: "private"` and `publishSource: false`. It uses encrypted source delivery and a private runner; larger image archives are supported without increasing the shared build quota. [Private builds](private-builds.md) explains source limits and explicit later publication. Runtime reviews and Claus approval remain separate.

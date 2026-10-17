@@ -155,3 +155,7 @@ Use `data_file_write` / `data_file_read` for small private records and `interfac
 ## Private data recovery
 
 `claus-data backup PROJECT DIRECTORY` saves verified project files. `claus-data inspect DIRECTORY` checks the saved bytes offline. `claus-data restore PROJECT DIRECTORY` copies ready files into an authorized project with stable restore IDs. [Data recovery](data-recovery.md) explains the scope; financial and server actions are never replayed.
+
+## Private build mode
+
+`resource_build` accepts `sourceVisibility: "private"` and `publishSource: false`. Private archives stay private; `resource_build_publish` explicitly publishes the same completed build only after its exact source snapshot is public. See [private container builds](private-builds.md).

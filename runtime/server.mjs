@@ -63,7 +63,7 @@ import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
 import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {createPublicAppearances} from '../src/releases/appearance.mjs';
 
-export function createApplication({dataObjects=null,registryOrigin='https://claus-network-api.vercel.app',imageArchive=null,ociBuildPorts={},ociBuildEnabled=false,infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
+export function createApplication({dataObjects=null,registryOrigin='https://claus-network-api.vercel.app',imageArchive=null,ociBuildPorts={},ociBuildEnabled=false,ociPrivateEnabled=false,ociPrivateSecret=null,infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:tx=>access.consumeProjects(tx),
@@ -151,7 +151,7 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
  workflows=createWorkflows({store,identity,apps,now,admit:access.collaboration});
  const discovery=createDiscovery({store,projects,apps,services,now});
  const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
- const ociBuilds=createOciBuilds({store,identity,projects,jobs,artifacts,images:imageArchive,now,ports:ociBuildPorts,enabled:ociBuildEnabled});
+ const ociBuilds=createOciBuilds({store,identity,projects,jobs,artifacts,images:imageArchive,sourceFiles,privateEnabled:ociPrivateEnabled,privateSecret:ociPrivateSecret,now,ports:ociBuildPorts,enabled:ociBuildEnabled});
  const imageRegistry=createImageRegistry({store,identity,projects,artifacts,images:imageArchive,origin:registryOrigin,now});
  const infrastructure=createInfrastructure({store,identity,projects,now,ports:infrastructurePorts,enabled:infrastructureEnabled});
  const workers=createWorkers({store,identity,projects,artifacts,now,ports:workerPorts,enabled:workersEnabled});

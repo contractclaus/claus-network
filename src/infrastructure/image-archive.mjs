@@ -3,7 +3,7 @@ import {inflateRawSync} from 'node:zlib';
 import {requireThat} from '../shared/index.mjs';
 import {readOciLayout} from './oci-layout.mjs';
 
-export const MAX_IMAGE_BYTES=33554432;
+export const MAX_IMAGE_BYTES=134217728;
 export const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 
 // Read the one fixed Actions entry in memory. Never extract filesystem paths.

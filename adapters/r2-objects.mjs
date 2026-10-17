@@ -9,7 +9,7 @@ const code=(name,details)=>Object.assign(Error(name),{code:name,...details});
 export async function createR2Objects({accountId,bucket,accessKeyId,secretAccessKey,maxBytes=67108864,timeoutMs=30000,sdk,transport,uploads=false}){
  requireThat(/^[a-f0-9]{32}$/.test(accountId)&&/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket),'r2_target_invalid');
  requireThat(Number.isSafeInteger(maxBytes)&&maxBytes>0&&maxBytes<=268435456,'r2_size_limit_invalid');
- requireThat(Number.isSafeInteger(timeoutMs)&&timeoutMs>=1000&&timeoutMs<=30000,'r2_timeout_invalid');
+ requireThat(Number.isSafeInteger(timeoutMs)&&timeoutMs>=1000&&timeoutMs<=60000,'r2_timeout_invalid');
  const S=sdk??await import('@aws-sdk/client-s3');
  const client=transport??new S.S3Client({region:'auto',endpoint:`https://${accountId}.r2.cloudflarestorage.com`,forcePathStyle:true,
   credentials:{accessKeyId,secretAccessKey},maxAttempts:1,requestChecksumCalculation:'WHEN_REQUIRED',responseChecksumValidation:'WHEN_REQUIRED'});

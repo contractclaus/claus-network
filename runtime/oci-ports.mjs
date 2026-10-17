@@ -34,7 +34,7 @@ export function ociPorts({env=process.env,request=fetch}={}){
       requireThat(verifyObservation(work,r)&&r.buildId===work.id&&canonical(r.receipt)===canonical(receipt),'oci_image_download_unverified');
       const url=new URL(r.url);
       requireThat(url.protocol==='https:'&&!url.username&&!url.password&&['.blob.core.windows.net','.githubusercontent.com'].some(s=>url.hostname.endsWith(s)),'oci_image_redirect_invalid');
-      const response=await request(url,{redirect:'error',signal:AbortSignal.timeout(25000)});
+      const response=await request(url,{redirect:'error',signal:AbortSignal.timeout(90000)});
       requireThat(response.ok,'oci_image_download_unavailable');
       return bounded(response,MAX_IMAGE_BYTES+65536);
     },

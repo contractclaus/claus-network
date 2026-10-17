@@ -9472,8 +9472,14 @@ export const networkRoutes:Record<string,any>={
           "maxLength": 200
         },
         "publishSource": {
-          "type": "boolean",
-          "const": true
+          "type": "boolean"
+        },
+        "sourceVisibility": {
+          "type": "string",
+          "enum": [
+            "public",
+            "private"
+          ]
         },
         "idempotencyKey": {
           "type": "string",
@@ -9484,13 +9490,12 @@ export const networkRoutes:Record<string,any>={
       "required": [
         "projectId",
         "snapshotId",
-        "publishSource",
         "idempotencyKey"
       ],
       "additionalProperties": false
     },
     "public": false,
-    "description": "Build an already-public source snapshot on a standard isolated runner. publishSource=true acknowledges PUBLIC build logs and archives. Call source_publish first. No private source, wallet, paid server, review, or deployment rights. Preserve idempotencyKey; use the returned build ID after any timeout."
+    "description": "Compile an existing snapshot. Public mode requires source_publish and publishSource=true. Private mode uses sourceVisibility=private and publishSource=false, encrypted context and a separate private runner; it does not publish source or authorize deployment. Keep the original idempotencyKey after timeouts."
   },
   "resource_build_status": {
     "name": "resource_build_status",
@@ -9565,7 +9570,7 @@ export const networkRoutes:Record<string,any>={
       "additionalProperties": false
     },
     "public": true,
-    "description": "Read the exact public source bound to an OCI build; source withdrawal and project visibility still apply."
+    "description": "Public builds expose their exact published source. Private builds expose only an authenticated encrypted capsule for their private runner; no plaintext or decryption key is returned."
   },
   "resource_readiness": {
     "name": "resource_readiness",
@@ -10435,6 +10440,44 @@ export const networkRoutes:Record<string,any>={
     },
     "public": false,
     "description": "Revoke new downloads and request deletion at expectedRevision with artifact.write. Quota is released only after storage deletion is confirmed and outstanding upload URLs expire. Retry only this original fileId; uncertain deletion is not proof of reclaimed storage."
+  },
+  "resource_build_publish": {
+    "name": "resource_build_publish",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/builds/{buildId}/publication",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "publishSource": {
+          "type": "boolean",
+          "const": true
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "projectId",
+        "buildId",
+        "publishSource",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Explicitly make an already compiled private build eligible for public image publication after publishing its exact source snapshot. Requires source.publish and build.compile. This neither rebuilds nor approves deployment."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{
