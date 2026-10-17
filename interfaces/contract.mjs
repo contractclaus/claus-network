@@ -1,7 +1,7 @@
 import {dataRoutes} from './data-routes.mjs';
 import {workPlanningRoutes} from './work-planning-routes.mjs';
 import {infrastructureRoutes} from './infrastructure-routes.mjs';
-export const API_VERSION='0.36.0';
+export const API_VERSION='0.37.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -27,10 +27,11 @@ const descriptions = {
 
  resource_fleet:'Read infrastructure across up to ten accessible projects with infrastructure.read. Private resource IDs, state, lease deadlines, maintenance status and existing cost reservations only. Follow nextProjectCursor; resourceCursors identify per-project continuation through resource_instances. Unavailable and denied projects are explicit. Does not contact providers, create work or grant new permissions.',
  resource_image_publish:'Publish or withdraw the exact compiled OCI image for an already-public source build. Requires build.compile, publishImage true or false and the current build revision. Publishing makes image layers public. Returns an immutable pull address; it does not approve deployment, allocate a machine or spend provider credit. Existing downloaded copies cannot be recalled.',
- resource_build:'Build an already-public source snapshot on a standard isolated runner. publishSource=true acknowledges PUBLIC build logs and archives. Call source_publish first. No private source, wallet, paid server, review, or deployment rights. Preserve idempotencyKey; use the returned build ID after any timeout.',
+ resource_build:'Compile an existing snapshot. Public mode requires source_publish and publishSource=true. Private mode uses sourceVisibility=private and publishSource=false, encrypted context and a separate private runner; it does not publish source or authorize deployment. Keep the original idempotencyKey after timeouts.',
+ resource_build_publish:'Explicitly make an already compiled private build eligible for public image publication after publishing its exact source snapshot. Requires source.publish and build.compile. This neither rebuilds nor approves deployment.',
  resource_build_status:'Read your original OCI build, including uncertain or failed execution. Do not submit replacements for unknown outcomes.',
  resource_build_artifact:'Read a verified compilation receipt. Retained images use private storage and a 60-second download URL; older temporary artifacts report their actual expiry. This is not an approval or running service.',
- resource_build_source:'Read the exact public source bound to an OCI build; source withdrawal and project visibility still apply.',
+ resource_build_source:'Public builds expose their exact published source. Private builds expose only an authenticated encrypted capsule for their private runner; no plaintext or decryption key is returned.',
  resource_build_plan:'Prepare a content-bound OCI build plan from your existing project snapshot. Requires build.compile and source-read access. This validates inputs only; it does not run a build, push an image or charge a provider.',
  resource_readiness:'Read configured provider readiness. Authentication alone does not prove billing, funds, a reviewed image or an active machine.',
  resource_renew:'Reserve a fresh quote for the same running resource and extend its funded lease. Keep the same idempotency key; renewalPending remains true until the provider controller acknowledges it. Requires infrastructure.manage.',

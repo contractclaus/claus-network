@@ -1,0 +1,54 @@
+name: Claus private OCI
+run-name: Claus OCI ${{ inputs.build_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: Original private OCI build ID
+        required: true
+        type: string
+      context_key:
+        description: Single-build decryption key
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: claus-oci-${{ inputs.build_id }}
+  cancel-in-progress: false
+jobs:
+  compile:
+    if: github.repository == 'contractclaus/claus-private-builds' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Compile encrypted private source
+        env:
+          CLAUS_OCI_BUILD_ID: ${{ inputs.build_id }}
+          CLAUS_OCI_CONTEXT_KEY: ${{ inputs.context_key }}
+        run: node scripts/private-oci-runner.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: oci-receipt
+          path: ${{ runner.temp }}/claus-oci/receipt.json
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: oci-image
+          path: ${{ runner.temp }}/claus-oci/image.tar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: failure()
+        with:
+          name: oci-build-log
+          path: ${{ runner.temp }}/claus-oci/failure.txt
+          retention-days: 1

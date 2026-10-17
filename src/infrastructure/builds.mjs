@@ -1,9 +1,10 @@
 import {digest,integer,requireThat,text} from '../shared/index.mjs';
 import {createOciBuildPlan} from './build-plan.mjs';
+import {sealPrivateContext} from './private-context.mjs';
 
 // Builds have no wallet or deployment authority. Public-source consent is
 // explicit because standard public GitHub runners expose build logs/artifacts.
-export function createOciBuilds({store,identity,projects,jobs,artifacts,images=null,now=()=>Date.now(),ports={},enabled=false}) {
+export function createOciBuilds({store,identity,projects,jobs,artifacts,images=null,sourceFiles=null,privateEnabled=false,privateSecret=null,now=()=>Date.now(),ports={},enabled=false}) {
   const kind='oci-build-v1';
   const complete=new Set(['compiled','failed','cancelled','blocked']);
   async function owned(reader,projectId,id){const row=await reader.read('oci-builds',text(id));requireThat(row?.value.projectId===projectId,'not_found');return row;}
@@ -19,17 +20,27 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
     // its published source does. Explicit revocation still invalidates it.
     return identity.publishedBuildAllowed?identity.publishedBuildAllowed(v.actor,v.projectId,reader):identity.allowed(v.actor,'build.compile',{projectId:v.projectId},reader);
   }
+  async function privatePlan(v){
+    requireThat(sourceFiles,'oci_private_not_enabled');
+    const row=await store.read('snapshots',digest({projectId:v.projectId,id:v.snapshotId}));
+    requireThat(row?.value.projectId===v.projectId,'not_found');
+    const files=[];for(let i=0;i<row.value.files.length;i+=8)files.push(...await Promise.all(row.value.files.slice(i,i+8).map(f=>sourceFiles.get(v.projectId,f.hash))));
+    return createOciBuildPlan({projectId:v.projectId,snapshotId:v.snapshotId,dockerfile:v.dockerfile,files});
+  }
   return {
-    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:2,projectConcurrentBuilds:1,globalBuildsPerWindow:2,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
-    async submit(actor,projectId,{snapshotId,dockerfile='Dockerfile',publishSource,idempotencyKey}){
+    discovery(){return {enabled:enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function',profile:kind,sourceVisibility:'explicit-public-snapshot',privateSource:privateEnabled&&!!privateSecret,artifact:'OCI archive, compiled only',deployment:false,maxImageBytes:33554432,maxPrivateImageBytes:134217728,maxSourcePayloadBytes:3200000,projectBuildsPerWindow:2,projectConcurrentBuilds:1,globalBuildsPerWindow:2,windowSeconds:90000,artifactStorage:images?.enabled?'private-r2':'temporary-github',artifactRetentionDays:images?.enabled?null:1,downloadUrlSeconds:images?.enabled?60:null};},
+    async submit(actor,projectId,{snapshotId,dockerfile='Dockerfile',sourceVisibility='public',publishSource,idempotencyKey}){
       await identity.authorize(actor,'build.compile',{projectId});
       text(idempotencyKey);requireThat(idempotencyKey.length<=128,'invalid_identifier');
-      requireThat(publishSource===true,'oci_public_source_consent_required');
-      const id=digest({projectId,kind,idempotencyKey}),requestHash=digest({snapshotId,dockerfile,publishSource});
+      requireThat(['public','private'].includes(sourceVisibility),'oci_invalid_visibility');
+      const isPrivate=sourceVisibility==='private';
+      requireThat(isPrivate?publishSource!==true:publishSource===true,'oci_public_source_consent_required');
+      if(isPrivate)requireThat(privateEnabled&&privateSecret&&sourceFiles,'oci_private_not_enabled');
+      const id=digest({projectId,kind,idempotencyKey}),requestHash=digest({...{snapshotId,dockerfile,publishSource},...(isPrivate?{sourceVisibility:'private'}:{})});
       const prior=await store.read('oci-builds',id);
       if(prior){requireThat(prior.value.requestHash===requestHash,'idempotency_conflict');return visible(store,prior);}
       requireThat(enabled&&typeof ports.dispatch==='function'&&typeof ports.inspect==='function','oci_builds_not_enabled');
-      const published=await projects.publicSource(digest({projectId,id:snapshotId}));
+      const published=isPrivate?{projectId,snapshotId,files:await projects.files(actor,projectId,snapshotId)}:await projects.publicSource(digest({projectId,id:snapshotId}));
       requireThat(published.projectId===projectId&&published.snapshotId===snapshotId,'oci_source_not_public');
       const plan=createOciBuildPlan({projectId,snapshotId,dockerfile,files:published.files});
       sourcePayload(id,plan);
@@ -52,11 +63,22 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
         }
         const job=await jobs.enqueue(tx,{projectId,kind,idempotencyKey,payload:{buildId:id},authority:{actor}});
         requireThat(job.id===id,'oci_job_binding_mismatch');
-        const value={id,projectId,snapshotId,dockerfile,requestHash,publishSource:true,actor,planId:plan.id,sourceHash:plan.sourceHash,state:'queued',createdAt:now(),artifactHash:null};
+        const value={id,projectId,snapshotId,dockerfile,requestHash,publishSource:!isPrivate,...(isPrivate?{sourceVisibility:'private'}:{}),actor,planId:plan.id,sourceHash:plan.sourceHash,state:'queued',createdAt:now(),artifactHash:null};
         const saved=await tx.write('oci-builds',id,value,0);
         await tx.write('oci-capacity','standard',{entries:[...active,{id,projectId,at:now()}]},row?.revision??0);
         return visible(tx,saved);
       });
+    },
+    async publish(actor,projectId,{buildId,expectedRevision,publishSource}){
+      requireThat(publishSource===true,'oci_public_source_consent_required');
+      await identity.authorize(actor,'source.publish',{projectId});
+      await identity.authorize(actor,'build.compile',{projectId});
+      const row=await owned(store,projectId,buildId);requireThat(row.value.state==='compiled','build_not_complete');
+      const publication=await projects.publicSource(digest({projectId,id:row.value.snapshotId}));
+      const plan=createOciBuildPlan({projectId,snapshotId:row.value.snapshotId,dockerfile:row.value.dockerfile,files:publication.files});
+      requireThat(plan.id===row.value.planId&&plan.sourceHash===row.value.sourceHash,'oci_plan_changed');
+      return store.transaction(async tx=>{await identity.authorize(actor,'source.publish',{projectId},tx);await identity.authorize(actor,'build.compile',{projectId},tx);const current=await owned(tx,projectId,buildId);requireThat(current.value.state==='compiled','build_not_complete');if(current.value.publishSource===true)return visible(tx,current);requireThat(current.revision===expectedRevision,'revision_conflict');
+        const p=await tx.read('public-sources',digest({projectId,id:current.value.snapshotId}));requireThat(p?.value.published===true,'oci_source_not_public');return visible(tx,await tx.write('oci-builds',buildId,{...current.value,publishSource:true,publishedAt:now()},current.revision));});
     },
     async get(actor,projectId,id){await identity.authorize(actor,'artifact.read',{projectId});return visible(store,await owned(store,projectId,id));},
     async artifact(actor,projectId,id){
@@ -73,20 +95,19 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
     },
     async publicSource(id){
       const v=(await store.read('oci-builds',text(id)))?.value;
-      requireThat(v?.publishSource===true&&await (identity.publishedBuildAllowed?identity.publishedBuildAllowed(v.actor,v.projectId,store):authorized(store,v)),'not_found');
+      requireThat(v&&(v.publishSource===true||v.sourceVisibility==='private'&&privateSecret)&&await authorized(store,v),'not_found');
       const job=(await store.read('workflow-jobs',id))?.value;
       requireThat(job&&job.state!=='cancelled'&&job.state!=='blocked','not_found');
       // No source first becomes public without the separate submit opt-in.
-      const published=await projects.publicSource(digest({projectId:v.projectId,id:v.snapshotId}));
-      const plan=createOciBuildPlan({projectId:v.projectId,snapshotId:v.snapshotId,dockerfile:v.dockerfile,files:published.files});
+      const plan=v.publishSource===true?createOciBuildPlan({projectId:v.projectId,snapshotId:v.snapshotId,dockerfile:v.dockerfile,files:(await projects.publicSource(digest({projectId:v.projectId,id:v.snapshotId}))).files}):await privatePlan(v);
       requireThat(plan.id===v.planId&&plan.sourceHash===v.sourceHash,'oci_plan_changed');
-      return sourcePayload(id,plan);
+      const payload=sourcePayload(id,plan);return v.publishSource===true?payload:sealPrivateContext(privateSecret,{id:v.id,projectId:v.projectId,planId:v.planId,sourceHash:v.sourceHash,visibility:'private'},payload);
     },
     async runOne(){
       if(typeof ports.inspect!=='function')return {idle:true,configured:false};
       const claim=await jobs.claim({kinds:[kind],leaseMs:images?.enabled?180000:90000});if(claim.idle)return claim;
       const v=(await owned(store,claim.job.projectId,claim.id)).value;
-      const work={id:v.id,projectId:v.projectId,planId:v.planId,sourceHash:v.sourceHash};
+      const work={id:v.id,projectId:v.projectId,planId:v.planId,sourceHash:v.sourceHash,...(v.sourceVisibility==='private'?{visibility:'private'}:{})};
       const blocked=()=>jobs.finish(claim,{state:'blocked',result:{error:'authorization_revoked'}},async tx=>{const r=await owned(tx,v.projectId,v.id);await tx.write('oci-builds',v.id,{...r.value,state:'blocked',error:'authorization_revoked'},r.revision);});
       const validate=async observation=>{
         requireThat(observation?.buildId===v.id&&['not_started','unknown','running','compiled','failed'].includes(observation.state),'oci_observation_invalid');
@@ -114,7 +135,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
           const receipt=observation.receipt;
           requireThat(receipt?.planId===v.planId&&receipt.sourceHash===v.sourceHash&&receipt.projectId===v.projectId&&receipt.buildId===v.id&&receipt.evidence==='compiled_only','oci_receipt_mismatch');
           requireThat(/^sha256:[a-f0-9]{64}$/.test(receipt.imageDigest)&&/^sha256:[a-f0-9]{64}$/.test(receipt.archiveHash),'oci_receipt_invalid');
-          integer(receipt.archiveBytes,1,33554432);
+          integer(receipt.archiveBytes,1,v.sourceVisibility==='private'?134217728:33554432);
           requireThat(typeof ports.verify==='function'&&await ports.verify(receipt,observation)===true,'oci_receipt_unverified');
           if(images?.enabled&&await authorized(store,v)){
             await jobs.assertCurrent(claim);

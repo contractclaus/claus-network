@@ -23,6 +23,7 @@ export function createService({dataFiles,runtimeReleases,imageRegistry,ociBuilds
   public_resource_release:(_a,i)=>runtimeReleases.status(i.releaseId),
   resource_image_publish:(a,i)=>imageRegistry.publish(a,i.projectId,i),
   resource_build:(a,i)=>ociBuilds.submit(a,i.projectId,i),
+  resource_build_publish:(a,i)=>ociBuilds.publish(a,i.projectId,i),
   resource_build_status:(a,i)=>ociBuilds.get(a,i.projectId,i.buildId),
   resource_build_artifact:(a,i)=>ociBuilds.artifact(a,i.projectId,i.buildId),
   resource_build_source:(_a,i)=>ociBuilds.publicSource(i.buildId),

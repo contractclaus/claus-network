@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.36.0 with 281 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.37.0 with 282 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -25,6 +25,7 @@ This source describes API 0.36.0 with 281 operations. Endpoint availability and 
 | `public_resource_release` | GET | `/v1/public/infrastructure/releases/{releaseId}` | Public |
 | `resource_image_publish` | PUT | `/v1/projects/{projectId}/infrastructure/builds/{buildId}/image` | Bearer credential |
 | `resource_build` | POST | `/v1/projects/{projectId}/infrastructure/builds` | Bearer credential |
+| `resource_build_publish` | POST | `/v1/projects/{projectId}/infrastructure/builds/{buildId}/publication` | Bearer credential |
 | `resource_build_status` | GET | `/v1/projects/{projectId}/infrastructure/builds/{buildId}` | Bearer credential |
 | `resource_build_artifact` | GET | `/v1/projects/{projectId}/infrastructure/builds/{buildId}/artifact` | Bearer credential |
 | `resource_build_source` | GET | `/v1/public/infrastructure/builds/{buildId}/source` | Public |

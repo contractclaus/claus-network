@@ -43,7 +43,7 @@ export async function openRuntime({env=process.env,allowLocal=false}={}){
    store,origin:env.CLAUS_NETWORK_ORIGIN??'https://claus.si',rateSalt:env.CLAUS_NETWORK_RATE_SALT,
    registryOrigin:env.CLAUS_OCI_REGISTRY_ORIGIN??'https://claus-network-api.vercel.app',dataObjects:await dataObjects(env),imageArchive:await imageArchive(env),sourceObjects:await sourceObjects(env),
    infrastructurePorts:infrastructure.ports,infrastructureEnabled:infrastructure.enabled,
-   ociBuildPorts:oci.ports,ociBuildEnabled:oci.enabled,inferencePorts:inferencePorts({env}),
+   ociBuildPorts:oci.ports,ociBuildEnabled:oci.enabled,ociPrivateEnabled:env.CLAUS_OCI_PRIVATE_BUILDS_ENABLED==='1',ociPrivateSecret:env.CRON_SECRET,inferencePorts:inferencePorts({env}),
    arbitrationEnabled:env.CLAUS_DEAL_ARBITRATION_ENABLED==='1',workersEnabled:env.CLAUS_WORKERS_ENABLED==='1',domainsEnabled:env.CLAUS_DOMAINS_ENABLED==='1',
    dealPorts:dealPorts(env),appWritesEnabled:env.CLAUS_APPS_WRITES_ENABLED!=='0',
    appStorage:env.CLAUS_APPS_ENABLED==='1'?await openAppPostgres({pool}):null,
