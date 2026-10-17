@@ -1,7 +1,7 @@
 import {dataRoutes} from './data-routes.mjs';
 import {workPlanningRoutes} from './work-planning-routes.mjs';
 import {infrastructureRoutes} from './infrastructure-routes.mjs';
-export const API_VERSION='0.37.0';
+export const API_VERSION='0.38.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -108,6 +108,7 @@ const descriptions = {
  workflow_receipts: 'Read own workflow accepted-step receipts. Requires project.read. A requester acceptance is distinct from an IMD review.',
  app_session_create:'Create an expiring, revocable session for one app and selected nonfinancial actions after joining. Maximum 30 minutes, bounded by the login/delegate expiry. Parent revocation invalidates it. No wallet/project/admin authority.',
  app_session_revoke:'Revoke your own application session. A session cannot renew itself or issue other credentials.',
+ app_database_export:'Export the complete private application database as the project owner, including record revisions and request deduplication receipts. Follow nextCursor to the verified final page; app_database_backup_changed invalidates the entire backup. This is historical data, not permission to replay payments or jobs.',
  app_export:'Export complete application records, members, versions, free tasks and events as the project owner. Follow nextCursor. Save contentVersion; app_export_changed requires restarting. No credentials or financial balances are exported.',
  app_catalog: 'List published managed applications. Follow nextCursor as after.',
  public_app: 'Read the published application manifest, actions and schemas.',
@@ -237,6 +238,7 @@ export const ROUTES=Object.freeze([
  route('content_admin_grant','PUT','/v1/admin/content-operators/{principalId}',{principalId:string(),active:boolean,scopes:{type:'array',items:{type:'string',enum:['inspect','moderate','publish']},maxItems:3},expiresAt:{type:['integer','null'],minimum:0},expectedRevision:integer,reason:string(500)}),
  route('app_session_create','POST','/v1/apps/{projectId}/sessions',{projectId:string(),actions:{type:'array',minItems:1,maxItems:17,items:{type:'string',enum:['app_service_get','app_service_call','app_task_messages','app_task_message','app_task_review_request','app_task_review_submit','app_task_review_challenge','app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']}},expiresAt:integer}),
  route('app_session_revoke','DELETE','/v1/apps/{projectId}/sessions/{sessionId}',{projectId:string(),sessionId:string()}),
+ route('app_database_export','GET','/v1/projects/{projectId}/app/database-export',{projectId:string(),after:string(4096),limit:{type:'integer',minimum:1,maximum:50}},['projectId']),
  route('app_export','GET','/v1/projects/{projectId}/app/export',{projectId:string(),after:string(2048),limit:{type:'integer',minimum:1,maximum:25}},['projectId']),
  route('app_catalog','GET','/v1/public/apps',{after:string(),limit:{type:'integer',minimum:1,maximum:100}},[],true),
  route('public_app','GET','/v1/public/apps/{projectId}',{projectId:string()},undefined,true),

@@ -34,3 +34,7 @@ Signed project transfer archives also retain safe metadata for private files, OC
 ## SDK
 
 `interfaces/data-backup.mjs` exports `exportDataBackup`, `verifyDataBackup` and `restoreDataBackup`. Provide a private `writeBlob(hash, bytes)` sink or a `readBlob(hash, expectedBytes)` source. The helpers use the existing API and MCP operation semantics; they receive no provider key and cannot replay financial or server actions.
+
+## Complete application database
+
+For managed app records, service state and request receipts, use [Application database recovery](app-database-recovery.md). The file backup above does not replace the app database backup.

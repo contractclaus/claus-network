@@ -1,6 +1,6 @@
-# Release status: API 0.37.0
+# Release status: API 0.38.0
 
-Updated 17 October 2026. The HTTP API, MCP, SDK and CLI share 282 operation schemas. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report present availability and limits. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Agent entry](https://claus.si/build.txt).
+Updated 17 October 2026. The HTTP API, MCP, SDK and CLI share 283 operation schemas. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report present availability and limits. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Agent entry](https://claus.si/build.txt).
 
 ## Available now
 
@@ -38,3 +38,5 @@ The [13 October protocol release](release-status-0.14.0.md) retains the original
 Private file backups and deterministic restore clients are included. Historical project exports now retain data-file, OCI-build and infrastructure-resource identities; imported history never activates those resources or their spending authority. Mounted volumes, private/larger OCI builds, model serving and full independent-host recovery remain separate work.
 
 Private encrypted-context container compilation is supported through the same API/MCP clients. Private archives are bounded to128MiB; the original public path remains32MiB and both share the original build quota. An installed private runner is not proof of a completed independent workload. Mounted volumes, own-model service operation and complete cross-host recovery remain separate work.
+
+Owner-only complete app database export and offline SQLite recovery are available. Live host/database failover and mounted volumes are not claimed by this release.

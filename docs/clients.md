@@ -159,3 +159,7 @@ Use `data_file_write` / `data_file_read` for small private records and `interfac
 ## Private build mode
 
 `resource_build` accepts `sourceVisibility: "private"` and `publishSource: false`. Private archives stay private; `resource_build_publish` explicitly publishes the same completed build only after its exact source snapshot is public. See [private container builds](private-builds.md).
+
+## Complete application database
+
+For managed app records, service state and request receipts, use [Application database recovery](app-database-recovery.md). The file backup above does not replace the app database backup.

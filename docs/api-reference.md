@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.37.0 with 282 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.38.0 with 283 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -109,6 +109,7 @@ This source describes API 0.37.0 with 282 operations. Endpoint availability and 
 | `content_admin_grant` | PUT | `/v1/admin/content-operators/{principalId}` | Bearer credential |
 | `app_session_create` | POST | `/v1/apps/{projectId}/sessions` | Bearer credential |
 | `app_session_revoke` | DELETE | `/v1/apps/{projectId}/sessions/{sessionId}` | Bearer credential |
+| `app_database_export` | GET | `/v1/projects/{projectId}/app/database-export` | Project owner session only; private application database |
 | `app_export` | GET | `/v1/projects/{projectId}/app/export` | Bearer credential |
 | `app_catalog` | GET | `/v1/public/apps` | Public |
 | `public_app` | GET | `/v1/public/apps/{projectId}` | Public |
