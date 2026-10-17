@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
-  "snapshotId": "sha256:00ee2e2b05c280452679a060390e7a7a053e979e49fd0551ec5b4a3b33907751",
+  "snapshotId": "sha256:0289dad6f92960b552c7f95850c691c90782e451da746fdb39b0ac965e3704ed",
   "files": [
     {
       "path": "examples/semantic-search/Dockerfile",
@@ -9,11 +9,11 @@
     },
     {
       "path": "examples/semantic-search/server.py",
-      "sha256": "0ce93eb4df6978b281a19e9eedd539cb1cbca1487fef59d03623e962e614df61"
+      "sha256": "79a7aaced411f864b7f6744eb069233441afb04d906aa0a067965735f97555ce"
     },
     {
       "path": "examples/semantic-search/admission.py",
-      "sha256": "c3e7efe78e01e68fab298d2c2fb1cf9f18c59c4731903f625a5a294e4d6d908f"
+      "sha256": "1454f54f487b7c83adbfa92c225c8a3eb63bcb29feba3ed8a1e7f65094337cdd"
     },
     {
       "path": "examples/semantic-search/admission-key.json",
@@ -33,77 +33,77 @@
     },
     {
       "path": "examples/semantic-search/README.md",
-      "sha256": "d23a36bbd03efa339509b7744f80808c8b5ecb7e790402f87e9a3bf4effd347b"
+      "sha256": "d184d536204569ac8f895bf51fbd78806d5a2c51752e8dc0a6d6b75f8cab35c0"
     },
     {
       "path": "examples/semantic-search/test_service.py",
-      "sha256": "40078db46e276e20960fe65dc777d0bf93001583cc7f57f57c8b3743f2474555"
+      "sha256": "b31079769e4b28bc30628c692fc4dc26fb953a6975794a07c842bfe541a5a877"
     }
   ],
   "plan": {
-    "id": "sha256:ee7a5418485cb1158222fb4e3b3079be4990ded711290aaeaac0a651f42ac17d",
-    "sourceHash": "sha256:a04eb8f05a9a23c62d2fad1b4c8be593d56959517740d742c4915cd76c0bb903",
-    "sourceBytes": 63698
+    "id": "sha256:5042e85175d6ea3a42895d80b5c8d70e9bb89237457a692a0ecd882759610f6e",
+    "sourceHash": "sha256:3cbf5b5ade56472cae966f3e19225e590554bff27d448783f13972d6253c7f94",
+    "sourceBytes": 71309
   },
   "build": {
-    "id": "sha256:893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e",
-    "snapshotId": "sha256:00ee2e2b05c280452679a060390e7a7a053e979e49fd0551ec5b4a3b33907751",
-    "planId": "sha256:ee7a5418485cb1158222fb4e3b3079be4990ded711290aaeaac0a651f42ac17d",
-    "sourceHash": "sha256:a04eb8f05a9a23c62d2fad1b4c8be593d56959517740d742c4915cd76c0bb903",
-    "artifactHash": "sha256:4a05929b1ea42474cec4b19d1b201d60cfec93a8593924a3b62cdf0bd438fb35",
+    "id": "sha256:b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d",
+    "snapshotId": "sha256:0289dad6f92960b552c7f95850c691c90782e451da746fdb39b0ac965e3704ed",
+    "planId": "sha256:5042e85175d6ea3a42895d80b5c8d70e9bb89237457a692a0ecd882759610f6e",
+    "sourceHash": "sha256:3cbf5b5ade56472cae966f3e19225e590554bff27d448783f13972d6253c7f94",
+    "artifactHash": "sha256:6c8e9c9384fd317c16700c8a1ae9f0f2dbb21b4041a5709f4ad8219b882d7b05",
     "sourceVisibility": "private",
     "receipt": {
-      "archiveBytes": 113182720,
-      "archiveHash": "sha256:d14c779cc27cc6bf702577383ccf34132c70ca97cab652040922e1d18e495fdd",
+      "archiveBytes": 113183232,
+      "archiveHash": "sha256:f9ac8ad5e1dbb886f684f0790da268613a477060aa9aa5cfb7563e3ef3479364",
       "artifact": {
-        "digest": "sha256:460064553a88cbee82dfbac4269606a77ba41bd98c323268e45c1125dcc3e622",
-        "expiresAt": "2026-10-18T18:52:45Z",
-        "id": 12110488125,
-        "url": "https://github.com/contractclaus/claus-private-builds/actions/runs/39059988702/artifacts/12110488125"
+        "digest": "sha256:fb913f3ca64867c6c6fbb0acdffbb000b0e9dcc0a6dae16f37a42e15ba6a350c",
+        "expiresAt": "2026-10-18T19:41:44Z",
+        "id": 12111844952,
+        "url": "https://github.com/contractclaus/claus-private-builds/actions/runs/39063523098/artifacts/12111844952"
       },
-      "buildId": "sha256:893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e",
+      "buildId": "sha256:b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d",
       "evidence": "compiled_only",
-      "imageDigest": "sha256:07a1e3d9ff3725ef34d64c860ac956017260df7b11b840921410aa7f166c961e",
-      "planId": "sha256:ee7a5418485cb1158222fb4e3b3079be4990ded711290aaeaac0a651f42ac17d",
+      "imageDigest": "sha256:bf627bbd8e1f6204d61a1fcaa260d656f1e95a739584993ae59037e3bd9ab336",
+      "planId": "sha256:5042e85175d6ea3a42895d80b5c8d70e9bb89237457a692a0ecd882759610f6e",
       "projectId": "prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a",
-      "runId": "39059988702",
+      "runId": "39063523098",
       "runnerSha": "c3ae7e469c5aa72cbea77ef25cb10c055f9973d6",
-      "sourceHash": "sha256:a04eb8f05a9a23c62d2fad1b4c8be593d56959517740d742c4915cd76c0bb903",
+      "sourceHash": "sha256:3cbf5b5ade56472cae966f3e19225e590554bff27d448783f13972d6253c7f94",
       "storage": {
-        "archiveHash": "sha256:d14c779cc27cc6bf702577383ccf34132c70ca97cab652040922e1d18e495fdd",
-        "bytes": 113182720,
+        "archiveHash": "sha256:f9ac8ad5e1dbb886f684f0790da268613a477060aa9aa5cfb7563e3ef3479364",
+        "bytes": 113183232,
         "expiresAt": null,
         "profile": "private-r2-oci-v1",
         "state": "verified",
-        "verifiedAt": 1792263265332
+        "verifiedAt": 1792266202930
       },
       "verification": false,
       "version": 1
     }
   },
   "release": {
-    "id": "sha256:212bc9f9bfc4444303ca06df1465b58557b36eb29705e46a8fff674c0b4bfcc7",
-    "buildId": "sha256:893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e",
-    "buildHash": "sha256:4a05929b1ea42474cec4b19d1b201d60cfec93a8593924a3b62cdf0bd438fb35",
-    "sourceHash": "sha256:00ee2e2b05c280452679a060390e7a7a053e979e49fd0551ec5b4a3b33907751",
+    "id": "sha256:3dfe4243cbb03b754978674e3aeb1aec44cec3267659080a9ff01cf5cca41315",
+    "buildId": "sha256:b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d",
+    "buildHash": "sha256:6c8e9c9384fd317c16700c8a1ae9f0f2dbb21b4041a5709f4ad8219b882d7b05",
+    "sourceHash": "sha256:0289dad6f92960b552c7f95850c691c90782e451da746fdb39b0ac965e3704ed",
     "profile": "claus-runtime-image-v1",
     "manifest": {
       "command": [],
       "cpu": 2,
       "gpu": null,
       "healthPath": "/health",
-      "image": "claus-network-api.vercel.app/claus/893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e@sha256:07a1e3d9ff3725ef34d64c860ac956017260df7b11b840921410aa7f166c961e",
+      "image": "claus-network-api.vercel.app/claus/b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d@sha256:bf627bbd8e1f6204d61a1fcaa260d656f1e95a739584993ae59037e3bd9ab336",
       "memoryMiB": 4096,
       "mode": "model",
       "port": 8080,
       "region": "EU-NL-1",
       "storageGiB": 0,
       "version": 1,
-      "releaseHash": "sha256:212bc9f9bfc4444303ca06df1465b58557b36eb29705e46a8fff674c0b4bfcc7"
+      "releaseHash": "sha256:3dfe4243cbb03b754978674e3aeb1aec44cec3267659080a9ff01cf5cca41315"
     }
   },
-  "image": "claus-network-api.vercel.app/claus/893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e@sha256:07a1e3d9ff3725ef34d64c860ac956017260df7b11b840921410aa7f166c961e",
-  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/893896a9db1123beef2162bfa6141a3cb7b2eeda8112d0eb1daee0f7163bdf0e/manifests/sha256:07a1e3d9ff3725ef34d64c860ac956017260df7b11b840921410aa7f166c961e",
+  "image": "claus-network-api.vercel.app/claus/b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d@sha256:bf627bbd8e1f6204d61a1fcaa260d656f1e95a739584993ae59037e3bd9ab336",
+  "registryManifest": "https://claus-network-api.vercel.app/v2/claus/b37a7bf4f284bff9c098219445b48d204841ae10a85d41f677fc052de83eac0d/manifests/sha256:bf627bbd8e1f6204d61a1fcaa260d656f1e95a739584993ae59037e3bd9ab336",
   "runtimeProviderProfile": "claus-runpod-cpu-v1",
   "reviewProfile": "claus-runtime-image-v1",
   "interpretation": "The immutable build receipt links the compiled image to its source. The image build runs a real local-model warmup as its runtime user. Neither is independent approval or proof of hosting.",
@@ -116,13 +116,18 @@
     {
       "providerJobId": "4771a9e3-28f6-4444-8bb2-dc7b24309bdf",
       "approval": false
+    },
+    {
+      "providerJobId": "dc6d6f08-9b3c-4c44-89e5-58be7f7e8f73",
+      "approval": false
     }
   ],
   "changes": [
-    "Shed oldest idle header connections and interleave bounded accept bursts with ready work",
-    "Steady ticket clock anchored at synchronized startup prevents transient clock poisoning and expired-ticket reopening",
-    "Real dependency import and local-model embedding during image build",
-    "Exact build receipt binds snapshot, plan, image and private archive"
+    "Complete bounded request bodies are received before taking application workers; combined two-second read deadline",
+    "Per-owner replay storage preserves unrelated owners and one-use protection",
+    "One-second response timeout and explicit HTTP 100-continue handling",
+    "Maximum ticket acceptance window documented as 22 seconds; original clock guard preserved",
+    "Exact image receipt and real model warmup retained"
   ],
   "approvalGranted": false,
   "modelHosted": false
