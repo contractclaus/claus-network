@@ -56,11 +56,17 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
           if(entry.at>now()-90000000||pending)active.push(entry);
           if(pending)busy.push(entry);
         }
-        let reservedPrivate=false;
+        let reservedPrivate=false,reservedRetry=false;
         const standard=active.filter(entry=>entry.reservedPrivate!==true);
-        if(standard.length>=2&&isPrivate&&reservedPrivateOwner&&!active.some(entry=>entry.reservedPrivate===true)){
+        const reserved=active.filter(entry=>entry.reservedPrivate===true);
+        // One bounded retry of identical source after a confirmed runner failure.
+        // An unknown, successful or already-retried build never frees this slot.
+        const failed=reserved.length===1?await tx.read('oci-builds',reserved[0].id):null;
+        const canRetry=reserved.length===1&&!reserved[0].reservedRetry&&failed?.value.state==='failed'&&failed.value.error==='oci_runner_failure'&&failed.value.projectId===projectId&&failed.value.planId===plan.id;
+        if(standard.length>=2&&isPrivate&&reservedPrivateOwner&&(reserved.length===0||canRetry)){
           const credential=await identity.credential(actor,tx),principal=(await tx.read('principals',credential.principalId))?.value;
           reservedPrivate=credential.kind==='owner'&&principal?.chainId===1&&principal.address?.toLowerCase()===reservedPrivateOwner;
+          reservedRetry=reservedPrivate&&canRetry;
         }
         if((standard.length>=2&&!reservedPrivate)||busy.some(x=>x.projectId===projectId)){
           const relevant=busy.some(x=>x.projectId===projectId)?busy.filter(x=>x.projectId===projectId):active;
@@ -71,7 +77,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
         requireThat(job.id===id,'oci_job_binding_mismatch');
         const value={id,projectId,snapshotId,dockerfile,requestHash,publishSource:!isPrivate,...(isPrivate?{sourceVisibility:'private'}:{}),actor,planId:plan.id,sourceHash:plan.sourceHash,state:'queued',createdAt:now(),artifactHash:null};
         const saved=await tx.write('oci-builds',id,value,0);
-        await tx.write('oci-capacity','standard',{entries:[...active,{id,projectId,at:now(),...(reservedPrivate?{reservedPrivate:true}:{})}]},row?.revision??0);
+        await tx.write('oci-capacity','standard',{entries:[...active,{id,projectId,at:now(),...(reservedPrivate?{reservedPrivate:true}:{}),...(reservedRetry?{reservedRetry:true,retryOf:reserved[0].id}:{})}]},row?.revision??0);
         return visible(tx,saved);
       });
     },

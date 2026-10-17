@@ -35,3 +35,15 @@ test('an unresolved reserved build remains occupied beyond the normal window',as
  await assert.rejects(f.api.submit('claus','another',{...f.input,idempotencyKey:'replace-unknown'}),{code:'oci_build_capacity_reached'});
  assert((await f.store.read('oci-capacity','standard')).value.entries.some(e=>e.id===b.id&&e.reservedPrivate));
 });
+test('only one same-source retry follows a confirmed failure, retaining the original record',async t=>{
+ const f=await setup(t),b=await f.api.submit('claus','new',f.input);
+ const fail=async id=>f.store.transaction(async tx=>{const r=await tx.read('oci-builds',id),j=await tx.read('workflow-jobs',id);await tx.write('oci-builds',id,{...r.value,state:'failed',error:'oci_runner_failure'},r.revision);await tx.write('workflow-jobs',id,{...j.value,state:'failed'},j.revision);});
+ await fail(b.id);
+ await assert.rejects(f.api.submit('claus','new',{...f.input,snapshotId:'other',idempotencyKey:'different-source'}),{code:'oci_build_capacity_reached'});
+ const retry=await f.api.submit('claus','new',{...f.input,idempotencyKey:'repair-one'});
+ const entries=(await f.store.read('oci-capacity','standard')).value.entries;
+ assert.equal(entries.at(-1).retryOf,b.id);assert.equal(entries.at(-1).reservedRetry,true);
+ assert.equal((await f.store.read('oci-builds',b.id)).value.state,'failed');
+ await fail(retry.id);
+ await assert.rejects(f.api.submit('claus','new',{...f.input,idempotencyKey:'repair-two'}),{code:'oci_build_capacity_reached'});
+});
