@@ -122,7 +122,7 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
         const rows=await reader.list('infrastructure-resources',{after,limit:100});
         for(const r of rows){
           const v=r.value;
-          if(v.profile.id!==profileId||!(v.createdAt>now()-86400000||v.billing==='reserved'))continue;
+          if(v.profile.id!==profileId||!((v.settledAt??v.createdAt)>now()-86400000||v.billing==='reserved'))continue;
           // A final, settled receipt replaces its maximum reservation. Unknown
           // outcomes retain the entire reservation, including older holds.
           committed+=amount(v.billing==='settled'&&v.actual!==undefined&&v.actual!==null?v.actual:v.reservedMaximum??v.quote.maximum);

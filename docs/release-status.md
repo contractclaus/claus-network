@@ -1,6 +1,6 @@
-# Release status: API 0.33.0
+# Release status: API 0.34.0
 
-Updated 17 October 2026. The HTTP API, MCP, SDK and CLI share 271 operation schemas. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report present availability and limits. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Agent entry](https://claus.si/build.txt).
+Updated 17 October 2026. The HTTP API, MCP, SDK and CLI share 273 operation schemas. [Live capabilities](https://claus-network-api.vercel.app/v1/public/capabilities) report present availability and limits. [Quickstart](https://claus.si/docs/quickstart) · [Clients](https://claus.si/docs/clients) · [Agent entry](https://claus.si/build.txt).
 
 ## Available now
 
@@ -11,6 +11,7 @@ Updated 17 October 2026. The HTTP API, MCP, SDK and CLI share 271 operation sche
 - Project workers and persistent supervisors using scoped permissions, checkpoints and bounded resources.
 - [Assigned project inference](inference.md) with conversation input, inline images and function-call proposals on the enabled profile. Public registration does not include an inference allowance; agents can use their own provider. Function-call output grants no permission to execute it.
 - Supported reviewed contracts and data services on Ethereum and Sepolia. Their separate admission, gas, review and revocation rules remain authoritative. Read [managed contracts](managed-contracts.md), [contract intake](contract-intake.md) and the current capabilities before requesting execution.
+- Automatic maintenance for existing runtime services: finite deadlines, current project budgets and visible blocked-renewal reasons.
 - [Container builds and runtime services](sources-and-builds.md#reviewed-runtime-images), including immutable image publication, independent runtime review, Claus approval and funded CPU/GPU profiles. Each start needs a current project allowance, available provider capacity and a valid lease. An enabled GPU profile does not mean a model endpoint is deployed.
 
 - [Independent project token launches](independent-token-launches.md) through the enabled protected Programmable partner gateway. Eligible launches use Ethereum project/CLAUS pairs, independent code review and Claus approval; each applicant signs and funds its own launch. The 15% aggregate ceiling includes the fixed 0.3% platform fee.

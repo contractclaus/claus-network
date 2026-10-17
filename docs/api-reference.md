@@ -1,9 +1,10 @@
 # API reference
 
-This source describes API 0.33.0 with 271 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.34.0 with 273 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `resource_fleet` | GET | `/v1/infrastructure` | Bearer credential |
 | `resource_control_set` | PUT | `/v1/admin/infrastructure/controls` | Network owner session |
 | `resource_control` | GET | `/v1/infrastructure/controls/{profileId}` | Assigned infrastructure operator or network owner session |
 | `resource_grants` | GET | `/v1/infrastructure/controls/{profileId}/grants` | Assigned infrastructure operator or network owner session |
@@ -22,6 +23,7 @@ This source describes API 0.33.0 with 271 operations. Endpoint availability and 
 | `resource_build_plan` | POST | `/v1/projects/{projectId}/infrastructure/build-plan` | Bearer credential |
 | `resource_readiness` | GET | `/v1/projects/{projectId}/infrastructure/readiness` | Bearer credential |
 | `resource_renew` | POST | `/v1/projects/{projectId}/infrastructure/instances/{resourceId}/renew` | Bearer credential |
+| `resource_maintenance_set` | PUT | `/v1/projects/{projectId}/infrastructure/instances/{resourceId}/maintenance` | Bearer credential |
 | `resource_profiles` | GET | `/v1/projects/{projectId}/infrastructure/profiles` | Bearer credential |
 | `resource_instances` | GET | `/v1/projects/{projectId}/infrastructure` | Bearer credential |
 | `resource_quote` | POST | `/v1/projects/{projectId}/infrastructure/quotes` | Bearer credential |

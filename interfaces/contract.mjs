@@ -1,6 +1,6 @@
 import {workPlanningRoutes} from './work-planning-routes.mjs';
 import {infrastructureRoutes} from './infrastructure-routes.mjs';
-export const API_VERSION='0.33.0';
+export const API_VERSION='0.34.0';
 const string=(maxLength=256)=>({type:'string',minLength:1,maxLength});
 const integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 const operatingDeadline={...integer,type:['integer','null'],description:'Operator policy deadline in Unix milliseconds; explicit null keeps the policy active until disabled or its budget is exhausted.'};
@@ -14,6 +14,7 @@ const reviewEvidence={type:'array',maxItems:8,items:object({label:string(120),co
 const reviewPolicy=object({reviewerId:string(),selectionBasis:string(1000),criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),description:string(1000)})}});
 const reviewReport=object({criteria:{type:'array',minItems:1,maxItems:12,items:object({id:string(48),outcome:{type:'string',enum:['pass','fail','insufficient_evidence']},rationale:string(2000),evidenceHashes:{type:'array',maxItems:16,items:string(71)}})},evidence:reviewEvidence,conflicts:string(2000),limitations:string(2000)});
 const descriptions = {
+ resource_fleet:'Read infrastructure across up to ten accessible projects with infrastructure.read. Private resource IDs, state, lease deadlines, maintenance status and existing cost reservations only. Follow nextProjectCursor; resourceCursors identify per-project continuation through resource_instances. Unavailable and denied projects are explicit. Does not contact providers, create work or grant new permissions.',
  resource_image_publish:'Publish or withdraw the exact compiled OCI image for an already-public source build. Requires build.compile, publishImage true or false and the current build revision. Publishing makes image layers public. Returns an immutable pull address; it does not approve deployment, allocate a machine or spend provider credit. Existing downloaded copies cannot be recalled.',
  resource_build:'Build an already-public source snapshot on a standard isolated runner. publishSource=true acknowledges PUBLIC build logs and archives. Call source_publish first. No private source, wallet, paid server, review, or deployment rights. Preserve idempotencyKey; use the returned build ID after any timeout.',
  resource_build_status:'Read your original OCI build, including uncertain or failed execution. Do not submit replacements for unknown outcomes.',
@@ -22,6 +23,7 @@ const descriptions = {
  resource_build_plan:'Prepare a content-bound OCI build plan from your existing project snapshot. Requires build.compile and source-read access. This validates inputs only; it does not run a build, push an image or charge a provider.',
  resource_readiness:'Read configured provider readiness. Authentication alone does not prove billing, funds, a reviewed image or an active machine.',
  resource_renew:'Reserve a fresh quote for the same running resource and extend its funded lease. Keep the same idempotency key; renewalPending remains true until the provider controller acknowledges it. Requires infrastructure.manage.',
+ resource_maintenance_set:'Enable finite automatic lease renewal for this existing service, or disable it with policy=null. Requires infrastructure.manage. The deadline may not exceed the project allowance; maxTotalCost includes all original and outstanding reservations. The controller uses fresh quotes and existing daily, project and funding limits. It never replaces a resource, revives an explicitly stopped service or extends an expired lease. Inspect maintenance.last and providerLeaseUntil; configuration is not a completed renewal.',
  resource_profiles:'Read only your assigned infrastructure profiles and allowances. A profile is not evidence of provider readiness or permission to spend beyond its funded allowance.',
  resource_instances:'List your durable resource records after reconnecting. Retain the original resource and operation IDs; unknown provider outcomes must not be replaced.',
  resource_quote:'Quote an immutable, reviewed image and bounded lease using your existing project identity. Requires infrastructure.manage, an assigned funded profile and configured provider. No resource is created.',

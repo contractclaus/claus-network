@@ -1,3 +1,4 @@
+import {runtimeAttentionSignature} from './runtime-resource-view.js';
 import {sampleOperatingBudget} from './operating-sampler.js';
 import {operatingResources} from './operating-resources.js';
 import {completedCapitalReceipt} from './capital.js';
@@ -45,7 +46,7 @@ export function networkObservationFingerprint(value:any){
  const stable={inventoryStatus:value?.inventoryStatus,capabilitiesStatus:value?.capabilitiesStatus,operationsStatus:value?.operationsStatus,
   counts:v?.counts,complete:[v?.graphComplete,v?.detailsComplete,v?.nextCursor],
   projects:(v?.projects??[]).map((p:any)=>({id:p.id,slug:p.slug,description:p.description,detailStatus:p.detailStatus,agents:p.agents,services:p.services,application:p.application,interfaces:(p.interfaces??[]).map((r:any)=>r.id),work:(p.publicWork??[]).map((r:any)=>r.orderId??r.id)})).sort((a:any,b:any)=>String(a.id).localeCompare(String(b.id))),
-  execution:executionSnapshot(value?.operations?.execution),capabilities:stableCapabilityFacts(c),opportunities:value?.opportunities,workers:(value?.operations?.workers??[]).map((w:any)=>({role:w.role,status:w.status,release:w.release})).sort((a:any,b:any)=>a.role.localeCompare(b.role))};
+  infrastructure:runtimeAttentionSignature(value?.infrastructure),execution:executionSnapshot(value?.operations?.execution),capabilities:stableCapabilityFacts(c),opportunities:value?.opportunities,workers:(value?.operations?.workers??[]).map((w:any)=>({role:w.role,status:w.status,release:w.release})).sort((a:any,b:any)=>a.role.localeCompare(b.role))};
  return createHash('sha256').update(JSON.stringify(stable)).digest('hex');
 }
 export function stableCapabilityFacts(value:any):any {
@@ -55,6 +56,7 @@ export function stableCapabilityFacts(value:any):any {
 }
 export function networkInvestigations(watch:any,items:any[]){
  const result:any[]=executionInvestigations(watch?.execution,watch?.reviewed_execution);
+ for(const r of (watch?.infrastructure?.items??[]).filter((r:any)=>r.issues?.length).slice(0,8))result.push({kind:'own-runtime',resourceId:r.id,issues:r.issues,action:'Read the original resource, provider-confirmed lease, maintenance policy and current allowance. Preserve its ID and pending outcomes; do not create a replacement or increase a budget to hide the issue.'});
  if(watch?.failures>=2)result.push({kind:'availability',action:'Inspect the failing public reader; repeated observation failures are not proof that all services are down. Check execution evidence availability separately from host heartbeats.'});
  const stale=items.filter(r=>r.assumptionsNeedRefresh).map(r=>r.id);
  if(stale.length)result.push({kind:'capability-change',workIds:stale,action:'Reconcile these original work items against current capabilities; preserve IDs and history.'});
@@ -115,7 +117,7 @@ export function createNetworkOperations({database=sql,observe=networkOperatingCo
   await db`CREATE TABLE IF NOT EXISTS claus_network_work(id text PRIMARY KEY,title text NOT NULL,goal text NOT NULL,next_step text NOT NULL,priority integer NOT NULL DEFAULT 2,status text NOT NULL DEFAULT 'ready',revision integer NOT NULL DEFAULT 1,next_at timestamptz NOT NULL DEFAULT now(),blocker text NOT NULL DEFAULT '',summary text NOT NULL DEFAULT '',evidence jsonb NOT NULL DEFAULT '[]',created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now())`;
   await db`ALTER TABLE claus_network_work ADD COLUMN IF NOT EXISTS capabilities_hash text, ADD COLUMN IF NOT EXISTS assumption_note text`;
  })().catch((e:any)=>{initialized=undefined;throw e;});}
- async function read(id?:string){await initialize();const db=database();const [watch]=await db`SELECT observed_at,reviewed_at,next_inspection,next_review,pending,failures,capabilities_hash,capabilities_changed_at,reviewed_execution,observation->'operations'->'execution' AS execution,observation->'capabilities' AS capabilities,observation->>'capabilitiesStatus' AS capabilities_status,observation->'opportunities' AS opportunities,observation->'opportunityScope' AS opportunity_scope FROM claus_network_watch WHERE id`;
+ async function read(id?:string){await initialize();const db=database();const [watch]=await db`SELECT observed_at,reviewed_at,next_inspection,next_review,pending,failures,capabilities_hash,capabilities_changed_at,reviewed_execution,observation->'operations'->'execution' AS execution,observation->'capabilities' AS capabilities,observation->>'capabilitiesStatus' AS capabilities_status,observation->'opportunities' AS opportunities,observation->'opportunityScope' AS opportunity_scope,observation->'infrastructure' AS infrastructure FROM claus_network_watch WHERE id`;
   const items=id?await db`SELECT * FROM claus_network_work WHERE id=${id}`:await db`SELECT * FROM claus_network_work WHERE status NOT IN ('completed','cancelled') ORDER BY priority,next_at,created_at LIMIT 24`;
   const recent=id?[]:await db`SELECT id,title,status,summary,evidence,updated_at FROM claus_network_work WHERE status IN ('completed','cancelled') ORDER BY updated_at DESC LIMIT 4`;
   const annotated=items.map((r:any)=>({...r,checkpointAgeMs:Math.max(0,now()-Date.parse(r.updated_at)),assumptionsNeedRefresh:!!watch?.capabilities_hash&&r.capabilities_hash!==watch.capabilities_hash}));
