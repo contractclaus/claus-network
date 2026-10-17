@@ -84,3 +84,34 @@ test('release approval and quote expiry are checked again immediately before pro
  await f.api.reconcile(r.id);assert.equal(f.calls(),0);assert.equal((await f.balance()).reserved,'100');
  await f.api.reconcile(r.id);assert.equal((await f.balance()).reserved,'0');assert.equal(f.calls(),0);
 });
+
+test('definite pre-dispatch absence resumes the same resource, but unknown outcomes never create again',async t=>{
+ const f=await fixture(t),q=await f.quote(),r=await f.api.request('owner','project',{quoteId:q.id,idempotencyKey:'create'});
+ const create=f.ports.create;let fail=true;
+ f.ports.create=async w=>{if(fail){fail=false;throw Error('request never arrived');}return create(w);};
+ f.ports.inspect=async()=>({operationId:r.id,accountId:'account',outcome:'not_started'});
+ await f.api.reconcile(r.id);assert.equal(f.calls(),0);
+ await f.api.reconcile(r.id);assert.equal(f.calls(),1);assert.equal((await f.api.get('owner','project',r.id)).state,'running');
+});
+
+test('confirmed terminal capacity is freed while delayed billing stays reserved',async t=>{
+ const f=await fixture(t),q=await f.quote(),r=await f.api.request('owner','project',{quoteId:q.id,idempotencyKey:'create'});
+ await f.api.reconcile(r.id);f.ports.inspect=async()=>({operationId:r.id,accountId:'account',providerResourceId:'instance',terminal:true,ready:false});
+ await f.api.reconcile(r.id);
+ assert.equal((await f.store.read('infrastructure-capacity','profile:cpu')).value.active.length,0);
+ assert.equal((await f.balance()).reserved,'100');
+});
+
+test('renewal reserves once, preserves the original resource and waits for provider acknowledgement',async t=>{
+ const f=await fixture(t),q=await f.quote(),r=await f.api.request('owner','project',{quoteId:q.id,idempotencyKey:'create'});
+ await f.api.reconcile(r.id);
+ const second=await f.api.quote('owner','project',{profileId:'cpu',manifest:f.manifest,leaseSeconds:300,idempotencyKey:'renew-q'});
+ f.ports.extend=async w=>({operationId:w.id,accountId:'account',providerResourceId:'instance',ready:true,terminal:false,providerLeaseUntil:w.leaseUntil});
+ const input={quoteId:second.id,idempotencyKey:'renew-once',expectedRevision:(await f.api.get('owner','project',r.id)).revision};
+ const renewed=await f.api.renew('owner','project',r.id,input);await f.api.renew('owner','project',r.id,input);
+ assert.equal((await f.balance()).reserved,'200');assert.equal(renewed.renewalPending,true);
+ await f.api.reconcile(r.id);const live=await f.api.get('owner','project',r.id);
+ assert.equal(live.renewalPending,false);assert.equal(live.providerLeaseUntil,live.leaseUntil);assert.equal(f.calls(),1);
+ const closed=await f.api.stop('owner','project',r.id,{expectedRevision:live.revision});await f.api.reconcile(closed.id);
+ assert.deepEqual(await f.balance(),{account:'fund',asset:'USDC',available:'470',reserved:'0',spent:'30'});
+});

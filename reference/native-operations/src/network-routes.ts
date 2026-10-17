@@ -9560,6 +9560,72 @@ export const networkRoutes:Record<string,any>={
     },
     "public": true,
     "description": "Read the exact public source bound to an OCI build; source withdrawal and project visibility still apply."
+  },
+  "resource_readiness": {
+    "name": "resource_readiness",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/infrastructure/readiness",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "projectId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Read configured provider readiness. Authentication alone does not prove billing, funds, a reviewed image or an active machine."
+  },
+  "resource_renew": {
+    "name": "resource_renew",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/instances/{resourceId}/renew",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "resourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "quoteId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 71
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "projectId",
+        "resourceId",
+        "expectedRevision",
+        "quoteId",
+        "idempotencyKey"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "Reserve a fresh quote for the same running resource and extend its funded lease. Keep the same idempotency key; renewalPending remains true until the provider controller acknowledges it. Requires infrastructure.manage."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{
