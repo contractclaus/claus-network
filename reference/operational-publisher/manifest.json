@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_5zB6BqAp1BFWe5TSLFU7TvVUbcoS",
-  "source": "2026-10-17-autonomy-completion",
+  "deployed": "dpl_Fg4XDAQfTatkCF5phrGcL442pbaJ",
+  "source": "2026-10-17-autonomy-completion-r2",
   "files": {
-    "src/index.js": "a7abaefbd57b21155aa516b51c69df14028673ae950411336a8cc3f46f7e2c36",
+    "src/index.js": "2e8c44265959670a2247cf87d2e1483dea2c287a3db99f3fe6547656c93711f5",
     "src/publisher/host.js": "c59603df1592e5b418d6eb44bc4deab0d8028e6fbf9527df9c5d04fdc092197b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
     "src/publisher/policy.js": "20d4c036d928916c4f45f06462a393b8b3720d877bdce36169fa66296c9643e6",
