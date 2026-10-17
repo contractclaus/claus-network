@@ -78,6 +78,29 @@ test('a confirmed provider failure retains its real charge and terminates the wo
   assert.equal(account.spent, '5'); assert.equal(account.available, '45'); assert.equal(account.reserved, '0');
 });
 
+test('a blocked provider audit preserves its charge and frees only the completed job slot', async t => {
+  const f = await fixture(t); await f.publish();
+  const item = await f.flow.request(f.actor, f.projectId, f.input); await f.flow.runQuote();
+  await f.flow.accept(f.actor, f.projectId, { caseId: item.id, quoteId: item.id, idempotencyKey: 'once' });
+  const state = { state: 'provider_paid', outcome: { admission: { result: { jobId: 'failed-provider' } } } };
+  const result = await f.flow.runPaid({ createPayment: () => ({ status: async () => state, reconcile: async () => state }),
+    provider: { report: async () => ({ complete: false, state: 'blocked' }) },
+    costReceipt: async ({ offer, inputHash }) => ({ id: 'charge-for-failed-job', provider: offer.provider,
+      providerQuoteId: offer.id, inputHash, asset: f.asset, actual: '5' }) });
+  assert.equal(result.state, 'failed');
+  assert.equal(result.result.error,'provider_blocked');
+  const review = await f.flow.get(f.actor, f.projectId, item.id);
+  assert.equal(review.job.work, 'failed'); assert.equal(review.job.billing, 'settled');
+  const account = await f.network.billing.balance({ actor: f.workerActor, account: 'sponsor:' + f.ownerAddress, asset: f.asset });
+  assert.equal(account.spent, '5'); assert.equal(account.available, '45'); assert.equal(account.reserved, '0');
+  assert.equal((await f.flow.runPaid({})).idle,true);
+  const next=await f.flow.request(f.actor,f.projectId,{...f.input,baseCommit:"b".repeat(40),idempotencyKey:'separate-corrected-source'});
+  await f.flow.runQuote();
+  const admitted=await f.flow.accept(f.actor,f.projectId,{caseId:next.id,quoteId:next.id,idempotencyKey:'explicit-next-review'});
+  assert.equal(admitted.work,'queued');
+  assert.equal((await f.flow.get(f.actor,f.projectId,item.id)).job.billing,'settled');
+});
+
 test('review admission atomically reserves sponsor funds and enqueues one cancel-safe workflow', async t => {
   const f = await fixture(t);
   await assert.rejects(f.flow.request(f.actor, f.projectId, f.input), { code: 'source_not_published' });
