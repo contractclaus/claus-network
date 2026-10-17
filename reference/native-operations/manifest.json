@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_2uqp2uPsApNG9SK7QQh2Ae1qfX2u",
-  "source": "2026-10-17-host-failover",
+  "deployed": "dpl_EZRdGq5WjKhfjoWNRCeiAuy45tAr",
+  "source": "2026-10-17-completion-six",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -16,7 +16,7 @@
     "src/work-wallet.ts": "c4434dd0c2363044ffeb0a19c0620a4ee5acea928bf2c8fa4a89ee1e3b8f6dd1",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "68f5467ac1d101dd252f3c627934320ca4f111d4a9853a186a9a343a085925c2",
+    "src/network-access.ts": "361d6cbf76e37c395dfc1949ead42851e9c036eced2a6fe95128188f3f4306f7",
     "src/context.ts": "3192fe2e5b49eb1725ba78cb80cb00da492f9a97e4a3580b31585130bfff386f",
     "src/knowledge.ts": "edb3d5a19a4a481cd5e48ef4a60fb7a5f8427d024bb6c1884c6e4ca61ae6f932",
     "src/network-care.ts": "fb5b6e2813c5c8d9760c025766667c4babe596248d1b46deb4476ce57c9c3777",
@@ -31,7 +31,7 @@
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
     "src/isolated/runner.mjs": "664b14555698224c02880e743535873e08e6a82e5f64629ba6461edd8b217df9",
     "src/network-products.ts": "b6d829c3ce9b8ced6c1c4ca2b488d1bef809481d39416e473ae196fc1ea2bc94",
-    "src/network-routes.ts": "b3fd4a01d71f290ae8fc66305491907be9f6d603a42b797f4e6b9eca289f233f",
+    "src/network-routes.ts": "1fca92f67e6cef5a226b76765d5a1ce9e2fa4f50c5557d768516a0c8312c13c0",
     "src/operational-capabilities.ts": "1da5f353b4f5ddb22b212aa948dcee33fea56736d30424f3ed15416621962770",
     "src/cycle.ts": "2b9370e3d81d3122f61c8975c6f2ca10a5727d3fc996f98e906ee0cd885a693f",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
@@ -134,9 +134,9 @@
     "src/operating-sampler.ts": "7ccd9d8dd19db835efffafdaabb523cc39b9712f914a86e5bd06b09873f3733e",
     "src/runtime-resource-view.ts": "bf9f912a5af3679d575aa1cc294fbdc1935ccc00986487712703a9af8ee2064a",
     "src/network-initiative.ts": "e345463186b151e347fda282ff31fdcbc509fce5a585ea776965c8d123bc6907",
-    "src/runtime-host-schema.sql": "a8869e1d738eb2791368bbe41c31177abe188c9d574f32e4560e738c33a49d3b",
+    "src/runtime-host-schema.sql": "1235fb184db3cb865bba5a53e66e3aaf702efdeb97025973df757a4f1b6c6647",
     "src/runtime-host.ts": "2e932899538d9f84b6e0cd1af994231cd3f5a404875554986404773cc08151e4",
-    "src/standby.ts": "97d369686038aca57105af90db31f24ee55a738fde400a6ccb4ecaecc906c9a4"
+    "src/standby.ts": "5481d3c1916e56266835b023e9c352b3e198e71d273af102127f64c53a99aceb"
   },
   "referenceSubset": true
 }

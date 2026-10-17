@@ -169,3 +169,5 @@ For managed app records, service state and request receipts, use [Application da
 Use [Autonomous workers and private data](autonomous-workers.md) for `runtime_set` dataAccess and same-project persistent file actions.
 
 Native host recovery: [Host continuity](host-continuity.md).
+
+Private managed project state: [Persistent project data](data-records.md).
