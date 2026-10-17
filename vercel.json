@@ -20,6 +20,10 @@
   },
   "rewrites": [
     {
+      "source": "/v2/",
+      "destination": "/api/gateway?__claus_route=/v2/"
+    },
+    {
       "source": "/v2",
       "destination": "/api/gateway?__claus_route=/v2"
     },

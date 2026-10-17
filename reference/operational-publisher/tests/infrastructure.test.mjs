@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createInfrastructureBroker,digest} from '../src/infrastructure/broker.mjs';
-import {ProviderError,runpodDriver,providerRequest} from '../src/infrastructure/providers.mjs';
+import {ProviderError,runpodDriver,flyDriver,providerRequest} from '../src/infrastructure/providers.mjs';
 
 async function fixture(){
  let at=1000000,creates=0,deletes=0,found=null,lost=false;
@@ -56,6 +56,21 @@ test('authoritative rejection settles zero while provider 5xx remains unknown',a
 
 test('unreviewed releases and foreign profiles cannot receive provider quotes',async()=>{
  const f=await fixture();f.config.releases=[];await assert.rejects(f.quote(),/release_not_approved/);
+});
+
+test('withdrawing image approval stops the original running resource through the existing guardian',async()=>{
+ const f=await fixture();await f.call('create',f.work);f.config.releases[0].enabled=false;
+ await f.broker.guard();assert.equal(f.creates(),1);assert.equal(f.deletes(),1);
+});
+
+test('Fly price binds CPU, memory and region; projects cannot share a routing app',async()=>{
+ let reads=0,creates=0;const request=async(_url,init)=>{if(init.method==='POST')creates++;else reads++;return Response.json({organization:{slug:'claus-network'}});};
+ const d=flyDriver({token:()=> 'fixture',request}),work={projectId:'a',manifest:{cpu:1,memoryMiB:256,region:'ams',storageGiB:0,gpu:null}};
+ const config={app:'project-a',projectId:'a',organization:'claus-network',rates:[{cpu:1,memoryMiB:256,region:'ams',hourlyMicroUsd:'9000',priceSource:'fixture'}]};
+ const quote=await d.quote(work,config);assert.equal(quote.hourlyMicroUsd,'9000');assert.equal(reads,1);
+ await assert.rejects(d.quote({...work,projectId:'b'},config),/project_app_not_isolated/);
+ await assert.rejects(d.quote({...work,manifest:{...work.manifest,memoryMiB:65536}},config),/price_not_configured/);
+ await assert.rejects(d.create({...work,manifest:{...work.manifest,cpu:64}},quote,config),/price_shape_mismatch/);assert.equal(creates,0);
 });
 
 test('Runpod CPU requests use v2 shape and a public application must pass health check',async()=>{

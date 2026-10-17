@@ -16,7 +16,7 @@ class OperationsHostError extends Error {
 function sourceTree(tree) {
   const out = {};
   function walk(a, prefix = "") {
-    for (const n of a) n.children ? walk(n.children, prefix + n.name + "/") : out[prefix + n.name] = n.uid;
+    for (const n of a) n.type === 'directory' || n.children ? walk(n.children ?? [], prefix + n.name + "/") : out[prefix + n.name] = n.uid;
   }
   const root = tree.find((n) => n.name === "src");
   if (!root?.children) throw Error("operations_source_missing");
