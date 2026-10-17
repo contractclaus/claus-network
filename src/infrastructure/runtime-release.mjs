@@ -1,4 +1,4 @@
-import {digest,requireThat,text,integer} from '../shared/index.mjs';
+import {digest,requireThat,text,integer,sourceText} from '../shared/index.mjs';
 import {validateManifest} from './manifest.mjs';
 import {CLAUS_IDENTITY} from '../partner-launch/policy.mjs';
 export const RUNTIME_IMAGE_PROFILE='claus-runtime-image-v1';
@@ -52,7 +52,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
   async get(actor,projectId,id){try{await identity.authorize(actor,'infrastructure.read',{projectId});}catch{await authority(actor,store);}const row=await store.read('runtime-image-releases',id);requireThat(row?.value.projectId===projectId,'not_found');return {...row.value,revision:row.revision};},
   async inspect(actor,projectId,id,caseId){await authority(actor,store);return evidence(store,projectId,id,caseId);},
   async approve(actor,projectId,id,{caseId,reportHash,acknowledgedFindings,reason,expectedRevision}){
-   integer(expectedRevision);text(reason);requireThat(reason.trim().length>=20&&reason.length<=4000&&Array.isArray(acknowledgedFindings),'runtime_image_decision_invalid');
+   integer(expectedRevision);sourceText(reason,4000);requireThat(reason.trim().length>=20&&reason.length<=4000&&Array.isArray(acknowledgedFindings),'runtime_image_decision_invalid');
    return store.transaction(async r=>{await authority(actor,r);const row=await r.read('runtime-image-releases',id);requireThat(row?.revision===expectedRevision,'revision_conflict');const e=await evidence(r,projectId,id,caseId);
     requireThat(reportHash===e.review.reportHash&&digest([...acknowledgedFindings].sort())===digest(e.findings.map(digest).sort()),'runtime_image_decision_invalid');
     const value={...e.release,approved:true,decision:{review:e.review,reason,at:now()}};const saved=await r.write('runtime-image-releases',id,value,expectedRevision);return {...value,revision:saved.revision};});

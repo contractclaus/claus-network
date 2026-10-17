@@ -88,3 +88,12 @@ test('inspection supplies exact finding hashes without weakening the approval de
  await assert.rejects(f.service.approve('claus',f.projectId,f.release.id,f.decision),/decision_invalid/);
  const approved=await f.service.approve('claus',f.projectId,f.release.id,{...f.decision,acknowledgedFindings:inspected.findingHashes});assert.equal(approved.approved,true);
 });
+
+test('runtime approval accepts its documented reason length and rejects malformed text',async t=>{
+ const f=await fixture(t),reason=('Considered the exact review findings.\n').repeat(110).slice(0,4000);
+ assert.equal(reason.length,4000);
+ const approved=await f.service.approve('claus',f.projectId,f.release.id,{...f.decision,reason});
+ assert.equal(approved.approved,true);assert.equal(approved.decision.reason,reason);
+ await assert.rejects(f.service.approve('claus',f.projectId,f.release.id,{...f.decision,reason:reason+'x'}),/invalid_text/);
+ await assert.rejects(f.service.approve('claus',f.projectId,f.release.id,{...f.decision,reason:'A full review reason with a hidden\u0000control'}),/invalid_text/);
+});
