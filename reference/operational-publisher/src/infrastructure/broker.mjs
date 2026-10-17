@@ -114,6 +114,11 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
   }
   async function operate(operation,input){
     if(operation==='verify_release')return {approved:await releaseApproved(input)};
+    if(operation==='funding_history'){
+      const c=config(),p=c.profiles?.find(p=>p.id===input.profileId);
+      check(c.enabled&&p?.enabled&&p.provider==='runpod','funding_profile_unavailable');
+      return {provider:'runpod',accountId:p.accountId,...await drivers.runpod.fundingHistory(input)};
+    }
     if(operation==='readiness'){
       const c=config(),items=[];
       const profiles=c.profiles?.length?c.profiles:[{id:'runpod',provider:'runpod',enabled:false},...(process.env.CLAUS_FLY_API_TOKEN?[{id:'fly',provider:'fly',organization:'claus-network',enabled:false}]:[])];

@@ -55,6 +55,27 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
     return value;
   }
   return {
+    async fundingHistory({from,to}){
+      check(Number.isSafeInteger(from)&&Number.isSafeInteger(to)&&from>=0&&to>from&&to<=now()+30000&&to-from<=7*86400000,'funding_window_invalid');
+      const value=await providerRequest(request,'https://api.runpod.io/graphql',token(),{method:'POST',body:{
+        query:'query Funding($from: DateTime!, $to: DateTime!) { myself { id clientBalance stripeReloadHistory(startDate: $from, endDate: $to) { id amount type medium transactionCompletedAt } } }',
+        variables:{from:new Date(from).toISOString(),to:new Date(to).toISOString()}
+      }});
+      const user=value?.data?.myself;
+      check(!value?.errors?.length&&typeof user?.id==='string'&&user.id.length>0&&Array.isArray(user.stripeReloadHistory)&&user.stripeReloadHistory.length<=500,'funding_response_invalid');
+      const receipts=[];
+      for(const r of user.stripeReloadHistory){
+        // Debits or other funding rails need their own reconciliation policy.
+        check(r.type==='RELOAD'&&r.medium==='STRIPE','funding_event_requires_review');
+        const completedAt=Date.parse(r.transactionCompletedAt);
+        check(typeof r.id==='string'&&r.id.length>0&&r.id.length<=256&&Number.isSafeInteger(completedAt)&&completedAt>=from&&completedAt<=to&&typeof r.amount==='number'&&r.amount>0&&r.amount<1000000,'funding_receipt_invalid');
+        const cents=Math.round(r.amount*100);
+        check(Math.abs(r.amount*100-cents)<0.000001,'funding_amount_invalid');
+        receipts.push({id:r.id,amount:(BigInt(cents)*10000n).toString(),completedAt,type:r.type,medium:r.medium});
+      }
+      check(typeof user.clientBalance==='number'&&Number.isFinite(user.clientBalance)&&user.clientBalance>=0&&user.clientBalance<1000000,'funding_balance_invalid');
+      return {providerAccountId:user.id,from,to,observedAt:now(),balanceMicroUsd:Math.floor(user.clientBalance*1000000).toString(),receipts};
+    },
     async readiness(config={}){
       const list=await api('/pods?limit=1');check(Array.isArray(list.pods),'provider_shape_invalid');
       if(config.gpuTypes?.length){

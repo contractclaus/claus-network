@@ -65,13 +65,13 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
         }
         requireThat(amount(totalLimit)+(old?.value.pooledFunding?0n:otherLimits)<=amount(funds.available)+amount(funds.reserved)+amount(funds.spent),'infrastructure_funding_insufficient');
         await tx.write('infrastructure-profiles',profile.id,profile,priorProfile?.revision??0);
-        const result=await tx.write('infrastructure-controls',profile.id,{profileId:profile.id,fundingAccount:profile.fundingAccount,asset:profile.asset,operators,enabled,expiresAt,totalLimit,perProjectLimit,dailyLimit,allocated,...(old?.value.pooledFunding?{pooledFunding:true}:{})},expectedRevision);
+        const result=await tx.write('infrastructure-controls',profile.id,{profileId:profile.id,fundingAccount:profile.fundingAccount,asset:profile.asset,operators,enabled,expiresAt,totalLimit,perProjectLimit,dailyLimit,allocated,...(old?.value.pooledFunding?{pooledFunding:true}:{}),...(old?.value.providerFundingId?{providerFundingId:old.value.providerFundingId}:{})},expectedRevision);
         await tx.event({type:'infrastructure.policy_changed',profileId:profile.id,at:now(),revision:result.revision});
         return publicPolicy(result);
       });
     },
     async policy(actor,profileId) {
-      const read=async reader=>{const {row}=await issuer(actor,profileId,reader);return {...publicPolicy(row),funds:await balance(reader,row.value.fundingAccount,row.value.asset)};};
+      const read=async reader=>{const {row}=await issuer(actor,profileId,reader);const funding=row.value.providerFundingId?(await reader.read('infrastructure-funding',row.value.providerFundingId))?.value:null;return {...publicPolicy(row),funds:await balance(reader,row.value.fundingAccount,row.value.asset),...(funding?{automaticFunding:{enabled:funding.enabled,last:funding.last??null,nextAt:funding.nextAt}}:{})};};
       return store.snapshot?store.snapshot(read):store.transaction(read);
     },
     async grant(actor,projectId,input) {

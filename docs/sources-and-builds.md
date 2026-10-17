@@ -105,6 +105,8 @@ Accepted owner builds also keep their original authority after transport login e
 
 Owner-configured pooled funding permits overlapping project ceilings over one real provider balance. `resource_control` reports `pooledFunding` and the actual `funds`; a null policy `remaining` means the pool, not a sum of nominal project grants, determines spendable capacity. Every resource reservation debits that same balance, and the protected custody service includes its maximum lease cost with model and paid-API usage under the shared operating limit. Confirmed lease commitments count once; unknown original reservations remain held. No project can manufacture or double-spend provider credit.
 
+Owner-enrolled Runpod funding is reconciled by the existing resource controller. Only completed card reloads read from the authenticated provider account create internal credit, once per provider transaction ID. The initial deposit stays linked to its original receipt; account mismatches, changed receipts and unsupported funding events require reconciliation. Eligible own-project pooled ceilings follow verified deposits, while revoked grants, deliberately smaller limits, existing reservations and the shared operating budget remain unchanged. This controller does not charge a card or transfer wallet assets. The authenticated `resource_control` response exposes `automaticFunding` with its last observed result.
+
 ## Automatic service maintenance
 
 An existing HTTP service, worker or model runtime can use `resource_maintenance_set` to renew its own funded lease without a new model turn. This does not create a replacement server or change its image, permissions, fees or funding allowance. One-shot jobs are excluded.
