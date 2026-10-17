@@ -16,7 +16,7 @@ export async function fixture(t,{lost=false,enabled=true,images=null}={}){
  const jobs=createJobs({store,identity,now:()=>at});const artifacts=createArtifactStore({store});
  const ports={dispatch:async v=>{calls++;seen=v;if(lost)throw Error('response lost');return {buildId:v.id,state:'running'};},inspect:async v=>{inspection++;return {buildId:v.id,state:'compiled',runUrl:'https://github.com/contractclaus/claus-network/actions/runs/1',receipt:{buildId:v.id,projectId:v.projectId,planId:v.planId,sourceHash:v.sourceHash,imageDigest:digest('image'),archiveHash:digest('archive'),archiveBytes:200,evidence:'compiled_only'}};},verify:async()=>true};
  const api=createOciBuilds({store,identity,projects,jobs,artifacts,ports,enabled,images,now:()=>at});
- return {api,store,jobs,ports,projects,input:{snapshotId:'s',publishSource:true,idempotencyKey:'same'},advance:()=>at+=61000,revoke:()=>allowed=false,withdraw:()=>published=false,calls:()=>calls,inspections:()=>inspection};
+ return {api,store,jobs,ports,projects,identity,input:{snapshotId:'s',publishSource:true,idempotencyKey:'same'},advance:()=>at+=61000,revoke:()=>allowed=false,withdraw:()=>published=false,calls:()=>calls,inspections:()=>inspection};
 }
 test('lost dispatch reconciles the original build once, preserving source and result binding',async t=>{
  const f=await fixture(t,{lost:true}),a=await f.api.submit('owner','p',f.input);
@@ -70,4 +70,13 @@ test('a completed build permits one correction in the same project without incre
  const second=await f.api.submit('owner','p',{...f.input,snapshotId:'corrected',idempotencyKey:'corrected'});assert.notEqual(second.id,a.id);
  await assert.rejects(f.api.submit('owner','p',{...f.input,snapshotId:'third',idempotencyKey:'third'}),{code:'oci_build_capacity_reached'});
  assert.equal((await f.api.submit('owner','p',f.input)).id,a.id);
+});
+
+
+test('published build source survives owner login expiry but still respects withdrawal and revocation',async t=>{
+ const f=await fixture(t),b=await f.api.submit('owner','p',f.input);
+ let retained=true;f.identity.publishedBuildAllowed=async()=>retained;f.revoke();
+ assert.equal((await f.api.publicSource(b.id)).buildId,b.id);
+ retained=false;await assert.rejects(f.api.publicSource(b.id),{code:'not_found'});
+ retained=true;f.withdraw();await assert.rejects(f.api.publicSource(b.id),{code:'not_found'});
 });

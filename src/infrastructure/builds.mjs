@@ -69,7 +69,7 @@ export function createOciBuilds({store,identity,projects,jobs,artifacts,images=n
     },
     async publicSource(id){
       const v=(await store.read('oci-builds',text(id)))?.value;
-      requireThat(v?.publishSource===true&&await authorized(store,v),'not_found');
+      requireThat(v?.publishSource===true&&await (identity.publishedBuildAllowed?identity.publishedBuildAllowed(v.actor,v.projectId,store):authorized(store,v)),'not_found');
       const job=(await store.read('workflow-jobs',id))?.value;
       requireThat(job&&job.state!=='cancelled'&&job.state!=='blocked','not_found');
       // No source first becomes public without the separate submit opt-in.
