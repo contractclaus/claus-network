@@ -1,3 +1,4 @@
+import {createSearchAdmission} from '../src/discovery/admission.mjs';
 import {CLAUS_IDENTITY} from '../src/partner-launch/policy.mjs';
 import {createRuntimeReleases,RUNTIME_IMAGE_PROFILE,validateRuntimeBuild} from '../src/infrastructure/runtime-release.mjs';
 import {createImageRegistry} from '../src/infrastructure/registry.mjs';
@@ -153,6 +154,7 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
     (await reader.read('network-capabilities','contract-intake'))?.value.enabled===true)});
  workflows=createWorkflows({store,identity,apps,now,admit:access.collaboration});
  const discovery=createDiscovery({store,projects,apps,services,now});
+ const searchAdmission=createSearchAdmission({store,identity,signingKey:operatorPorts.signingKey,now});
  const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
  const ociBuilds=createOciBuilds({store,identity,projects,jobs,artifacts,images:imageArchive,sourceFiles,privateEnabled:ociPrivateEnabled,privateSecret:ociPrivateSecret,reservedPrivateOwner:CLAUS_IDENTITY,now,ports:ociBuildPorts,enabled:ociBuildEnabled});
  const imageRegistry=createImageRegistry({store,identity,projects,artifacts,images:imageArchive,origin:registryOrigin,now});
@@ -165,7 +167,7 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
  const workPlanning=createWorkPlanning({store,identity,apps,collaboration,services,projects,visible:contentAdmin.visible,admit:access.collaboration,validateAction:(name,input,path)=>validate(ROUTES.find(r=>r.name===name).inputSchema,input,path),now});
  const webhooks=createWebhooks({store,identity,apps,admit:access.collaboration,now,deriveSecret:id=>createHmac('sha256',rateSalt).update('claus-webhook/v1:'+id).digest('hex'),deliver:deliverWebhook});
  const runtimes=createRuntimes({store,identity,workers,readWeb:publicWebRead,now,route:name=>ROUTES.find(r=>r.name===name),execute:(name,input,actor)=>service.executeAs(name,input,actor)});
- const service=createService({dataRecords,dataFiles,runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const service=createService({searchAdmission,dataRecords,dataFiles,runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   const at=now(),window=Math.floor(at/300000);
   try {

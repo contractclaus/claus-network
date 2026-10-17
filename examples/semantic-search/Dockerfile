@@ -9,7 +9,7 @@ WORKDIR /app
 COPY --from=build /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=build /native/usr/lib/x86_64-linux-gnu /usr/local/lib/claus-native
 COPY --from=build /app/model /app/model
-COPY examples/semantic-search/model-lock.json examples/semantic-search/server.py examples/semantic-search/LICENSE ./
+COPY examples/semantic-search/model-lock.json examples/semantic-search/server.py examples/semantic-search/admission.py examples/semantic-search/admission-key.json examples/semantic-search/LICENSE ./
 USER 10001:10001
 EXPOSE 8080
 CMD ["python", "server.py"]

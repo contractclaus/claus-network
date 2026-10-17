@@ -1,7 +1,8 @@
 import {ROUTES,validate} from './contract.mjs';
 
-export function createService({dataRecords,dataFiles,runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
+export function createService({searchAdmission,dataRecords,dataFiles,runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
  const operations={
+  search_admission:(actor,input)=>searchAdmission.issue(actor,input),
   data_record_put:(a,{projectId,...i})=>dataRecords.put(a,projectId,i),
   data_record_get:(a,{projectId,...i})=>dataRecords.get(a,projectId,i),
   data_record_list:(a,{projectId,...i})=>dataRecords.list(a,projectId,i),
