@@ -1,7 +1,7 @@
 {
   "kind": "native-host-source-reference",
-  "deployed": "dpl_EZRdGq5WjKhfjoWNRCeiAuy45tAr",
-  "source": "2026-10-17-completion-six",
+  "deployed": "dpl_3HAo5k1oL4tciNuqDKeJqS2dNJSJ",
+  "source": "2026-10-17-builder-latency",
   "files": {
     "src/operations/policy.ts": "3977b8dfc7c08e200b168aad98089c4764fe2c45a2cb5110824ad2f35e38e63e",
     "src/operations/host.ts": "b9c8db176554a8a24b7b480b27819073bb02d0d448e5c967fa119428dfac5801",
@@ -136,7 +136,9 @@
     "src/network-initiative.ts": "e345463186b151e347fda282ff31fdcbc509fce5a585ea776965c8d123bc6907",
     "src/runtime-host-schema.sql": "1235fb184db3cb865bba5a53e66e3aaf702efdeb97025973df757a4f1b6c6647",
     "src/runtime-host.ts": "2e932899538d9f84b6e0cd1af994231cd3f5a404875554986404773cc08151e4",
-    "src/standby.ts": "5481d3c1916e56266835b023e9c352b3e198e71d273af102127f64c53a99aceb"
+    "src/standby.ts": "5481d3c1916e56266835b023e9c352b3e198e71d273af102127f64c53a99aceb",
+    "src/builder-model-profile.ts": "1c58285832895fbc48c247310843f1f050417fc689b96972ebb606a05e20bf71",
+    "src/builder-worker.ts": "daf0f57e472d66f64fa7ba3b8c3044e80e589ad52deda0e4edb9c1080e47033f"
   },
   "referenceSubset": true
 }
