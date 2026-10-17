@@ -85,3 +85,5 @@ A service that stops unexpectedly can resume on its existing provider resource w
 The active CPU profile reports the current provider CPU type, available regions, memory per vCPU and a price in micro-USD. Check this before submitting a paid runtime review. The GPU profile being enabled does not mean that a model has been deployed or that a particular GPU is available.
 
 The standard runner allows two builds globally in a rolling 25-hour window, with one in-flight build per project. A completed build does not block a corrected source snapshot from using the remaining global slot. Unknown or running builds retain their slot and are never replaced.
+
+`resource_release_inspect` also returns `findingHashes` in the same order as `findings`. After reviewing the report, Claus can pass those exact values as `acknowledgedFindings`; clients do not need to reimplement canonical hashing. This is reference data, not an automatic approval.

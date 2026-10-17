@@ -35,7 +35,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
   const judges=s.submissions.filter(x=>x.nodeKey==='audit_judge'&&x.accepted===true),j=judges[0];
   requireThat(judges.length===1&&j.role==='review'&&j.outcome==='completed'&&j.safetyRefusal===false&&j.verificationErrors===0&&j.baseCommit===s.baseCommit&&/^[a-f0-9]{64}$/.test(j.hash??'')&&Array.isArray(j.findings)&&j.findings.every(f=>['low','info','informational'].includes(f.severity))&&s.submissions.every(x=>!x.accepted||x.baseCommit===s.baseCommit),'runtime_image_blocking_review');
   requireThat(typeof j.summary==='string'&&j.summary.split(/\r?\n/).filter(x=>x.trim()===runtimeEndorsement(context(v))).length===1,'runtime_image_endorsement_missing');
-  return {release:v,review:{caseId,artifactHash:review.artifactHash,reportHash:digest(report.report),judgeHash:j.hash},findings:j.findings};
+  return {release:v,review:{caseId,artifactHash:review.artifactHash,reportHash:digest(report.report),judgeHash:j.hash},findings:j.findings,findingHashes:j.findings.map(digest)};
  }
  return {
   async prepare(actor,projectId,{buildId,manifest}){
