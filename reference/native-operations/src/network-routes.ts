@@ -1,5 +1,39 @@
 // Generated from the shared Claus Network contract.
 export const networkRoutes:Record<string,any>={
+  "search_admission": {
+  "name": "search_admission",
+  "method": "POST",
+  "path": "/v1/projects/{projectId}/search-admission",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      },
+      "path": {
+        "type": "string",
+        "enum": [
+          "/v1/search",
+          "/v1/embeddings"
+        ]
+      },
+      "bodyHash": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    },
+    "required": [
+      "projectId",
+      "path",
+      "bodyHash"
+    ],
+    "additionalProperties": false
+  },
+  "public": false,
+  "description": "Issue a 20-second, one-use ticket for a hashed semantic-search request. Requires service.call on your project. Per-principal admission applies across credentials and projects. The ticket authorizes only the fixed model service, HTTP path and exact body; no payment, wallet or administration access."
+},
   "data_file_write": {
     "name": "data_file_write",
     "method": "POST",

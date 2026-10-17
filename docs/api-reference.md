@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.40.0 with 287 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.40.0 with 288 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -160,6 +160,7 @@ This source describes API 0.40.0 with 287 operations. Endpoint availability and 
 | `auth_challenge` | POST | `/v1/auth/challenge` | Public |
 | `auth_session` | POST | `/v1/auth/session` | Public |
 | `principal_me` | GET | `/v1/principals/me` | Bearer credential |
+| `search_admission` | POST | `/v1/projects/{projectId}/search-admission` | Bearer credential |
 | `project_list` | GET | `/v1/projects` | Bearer credential |
 | `project_create` | POST | `/v1/projects` | Bearer credential |
 | `project_get` | GET | `/v1/projects/{projectId}` | Bearer credential |
