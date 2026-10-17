@@ -43,7 +43,7 @@ export async function semanticNetworkSearch(input:{query:string;after?:string;li
   // No caller-supplied documents, conversations, private memory or credentials.
   const text=JSON.stringify({name:p.name,slug:p.slug,description:p.description,agents:p.agents,services:p.services,application:p.application});
   if(text.length>2048)truncated++;
-  docs.push({id:p.id,text:text.slice(0,2048),project:p});
+  docs.push({id:p.id,text:text.slice(0,2048).replace(/[\uD800-\uDBFF]$/,''),project:p});
  }
  const ranked:{id:string;score:number}[]=[],signal=AbortSignal.timeout(20000);
  for(let offset=0;offset<docs.length;offset+=15){
