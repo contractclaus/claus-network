@@ -11,7 +11,7 @@ export function resourceReferences(value,out=new Set()){
  if(ref(value))out.add(value);else if(Array.isArray(value))for(const v of value)resourceReferences(v,out);else if(value&&typeof value==='object')for(const v of Object.values(value))resourceReferences(v,out);return [...out];
 }
 export async function assertResourcesActive(store,value){for(const id of resourceReferences(value)){const r=await store.get('resource',id);if(r&&(r.retirementPlanId||frozen.has(r.status)))fail('resource_fenced');}}
-export function managedRetirement({store,providers,invoke,now=Date.now}){
+export function managedRetirement({store,providers,database,invoke,now=Date.now}){
  const stamp=()=>new Date(now()).toISOString();
  async function all(kind){const rows=[];let offset=0;do{const p=await store.list(kind,offset);rows.push(...p.items);offset=p.nextOffset;}while(offset!==null);return rows;}
  async function resource(id){if(!ref(id))fail('reference_invalid');const r=await store.get('resource',id);if(!r||r.protected||protectedIds.has(r.providerId)||!r.creationAction&&r.kind!=='managed-queue'&&r.kind!=='managed-http-endpoint')fail('scope_denied');if(!['vercel','github','http','internal','r2','runpod','postgresql'].includes(r.provider))fail('provider_unsupported');return r;}
@@ -25,6 +25,8 @@ export function managedRetirement({store,providers,invoke,now=Date.now}){
  }
  async function proof(r,d){
   if(!d||typeof d!=='object'||Array.isArray(d))fail('disposition_required');
+  if(d.kind==='database-export'&&r.provider==='postgresql'&&Object.keys(d).length===1)return {kind:'database-export',meaning:'The frozen schema must appear in a signed, remotely verified independent database snapshot. A prior arbitrary asset does not prove this final state.'};
+  if(r.provider==='postgresql'&&d.kind==='export')fail('database_export_disposition_required');
   if(d.kind==='retain'&&Object.keys(d).length===1)return {kind:'retain',remainingCosts:'Retained data, objects, packages and external subscriptions keep their existing billing and retention.'};
   if(d.kind==='discard'&&Object.keys(d).length===2&&clean(d.reason))return {kind:'discard',reason:d.reason,backupVerified:false};
   if(d.kind!=='export'||Object.keys(d).length!==3||!/^[a-z][a-z0-9-]{1,99}$/.test(d.name??'')||!/^[a-f0-9]{64}$/.test(d.version??''))fail('disposition_invalid');
@@ -77,7 +79,15 @@ export function managedRetirement({store,providers,invoke,now=Date.now}){
   const drainUntil=Date.parse(r.retiringAt)+180000;
   if(now()<drainUntil)return save(p,{state:'draining',retryAt:new Date(drainUntil).toISOString(),reason:'allow_preexisting_requests_to_settle'});
   const d=await proof(r,p.disposition);
-  if(r.provider==='postgresql')return save(p,{state:'blocked',reason:'database_export_and_session_shutdown_required',next:'Keep this plan and data. Database credentials alone do not terminate existing sessions; no schema is dropped or claimed retired.'});
+  if(r.provider==='postgresql'){
+   const state=await database.retire(r.id,p.id,d.kind);
+   if(!['retained','removed'].includes(state.phase))return save(p,{state:'waiting',reason:state.reason??'database_sessions_draining',database:state,next:state.next??'Repeat retirement_apply with this original plan.'});
+   const secret=await store.get('secret',r.connectionSecretId);
+   if(secret&&secret.status!=='revoked')await store.change('secret',secret.id,secret.revision,{...secret,status:'revoked',retirementPlanId:p.id,revision:secret.revision+1,updatedAt:stamp()});
+   r=await resource(r.id);const status=state.phase==='removed'?'removed':'retired';
+   if(r.status!==status)await store.change('resource',r.id,r.revision,{...r,status,retiredAt:stamp(),revision:r.revision+1});
+   return save(p,{state:'completed',status,completedAt:stamp(),database:state,historyRetained:true,holdsReleased:false,applicationSessionsStopped:true,providerRuntimeStopped:false,proof:state.proof??d,remainingCosts:state.phase==='retained'?'Frozen application data remains stored and billable. Shared database service, backups, account fees and accrued usage remain payable.':'Owned schema data is removed. Shared database service, retained backups, account fees and accrued usage remain payable; this does not cancel a shared provider subscription.'});
+  }
   if(r.kind==='managed-network-volume'){
    if(d.kind==='retain')return save(p,{state:'blocked',reason:'volume_requires_explicit_export_or_discard',remainingCosts:d.remainingCosts});
    const result=await child(p,'volume','volume_delete',{resourceId:r.id,expectedRevision:r.revision,disposition:d.kind==='export'?{kind:'backed-up',name:d.name,version:d.version}:{kind:'discard',reason:d.reason}});
