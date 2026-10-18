@@ -106,20 +106,35 @@ export function createClubTelegram({store,chain,call=createTelegramClient(),wake
   if(join&&String(join.chat.id)===c.chat_id){
    const uid=userId(join.from?.id),[m]=await sql`SELECT * FROM club_telegram_members WHERE user_id=${uid}`;
    const [i]=await sql`SELECT * FROM club_telegram_invites WHERE invite_link=${join.invite_link?.invite_link??''}`;
-   const allowed=inviteMatches(i,m,join)&&await check(m,true);
-   const id='join:'+update.update_id;await queue(id,allowed?'approveChatJoinRequest':'declineChatJoinRequest',{chat_id:c.chat_id,user_id:Number(uid)});const sent=await deliver(id);
-   if(allowed&&sent?.state==='done'){
-    await sql`UPDATE club_telegram_members SET state='joined',joined_at=coalesce(joined_at,now()),updated_at=now() WHERE user_id=${uid}`;
-    await sql`UPDATE club_telegram_invites SET state='used' WHERE id=${i.id}::uuid`;
-    await queue('revoke-invite:'+i.id,'revokeChatInviteLink',{chat_id:c.chat_id,invite_link:i.invite_link});await deliver('revoke-invite:'+i.id);
+   const id='join:'+update.update_id;
+   // Keep the original decision across 429s, restarts and invitation expiry.
+   // Delivery and the account-bound invitation must both finish before this
+   // update is acknowledged; the outbox alone cannot finalize membership.
+   let [decision]=await sql`SELECT method FROM club_telegram_outbox WHERE id=${id}`;
+   if(!decision){
+    const allowed=inviteMatches(i,m,join)&&await check(m,true);
+    await queue(id,allowed?'approveChatJoinRequest':'declineChatJoinRequest',{chat_id:c.chat_id,user_id:Number(uid)});
+    [decision]=await sql`SELECT method FROM club_telegram_outbox WHERE id=${id}`;
+   }
+   const sent=await deliver(id);
+   if(!sent||['pending','sending','uncertain'].includes(sent.state))throw new ClubError(503,'telegram_join_pending','The original join decision is still pending.');
+   if(decision?.method==='approveChatJoinRequest'&&sent.state==='done'){
+    // Fresh eligibility still applies if the original delivery was delayed.
+    if(m&&i&&m.address===i.address&&m.user_id===i.user_id&&await check(m,true)){
+     await sql`UPDATE club_telegram_members SET state='joined',joined_at=coalesce(joined_at,now()),updated_at=now() WHERE user_id=${uid} AND address=${i.address} AND state IN ('verified','joined')`;
+    }
+    if(i){
+     await sql`UPDATE club_telegram_invites SET state='used' WHERE id=${i.id}::uuid`;
+     await queue('revoke-invite:'+i.id,'revokeChatInviteLink',{chat_id:c.chat_id,invite_link:i.invite_link});await deliver('revoke-invite:'+i.id);
+    }
    }
    return;
   }
   const changed=update.chat_member;
   if(changed&&String(changed.chat.id)===c.chat_id){
    const uid=userId(changed.new_chat_member?.user?.id),status=changed.new_chat_member?.status;
-   if(['left','kicked'].includes(status))await sql`UPDATE club_telegram_members SET state=CASE WHEN state='revoked' THEN state ELSE 'left' END,updated_at=now() WHERE user_id=${uid}`;
-   if(['member','administrator','restricted'].includes(status)&&uid!==c.bot_id&&uid!==c.owner_id){
+   if(['left','kicked'].includes(status)||status==='restricted'&&changed.new_chat_member.is_member===false)await sql`UPDATE club_telegram_members SET state=CASE WHEN state='revoked' THEN state ELSE 'left' END,updated_at=now() WHERE user_id=${uid}`;
+   if((['member','administrator'].includes(status)||status==='restricted'&&changed.new_chat_member.is_member===true)&&uid!==c.bot_id&&uid!==c.owner_id){
     const [m]=await sql`SELECT * FROM club_telegram_members WHERE user_id=${uid}`;
     if(!m||!await check(m,true)){await queue('unverified-join:'+update.update_id,'banChatMember',{chat_id:c.chat_id,user_id:Number(uid),revoke_messages:false});await deliver('unverified-join:'+update.update_id);}
     else await sql`UPDATE club_telegram_members SET state='joined',joined_at=coalesce(joined_at,now()) WHERE user_id=${uid}`;
@@ -138,6 +153,10 @@ export function createClubTelegram({store,chain,call=createTelegramClient(),wake
   if(String(msg.chat.id)!==c.chat_id)return;
   const [m]=await sql`SELECT * FROM club_telegram_members WHERE user_id=${uid}`;
   if(!m||!await check(m))return;
+  // Refresh display metadata only from Telegram's authenticated stable user ID.
+  // Wallet/X links and permissions never follow a handle change.
+  const username=msg.from.username??null,firstName=String(msg.from.first_name??'').slice(0,64);
+  if(m.username!==username||m.first_name!==firstName)await sql`UPDATE club_telegram_members SET username=${username},first_name=${firstName},updated_at=now() WHERE user_id=${uid} AND address=${m.address}`;
   let text=msg.text??msg.caption??'';
   if(msg.photo)text+=(text?'\n':'')+'[Telegram photo attached; image contents are not available to Claus.]';
   else if(msg.document||msg.voice||msg.video||msg.audio)text+=(text?'\n':'')+'[Telegram attachment; file contents are not available to Claus.]';

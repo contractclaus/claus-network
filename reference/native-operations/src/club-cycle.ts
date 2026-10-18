@@ -12,7 +12,7 @@ import {clubContext,clubScope,clubEnabled,clubPresence,assertClubResolved} from 
 import {complete,completeRequest,inferenceRequest,contextFits} from './model.js';
 import {executeTool,checkpoint} from './tools.js';
 import {publicState,publicationContext} from './public.js';
-import {conversationWindow,toolContent} from './context.js';
+import {conversationWindow,toolContent,toolOutcome} from './context.js';
 import {readAdaptationContext} from './adaptation-service.js';
 
 const preferencePolicy=`BOUNDED PREFERENCES AND PRODUCT WORK
@@ -71,7 +71,7 @@ export async function clubCycle(owner:string,initial:Configuration){
     }
     result=await executeTool(pending.id.replace(':model:',':tool:')+':0',call.function.name,args,{channel:'club',configurationRevision:pending.revision,factsHash:pending.publication.factsHash,adaptation:pending.adaptation});
    }catch(error){if(String(error).includes('action_requires_reconciliation'))throw error;result={error:error instanceof Error?error.message:'club_action_failed'};}
-   const record='j_'+await journal('tool',call.function.name,{turn:owner,visibility:'private_club',result});
+   const record='j_'+await journal('tool',call.function.name,{turn:owner,visibility:'private_club',...toolOutcome(result,call.function.name,args),result});
    history.push(response,{role:'tool',tool_call_id:call.id,content:toolContent(result,record)});pending=null;await save();
   }
   return {done:false,nextAt:new Date(Date.now()+5000).toISOString()};

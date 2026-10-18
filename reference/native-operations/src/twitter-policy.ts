@@ -35,9 +35,23 @@ export function replyExclusion(post:any,replyAuthorIds:readonly string[]=[]):str
   return !eligibleBadge(post?.authorVerification)&&!excepted?'verified_audience_required':conversationExclusion(post);
 }
 
-export function originalPostSchedule(startedAt:string,lastPostAt:string|null,now=Date.now()) {
+export function originalPostSchedule(startedAt:string,lastPostAt:string|null,now=Date.now(),ownerRules:readonly {id:string;enabled:boolean;text:string}[]=[]) {
   const started=Date.parse(startedAt),last=lastPostAt?Date.parse(lastPostAt):0;
   if(!Number.isFinite(started)||!Number.isFinite(last))throw Error('invalid_social_schedule');
   const nextAt=new Date(Math.max(started,last)+originalPostIntervalMs).toISOString();
-  return {due:now>=Date.parse(nextAt),nextAt,intervalHours:originalPostIntervalMs/3600000,lastPostAt};
+  // Only authenticated configuration can advance this exact existing slot.
+  // Keep nextAt unchanged: its durable action ID and uncertain-send protection
+  // remain the same. Once a post completes, its new schedule consumes the grant.
+  let ownerAdvance:{notBefore:string;instruction:string}|undefined;
+  const rule=ownerRules.find(r=>r.id==='owner-original-post-advance'&&r.enabled);
+  if(rule){
+    try{
+      const value=JSON.parse(rule.text);
+      if(value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(k=>['slot','notBefore','instruction'].includes(k))&&value.slot===nextAt&&typeof value.notBefore==='string'&&typeof value.instruction==='string'&&value.instruction.trim()){
+        const permittedAt=Date.parse(value.notBefore);
+        if(Number.isFinite(permittedAt)&&new Date(permittedAt).toISOString()===value.notBefore&&permittedAt<Date.parse(nextAt)&&now>=permittedAt)ownerAdvance={notBefore:value.notBefore,instruction:value.instruction};
+      }
+    }catch{/* Invalid owner metadata never changes the normal schedule. */}
+  }
+  return {due:now>=Date.parse(nextAt)||!!ownerAdvance,nextAt,intervalHours:originalPostIntervalMs/3600000,lastPostAt,...(ownerAdvance?{ownerAdvance}:{})};
 }
