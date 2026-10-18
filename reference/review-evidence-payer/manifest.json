@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_B3G4txe4CGk6eoCTdkhTKLfoVEbV",
-  "source": "claus-goal-phase14-20261018",
+  "deployed": "dpl_6qSQdvPYnVirLzQx4SXguWqppAN1",
+  "source": "claus-goal-phase27-20261018",
   "files": {
-    "src/index.js": "32a2838f09866ada9a871e93b7f797ba1b29c78dab0b9bbc5080af50be88e2d4",
+    "src/index.js": "e395aa09eab3b33d0fa74790579e8801a895f9144ab8a963f8fdcc25b4c7f203",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
     "src/credit-work-store.js": "274409e275e0f493f4f6ffc0178573048990391c9a602891936355f3d797cfe7",
     "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
@@ -39,7 +39,8 @@
     "vendor-manifest.json": "1b1078957e0fb3dac74cfb9ded458c1c8950590e4a68e39eb4c7ba5ea30fe4e6",
     "src/external-services.js": "0da7b7f482e3f611ddd5e05a122aac146b0cc095c5fd6704aba89f5861695069",
     "src/operating-budget.js": "f01a4901350e12cec42456135fc76e75f1cc87178b9eece970ea2e42fc1f021d",
-    "src/wallet-rpc.mjs": "98ad9c441306e339c5654f39c1c2b8fca96c05eea4cf0246ed16c1e61ea1465b"
+    "src/wallet-rpc.mjs": "98ad9c441306e339c5654f39c1c2b8fca96c05eea4cf0246ed16c1e61ea1465b",
+    "src/credit-settlement.js": "75555150daed4819d7fe60e14966316082a61657630f287c8aec8c16818e63f6"
   },
   "referenceSubset": true
 }

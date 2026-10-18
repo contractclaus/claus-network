@@ -1,3 +1,4 @@
+import {hasSettledCreditProof} from './credit-settlement.js';
 import {operatingBudget} from './operating-budget.js';
 import {createExternalServices} from './external-services.js';
 import {installCapitalRoutes} from './capital/routes.mjs';
@@ -30,7 +31,7 @@ import {readCredit,creditSnapshot} from './credit-store.js';
 import {creditAllowed,creditCandidate,creditAdmission} from './credit-admission.js';
 import * as creditWork from './credit-work-store.js';
 import {workCandidate,workAdmission} from './credit-work-admission.js';
-import {hasNonpaymentProof,reconcileCreditWork} from './credit-reconciliation.js';
+import {hasNonpaymentProof,reconcileCreditWork,reconcileCompletedCreditWork} from './credit-reconciliation.js';
 import {reviewEvidence,recoverReviewBinding} from './review-evidence.js';
 import {createOperatingResources} from './operating-resources.js';
 
@@ -84,9 +85,10 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:true,allowSmallerOutput:false,allowCapacityDeferral:true,maximumOutputTokens:16384});
   const workHandler=id=>/^network-review:nr_[a-f0-9]{64}$/.test(id)?reviewCredit:independentCredit;
   const creditResult=row=>({status:row.status,response:row.response??null,outcome:row.outcome??null});
-  const workResult=row=>({...creditResult(row),response:recoveredBuilderResponse(row)??row.response??null,id:row.id,rail:'surplus_credit',execution:{active:row.active,activeUntil:row.active_until},...((row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed')||hasNonpaymentProof(row)
+  const workResult=row=>({...creditResult(row),response:recoveredBuilderResponse(row)??row.response??null,id:row.id,rail:'surplus_credit',execution:{active:row.active,activeUntil:row.active_until},...(hasSettledCreditProof(row)?{accounting:{requestId:row.id,amount:row.accounted_cost,maximumMicroUsdc:row.reserved_max,basis:'verified_provider_credit_debit',proof:row.outcome.settlementProof}}:{}),...((row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed')||hasNonpaymentProof(row)
     ?{accounting:{requestId:row.id,amount:'0',maximumMicroUsdc:row.reserved_max,basis:'verified_nonpayment'}}:{})});
   const workStatus=async(db,id)=>{const row=await creditWork.readCredit(db,id);if(!row)return null;await creditWork.expireCredit(db);return reconcileCreditWork(db,await creditWork.readCredit(db,id),{env,fetcher});};
+  const admitWork=async(db,id,maximum)=>{await reconcileCompletedCreditWork(db,{env,fetcher});return workAdmission(db,env,id,maximum);};
   const recovery={payer,outcome};
   const completion=createCompletion({env,requestBudget,imageEndpoint,inferenceEndpoint,completionTiming,sql,imageRequest,validateRequest,imageQuoteLimit,imageDailyLimit,
     reserveInference:(db,args)=>reserve(db,{...args,networkMaximum:/^[1-9]\d{0,7}$/.test(env.NETWORK_COMPUTE_LIMIT_MICRO_USDC??'')?BigInt(env.NETWORK_COMPUTE_LIMIT_MICRO_USDC):0n}),afterInference:(db,id)=>reconcile(db,id,recovery),
@@ -167,7 +169,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
       const prepaid=await readCredit(db,id);
       if(prepaid)return c.json({id,maximumMicroUsdc,ready:true,rail:'surplus_credit'});
       if(await creditWork.readCredit(db,id))return c.json({id,maximumMicroUsdc,ready:true,rail:'surplus_credit'});
-      if(workCandidate(env,id))return c.json(await workAdmission(db,env,id,maximumMicroUsdc));
+      if(workCandidate(env,id))return c.json(await admitWork(db,id,maximumMicroUsdc));
       if(creditCandidate(env,id))return c.json(await creditAdmission(db,env,id,maximumMicroUsdc));
       const budget=await budgetSnapshot(db);
       return c.json(BigInt(budget.remaining)<BigInt(maximumMicroUsdc)?waiting('payment_budget_unavailable'):{id,maximumMicroUsdc,ready:true,rail:'x402'});
@@ -205,7 +207,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     // An unselected Builder waits; it never falls through to a paid x402 call.
     if(!rows.length&&workCandidate(env,id)&&path==='/api/completion'){
       if(c.req.header('x-inference-purpose')!=='research')return c.json({error:'credit_purpose_required',payment:'not_signed'},400);
-      const admission=await workAdmission(db,env,id,c.req.header('x-max-quote-micro-usdc'));
+      const admission=await admitWork(db,id,c.req.header('x-max-quote-micro-usdc'));
       if(!admission.ready)return c.json({id,error:admission.reason,payment:'not_signed',admission:'deferred'},503);
       return deliver(workHandler(id));
     }
