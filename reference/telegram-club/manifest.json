@@ -1,23 +1,23 @@
 {
   "files": {
-    "lib/club-telegram.mjs": "a94ab8652bbe1705805de52221b36330cbea5b6c9482f0fc73ea350ba810f018",
+    "lib/club-telegram.mjs": "0e2f5bce3311b6d32e87445dee346672391e6c0c71f0038e02a9b01c67211ca9",
     "lib/telegram-activation.mjs": "01df3e7d080b1eb1467bf8c4274419c849c7051a0a67104e770df85ac95f315d",
     "lib/club-person-continuity.mjs": "7b1bd4609ac582bbe1975c1f41df66c909194298d7c62acc03a96db53678eb92",
     "lib/continuity-gate.mjs": "0d5689cf57a0354bd62d4cd26e2de758fa8c3eb52aa0e51e0cebbd13553d4a4b",
-    "lib/website-continuity.mjs": "eaa83f42a675fcc99cb48ec090f5a73a4f6a70862d9bff9f012572f9b777f772",
+    "lib/website-continuity.mjs": "f63a91d1e3f511622e8482c7445d7b45ce8e88e6744c733b6a43946120ad3bc1",
     "api/club-telegram.mjs": "18deca30cf19a0ee5e39053936e58f754c84c48e4e3682a3da262ee5d57c447b",
-    "api/club-agent.mjs": "15f139f8707259d2b8bee365ca07d9c2facc379bde2c0c21406e8dfba8c14dab",
+    "api/club-agent.mjs": "52f7d8077672eeca15674bede7188aabd4de508ee0f9e3e428e16ba7802a55db",
     "source/club-telegram.mjs": "c5de94a4f26eeb8ae83d09454737a7d4f3df695cbe3994519265ad4c609bdd94",
     "club-telegram.css": "9018f0ca64837c2389442e4989175e1743adedfc602c1a430a2ca0ba7db12fbf",
     "db/migrations/20261018-club-telegram.sql": "9791c0053ad44f606c94f4e1ae17c0f4109c030e615522b733912e45a000c30e",
     "lib/runtime-export.mjs": "e8839bec2e817cbc1722cbb2735fc1ebeb86a7389f158ba449fe5d01035b49e4",
     "lib/runtime-export-scope.json": "b01b0f20dafee0b8ddfe2c53df363776c46bdc06eb6a11067a5263219a5eb839",
     "api/continuity-export.mjs": "1c0bde9c165eb9b562ec9044c8dcbc39868f78b4b512c643066cef07155cb00f",
-    "lib/club-agent.mjs": "4f458e22a2657630b10556435e55e5a2315fced359286243d2eca15aa04174ce",
+    "lib/club-agent.mjs": "ad5308544a051d8065cec5fa64da81d25c525297bb286581cbc1f97b0c6e5704",
     "lib/club-ballots.mjs": "dbf678765347c7b691d92278d77e4e9f1a7368df822c471d158f15b24ef8b303",
     "lib/security/communication-policy.mjs": "a457513dd9140004fa63acb229cf7d187f298a4f621a1520298d98cfac792e30"
   },
   "referenceSubset": true,
-  "source": "claus-connected-observation-recovery-20261018",
+  "source": "claus-connected-development-and-recovery-20261018",
   "deployed": "included-in-this-web-release"
 }

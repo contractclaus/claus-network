@@ -133,3 +133,20 @@ BEGIN
  END LOOP;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION public.claus_native_host_extend(p_executor text,p_generation integer,p_epoch bigint,p_deployment text)
+RETURNS timestamptz LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+DECLARE extended timestamptz;
+BEGIN
+ PERFORM pg_advisory_xact_lock(7540317);
+ IF NOT public.claus_native_host_permit('standby',p_executor,p_generation,p_epoch) THEN RETURN NULL; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.claus_config c WHERE c.revision=(SELECT max(revision) FROM public.claus_config) AND c.content->'settings'->>'enabled'='true') THEN RETURN NULL; END IF;
+ UPDATE public.claus_native_hosts SET deadline=clock_timestamp()+interval '20 minutes',lease_until=clock_timestamp()+interval '5 minutes',updated_at=clock_timestamp()
+ WHERE id AND enabled AND mode='standby' AND executor=p_executor AND epoch=p_epoch AND generation=p_generation
+ AND execution_deployment=p_deployment AND lease_until>clock_timestamp() AND deadline>clock_timestamp()
+ RETURNING deadline INTO extended;
+ RETURN extended;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.claus_native_host_extend(text,integer,bigint,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.claus_native_host_extend(text,integer,bigint,text) TO claus_native_runtime;

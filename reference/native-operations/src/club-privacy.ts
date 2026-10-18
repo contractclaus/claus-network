@@ -8,7 +8,7 @@ import {sql} from './store.js';
 import {clubTools} from './club.js';
 import {builderTools} from './builder-schema.js';
 
-export const clubReaders=new Set(['read_network','read_publication','read_knowledge','read_reference','read_url','read_image','read_work','read_developments','read_x_account','read_x_thread','recall_conversation','read_chain','read_contract_source','read_market','remember','recall','finish']);
+export const clubReaders=new Set(['generate_image','review_image','read_network','read_publication','read_knowledge','read_reference','read_url','read_image','read_work','read_developments','read_x_account','read_x_thread','recall_conversation','read_chain','read_contract_source','read_market','remember','recall','finish']);
 export function channelAllows(name:string,channel:'public'|'club'='public'){
  return channel==='club' ? feedbackBuildTools.has(name)||adaptationTools.has(name)||continuityTools.has(name)||contributionTools.has(name)||clubTools.has(name)||clubReaders.has(name)||builderTools.has(name)||siteTools.has(name) : !continuityTools.has(name)&&!contributionTools.has(name)&&!clubTools.has(name)&&!builderTools.has(name)&&(!siteTools.has(name)||publicSiteTools.has(name));
 }

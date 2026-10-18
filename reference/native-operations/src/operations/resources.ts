@@ -15,6 +15,6 @@ export async function resourcesTool(requestId:string,args:any){
  if(typeof requestId!=='string'||!requestId||requestId.length>200)return {error:'resource_request_id_invalid'};
  try{
   const response=await fetch('https://claus-inference.vercel.app/api/resources',{method:'POST',headers:{authorization:'Bearer '+process.env.PUBLISHER_SECRET,'content-type':'application/json'},body:JSON.stringify({operation:args.operation,input:args.input?JSON.parse(args.input):{},requestId}),redirect:'error',signal:AbortSignal.timeout(90000)});
-  const body=await response.json();if(!response.ok)return {error:/^resource_[a-z0-9_]+$/.test(body.error)?body.error:'resource_unavailable',retryAt:body.retryAt??null,retry:false,originalRequestId:requestId};return {...body.result,originalRequestId:requestId};
+  const body=await response.json();if(!response.ok)return {error:/^resource_[a-z0-9_]+$/.test(body.error)?body.error:'resource_unavailable',retryAt:body.retryAt??null,retry:false,traceId:body.traceId??null,originalRequestId:requestId};return {...body.result,traceId:body.traceId??null,originalRequestId:requestId};
  }catch{return {error:'resource_response_unknown',retry:false,originalRequestId:requestId,next:'Reconcile by repeating the same requestId, operation and input; do not create a replacement action.'};}
 }

@@ -1,13 +1,23 @@
 import {createHash} from 'node:crypto';
 import {productionLabDatabase,type LabDatabase,type LabQuery} from './lab-db.js';
 
-const actions=['development','development_plan','development_observe','development_decide'];
+const actions=['development','development_plan','development_observe','development_decide','development_cases','development_cases_reserve'];
 export const developmentActions=new Set(actions);
 const fail=(s:string):never=>{throw Error('development_'+s);};
 const text=(v:any,max:number)=>typeof v==='string'&&v.trim().length>0&&v.length<=max&&!/-----BEGIN|Bearer\s|(?:password|api[-_]?key|secret)\s*[=:]\s*\S{8}/i.test(v);
 const workId=(v:any)=>typeof v==='string'&&/^nw_[a-z0-9_-]{1,80}$/.test(v);
 const fingerprint=(v:any)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const ordered=(v:any):any=>Array.isArray(v)?v.map(ordered):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,ordered(v[k])])):v;
+export function validateExperiment(value:any){
+ if(value===undefined)return null;
+ if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['question','alternatives','method','dataSources','expectedValue','smallestScope','stopRule','change','heldOutEvidence'].includes(k)))fail('experiment_invalid');
+ for(const k of ['question','method','expectedValue','smallestScope','stopRule'])if(!text(value[k],1600))fail('experiment_'+k+'_required');
+ if(!Array.isArray(value.alternatives)||!value.alternatives.length||value.alternatives.length>6||value.alternatives.some((x:any)=>!text(x,1200)))fail('alternatives_required');
+ if(!value.change||Object.keys(value.change).some(k=>!['kind','baseRef','candidateRef'].includes(k))||!['prompt','tool','memory','model','code'].includes(value.change.kind)||!text(value.change.baseRef,500)||!text(value.change.candidateRef,500))fail('single_change_required');
+ if(!Array.isArray(value.dataSources)||value.dataSources.length>12||value.dataSources.some((d:any)=>!d||Object.keys(d).some(k=>!['ref','license','observedAt','limitations'].includes(k))||!text(d.ref,1000)||!text(d.license,300)||!text(d.limitations,800)||!Number.isFinite(Date.parse(d.observedAt))))fail('data_provenance_required');
+ if(value.heldOutEvidence!==undefined&&(!Array.isArray(value.heldOutEvidence)||value.heldOutEvidence.length>8||value.heldOutEvidence.some((id:any)=>!/^j_[1-9][0-9]*$/.test(id))))fail('heldout_evidence_invalid');
+ return value;
+}
 export function compareDevelopment(before:any[],after:any[],metrics:any[]) {
  return metrics.map(m=>{
   const b=before.find(x=>x.name===m.name),a=after.find(x=>x.name===m.name);
@@ -53,6 +63,27 @@ export function developmentCycles({database=productionLabDatabase(),validEvidenc
    if(args.id!==undefined&&!workId(args.id))fail('work_invalid');
    return args.id?{cycle:await latest(database,args.id),authorityChanged:false}:developmentOverview(database,now());
   }
+  if(args.action==='development_cases'){
+   if(args.id!==undefined&&!workId(args.id))fail('work_invalid');
+   const rows=(await database.query("SELECT DISTINCT ON(subject) document FROM claus_network_measurements WHERE subject LIKE 'learning-cases:%' AND ($1::text IS NULL OR subject='learning-cases:'||$1) ORDER BY subject,id DESC",[args.id??null])).rows;
+   return {sets:rows.map((row:any)=>row.document),meaning:'Reserved original comparison cases. Source bodies are omitted from discovery. Keep them out of candidate development prompts; inspect privately only for an actual evaluation. No quality score is inferred from a successful tool call.',authorityChanged:false};
+  }
+  if(args.action==='development_cases_reserve'){
+   if(!workId(args.id)||!Number.isInteger(args.expectedRevision)||args.expectedRevision<0||!Array.isArray(args.evidenceRefs)||!args.evidenceRefs.length||args.evidenceRefs.length>8||new Set(args.evidenceRefs).size!==args.evidenceRefs.length||args.evidenceRefs.some((x:any)=>!/^j_[1-9][0-9]*$/.test(x)))fail('comparison_cases_invalid');
+   return database.transaction(async db=>{
+    await db.query('SELECT pg_advisory_xact_lock(hashtext($1))',['learning-cases:'+args.id]);
+    const previous=(await db.query('SELECT document FROM claus_network_measurements WHERE subject=$1 ORDER BY id DESC LIMIT 1',['learning-cases:'+args.id])).rows[0]?.document;
+    const inputHash=fingerprint(ordered(args));if(previous?.inputHash===inputHash)return {...previous,replayed:true};
+    if((previous?.revision??0)!==args.expectedRevision)fail('revision_conflict');
+    const work=(await db.query('SELECT status FROM claus_network_work WHERE id=$1',[args.id])).rows[0];if(!work||!['ready','working','waiting'].includes(work.status))fail('active_work_required');
+    const rows=(await db.query('SELECT id,kind,summary,data,visibility,created_at FROM claus_journal WHERE id::text=ANY($1::text[])',[args.evidenceRefs.map((x:string)=>x.slice(2))])).rows;
+    if(rows.length!==args.evidenceRefs.length||rows.some((row:any)=>row.kind!=='tool'||!['public','private_network'].includes(row.visibility)||typeof row.data?.success!=='boolean'))fail('comparison_source_unavailable');
+    const cases=rows.map((row:any)=>({id:'j_'+row.id,tool:row.summary,at:row.created_at,sha256:fingerprint(ordered(row)),state:'reserved',sourceOutcome:row.data.success?'reported_success':'reported_failure',quality:null,costUsd:null,elapsedMs:row.data.execution?.elapsedMs??null,assistance:null,privacy:'Internal source reference only; no person, wallet, message or source body copied into the case index.'}));
+    const document={workId:args.id,revision:args.expectedRevision+1,inputHash,cases,createdBy:actor,at:new Date(now()).toISOString(),evaluation:'Use actual original evidence to assess answer correctness, needed assistance, cost and elapsed time. Missing measurements stay unknown. A held-out case must not be supplied while tuning the candidate. Record later evaluation receipts in the normal development cycle; reserve a new version after exposing the cases.'};
+    await db.query('INSERT INTO claus_network_measurements(subject,document) VALUES($1,$2::jsonb)',['learning-cases:'+args.id,JSON.stringify(document)]);
+    return document;
+   });
+  }
   if(!workId(args.id)||!Number.isInteger(args.expectedRevision)||args.expectedRevision<0)fail('revision_required');
   const requestHash=fingerprint(ordered(args));
   return database.transaction(async db=>{
@@ -72,8 +103,13 @@ export function developmentCycles({database=productionLabDatabase(),validEvidenc
      return {name:m.name,unit:m.unit,direction:m.direction,target:m.target};
     });
     if(args.kind==='capability'&&(!text(args.need,1200)||!text(args.existingMeans,1600)||!text(args.accessBasis,1600)))fail('capability_need_required');
-    const baseline=await observations(db,args.observations,metrics);
-    next={id:args.id,kind:args.kind,status:'observing',hypothesis:args.hypothesis,rollback:args.rollback,metrics,baseline,after:[],
+    const baseline=await observations(db,args.observations,metrics),experiment=validateExperiment(args.experiment);
+    if(experiment?.heldOutEvidence?.length){
+     const heldOut=await evidence(db,experiment.heldOutEvidence),used=new Set(baseline.flatMap((m:any)=>m.evidence.map((r:any)=>r.id)));
+     if(heldOut.some((r:any)=>used.has(r.id)))fail('heldout_overlaps_baseline');
+     experiment.heldOutSources=heldOut;experiment.holdoutMeaning='Reserved original cases for comparison, never training input. Do not tune against their answers or publish private source contents.';
+    }
+    next={id:args.id,kind:args.kind,...(experiment?{experiment}:{}),status:'observing',hypothesis:args.hypothesis,rollback:args.rollback,metrics,baseline,after:[],
      ...(args.kind==='capability'?{acquisition:{need:args.need,existingMeans:args.existingMeans,accessBasis:args.accessBasis}}:{}),
      originalWorkRevision:work.revision,createdAt:new Date(now()).toISOString(),createdBy:actor};
    }else{
@@ -81,6 +117,8 @@ export function developmentCycles({database=productionLabDatabase(),validEvidenc
     next={...previous};
     if(args.action==='development_observe'){
      next.after=await observations(db,args.observations,previous.metrics);
+     const baselineIds=new Set(previous.baseline.flatMap((m:any)=>m.evidence.map((r:any)=>r.id)));
+     if(next.after.some((m:any)=>m.evidence.some((r:any)=>baselineIds.has(r.id)||Date.parse(r.at)<Date.parse(previous.createdAt))))fail('new_after_evidence_required');
      next.comparison=compareDevelopment(previous.baseline,next.after,previous.metrics);
      if(previous.kind==='capability'){
       if(!text(args.integrationRef,1000)||!text(args.capabilityName,120))fail('capability_delivery_required');
@@ -104,4 +142,4 @@ export function developmentCycles({database=productionLabDatabase(),validEvidenc
  }};
 }
 
-export const developmentHelp='Self-development: development {id?} reads cycles and due assessments. development_plan requires id of existing active work, expectedRevision:0, kind repair|feature|capability|model, hypothesis, rollback, metrics [{name,unit,direction:lower|higher,target}], observations [{name,unit,value:number|null,method,evidence:[original successful j_N]}], nextReviewAt ISO within30days. A capability plan also requires need, existingMeans and accessBasis. Before changing anything retain a real baseline. development_observe uses id, current expectedRevision, observations and nextReviewAt; capability observations require integrationRef and capabilityName for the registered useful integration. development_decide uses id, expectedRevision, decision retain|revert|inconclusive, reason, evidenceRefs; inconclusive also needs nextReviewAt. Retain requires all specified targets met without a measured regression. These are private, evidence-linked recorded assessments; missing values stay null and correlation is not causation. Deployment/rollback and capability registration use their existing tools. No new work, purchase, permission, posting or model call is created by this register.';
+export const developmentHelp='Self-development: development_cases {id?} reads reserved comparison sets without exposing their source bodies. development_cases_reserve {id,expectedRevision,evidenceRefs:[j_N]} reserves up to eight real public/private-Network tool outcomes for an existing active work item; no private Club source or owner message is admitted. Preserve source hashes and keep case answers out of candidate-tuning prompts. The set records unknown quality, cost and assistance honestly; later evaluations use the normal evidence-linked development cycle. development {id?} reads cycles and due assessments. development_plan requires id of existing active work, expectedRevision:0, kind repair|feature|capability|model, hypothesis, rollback, metrics [{name,unit,direction:lower|higher,target}], observations [{name,unit,value:number|null,method,evidence:[original successful j_N]}], nextReviewAt ISO within30days. A capability plan also requires need, existingMeans and accessBasis. Before changing anything retain a real baseline. Optional experiment specifies question, alternatives, method, dataSources [{ref,license,observedAt,limitations}], expectedValue, smallestScope, stopRule, one change {kind:prompt|tool|memory|model|code,baseRef,candidateRef}, and heldOutEvidence original j_N separate from the baseline. Keep quality, time, cost and needed assistance in the metrics; a negative result is useful evidence. development_observe requires genuinely later receipts distinct from baseline and uses id, current expectedRevision, observations and nextReviewAt; capability observations require integrationRef and capabilityName for the registered useful integration. development_decide uses id, expectedRevision, decision retain|revert|inconclusive, reason, evidenceRefs; inconclusive also needs nextReviewAt. Retain requires all specified targets met without a measured regression. These are private, evidence-linked recorded assessments; missing values stay null and correlation is not causation. Deployment/rollback and capability registration use their existing tools. No new work, purchase, permission, posting or model call is created by this register.';

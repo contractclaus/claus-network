@@ -1,3 +1,5 @@
+import {primaryForwardHono} from './primary-forward.mjs';
+import {deploymentBindings} from './deployment-bindings.js';
 import {runtimeExport} from './runtime-export.mjs';
 import {nativeMiddleware} from './native-continuity.js';
 import {databasePermit} from './database-fence.js';
@@ -62,6 +64,7 @@ import {networkReviewRoutes} from './network-review-routes.js';
 import {networkOperations,networkOperationsEnabled} from './network-operations.js';
 
 const app=new Hono();
+app.use('*',primaryForwardHono('native'));
 app.get('/internal/recovery/runtime-environment',c=>runtimeExport(c.req.header('authorization')));
 app.use('/api/*',nativeMiddleware);
 app.use('/internal/*',nativeMiddleware);
@@ -84,7 +87,7 @@ app.get('/public/network-surface',async c=>{c.header('Cache-Control','public,max
 app.get('/health',async c=>{
   await managedSchemaReady();
   const published=process.env.DATABASE_URL?await publicState():null;
-  return c.json({isolatedAnalysis:await isolatedHealth(),service:'claus-agent',coin:published?.token.address?'published_deployment':'not_published',tokenAddress:published?.token.address??null,databaseConfigured:!!process.env.DATABASE_URL,inferenceConfigured:modelReady(),xConfigured:xReady(),contractLabConfigured:!!process.env.LAB_SNAPSHOT_ID,uniswapApiConfigured:!!process.env.UNISWAP_API_KEY,programmableApiConfigured:!!process.env.PROGRAMMABLE_API_KEY});
+  return c.json({bindings:deploymentBindings(),isolatedAnalysis:await isolatedHealth(),service:'claus-agent',coin:published?.token.address?'published_deployment':'not_published',tokenAddress:published?.token.address??null,databaseConfigured:!!process.env.DATABASE_URL,inferenceConfigured:modelReady(),xConfigured:xReady(),contractLabConfigured:!!process.env.LAB_SNAPSHOT_ID,uniswapApiConfigured:!!process.env.UNISWAP_API_KEY,programmableApiConfigured:!!process.env.PROGRAMMABLE_API_KEY});
 });
 app.use('/api/*',async(c,next)=>{
   c.header('Cache-Control','no-store');
@@ -114,7 +117,7 @@ app.post('/api/packages/withdraw',async c=>{
  try{const v=await c.req.json();if(!v||Object.keys(v).some(k=>!['owner','packageId'].includes(k)))return c.json({error:'package_request_invalid'},400);return c.json(await packageAction(v.owner,null,'withdraw',{packageId:v.packageId},c.req.header('idempotency-key')));}
  catch(e){const message=e instanceof Error?e.message:'';return c.json({error:/^package_[a-z_]+$/.test(message)?message:'package_unavailable'},/^package_[a-z_]+$/.test(message)?409:503);}
 });
-app.post('/api/club/wake',async c=>c.json(await wakeClub(async(generation,ticket)=>(await start(clubWake,[generation,ticket])).runId),202));
+app.post('/api/club/wake',async c=>c.json(await wakeClub(async(generation,ticket)=>process.env.CONTINUITY_EFFECTS_ENABLED==='true'&&process.env.CONTINUITY_INSTANCE==='standby'?'independent:club:'+ticket:(await start(clubWake,[generation,ticket])).runId),202));
 app.post('/api/builder/setup',async c=>{await adaptationStore().initialize();await builderStore().initialize();await feedbackBuildStore().initialize();await siteStore().initialize();await siteFeatureStore().initialize();await contributionStore().initialize();await packageStore().initialize();await continuityStore().initialize();return c.json({initialized:true});});
 app.post('/api/gotchi/setup',async c=>{await gotchiStore().initialize();return c.json({initialized:true,activated:false});});
 app.get('/api/site/club',async c=>{const state=await siteStore().current();return c.json({revision:state.revision,enabled:state.enabled,updatedAt:state.updatedAt,manifest:{...state.manifest,pages:state.enabled?state.manifest.pages.filter(p=>p.placement==='club'):[]}});});
@@ -137,7 +140,7 @@ app.get('/api/lab/status',async c=>{const {settings}=await currentLab();return c
 app.post('/api/lab/tick',async c=>c.json(await tickResearch()));
 app.post('/api/lab/start',async c=>c.json(await startResearch()));
 app.get('/api/lab/recover',async c=>c.json(await startResearch(true)));
-app.post('/api/lab/ideas/:id/decision',async c=>{const input=await c.req.json(),publication=await labPublicContext();if(input.decision==='approved')requireCurrentLabState(publication);return c.json(await labStore().decide(c.req.param('id'),input.expectedRevision,input.proposalRevision,input.decision,publication.factsHash));});
+app.post('/api/lab/ideas/:id/decision',async c=>{const input=await c.req.json(),publication=await labPublicContext();if(input.decision==='approved')requireCurrentLabState(publication);return c.json(await labStore().decide(c.req.param('id'),input.expectedRevision,input.proposalRevision,input.decision,publication));});
 app.post('/api/backup/checkpoint',async c=>{
   const {projectId,snapshotId}=await c.req.json();
   const data=await exportBackupCheckpoint(projectId,snapshotId);
@@ -223,6 +226,7 @@ app.post('/api/release/prepare',async c=>{
   return c.json(await prepareRelease(id,await c.req.json()));
 });
 app.post('/api/upgrade',async c=>{
+  if(process.env.CONTINUITY_EFFECTS_ENABLED==='true'&&process.env.CONTINUITY_INSTANCE==='standby')return c.json({error:'independent_runtime_requires_retained_source_handoff'},409);
   const input=await c.req.json();
   if(input?.drain===true){
     if(input.kind!=='social'||input.resumePaused!==undefined)return c.json({error:'invalid_drain_upgrade'},400);
@@ -242,6 +246,7 @@ app.post('/api/upgrade',async c=>{
 });
 app.get('/api/upgrade',async c=>{try{const result=await readRuntimeHandoff(productionLabDatabase(),c.req.query('id')??'');return result?c.json(result):c.json({error:'not_found'},404);}catch{return c.json({error:'runtime_handoff_unavailable'},503);}});
 app.post('/api/start',async c=>{
+  if(process.env.CONTINUITY_EFFECTS_ENABLED==='true'&&process.env.CONTINUITY_INSTANCE==='standby')return c.json({status:'independent_supervisor',generation:(await store.state()).generation});
   const config=await store.configuration();
   if(!config.settings.enabled||!modelReady()) return c.json({error:'enable_and_connect_inference_first'},409);
   const state=await store.state();
@@ -252,6 +257,7 @@ app.post('/api/start',async c=>{
   return c.json({runId:run.runId,generation});
 });
 app.get('/api/recover',async c=>{
+  if(process.env.CONTINUITY_EFFECTS_ENABLED==='true'&&process.env.CONTINUITY_INSTANCE==='standby')return c.json({status:'independent_supervisor',generation:(await store.state()).generation});
   if(!process.env.DATABASE_URL)return c.json({status:'waiting_for_database_setup'});
   const config=await store.configuration();
   if(!config.settings.enabled||!modelReady()) return c.json({status:'paused'});
