@@ -6,9 +6,12 @@ export const digest=value=>createHash('sha256').update(typeof value==='string'?v
 const ordered=v=>Array.isArray(v)?v.map(ordered):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,ordered(v[k])])):v;
 export const sameValue=(a,b)=>JSON.stringify(ordered(a))===JSON.stringify(ordered(b));
 const key=(kind,id)=>'owned:'+kind+':'+id;
+const infrastructureProjection="jsonb_build_object('id',id,'originalResourceId',result->'work'->'id','projectId',result->'work'->'projectId','provider',result->'providerConfig'->'provider','app',result->'providerConfig'->'app','providerResourceId',result->'providerResourceId','image',result->'work'->'manifest'->'image','leaseUntil',result->'leaseUntil','state',result->'state','phase',result->'phase','terminal',COALESCE(result->'terminal','false'::jsonb),'stopped',COALESCE(result->'stopped','false'::jsonb),'observedAt',result->'observedAt','networkVolume',result->'work'->'manifest'->'networkVolume')";
 export function resourceStore(sql=neon(process.env.DATABASE_URL)){
  return {
   ...grantSpending(sql),
+  async infrastructureLeases(offset=0){const rows=await sql.query("SELECT "+infrastructureProjection+" AS value FROM claus_publisher_actions WHERE id LIKE 'infrastructure:sha256:%' ORDER BY created_at,id LIMIT 51 OFFSET $1",[offset]);return {items:rows.slice(0,50).map(r=>r.value),nextOffset:rows.length>50?offset+50:null};},
+  async infrastructureMatches(machines){const ids=machines.map(x=>x.id),originals=machines.map(x=>x.originalResourceId).filter(Boolean),names=machines.filter(x=>x.provider==='runpod').map(x=>x.name).filter(Boolean);const rows=await sql.query("SELECT "+infrastructureProjection+" AS value FROM claus_publisher_actions WHERE id LIKE 'infrastructure:sha256:%' AND (result->>'providerResourceId'=ANY($1::text[]) OR result->'work'->>'id'=ANY($2::text[]) OR 'claus-'||right(result->'work'->>'id',40)=ANY($3::text[]))",[ids,originals,names]);return rows.map(r=>r.value);},
   async queueLoad(resourceId){
    const rows=await sql`SELECT
     count(*) FILTER (WHERE a.result->>'state'=ANY(ARRAY['queued','waiting']) AND (a.result->>'nextAt')::timestamptz<=now() AND NOT EXISTS (
