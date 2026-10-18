@@ -27,7 +27,7 @@ async function exported(snapshotId:string,paths:string[]){
 export async function stageDevelopment(id:string,value:any){
  const input=developmentExportInput(value),db=sql(),inputHash=digest(input);
  const admit=async()=>{
-  const [,rows]=await db.transaction([db`SELECT pg_advisory_xact_lock(746201603)`,db`WITH admitted AS (SELECT 1 WHERE (SELECT count(*) FROM claus_actions WHERE kind IN ('development','development_export') AND created_at>=date_trunc('day',now()))<${DEVELOPMENT_LIMITS.daily} AND (SELECT count(*) FROM claus_actions WHERE kind IN ('development','development_export') AND status NOT IN ('completed','failed'))<${DEVELOPMENT_LIMITS.active}) INSERT INTO claus_actions(id,kind,input_hash,status,input,visibility) SELECT ${id},'development_export',${inputHash},'pending',${JSON.stringify(input)}::jsonb,'private_network' FROM admitted ON CONFLICT DO NOTHING RETURNING id`]);
+  const [,rows]=await db.transaction([db`SELECT pg_advisory_xact_lock(746201603)`,db`WITH admitted AS (SELECT 1 WHERE (SELECT count(*) FROM claus_actions WHERE kind IN ('development','development_export') AND status NOT IN ('completed','failed'))<${DEVELOPMENT_LIMITS.active}) INSERT INTO claus_actions(id,kind,input_hash,status,input,visibility) SELECT ${id},'development_export',${inputHash},'pending',${JSON.stringify(input)}::jsonb,'private_network' FROM admitted ON CONFLICT DO NOTHING RETURNING id`]);
   if(!rows.length&&!(await db`SELECT id FROM claus_actions WHERE id=${id}`).length)throw new ConfirmedFailure('development_capacity_reached');return rows;
  };
  return once(id,'development_export',input,async()=>{

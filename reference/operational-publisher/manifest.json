@@ -1,13 +1,13 @@
 {
-  "deployed": "dpl_EfMQf6Js4bFj1JMpqG2DGvpfEjjG",
-  "source": "website-autonomy-20261018",
+  "deployed": "dpl_7r4WRM4k9nNE9DeoiLi8Ae7j2kQM",
+  "source": "claus-goal-phase0-20261018",
   "files": {
     "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
     "package.json": "b43eac6342727358a28af7d38a781577e63397bd39c3d263182e42b86c86e9f7",
     "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2",
     "src/configuration/routes.js": "104614febc26edceb338e905f5944d431d1794b6bf77c908a285d8699b4c7c0c",
     "src/configuration/service.js": "ab9e223e7235e927bd15911b4b6732dda80c4b606d3a25abe592b45568ace5af",
-    "src/configuration/validation.js": "f7518c04a32c7aa4a007fbb8bac218f8f2ee6b21aea0b468d2ddb9486b99e6f8",
+    "src/configuration/validation.js": "bdd4b806c8438412515dc0e190c588c7bdb74059e43571d4507ad40dedbb03a5",
     "src/github/oci-routes.mjs": "1d09052957188ee1265a12220d80111b45f415aecf5cf82de0c0e24014d148f1",
     "src/github/oci.mjs": "ae67b8edc94c169e89e45c5c65d7a2559462c265c4b061ef61e00562726506ff",
     "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",
@@ -58,11 +58,13 @@
     "src/infrastructure/operating-budget.mjs": "00474cd181fd51feedf70bbb6059c14694060ec14627bc6d7ce222ae26f5c265",
     "tests/infrastructure-funding.test.mjs": "60c456fa62879eea82b2a3d3f13642ed30727c5f9297efd977a5802cb9c844aa",
     "src/publisher/files.mjs": "ce9b616e5440890b1d66085c2685712e2f31980c93db427acfbe45d64ac3c010",
-    "src/website-admin/service.mjs": "d16578706c869fc7adb11f790634b30685612ec265165d236f094d0ea8572d3a",
+    "src/website-admin/service.mjs": "a603ad645105cb57b92afb980742114eb36c97f4787d39ae07d3ecb16051bfd7",
     "src/website-admin/database.mjs": "be4cb024ca97e495e09699d3c4f5ce4d9632f30bc2f15a8152d7698968e316df",
     "src/website-admin/routes.mjs": "14d43e1b0284e7f0dbb0b943016857d32ed2557aac863bb95b46fc62471b8326",
     "tests/website-autonomy.test.mjs": "4df002fe2d7c7b3dd372887c6fd99f8de2a21ed3b09c7e88ae0e528dee12eb0a",
-    "src/website-admin/assets.mjs": "38cc1ccf23718738f9be1529a91072c5da2de94690b9c6de4f62577171884165"
+    "src/website-admin/assets.mjs": "38cc1ccf23718738f9be1529a91072c5da2de94690b9c6de4f62577171884165",
+    "src/website-admin/dns.mjs": "3a4ab5909f8a14069dbd7bec0301d85f598908e5380343bee3cc24de872abdf9",
+    "tests/website-dns.test.mjs": "a58256294fd91cc6abc8c3097039db3680c71886e9a849c0dc391bb65abc1744"
   },
   "referenceSubset": true
 }

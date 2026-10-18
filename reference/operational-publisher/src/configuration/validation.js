@@ -12223,7 +12223,7 @@ function validateConfiguration(value) {
   if (!Number.isInteger(s.maxActionsPerTurn) || s.maxActionsPerTurn < 1 || s.maxActionsPerTurn > 24 || !Number.isInteger(s.maxOutputTokens) || s.maxOutputTokens < 256 || s.maxOutputTokens > 8192) throw new Error("Invalid execution chunk size");
   if (s.priorityXAuthorIds !== void 0 && (!Array.isArray(s.priorityXAuthorIds) || s.priorityXAuthorIds.length > 16 || s.priorityXAuthorIds.some((id) => typeof id !== "string" || !/^[1-9][0-9]{0,18}$/.test(id)) || new Set(s.priorityXAuthorIds).size !== s.priorityXAuthorIds.length)) throw Error("Invalid priority account IDs");
   if (s.blockedXAccounts !== void 0) validateBlockedXAccounts(s.blockedXAccounts);
-  if (s.role !== void 0 && s.role !== "twitter") throw Error("Invalid agent role");
+  if (s.role !== void 0 && !["twitter", "operator"].includes(s.role)) throw Error("Invalid agent role");
   if (s.mode === "test" && (value.policy.capabilities.chainWrite || value.policy.capabilities.externalTransfer)) throw new Error("Production signer is not enabled in this test runtime");
   if (s.role === "twitter" && (!Number.isFinite(Date.parse(s.socialStartedAt ?? "")) || ["chainWrite", "externalTransfer", "sandbox", "publicPublish"].some((k) => value.policy.capabilities[k]))) throw Error("Twitter role cannot hold engineering or wallet capabilities");
 }

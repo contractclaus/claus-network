@@ -1,9 +1,10 @@
+import {webPath,checkFileChange,previousManifest} from './files.mjs';
 import {createHash} from 'node:crypto';
 export type FileRef={path:string;sha:string;size:number;gitSha?:string};
-export type Change={path:string;before:string;after:string};
+export type Change={path:string;before:string;after:string;action?:'patch'|'replace'|'delete';encoding?:'base64';expectedSha?:string;assetId?:string};
 export const OPS_TARGETS={
  repository:{project:'contractclaus/claus-network',name:'claus-network',origin:'https://github.com/contractclaus/claus-network',probe:'/README.md',paths:[/^(?:README\.md|(?:src|runtime|api|adapters|interfaces|scripts|test|tests|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|tsx|jsx|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/]},
- web:{project:'prj_3EPhg3tuhf5oHU9sw2Butj9eRegy',name:'claus',origin:'https://claus.si',probe:'/Network',paths:[/^(?:(?:src|api|components|pages|app|network|public|assets|docs|styles|scripts|tests?)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|tsx|jsx|json|md|html|css|svg)|[A-Za-z0-9_-]+\.(?:html|css|js)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/]},
+ web:{project:'prj_3EPhg3tuhf5oHU9sw2Butj9eRegy',name:'claus',origin:'https://claus.si',probe:'/Network',paths:[{test:webPath}]},
  api:{project:'prj_rGom8c2zwC8zztmqsSFPaAJj7fXs',name:'claus-network-api',origin:'https://claus-network-api.vercel.app',probe:'/health',paths:[/^(?:(?:src|runtime|api|adapters|interfaces|scripts|tests?|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/]},
  native:{project:'prj_JQEQJQb3Obhgas8Dtx0FIe1Zokah',name:'claus-agent',origin:'https://claus-agent.vercel.app',probe:'/health',paths:[/^(?:(?:src|api|scripts|tests?|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/]}
 } as const;
@@ -25,7 +26,7 @@ export function validateChanges(scope:string,changes:Change[]){
  const p=target(scope);
  if(!Array.isArray(changes)||!changes.length||changes.length>64||changes.some(c=>!c||typeof c!=='object'))throw new OperationsInputRejection('operations_changes_invalid','Provide 1..64 file changes, each with path, before and after.');
  if(new Set(changes.map(x=>x.path)).size!==changes.length)throw new OperationsInputRejection('operations_changes_invalid','Use one change per file path. Combine multiple edits to the same file into one exact before/after replacement; reread current source and scope revision first.');
- for(const c of changes)if(!c||typeof c.path!=='string'||(c.path.split('/').some(x=>!x||x==='.'||x==='..')||!p.paths.some(r=>r.test(c.path)))||typeof c.before!=='string'||typeof c.after!=='string'||c.before===c.after||Buffer.byteLength(c.before)+Buffer.byteLength(c.after)>1000000)throw new OperationsInputRejection('operations_path_or_change_denied','Use a listed editable path, exact before text (empty only for a new file) and different after text within the existing size limit.');
+ for(const c of changes){try{checkFileChange(scope,c,path=>p.paths.some(r=>r.test(path)));}catch(error){throw new OperationsInputRejection((error as Error).message,'Use an editable path, exact text patch, or for website whole-file replace/delete use the current expectedSha. Binary files require canonical base64 and action replace/delete.');}}
 }
 export function patch(content:string,c:Change){if(c.before===''){if(content!=='')throw Error('operations_new_file_conflict');return c.after;}const at=content.indexOf(c.before);if(at<0||content.indexOf(c.before,at+c.before.length)>=0)throw Error('operations_patch_not_unique');const result=content.slice(0,at)+c.after+content.slice(at+c.before.length);if(Buffer.byteLength(result)>2000000)throw Error('operations_source_too_large');return result;}
 export function denyNewAuthority(before:string,after:string){
@@ -36,4 +37,4 @@ export function denyNewAuthority(before:string,after:string){
 
 export const isolatedPath=(path:string)=>/^src\/isolated\/(?:network|work)\.json$/.test(path)||path==='src/application/main.js';
 export const gitBlobSha=(content:string)=>{const bytes=Buffer.from(content);return createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');};
-export function baseManifest(release:any):FileRef[]{return release.manifest.filter((f:FileRef)=>!release.files.some((x:any)=>x.path===f.path&&x.created===true)).map((f:FileRef)=>{const old=release.files.find((x:any)=>x.path===f.path);return old?{...f,sha:sha(old.before),size:Buffer.byteLength(old.before),...(release.scope==='repository'?{gitSha:gitBlobSha(old.before)}:{})}:f;});}
+export function baseManifest(release:any):FileRef[]{return previousManifest(release,sha,gitBlobSha);}
