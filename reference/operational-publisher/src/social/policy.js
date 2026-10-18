@@ -1,4 +1,3 @@
-import {outgoingActionRisk} from '../security/communication-policy.mjs';
 import {createHash} from 'node:crypto';
 export const ownXId='2105791902952067072';
 export const digest=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
@@ -21,7 +20,6 @@ export function requestShape(v){
  if(typeof body.text!=='string'||[...body.text].length>4000||!body.text.trim()&&!body.media)throw new SocialError('x_post_invalid',true);
  if(body.reply&&(Object.keys(body.reply).join(',')!=='in_reply_to_tweet_id'||!/^\d{1,19}$/.test(body.reply.in_reply_to_tweet_id)))throw new SocialError('x_reply_invalid',true);
  if(body.media&&(Object.keys(body.media).join(',')!=='media_ids'||!Array.isArray(body.media.media_ids)||body.media.media_ids.length!==1||!/^\d{1,19}$/.test(body.media.media_ids[0])))throw new SocialError('x_media_invalid',true);
- const risk=outgoingActionRisk(body.text,{reply:!!body.reply});if(risk)throw new SocialError(risk,true);
  return {path,method,body,actionId};
 }
 export function authorizePost(v,source,after){

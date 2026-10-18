@@ -22,6 +22,9 @@ export function createSocial({repository,provider=providerRequest,after=()=>proc
     return provider(v.path,v.method,{media:a.base64,media_category:a.category});
    }
    const old=await repository.get(v.actionId);if(old)return existing(old,v);
+   // Existing completed/uncertain originals keep their receipt. A new policy
+   // refusal must never retroactively assert that an earlier send did not occur.
+   const textRisk=outgoingActionRisk(v.body.text,{reply:!!v.body.reply});if(textRisk)throw new SocialError(textRisk,true);
    const source=await repository.source(v.actionId);
    authorizePost(v,source,after());
    // Resolve actual provider identity; model-written attribution is not authority.
