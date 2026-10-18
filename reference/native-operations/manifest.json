@@ -173,8 +173,8 @@
     "src/development-cycles.ts": "85fd003c13f7a037c66cff3124774634d53594afcf2dd5bb71aa335654e87dea",
     "src/operations/resource-operations.ts": "53fa275a4a349cb64cb3a25dc1f88a614fdae8414667f0e7f60d27416684ace8",
     "src/database-fence.ts": "6e08cbd023bf536ffd923eccbef316dd29f46c433b12a8d9c39f1d2c578c7a0f",
-    "src/independent-inference.ts": "293e3dbcf6454d7332d53822d59e843737d86a7c10c32c79d84d04c8d13c9647",
-    "src/continuity-gate.mjs": "0d5689cf57a0354bd62d4cd26e2de758fa8c3eb52aa0e51e0cebbd13553d4a4b",
+    "src/independent-inference.ts": "16b5d295e20d377a4200642add6f333959c321bd509c98beacfce05e1ff753e2",
+    "src/continuity-gate.mjs": "07149b9b0a7c7683e5a462441c42440cfac1941aa004096faadddf778df91cd9",
     "src/continuity-gate.d.mts": "e4b62c77764a91f52e6b8ba665351fe09e6a27cde7a32c92ea50cdf5097881e9",
     "src/native-continuity.ts": "b3919208ed21db711a06f82690607f790ac8cc591cfd75e5a88226beaae4cfd4",
     "src/person-continuity.ts": "eee8947472f0e0f06b683d1081fc7b7cf3c4f347341c1ca2bad2ffae0594de1d",
@@ -186,5 +186,5 @@
     "src/security/communication-policy.d.mts": "1e4883b67c25b74441a4847519fcad85ac7f73bb234a3824f8c55e35a1be7b53"
   },
   "referenceSubset": true,
-  "deployed": "dpl_GiUnpgQMkWEw4r4Fv6GkghkS1qpc"
+  "deployed": "dpl_GeWmS4SLsAjohhtr64H1GCsUPbTe"
 }
