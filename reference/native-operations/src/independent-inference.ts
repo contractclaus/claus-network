@@ -50,7 +50,7 @@ export async function independentComplete(id:string,request:any,maximum:string,f
    if(!body?.choices?.[0]?.message||!validIndependentModel(body,request.model,id,env))throw Error('independent_model_result_invalid');
    return body;
   }
-  if(original.status==='not_dispatched')throw Error('independent_original_not_dispatched');
+  if(original.status==='not_dispatched')throw Object.assign(Error('independent_original_not_dispatched'),{continuityNoDispatch:true});
   if(original.status==='failed')throw Error('independent_original_failed');
   await new Promise(resolve=>setTimeout(resolve,2500));
  }

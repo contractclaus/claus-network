@@ -30,6 +30,19 @@ export function continuityGate({env=process.env,request=fetch,writeBarriers,comp
    if(settled.id!==id||settled.state!=='completed')throw Error('continuity_settlement_uncertain');
    return result;
   } catch(error){
+   // Only trusted code at a proven pre-dispatch rejection can mark this.
+   // Local writes still need a replicated barrier before the attempt is final.
+   if(!finished&&error?.continuityNoDispatch===true&&((['native','lab'].includes(component)&&kind==='inference')||(component==='network'&&kind==='signal_record_prepare'))){
+    try{
+     barriers=await writeBarriers(id,permit.epoch);
+     if(!Array.isArray(barriers)||!barriers.length)throw Error('continuity_barriers_missing');
+     const confirmed=await call('/v1/barriers/wait',{id,databases:barriers});
+     if(confirmed.id!==id||confirmed.confirmed!==true)throw Error('continuity_replication_pending');
+     const settled=await call('/v1/effects/settle',{id,token:claim.token,state:'failed',result:{executionFinished:true,dispatchOccurred:false,barriers,epoch:permit.epoch,error:{name:error.name,code:error.code??error.message}}});
+     if(settled.id!==id||settled.state!=='failed')throw Error('continuity_settlement_uncertain');
+     throw Object.assign(error,{continuitySettled:true});
+    }catch(settlementError){if(settlementError===error&&error.continuitySettled)throw error;}
+   }
    try{await call('/v1/effects/settle',{id,token:claim.token,state:'uncertain',result:{executionFinished:finished,...(finished?{value:result}:{}),barriers:barriers??null,epoch:permit.epoch,error:{name:error?.name??'Error',code:/^[a-z0-9_]{1,100}$/i.test(error?.message??'')?error.message:'original_execution_uncertain'}}});}catch{}
    throw error;
   }

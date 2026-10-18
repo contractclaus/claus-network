@@ -242,7 +242,12 @@ export function createSignals({ store, identity, chain, artifacts, publicResult,
       return prepare(actor, projectId, 'record', input, async c => {
         const sourceHash = await source(input);
         requireThat(!(await store.read('signal-revocations', digest({ projectId, grantId: input.grantId }))), 'signal_api_revoked');
-        return { ...await chain.prepareRecord(await signal(projectId), c.binding, { ...input, sourceHash }), sourceHash };
+        try { return { ...await chain.prepareRecord(await signal(projectId), c.binding, { ...input, sourceHash }), sourceHash }; }
+        catch(error){
+          // The interval check precedes transaction construction and storage.
+          if(error?.code==='signal_interval_pending')Object.defineProperty(error,'continuityNoDispatch',{value:true});
+          throw error;
+        }
       });
     },
     async submit(actor, projectId, { operationId, transactionHash }) {
