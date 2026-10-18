@@ -22,7 +22,7 @@ export function configurationService(db=neon(process.env.NATIVE_CONFIGURATION_DA
      WHERE (SELECT revision FROM current)=${expectedRevision} AND (SELECT hash FROM current)<>${hash}
      ON CONFLICT(parent_revision) DO NOTHING RETURNING revision,hash),
     recorded AS (INSERT INTO claus_journal(kind,summary,data)
-     SELECT 'configuration',${summary},jsonb_build_object('revision',revision,'custodian','fixed-configuration','actor',${origin}) FROM inserted RETURNING id)
+     SELECT 'configuration',${summary},jsonb_build_object('revision',revision,'custodian','fixed-configuration','actor',${origin}::text) FROM inserted RETURNING id)
     SELECT revision,hash,false AS unchanged FROM inserted
     UNION ALL SELECT revision,hash,true AS unchanged FROM current WHERE hash=${hash} AND (revision=${expectedRevision} OR parent_revision=${expectedRevision})`;
    if(!rows[0])throw Error('configuration_conflict');return rows[0];
