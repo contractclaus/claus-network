@@ -1,3 +1,4 @@
+import {nativeContinuity} from './native-continuity.js';
 import {outgoingActionRisk} from './security/communication-policy.mjs';
 import {xPersonContinuity} from './person-continuity.js';
 import {networkOperations,networkOperationsEnabled} from './network-operations.js';
@@ -372,6 +373,9 @@ export async function replyDeliveryOverview() {
   return sql()`SELECT post_id AS "postId",status,reason,deferred_until AS "retryAt" FROM claus_x_inbox WHERE status IN ('retrying','delivery_blocked') ORDER BY observed_at LIMIT 20`;
 }
 export async function wakeDecision(generation:number) {
+ return nativeContinuity('native','wake','generation:'+generation,{},()=>wakeDecisionUnfenced(generation));
+}
+async function wakeDecisionUnfenced(generation:number) {
   const config=await configuration(),current=await state();
   if(current.generation!==generation)return {run:false,nextAt:null};
   if(!await import('./runtime-host.js').then(m=>m.runtimeHostPulse(generation)))return {run:false,nextAt:null};

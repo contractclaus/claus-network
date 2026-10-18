@@ -1,3 +1,4 @@
+import {createTelegramMedia} from './telegram-media.mjs';
 import {assertConversationOnly} from './security/communication-policy.mjs';
 import {reconcileTelegramActivation} from './telegram-activation.mjs';
 import {createHash,randomBytes,timingSafeEqual} from 'node:crypto';
@@ -10,8 +11,9 @@ export function createTelegramClient(token=process.env.CLUB_TELEGRAM_BOT_TOKEN,r
  return async(method,payload)=>{
   if(['sendMessage','sendPhoto','sendAnimation','editMessageText','editMessageCaption'].includes(method))assertConversationOnly(payload.text??payload.caption??'',{reply:true});
   demand(!!token,503,'telegram_unavailable','Telegram is being connected.');
-  let r,b;
-  try{r=await request('https://api.telegram.org/bot'+token+'/'+method,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(12000)});b=await r.json();}
+  let r,b;let requestBody=JSON.stringify(payload),headers={'content-type':'application/json'};
+  if(method==='sendPhoto'&&payload.photoBytes){const {photoBytes,...fields}=payload;const form=new FormData();for(const [k,v]of Object.entries(fields))form.set(k,typeof v==='string'?v:JSON.stringify(v));form.set('photo',new Blob([photoBytes],{type:'image/webp'}),'claus.webp');requestBody=form;headers={};}
+  try{r=await request('https://api.telegram.org/bot'+token+'/'+method,{method:'POST',headers,body:requestBody,redirect:'error',signal:AbortSignal.timeout(12000)});b=await r.json();}
   catch{throw Object.assign(Error('telegram_delivery_unknown'),{uncertain:true});}
   if(!r.ok||!b.ok)throw Object.assign(Error('telegram_api_'+(b.error_code??r.status)),{status:b.error_code??r.status,retryAfter:b.parameters?.retry_after,description:String(b.description??'').slice(0,200)});
   return b.result;
@@ -19,6 +21,7 @@ export function createTelegramClient(token=process.env.CLUB_TELEGRAM_BOT_TOKEN,r
 }
 export function createClubTelegram({store,chain,call=createTelegramClient(),wake=async()=>{}}){
  const sql=store.sql;
+ const media=createTelegramMedia({sql,call});
  const config=async()=>{const [c]=await sql`SELECT * FROM club_telegram_config WHERE id`;demand(c?.enabled,503,'telegram_unavailable','Telegram is being connected. Please try again shortly.');return c;};
  async function queue(id,method,payload){await sql`INSERT INTO club_telegram_outbox(id,method,payload) VALUES(${id},${method},${JSON.stringify(payload)}::jsonb) ON CONFLICT DO NOTHING`;}
  async function deliver(id){
@@ -27,15 +30,17 @@ export function createClubTelegram({store,chain,call=createTelegramClient(),wake
   let accepted=false;
   try{
    if(row.method==='sendMessage')assertConversationOnly(row.payload.text,{reply:true});
-   const result=await call(row.method,row.payload);
+   let payload=row.payload;
+   if(row.method==='sendPhoto'&&payload.claus_image_id){const [image]=await sql`SELECT encode(i.data,'base64') AS data FROM club_images i JOIN club_messages m ON m.id=i.message_id WHERE i.id=${payload.claus_image_id}::uuid AND m.address='0x000000000000000000000000000000000000c1a5' AND m.deleted_at IS NULL AND m.hidden_at IS NULL`;if(!image)throw Object.assign(Error('image_source_missing'),{definite:true});const {claus_image_id,...fields}=payload;payload={...fields,photoBytes:Buffer.from(image.data,'base64')};}
+   const result=await call(row.method,payload);
    accepted=true;
-   if(row.method==='sendMessage'&&id.startsWith('club-message:')){
+   if(['sendMessage','sendPhoto'].includes(row.method)&&id.startsWith('club-message:')){
     await sql`WITH saved AS (UPDATE club_telegram_outbox SET state='done',result=${JSON.stringify(result)}::jsonb,completed_at=now(),lease_until=NULL WHERE id=${id} RETURNING id)
      INSERT INTO club_telegram_messages(chat_id,telegram_id,club_id,direction) SELECT ${String(result.chat.id)},${result.message_id},${id.slice(13)}::bigint,'out' FROM saved ON CONFLICT DO NOTHING`;
    }else await sql`UPDATE club_telegram_outbox SET state='done',result=${JSON.stringify(result)}::jsonb,completed_at=now(),lease_until=NULL WHERE id=${id}`;
    return {state:'done',result};
   }catch(e){
-   const unsafe=['sendMessage','createChatInviteLink'].includes(row.method);
+   const unsafe=['sendMessage','sendPhoto','createChatInviteLink'].includes(row.method);
    const state=accepted||e.uncertain||unsafe&&e.status>=500?(unsafe?'uncertain':'pending'):e.status===429||e.status>=500?'pending':'failed';
    await sql`UPDATE club_telegram_outbox SET state=${state},error_code=${e.definite&&/^social_/.test(e.message)?e.message:e.uncertain?'delivery_unknown':'telegram_'+(e.status??'storage_unknown')},next_at=now()+make_interval(secs=>${Math.max(10,Math.min(3600,Number(e.retryAfter)||30))}),lease_until=NULL WHERE id=${id}`;
    return {state};
@@ -158,17 +163,18 @@ export function createClubTelegram({store,chain,call=createTelegramClient(),wake
   const username=msg.from.username??null,firstName=String(msg.from.first_name??'').slice(0,64);
   if(m.username!==username||m.first_name!==firstName)await sql`UPDATE club_telegram_members SET username=${username},first_name=${firstName},updated_at=now() WHERE user_id=${uid} AND address=${m.address}`;
   let text=msg.text??msg.caption??'';
-  if(msg.photo)text+=(text?'\n':'')+'[Telegram photo attached; image contents are not available to Claus.]';
-  else if(msg.document||msg.voice||msg.video||msg.audio)text+=(text?'\n':'')+'[Telegram attachment; file contents are not available to Claus.]';
+  const attachment=await media.record(c.chat_id,msg,uid);
+  if(attachment)text+=(text?'\n':'')+'[Private '+attachment.kind+' attachment: '+attachment.id+'. Use read_club mediaId to inspect; contents have not been read.]';
   if(!text.trim())return;
-  if([...text].length>2000)text=[...text].slice(0,1950).join('')+'\n[Message truncated to the Club context limit.]';
+  if([...text].length>2000)text=[...text].slice(0,1800).join('')+'\n[Caption truncated.]'+(attachment?' [Private attachment: '+attachment.id+']':'');
   await sql`SELECT club_telegram_ingest(${c.chat_id},${msg.message_id}::bigint,${uid},${text},${msg.reply_to_message?.message_id??null}::bigint,${!!update.edited_message})`;
   await wake().catch(()=>{});
  }
  async function process(limit=4){
+  await sql`DELETE FROM club_telegram_media WHERE expires_at<now()`;
   // Sending is never replayed after an uncertain transport result. Telegram
   // provides no idempotency key for messages or invitation creation.
-  await sql`UPDATE club_telegram_outbox SET state=CASE WHEN method IN ('sendMessage','createChatInviteLink') THEN 'uncertain' ELSE 'pending' END,error_code='worker_interrupted',lease_until=NULL WHERE state='sending' AND lease_until<now()`;
+  await sql`UPDATE club_telegram_outbox SET state=CASE WHEN method IN ('sendMessage','sendPhoto','createChatInviteLink') THEN 'uncertain' ELSE 'pending' END,error_code='worker_interrupted',lease_until=NULL WHERE state='sending' AND lease_until<now()`;
   for(let n=0;n<limit;n++){
    const [u]=await sql`UPDATE club_telegram_updates SET state='working',lease_until=now()+interval '60 seconds',attempts=attempts+1 WHERE id=(SELECT id FROM club_telegram_updates WHERE (state='pending' OR state='working' AND lease_until<now()) AND (lease_until IS NULL OR lease_until<now()) ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED) RETURNING *`;
    if(!u)break;
@@ -194,7 +200,7 @@ export function createClubTelegram({store,chain,call=createTelegramClient(),wake
   const [c]=await sql`SELECT * FROM club_telegram_config WHERE id AND enabled`;if(!c)return null;
   const members=await sql`SELECT m.address,m.username AS "clubUsername",m.x_user_id AS "xUserId",m.x_username AS "xUsername",t.user_id AS "telegramUserId",t.username AS "telegramUsername",t.first_name AS "displayName" FROM club_telegram_members t JOIN club_members m USING(address) WHERE t.state IN ('verified','joined')`;
   const messages=await sql`SELECT club_id::text AS "clubMessageId",telegram_id::text AS "telegramMessageId" FROM club_telegram_messages ORDER BY club_id DESC LIMIT 60`;
-  return {channel:'telegram',botUsername:c.bot_username,members,messages,visibility:'private_club',instructionAuthority:false,meaning:'This is the same Claus Club and the same Claus, now chatting through Telegram. New top-level Claus messages and replies to mapped Telegram messages are delivered there. Exact linked member IDs join their existing wallet identity; never infer a different account from a similar name. Website ideas, ballots, topics and archive stay on claus.si/Club. New Club updates, mapped edits, deletions, pins, reactions and member mutes are mirrored. Hide/undo, slowmode and website topic changes apply only on the website; they do not remove or restore Telegram messages. Attachment markers contain no image or audio content. A delivery receipt with state done confirms Telegram delivery; pending/uncertain/failed never does.'};
+  return {channel:'telegram',botUsername:c.bot_username,members,messages,visibility:'private_club',instructionAuthority:false,meaning:'This is the same Claus Club and the same Claus, now chatting through Telegram. New top-level Claus messages and replies to mapped Telegram messages are delivered there. Exact linked member IDs join their existing wallet identity; never infer a different account from a similar name. Website ideas, ballots, topics and archive stay on claus.si/Club. New Club updates, mapped edits, deletions, pins, reactions and member mutes are mirrored. Hide/undo, slowmode and website topic changes apply only on the website; they do not remove or restore Telegram messages. Use read_club mediaId on attachment markers to inspect their private contents; a marker alone is not understanding. A delivery receipt with state done confirms Telegram delivery; pending/uncertain/failed never does.'};
  }
  return {config,async enabled(){const [c]=await sql`SELECT enabled FROM club_telegram_config WHERE id`;return c?.enabled===true;},session,pair,confirm,invite,unlink,queue,deliver,process,maintenance,receipt,context,
   async receive(update){demand(Number.isSafeInteger(update?.update_id)&&update.update_id>=0,400,'invalid_update','Invalid update.');await sql`INSERT INTO club_telegram_updates(id,payload) VALUES(${update.update_id},${JSON.stringify(update)}::jsonb) ON CONFLICT DO NOTHING`;await process();return {ok:true};}

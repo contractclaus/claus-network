@@ -49,12 +49,13 @@ export function projectAgentContinuity(config:Configuration,channel:ContinuityCh
 
 export async function agentContinuity(config:Configuration,channel:ContinuityChannel,networkWork?:any,db=sql()){
  if(!['operator','club','research'].includes(channel))throw Error('continuity_channel_invalid');
+ const focus=networkWork?.focus?.id??'';
  const reads=await Promise.allSettled([
-  db`SELECT m.id,m.title,left(m.body,650) AS body,m.sources,m.visibility,m.created_at FROM claus_memories m WHERE m.visibility='public' AND NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility) ORDER BY m.created_at DESC,m.id LIMIT 6`,
+  db`SELECT m.id,m.title,left(m.body,650) AS body,m.sources,m.visibility,m.created_at FROM claus_memories m WHERE m.visibility='public' AND NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility) AND NOT EXISTS(SELECT 1 FROM claus_memories p JOIN claus_memories newer ON newer.supersedes=p.id AND newer.visibility=p.visibility WHERE m.sources ? p.id AND (p.visibility='public' OR p.visibility=m.visibility)) ORDER BY m.created_at DESC,m.id LIMIT 6`,
   db`SELECT id,input->>'text' AS text,result->'data'->>'id' AS post_id,visibility,completed_at FROM claus_actions WHERE kind='x_post' AND status='completed' AND visibility='public' AND input->>'replyTo' IS NULL AND result->'data'->>'id' IS NOT NULL ORDER BY completed_at DESC,id LIMIT 6`,
   db`SELECT id,document,published FROM claus_public_work WHERE published ORDER BY updated_at DESC,id LIMIT 6`,
   db`SELECT id,content->>'title' AS title,status,revision,content->>'nextStep' AS next_step,visibility,updated_at FROM claus_lab_ideas WHERE visibility='public' ORDER BY updated_at DESC,id LIMIT 6`,
-  channel==='operator'?db`SELECT m.id,m.title,left(m.body,650) AS body,m.sources,m.visibility,m.created_at FROM claus_memories m WHERE m.visibility='private_network' AND NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility) ORDER BY m.created_at DESC,m.id LIMIT 4`:Promise.resolve([])
+  channel==='operator'?db`SELECT m.id,m.title,left(m.body,650) AS body,m.sources,m.visibility,m.created_at FROM claus_memories m WHERE m.visibility='private_network' AND NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility) AND NOT EXISTS(SELECT 1 FROM claus_memories p JOIN claus_memories newer ON newer.supersedes=p.id AND newer.visibility=p.visibility WHERE m.sources ? p.id AND (p.visibility='public' OR p.visibility=m.visibility)) ORDER BY CASE WHEN ${focus}!='' AND (m.sources ? ${focus} OR strpos(m.body,${focus})>0) THEN 0 ELSE 1 END,m.created_at DESC,m.id LIMIT 4`:Promise.resolve([])
  ]);
  const sections=Object.fromEntries(['memories','statements','work','research','internal'].map((name,index)=>{const r=reads[index];return [name,{available:r.status==='fulfilled',rows:r.status==='fulfilled'?r.value:[]}];})) as Sources;
  return {...projectAgentContinuity(config,channel,sections,networkWork),observedAt:new Date().toISOString()};

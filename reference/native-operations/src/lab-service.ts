@@ -34,7 +34,7 @@ export async function publicLab(view:string,input:{id?:string;after?:string;befo
   const {settings,config}=await currentLab();if(!settings.enabled||!settings.publicFeed)return null;
   const store=labStore(),envelope={...await store.envelope(),runtime:publicLabRuntime(config.settings)};
   const context=['ideas','idea'].includes(view)?await labPublicContext():null;
-  const factsHash=context?.operatingState.status==='current'?context.factsHash:undefined;
+  const factsHash=context?.operatingState.status==='current'?context:undefined;
   if(view==='ideas')return {...envelope,ideas:await store.ideas(input.limit,factsHash)};
   if(view==='idea'){const detail=await store.detail(input.id??'',factsHash);return detail?{...envelope,...detail}:null;}
   return {...envelope,...await store.feed({after:input.after,before:input.before,idea:input.id,limit:input.limit})};
@@ -44,7 +44,7 @@ export async function researchTool(name:string,args:Record<string,any>){
   if(name==='search_web'){if(!settings.webSearch)throw Error('lab_search_disabled');return searchWeb(args,researchCache());}
   if(name==='read_developments'){if(!settings.developments)throw Error('lab_developments_disabled');return new Developments(researchCache()).read();}
   if(name==='read_work'){
-    const context=await labPublicContext(),factsHash=context.operatingState.status==='current'?context.factsHash:undefined;
+    const context=await labPublicContext(),factsHash=context.operatingState.status==='current'?context:undefined;
     const result=args.id?await store.detail(args.id,factsHash):{ideas:args.query?await store.portfolio(args.query):await store.ideas(20,factsHash),...await store.feed({limit:12})};
     if(!result)throw Error('lab_idea_missing');
     // This projection is also the entire extra context made available on X.

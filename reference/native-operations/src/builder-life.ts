@@ -25,7 +25,7 @@ export async function startBuilder(id:string,deps:StartDependencies={store:build
  // preview. The pinned code also rechecks its identity at each effect boundary.
  const active=await deps.store.coordination.active();
  if(!sent&&!active)try{await deps.store.coordination.assertCurrent();}catch(error){if(error instanceof BuilderDeploymentFence)return {state:'fenced',id};throw error;}
- const run=active?await deps.start(builderLife,[id],{deploymentId:active.deploymentId}):await deps.start(builderLife,[id]);
+ const run=process.env.CONTINUITY_EFFECTS_ENABLED==='true'&&process.env.CONTINUITY_INSTANCE==='standby'?{runId:'independent:builder:'+id}:active?await deps.start(builderLife,[id],{deploymentId:active.deploymentId}):await deps.start(builderLife,[id]);
  const event=builderDispatchRecord(p,sent);
  await deps.journal(event.kind,event.summary,{visibility:event.visibility,purpose:event.purpose,operation:event.operation,id,runId:run.runId});
  return {state:'queued',id,runId:run.runId,operation:event.operation};

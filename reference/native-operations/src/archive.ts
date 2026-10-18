@@ -1,3 +1,4 @@
+import {hybridMemories} from './memory-search.js';
 import { sql } from './store.js';
 import { digest } from './config.js';
 import { pageRecord,searchPage } from './context.js';
@@ -94,7 +95,7 @@ export async function recall(input:{query?:string; id?:string; includeSuperseded
     }
     if(input.id.startsWith('p_')) return page({kind:'project',record:await projectById(input.id),instructionAuthority:false});
     if(/^m_[a-f0-9]{32}$/.test(input.id)) {
-      const rows=await db`SELECT m.*,child.id AS superseded_by FROM claus_memories m LEFT JOIN claus_memories child ON child.supersedes=m.id AND child.visibility=m.visibility WHERE m.id=${input.id} AND (m.visibility='public' OR m.visibility='private_club' AND ${includePrivate} OR m.visibility='private_network' AND NOT ${includePrivate})`;
+      const rows=await db`SELECT m.*,child.id AS superseded_by,COALESCE((SELECT jsonb_agg(jsonb_build_object('source',p.id,'supersededBy',newer.id)) FROM claus_memories p JOIN claus_memories newer ON newer.supersedes=p.id AND newer.visibility=p.visibility WHERE m.sources ? p.id AND (p.visibility='public' OR p.visibility=m.visibility)),'[]'::jsonb) AS corrected_sources FROM claus_memories m LEFT JOIN claus_memories child ON child.supersedes=m.id AND child.visibility=m.visibility WHERE m.id=${input.id} AND (m.visibility='public' OR m.visibility='private_club' AND ${includePrivate} OR m.visibility='private_network' AND NOT ${includePrivate})`;
       return {...page({kind:'memory',record:rows[0]??null,instructionAuthority:false}),...(rows[0]?.visibility==='private_network'?{visibility:'private_network'}:{})};
     }
     if(/^j_[0-9]+$/.test(input.id)) {
@@ -115,9 +116,23 @@ export async function recall(input:{query?:string; id?:string; includeSuperseded
       WHERE (m.visibility='public' OR m.visibility='private_club' AND ${includePrivate} OR m.visibility='private_network' AND NOT ${includePrivate}) AND (${!!input.includeSuperseded} OR NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility)) AND (${query}='' OR to_tsvector('simple',m.title||' '||m.body)@@plainto_tsquery('simple',${query}) OR m.title ILIKE ${literal} OR m.body ILIKE ${literal})
     UNION ALL SELECT 'j_'||id::text,'journal',kind,left(summary||' '||coalesce(data->>'memory','')||' '||coalesce(data->>'agenda',''),1400),created_at,ts_rank(to_tsvector('simple',summary||' '||coalesce(data->>'memory','')||' '||coalesce(data->>'agenda','')),plainto_tsquery('simple',${query})) FROM claus_journal WHERE (visibility='public' OR visibility='private_club' AND ${includePrivate} OR visibility='private_network' AND NOT ${includePrivate}) AND (${query}='' OR to_tsvector('simple',summary||' '||coalesce(data->>'memory','')||' '||coalesce(data->>'agenda',''))@@plainto_tsquery('simple',${query}) OR (summary||' '||coalesce(data->>'memory','')||' '||coalesce(data->>'agenda','')) ILIKE ${literal})
     UNION ALL SELECT id,'project',title,left(summary,1400),updated_at,ts_rank(to_tsvector('simple',title||' '||summary),plainto_tsquery('simple',${query})) FROM claus_projects WHERE visibility='public' AND (${query}='' OR to_tsvector('simple',title||' '||summary)@@plainto_tsquery('simple',${query}) OR title ILIKE ${literal} OR summary ILIKE ${literal})
-  ) found ORDER BY relevance DESC,observed_at DESC,id LIMIT 16 OFFSET ${offset}`;
-  const page=searchPage(rows,offset,15);
-  return {...page,...(!includePrivate?{visibility:'private_network'}:{}),instructionAuthority:false,search:'keywords',offsetUnit:'records',truncated:page.nextOffset!==null,order:'relevance_then_newest',paginationNote:'Results can move when new memories arrive; use exact IDs for durable references.'};
+  ) found ORDER BY relevance DESC,observed_at DESC,id LIMIT ${query?256:16} OFFSET ${query?0:offset}`;
+  let ranked=rows,semantic:any=null;
+  if(query){
+    // Authorization and supersession are applied in SQL before any text is
+    // sent to the private ranker. No public catalogue endpoint receives it.
+    const memories=await db`SELECT m.id,'memory' AS kind,m.title,left(m.body,1400) AS excerpt,m.created_at AS observed_at,
+      m.sources,COALESCE((SELECT jsonb_agg(jsonb_build_object('source',p.id,'supersededBy',child.id)) FROM claus_memories p
+       JOIN claus_memories child ON child.supersedes=p.id AND child.visibility=p.visibility
+       WHERE m.sources ? p.id AND p.visibility=m.visibility),'[]'::jsonb) AS corrected_sources
+      FROM claus_memories m WHERE (m.visibility='public' OR m.visibility='private_club' AND ${includePrivate} OR m.visibility='private_network' AND NOT ${includePrivate})
+      AND (${!!input.includeSuperseded} OR NOT EXISTS(SELECT 1 FROM claus_memories child WHERE child.supersedes=m.id AND child.visibility=m.visibility))
+      ORDER BY m.created_at DESC,m.id LIMIT 1000`;
+    const hybrid=await hybridMemories(query,rows as any,memories as any,includePrivate?'club':'operator');ranked=hybrid.rows;semantic=hybrid.semantic;
+    ranked=ranked.slice(offset,offset+16);
+  }
+  const page=searchPage(ranked,offset,15);
+  return {...page,...(!includePrivate?{visibility:'private_network'}:{}),instructionAuthority:false,search:semantic?.available?'hybrid_keywords_semantic':'keywords',...(semantic?{semantic,keywordCandidateLimit:256,keywordCandidatesTruncated:rows.length===256}:{}),offsetUnit:'records',truncated:page.nextOffset!==null||!!query&&rows.length===256,order:'relevance_then_newest',paginationNote:'Results can move when new memories arrive; use exact IDs for durable references. If candidate limits are reached, narrow the query; an exhausted candidate page does not prove absence.'};
 }
 export async function archiveOverview(db=sql()) {
   const [memories,projects,drafts]=await Promise.all([

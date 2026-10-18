@@ -1,3 +1,4 @@
+import {nativeContinuity} from './native-continuity.js';
 import {databasePermit} from './database-fence.js';
 import {pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
@@ -39,13 +40,20 @@ export async function runStandby(planned=false){
   if(!planned||claim?.status!=='healthy_or_busy'||Date.now()>=until)break;await pause(5000);
  }while(true);
  if(claim?.status!=='claimed')return {...claim,claimed:false};
- const generation=Number(claim.generation),epoch=Number(claim.epoch),deadline=Date.parse(claim.deadline);
+ const generation=Number(claim.generation),epoch=Number(claim.epoch);let deadline=Date.parse(claim.deadline);
  process.env.CLAUS_RUNTIME_HOST='standby';process.env.CLAUS_RUNTIME_EPOCH=String(epoch);
  let permitted=true,pulsing=false,stopping=false,turns=0,returned=false;
  const stop=()=>{stopping=true;};process.once('SIGTERM',stop);process.once('SIGINT',stop);
  const timer=setInterval(async()=>{if(pulsing)return;pulsing=true;try{permitted=await runtimeHostPulse(generation);}catch{permitted=false;}finally{pulsing=false;}},25000);timer.unref();
  try{
-  while(!stopping&&permitted&&Date.now()<deadline-14*60_000){
+  while(!stopping&&permitted&&(independent||Date.now()<deadline-14*60_000)){
+   if(independent&&Date.now()>deadline-16*60_000){
+    const extended=await nativeContinuity('native','extend-independent-lease','generation:'+generation,{executor,generation,epoch},async()=>{
+     const result=await db.query('SELECT public.claus_native_host_extend($1,$2,$3,$4) AS deadline',[executor,generation,epoch,deployment]);return result.rows[0]?.deadline??null;
+    });
+    if(!extended)break;deadline=Date.parse(extended);
+   }
+   if(Date.now()>=deadline-14*60_000)break;
    if(!independent&&(!planned||turns>0)&&await primaryHealthy()){
     returned=(await db.query('SELECT public.claus_native_host_return($1,$2,$3) AS returned',[executor,generation,epoch])).rows[0]?.returned===true;
     if(returned)break;

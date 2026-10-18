@@ -237,7 +237,7 @@ async function cycleUnfenced(generation:number,fromClubWake=false) {
       for(const [n,call] of calls.entries()) {
         let args;
         try {args=JSON.parse(call.function.arguments);} catch {args={};}
-        let result:unknown;
+        let result:unknown;const toolStartedAt=Date.now();
         try {
         if(call.function.name==='finish') {
           if(networkDue&&networkOperationsEnabled(current)&&!await networkOperations.reviewedSince(started).catch(()=>true))throw Error('network_work_review_due_use_network_work_before_finish');
@@ -261,7 +261,7 @@ async function cycleUnfenced(generation:number,fromClubWake=false) {
           if(message.startsWith('action_requires_reconciliation')) throw error;
           result={error:textPrefix(message,200)};
         }
-        const archiveId='j_'+await journal('tool',call.function.name,{turn:id,...toolOutcome(result,call.function.name,args),result,...(privateNetworkTool(call.function.name,args,result)?{visibility:'private_network',...(call.function.name==='build_network'?{request:structuredClone(args)}:{})}:{})});
+        const archiveId='j_'+await journal('tool',call.function.name,{turn:id,execution:{invocationId:`${effectPrefix}:${n}`,startedAt:new Date(toolStartedAt).toISOString(),elapsedMs:Date.now()-toolStartedAt,selectedWorkContext:networkFocus?.id??null,contextIsWorkAcceptance:false},...toolOutcome(result,call.function.name,args),result,...(privateNetworkTool(call.function.name,args,result)?{visibility:'private_network',...(call.function.name==='build_network'?{request:structuredClone(args)}:{})}:{})});
         messages.push({role:'tool',tool_call_id:call.id,content:toolContent(result,archiveId)});
         awaitingInference=null;
       }

@@ -61,7 +61,7 @@ export async function clubCycle(owner:string,initial:Configuration){
    const response=pending.response.message,calls=response.tool_calls??[];
    if(calls.length!==1){history.push(response,...calls.map((c:any)=>({role:'tool',tool_call_id:c.id,content:'{"error":"Use one tool per step."}'})));if(!calls.length)history.push({role:'user',content:'Use a Club action or finish to save the private checkpoint.'});pending=null;await save();continue;}
    const call=calls[0];let args:any={};try{args=JSON.parse(call.function.arguments);}catch{}
-   let result:any;
+   let result:any;const toolStartedAt=Date.now();
    try{
     if(call.function.name==='finish'){
      const value=checkpoint(args);assertClubResolved(pending.events,await clubContext(config));memory=value.memory;agenda=value.agenda;
@@ -71,7 +71,7 @@ export async function clubCycle(owner:string,initial:Configuration){
     }
     result=await executeTool(pending.id.replace(':model:',':tool:')+':0',call.function.name,args,{channel:'club',configurationRevision:pending.revision,factsHash:pending.publication.factsHash,adaptation:pending.adaptation});
    }catch(error){if(String(error).includes('action_requires_reconciliation'))throw error;result={error:error instanceof Error?error.message:'club_action_failed'};}
-   const record='j_'+await journal('tool',call.function.name,{turn:owner,visibility:'private_club',...toolOutcome(result,call.function.name,args),result});
+   const record='j_'+await journal('tool',call.function.name,{turn:owner,visibility:'private_club',execution:{invocationId:pending.id.replace(':model:',':tool:')+':0',startedAt:new Date(toolStartedAt).toISOString(),elapsedMs:Date.now()-toolStartedAt},...toolOutcome(result,call.function.name,args),result});
    history.push(response,{role:'tool',tool_call_id:call.id,content:toolContent(result,record)});pending=null;await save();
   }
   return {done:false,nextAt:new Date(Date.now()+5000).toISOString()};

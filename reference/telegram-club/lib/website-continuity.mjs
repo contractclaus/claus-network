@@ -1,3 +1,4 @@
+import {primaryForwardNode} from './primary-forward.mjs';
 import {createHash} from 'node:crypto';
 import {neon} from '@neondatabase/serverless';
 import {continuityGate,continuityEnabled,postgresBarriers} from './continuity-gate.mjs';
@@ -7,7 +8,9 @@ const hash=v=>createHash('sha256').update(v).digest('hex');
 // original effect and its database barrier are durable outside the primary.
 export function withWebsiteContinuity(handler,{readSideEffects=false,gate,enabled=continuityEnabled}={}){
  return async function websiteHandler(req,res){
-  if(!enabled()||!readSideEffects&&['GET','HEAD','OPTIONS'].includes(req.method))return handler(req,res);
+  if(await primaryForwardNode('web',req,res))return;
+  const writesOnRead=typeof readSideEffects==='function'?readSideEffects(req):readSideEffects;
+  if(!enabled()||!writesOnRead&&['GET','HEAD','OPTIONS'].includes(req.method))return handler(req,res);
   const guard=gate??continuityGate({component:'website',writeBarriers:postgresBarriers({website:(query,params)=>neon(process.env.CLUB_DATABASE_URL).query(query,params)})});
   const original={end:res.end,write:res.write,writeHead:res.writeHead,flushHeaders:res.flushHeaders};
   const chunks=[];let size=0,ended=false;

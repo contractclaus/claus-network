@@ -1,3 +1,4 @@
+import {reviewFactsHash} from './lab-review-facts.js';
 import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {textPrefix} from './text.ts';
 import type {LabDatabase,LabQuery} from './lab-db.js';
@@ -48,23 +49,49 @@ export class LabStore {
     const used=Math.max(0,idea.steps-r.exempt);
     return {attempts:idea.steps,used,remaining:settings.maxStepsPerIdea===null?null:Math.max(0,settings.maxStepsPerIdea-used)};
   }
-  async maintainQueue(settings:LabSettings,factsHash:string){
+  async maintainQueue(settings:LabSettings,publication:any){
+    const hashes={operating:reviewFactsHash(publication),edition:reviewFactsHash(publication,{factsScope:'edition'})};
     if(!settings.enabled||!settings.autonomous)return;
     await this.db.transaction(async q=>{await this.lock(q);
+      // A later successful response on the same model/provider is evidence of
+      // delivery recovery. Only terminal, authenticated unpaid failures qualify;
+      // pending/unknown/charged originals remain fenced and are never reset.
+      const {rows:recovered}=await q.query(`SELECT i.*,last.id AS failed_id,healthy.id AS healthy_id
+        FROM claus_lab_ideas i
+        JOIN LATERAL (SELECT * FROM claus_lab_effects e WHERE e.idea_id=i.id AND e.revision=i.revision AND e.kind='model' ORDER BY e.created_at DESC LIMIT 1) last ON true
+        JOIN LATERAL (SELECT e.id FROM claus_lab_effects e WHERE e.kind='model' AND e.status='completed'
+          AND e.result->'message' IS NOT NULL AND e.updated_at>i.updated_at
+          AND e.input->>'model'=last.input->>'model'
+          AND e.input->>'provider' IS NOT DISTINCT FROM last.input->>'provider'
+          ORDER BY e.updated_at DESC LIMIT 1) healthy ON true
+        WHERE i.status='blocked' AND i.visibility='public' AND i.updated_at<$1::timestamptz-interval '1 hour'
+          AND (i.lease_until IS NULL OR i.lease_until<$1)
+          AND (i.content->>'nextStep'='Three model requests failed in succession. Review provider delivery before trying again.'
+            OR i.content->>'nextStep' LIKE 'Three consecutive requests were interrupted%')
+          AND last.status='failed' AND last.result->>'reason'='request_proven_unpaid'
+          AND last.result->>'failureClassified'='true'
+          AND NOT EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=i.id AND e.status IN ('reserved','started','uncertain'))
+          AND NOT EXISTS(SELECT 1 FROM claus_lab_events e WHERE e.event_key=last.id||':delivery-recovered')
+        ORDER BY i.updated_at LIMIT 25`,[this.now()]);
+      for(const row of recovered){const idea=this.ideaRow(row),message='Later authenticated delivery recovered on the same model and provider. Continuing after terminal unpaid originals; no original request is replayed.';
+        await q.query("UPDATE claus_lab_ideas SET status='noted',content=jsonb_set(content,'{nextStep}',$2::jsonb),next_at=$3,updated_at=$3 WHERE id=$1",[idea.id,JSON.stringify(message),this.now()]);
+        await this.event(q,row.failed_id+':delivery-recovered',idea,'research_resumed','system','Delivery recovered',message);
+        await q.query("UPDATE claus_lab_events SET content=content||$2::jsonb WHERE event_key=$1",[row.failed_id+':delivery-recovered',JSON.stringify({failedOriginal:row.failed_id,recoveryOriginal:row.healthy_id})]);
+      }
       const {rows}=await q.query(`SELECT * FROM claus_lab_ideas i WHERE visibility='public'
         AND (lease_until IS NULL OR lease_until<$1)
         AND NOT EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=i.id AND e.status IN ('reserved','started','uncertain'))
         AND ((status='blocked' AND content->>'nextStep'='Research allowance reached; review the current findings.')
           OR (status='ready' AND content->'proposal'->>'status' IN ('pending','approved')
-              AND content->'proposal'->'review'->>'factsHash' IS DISTINCT FROM $2)
+              AND content->'proposal'->'review'->>'factsHash' IS DISTINCT FROM ($2::jsonb->>CASE WHEN i.content->'proposal'->'review'->>'factsScope'='edition' THEN 'edition' ELSE 'operating' END))
           OR (status='blocked' AND content->'proposal'->>'status'='stale'
               AND EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=i.id AND e.input->>'reviewRefresh'='true')
               AND NOT EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=i.id
-                  AND e.input->>'reviewRefresh'='true' AND e.input->'reviewBinding'->>'factsHash'=$2)
+                  AND e.input->>'reviewRefresh'='true' AND e.input->'reviewBinding'->>'factsHash'=($2::jsonb->>CASE WHEN i.content->'proposal'->'review'->>'factsScope'='edition' THEN 'edition' ELSE 'operating' END))
               AND NOT EXISTS(SELECT 1 FROM claus_lab_events e WHERE e.idea_id=i.id
-                  AND e.event_key=i.id||':facts-review:'||(i.content->'proposal'->>'revision')||':'||$2)))
-        ORDER BY updated_at LIMIT 100`,[this.now(),factsHash]);
-      for(const row of rows){const idea=this.ideaRow(row);
+                  AND e.event_key=i.id||':facts-review:'||(i.content->'proposal'->>'revision')||':'||($2::jsonb->>CASE WHEN i.content->'proposal'->'review'->>'factsScope'='edition' THEN 'edition' ELSE 'operating' END))))
+        ORDER BY updated_at LIMIT 100`,[this.now(),JSON.stringify(hashes)]);
+      for(const row of rows){const idea=this.ideaRow(row),factsHash=reviewFactsHash(publication,idea.proposal?.review);
         if(idea.status==='blocked'&&idea.nextStep==='Research allowance reached; review the current findings.'){
           if((await this.stepUsage(idea.id,settings,q)).remaining===0)continue;
           const message='Continuing saved research; reconciled unpaid model attempts do not consume research steps.';
@@ -156,7 +183,21 @@ export class LabStore {
   }
   async claim(worker:string,settings:LabSettings,reconcileOnly=false):Promise<Idea|null>{return this.db.transaction(async q=>{await this.lock(q);
     const {rows:[{n}]}=await q.query('SELECT count(*)::int AS n FROM claus_lab_ideas WHERE lease_until>$1',[this.now()]);if(settings.maxConcurrentJobs!==null&&n>=settings.maxConcurrentJobs)return null;
-    const {rows:[row]}=await q.query("SELECT * FROM claus_lab_ideas WHERE visibility='public' AND (status IN ('noted','queued','researching','waiting','reviewing') OR EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=claus_lab_ideas.id AND (e.status IN ('reserved','started','uncertain') OR e.kind IN ('imd','experiment') AND e.status='completed' AND e.result->>'materialized'='false' OR e.kind='model' AND e.status='completed' AND e.revision=claus_lab_ideas.revision AND e.result->>'applied'='false'))) AND (status!='noted' OR $3::integer IS NULL OR (SELECT count(*) FROM claus_lab_ideas a WHERE a.status IN ('queued','researching','waiting','reviewing'))<$3) AND next_at<=$1 AND (lease_until IS NULL OR lease_until<$1) AND (NOT $2::boolean OR EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=claus_lab_ideas.id AND (e.kind='model' AND e.status IN ('started','uncertain') OR e.kind='imd' AND (e.status IN ('started','uncertain') AND e.private_data->>'phase' IN ('submitted','submitting','polling') OR e.status='completed' AND e.result->>'materialized'='false')))) ORDER BY next_at,created_at LIMIT 1 FOR UPDATE",[this.now(),reconcileOnly,settings.maxActiveIdeas]);if(!row)return null;
+    // Reconcile committed work before buying more thought. Age orders work
+    // within a lane; a large stale-review backlog cannot starve saved results.
+    const {rows:[row]}=await q.query(`SELECT i.* FROM claus_lab_ideas i
+      CROSS JOIN LATERAL (SELECT
+        bool_or(e.status IN ('reserved','started','uncertain') OR e.kind IN ('imd','experiment') AND e.status='completed' AND e.result->>'materialized'='false') AS pending,
+        bool_or(e.kind='model' AND e.status='completed' AND e.revision=i.revision AND e.result->>'applied'='false') AS unapplied,
+        bool_or(e.kind='model' AND e.status IN ('started','uncertain') OR e.kind='imd' AND (e.status IN ('started','uncertain') AND e.private_data->>'phase' IN ('submitted','submitting','polling') OR e.status='completed' AND e.result->>'materialized'='false')) AS reconcile
+        FROM claus_lab_effects e WHERE e.idea_id=i.id) work
+      WHERE i.visibility='public' AND (i.status IN ('noted','queued','researching','waiting','reviewing') OR work.pending OR work.unapplied)
+        AND (i.status!='noted' OR work.pending OR work.unapplied OR $3::integer IS NULL OR (SELECT count(*) FROM claus_lab_ideas a WHERE a.status IN ('queued','researching','waiting','reviewing'))<$3)
+        AND i.next_at<=$1 AND (i.lease_until IS NULL OR i.lease_until<$1)
+        AND (NOT $2::boolean OR work.reconcile)
+      ORDER BY CASE WHEN work.unapplied THEN 0 WHEN work.pending THEN 1
+        WHEN i.content->'proposal'->>'status'='stale' AND i.next_at>$1::timestamptz-interval '30 minutes' THEN 3 ELSE 2 END,
+        i.next_at,i.created_at,i.id LIMIT 1 FOR UPDATE OF i`,[this.now(),reconcileOnly,settings.maxActiveIdeas]);if(!row)return null;
     await q.query("UPDATE claus_lab_ideas SET lease_owner=$2,lease_until=$3,status=CASE WHEN status='noted' THEN 'queued' ELSE status END WHERE id=$1",[row.id,identifier(worker),new Date(this.now().getTime()+720000)]);return this.idea(row.id,q);
   });}
   async defer(id:string,revision:number,seconds:number){await this.assertLease();await this.db.query('UPDATE claus_lab_ideas SET next_at=GREATEST(next_at,$3) WHERE id=$1 AND revision=$2',[id,revision,new Date(this.now().getTime()+seconds*1000)]);}
@@ -206,7 +247,7 @@ export class LabStore {
     const report=JSON.parse(review.content.body);
     if(report.pass!==true||report.candidateHash!==hash(candidate)||report.basisHash!==await this.basis(id,q)||typeof report.factsHash!=='string')throw Error('lab_review_stale');
     if(idea.proposal?.review?.id===reviewId)return idea.proposal;
-    const p:PublicProposal={id:`${id}:proposal`,revision:(idea.proposal?.revision??0)+1,sourceRevision:revision,createdAt:this.now().toISOString(),status:'pending',...candidate,review:{id:reviewId,candidateHash:report.candidateHash,basisHash:report.basisHash,factsHash:report.factsHash}};
+    const p:PublicProposal={id:`${id}:proposal`,revision:(idea.proposal?.revision??0)+1,sourceRevision:revision,createdAt:this.now().toISOString(),status:'pending',...candidate,review:{id:reviewId,candidateHash:report.candidateHash,basisHash:report.basisHash,factsHash:report.factsHash,...(report.factsScope?{factsScope:report.factsScope}:{})}};
     await q.query("UPDATE claus_lab_ideas SET status='ready',content=jsonb_set(jsonb_set(content,'{proposal}',$2::jsonb),'{nextStep}',$3::jsonb),updated_at=$4 WHERE id=$1",[id,JSON.stringify(p),JSON.stringify('Ready for an owner decision.'),this.now()]);
     await this.event(q,`${id}:proposal:${p.revision}`,idea,'proposal_ready','claus',p.title,p.summary,[reviewId]);return p;
   });}
@@ -225,10 +266,10 @@ export class LabStore {
     await this.event(q,`${reviewId}:revision-requested`,idea,'proposal_revision_requested','system','Proposal needs revision',nextStep,[reviewId]);
     return true;
   });}
-  async decide(id:string,revision:number,proposalRevision:number,decision:'approved'|'revise'|'parked',factsHash?:string){
+  async decide(id:string,revision:number,proposalRevision:number,decision:'approved'|'revise'|'parked',factsHash?:any){
     if(!['approved','revise','parked'].includes(decision))throw Error('lab_invalid_decision');
     return this.db.transaction(async q=>{await this.lock(q);const idea=await this.require(q,id,revision);if(idea.proposal?.status==='stale')throw Error('lab_review_stale');if(!idea.proposal||idea.proposal.revision!==proposalRevision||idea.proposal.sourceRevision!==revision||idea.proposal.status!=='pending')throw Error('lab_proposal_conflict');
-      if(decision==='approved'&&(!idea.proposal.review||idea.proposal.review.basisHash!==await this.basis(id,q)||idea.proposal.review.candidateHash!==hash(proposalCandidate(idea.proposal))||idea.proposal.review.factsHash!==factsHash))throw Error('lab_review_stale');
+      if(decision==='approved'&&(!idea.proposal.review||idea.proposal.review.basisHash!==await this.basis(id,q)||idea.proposal.review.candidateHash!==hash(proposalCandidate(idea.proposal))||idea.proposal.review.factsHash!==reviewFactsHash(factsHash,idea.proposal.review)))throw Error('lab_review_stale');
       const p={...idea.proposal,status:decision};await q.query("UPDATE claus_lab_ideas SET status=$2,content=jsonb_set(content,'{proposal}',$3::jsonb),updated_at=$4 WHERE id=$1",[id,decision==='revise'?'queued':decision==='parked'?'parked':'ready',JSON.stringify(p),this.now()]);
       await this.event(q,`${id}:decision:${proposalRevision}`,idea,'owner_decision','team','Proposal reviewed',decision==='approved'?'Approved for the team to plan the build.':decision==='revise'?'More research requested.':'Set aside for now.');return p;
     });
@@ -292,7 +333,12 @@ export class LabStore {
     const {rows}=await q.query("UPDATE claus_lab_runner SET turn_after=$3,deadline=$3 WHERE id=1 AND generation=$1 AND state='running' AND turn_after<=$2 RETURNING id",[generation,this.now(),new Date(this.now().getTime()+840000)]);return rows.length===1;
   });}
   async finishRunnerTurn(generation:number,delaySeconds:number,paused=false){await this.db.query("UPDATE claus_lab_runner SET state=$2,turn_after=$3,deadline=$4 WHERE id=1 AND generation=$1",[generation,paused?'paused':'running',new Date(this.now().getTime()+delaySeconds*1000),new Date(this.now().getTime()+(delaySeconds+840)*1000)]);}
-  async heartbeat(state:'working'|'waiting'|'idle'|'paused',settings:LabSettings){await this.db.query('INSERT INTO claus_lab_runtime(id,content,updated_at) VALUES(1,$1,$2) ON CONFLICT(id) DO UPDATE SET content=$1,updated_at=$2',[{state,enabled:settings.enabled},this.now()]);}
+  async heartbeat(state:'working'|'waiting'|'idle'|'paused',settings:LabSettings){
+    const {rows:[backlog]}=await this.db.query(`SELECT count(*)::int AS completedUnapplied,min(e.updated_at) AS oldestCompletedAt
+      FROM claus_lab_effects e JOIN claus_lab_ideas i ON i.id=e.idea_id AND i.revision=e.revision
+      WHERE e.kind='model' AND e.status='completed' AND e.result->>'applied'='false'`);
+    await this.db.query('INSERT INTO claus_lab_runtime(id,content,updated_at) VALUES(1,$1,$2) ON CONFLICT(id) DO UPDATE SET content=$1,updated_at=$2',[{state,enabled:settings.enabled,backlog},this.now()]);
+  }
   async envelope(mode:'preview'|'live'='live'){
     const now=this.now(),{rows:[r]}=await this.db.query(`SELECT r.*,EXISTS(
       SELECT 1 FROM claus_lab_ideas i JOIN claus_lab_effects e ON e.idea_id=i.id AND e.revision=i.revision
@@ -304,17 +350,17 @@ export class LabStore {
     const state=!r?'paused':r.content.state==='paused'?'paused':old?(r.content.state==='working'&&r.pending?'waiting':'stale'):r.content.state;
     return {version:1 as const,mode,asOf:now.toISOString(),status:{state,updatedAt:r?iso(r.updated_at):null}};
   }
-  private currentIdea(idea:Idea,factsHash?:string):Idea {
+  private currentIdea(idea:Idea,factsHash?:any):Idea {
     const p=idea.proposal;
-    if(factsHash&&p&&['pending','approved'].includes(p.status)&&p.review?.factsHash!==factsHash)return {...idea,status:'reviewing',nextStep:'Current hook facts changed; this proposal needs another review.',proposal:{...p,status:'stale'}};
+    if(factsHash&&p&&['pending','approved'].includes(p.status)&&p.review?.factsHash!==reviewFactsHash(factsHash,p.review))return {...idea,status:'reviewing',nextStep:'Current hook facts changed; this proposal needs another review.',proposal:{...p,status:'stale'}};
     return idea;
   }
-  async ideas(limit=20,factsHash?:string){return (await this.db.query("SELECT * FROM claus_lab_ideas WHERE visibility='public' ORDER BY updated_at DESC,id LIMIT $1",[Math.min(100,Math.max(1,limit))])).rows.map(r=>projectIdea(this.currentIdea(this.ideaRow(r),factsHash)));}
+  async ideas(limit=20,factsHash?:any){return (await this.db.query("SELECT * FROM claus_lab_ideas WHERE visibility='public' ORDER BY updated_at DESC,id LIMIT $1",[Math.min(100,Math.max(1,limit))])).rows.map(r=>projectIdea(this.currentIdea(this.ideaRow(r),factsHash)));}
   async feed(options:{after?:string;before?:string;idea?:string;limit?:number}={}){
     if(options.after&&options.before||options.before&&!/^\d{1,20}$/.test(options.before)||options.after&&!/^\d{1,20}$/.test(options.after))throw Error('lab_invalid_cursor');const limit=Math.min(50,Math.max(1,options.limit??20));
     const {rows}=await this.db.query(`SELECT e.*,i.content->>'title' AS idea_title FROM claus_lab_events e JOIN claus_lab_ideas i ON i.id=e.idea_id LEFT JOIN claus_lab_notes n ON n.id=e.content->>'noteId' WHERE i.visibility='public' AND ($1::bigint IS NULL OR e.seq>$1) AND ($2::text IS NULL OR e.idea_id=$2) AND ($4::bigint IS NULL OR e.seq<$4) AND (n.id IS NULL OR (e.content->>'noteRevision')::integer=n.revision) AND NOT EXISTS(SELECT 1 FROM claus_lab_evidence v WHERE v.id IN (SELECT jsonb_array_elements_text(e.content->'evidenceIds')) AND v.content->>'visibility'!='public') ORDER BY e.seq ${options.after?'ASC':'DESC'} LIMIT $3`,[options.after??null,options.idea??null,limit+1,options.before??null]);
     const events:PublicEvent[]=rows.slice(0,limit).map(r=>({id:r.content.noteId?`note:${r.content.noteId}`:r.event_key,cursor:String(r.seq),ideaId:r.idea_id,ideaTitle:r.idea_title,kind:r.content.kind,actor:r.content.actor,title:r.content.title,summary:r.content.summary,occurredAt:r.content.occurredAt,publishedAt:iso(r.created_at),sources:r.content.sources??[],evidenceIds:r.content.evidenceIds??[]}));
     return {events,nextCursor:events.length?String(options.after?events.at(-1)!.cursor:events[0].cursor):options.after??null,hasMore:rows.length>limit};
   }
-  async detail(id:string,factsHash?:string){const saved=await this.idea(id),idea=saved?this.currentIdea(saved,factsHash):null;if(!idea||idea.visibility!=='public')return null;const evidence=(await this.evidence(id)).filter(e=>e.visibility==='public'&&e.revision===idea.revision).map(({id,title,url,summary,contentHash,observedAt,actor,kind})=>({id,title,url,summary,contentHash,observedAt,actor,kind}));return {idea:projectIdea(idea),evidence,events:(await this.feed({idea:id,limit:50})).events,proposal:idea.proposal,notes:await this.notes(id),jobs:(await this.effects(id)).filter(e=>e.kind==='imd').map(e=>({id:e.id,revision:e.revision,status:e.result?.status??e.status,jobId:e.result?.jobId??e.privateData?.jobId??null,observedAt:e.result?.observedAt??e.updatedAt,deliveryComplete:e.status==='completed'&&e.result?.deliveryComplete===true&&e.result?.materialized===true}))};}
+  async detail(id:string,factsHash?:any){const saved=await this.idea(id),idea=saved?this.currentIdea(saved,factsHash):null;if(!idea||idea.visibility!=='public')return null;const evidence=(await this.evidence(id)).filter(e=>e.visibility==='public'&&e.revision===idea.revision).map(({id,title,url,summary,contentHash,observedAt,actor,kind})=>({id,title,url,summary,contentHash,observedAt,actor,kind}));return {idea:projectIdea(idea),evidence,events:(await this.feed({idea:id,limit:50})).events,proposal:idea.proposal,notes:await this.notes(id),jobs:(await this.effects(id)).filter(e=>e.kind==='imd').map(e=>({id:e.id,revision:e.revision,status:e.result?.status??e.status,jobId:e.result?.jobId??e.privateData?.jobId??null,observedAt:e.result?.observedAt??e.updatedAt,deliveryComplete:e.status==='completed'&&e.result?.deliveryComplete===true&&e.result?.materialized===true}))};}
 }
