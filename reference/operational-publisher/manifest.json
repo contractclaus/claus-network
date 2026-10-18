@@ -1,12 +1,12 @@
 {
-  "deployed": "dpl_5u1XfzBMcQTb73EMUbJUTnQYdnf6",
-  "source": "claus-goal-phase13-20261018",
+  "deployed": "dpl_4iirCp6QgLSDa42rjHpgNgFd8ktf",
+  "source": "claus-goal-phase14-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
     "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2",
     "src/configuration/routes.js": "104614febc26edceb338e905f5944d431d1794b6bf77c908a285d8699b4c7c0c",
-    "src/configuration/service.js": "ab9e223e7235e927bd15911b4b6732dda80c4b606d3a25abe592b45568ace5af",
+    "src/configuration/service.js": "918e6c9b2872b2b3382bbf22d663be5f5b94aecbb8f0ede92921efaed91ed3c1",
     "src/configuration/validation.js": "a7aeb3e6052ba4aa19039583f3863bd02656710c58584043b97b066ecca58610",
     "src/github/oci-routes.mjs": "1d09052957188ee1265a12220d80111b45f415aecf5cf82de0c0e24014d148f1",
     "src/github/oci.mjs": "ae67b8edc94c169e89e45c5c65d7a2559462c265c4b061ef61e00562726506ff",
@@ -68,7 +68,7 @@
     "src/resources/store.mjs": "a8d76f4eb5208ada64dd8f39670e7a77f116e9c9d35da7775bd6aae3bbe4cfcb",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
     "src/resources/providers.mjs": "66dd470979b1180cfc7dd1fab68b27657c5267dc227ceb354a23039bd8546cb5",
-    "src/resources/service.mjs": "12b956d046574032c130b07f1df0d3f8b1ed44aba87235994dca4dd194593d17",
+    "src/resources/service.mjs": "9c4da5671bde51d31c6108616b1b6e42d0ef89eb70e566df9ae46eaeacd915bc",
     "src/resources/routes.mjs": "2f296556739b8419dba97e6bd48f918407dc48a076fa5c0d97184ec44a8a6a7b",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
@@ -100,7 +100,11 @@
     "src/infrastructure/runtime-secrets.mjs": "e9893fe93abdade68dff2ae1b0f86e4a9bebad0b4e7d615377c47d6adcbdc05a",
     "tests/runtime-secrets.test.mjs": "782c4765cd9663b87b556c67fc6cbbb124e53b51aae146da3e5ff7307f715136",
     "src/resources/services.mjs": "ccde661a4c19d71e1c9ddbfd20e9695111abe16df40d801e333d0a6136f7ff23",
-    "tests/services.test.mjs": "4e2ce25a6ba4cee223163cec1ab42c732eb94073591a6f6d1ef9788825bbe82b"
+    "tests/services.test.mjs": "4e2ce25a6ba4cee223163cec1ab42c732eb94073591a6f6d1ef9788825bbe82b",
+    "src/wallet-rpc.mjs": "98ad9c441306e339c5654f39c1c2b8fca96c05eea4cf0246ed16c1e61ea1465b",
+    "tests/wallet-rpc.test.mjs": "3a1b148c8068c8cd1b6c2f7abc50e6e92f826c5c4691271b714ba7134bb9d9d8",
+    "src/resources/runtime-tuning.mjs": "562371c995520eccb72e59cb643e9957d62f4a396b9dd13c657ed4db88bad704",
+    "tests/runtime-tuning.test.mjs": "3b665d8b71c050703c97b4c89cd1776772d892db17c01e0fdb48c5b26126812c"
   },
   "referenceSubset": true
 }
