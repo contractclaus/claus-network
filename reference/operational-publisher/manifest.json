@@ -1,5 +1,5 @@
 {
-  "deployed": "dpl_AV49H3YyMJX42DDgKivRpHcsXs1j",
+  "deployed": "dpl_EfMQf6Js4bFj1JMpqG2DGvpfEjjG",
   "source": "website-autonomy-20261018",
   "files": {
     "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
@@ -13,7 +13,7 @@
     "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
-    "src/index.js": "b83f025d0cbc1218ff66d9e9ce4978e92a1ca605903adaa35a68a4a7df798f78",
+    "src/index.js": "843c55f30bc6ff6eb4da05f6da1211486331e4f64bb2c0597f95e331fc68dd3f",
     "src/infrastructure/broker.mjs": "60dd6719a767fafe4a874d2321506b8dfd3bd08fa73203b730c04c511a7029b1",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
     "src/infrastructure/providers.mjs": "4b8efd29ac8d7450c03cee16aacfb5412a85dd560f4ddaa821bb7bb9a5c343b3",
@@ -61,7 +61,7 @@
     "src/website-admin/service.mjs": "d16578706c869fc7adb11f790634b30685612ec265165d236f094d0ea8572d3a",
     "src/website-admin/database.mjs": "be4cb024ca97e495e09699d3c4f5ce4d9632f30bc2f15a8152d7698968e316df",
     "src/website-admin/routes.mjs": "14d43e1b0284e7f0dbb0b943016857d32ed2557aac863bb95b46fc62471b8326",
-    "tests/website-autonomy.test.mjs": "e7222f5239fcc7d2575288ea9263987c3ba6ee31b6683cf574cbd6fe14a65f5a",
+    "tests/website-autonomy.test.mjs": "4df002fe2d7c7b3dd372887c6fd99f8de2a21ed3b09c7e88ae0e528dee12eb0a",
     "src/website-admin/assets.mjs": "38cc1ccf23718738f9be1529a91072c5da2de94690b9c6de4f62577171884165"
   },
   "referenceSubset": true
