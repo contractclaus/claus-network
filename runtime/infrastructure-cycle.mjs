@@ -26,7 +26,8 @@ export async function infrastructureCycle({infrastructure,store,now=()=>Date.now
    const row=await tx.read('controller-cursors',key);if(row?.value.token!==token)return;
    await tx.write('controller-cursors',key,{after:result.nextCursor??'',token:null,leaseUntil:0,observedAt:now()},row.revision);
   });
-  return {state:'observed',...result,...(funding?{funding}:{})};
+  const scaling=await infrastructure.autoscaling?.tick().catch(()=>({state:'unavailable'}));
+  return {state:'observed',...result,...(funding?{funding}:{}),...(scaling?{scaling}:{})};
  }catch{
   await store.transaction(async tx=>{
    const row=await tx.read('controller-cursors',key);if(row?.value.token!==token)return;

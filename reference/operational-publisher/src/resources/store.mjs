@@ -4,6 +4,16 @@ export const digest=value=>createHash('sha256').update(typeof value==='string'?v
 const key=(kind,id)=>'owned:'+kind+':'+id;
 export function resourceStore(sql=neon(process.env.DATABASE_URL)){
  return {
+  async queueLoad(resourceId){
+   const rows=await sql`SELECT
+    count(*) FILTER (WHERE a.result->>'state'=ANY(ARRAY['queued','waiting']) AND (a.result->>'nextAt')::timestamptz<=now() AND NOT EXISTS (
+     SELECT 1 FROM jsonb_array_elements_text(COALESCE(a.result->'dependencies','[]'::jsonb)) d(id)
+     LEFT JOIN claus_publisher_actions dependency ON dependency.id='owned:job:'||${resourceId}||':'||d.id
+     WHERE dependency.result->>'state' IS DISTINCT FROM 'succeeded'))::int AS backlog,
+    count(*) FILTER (WHERE a.result->>'state'=ANY(ARRAY['running','reconciling','accepted']) OR a.result->>'state'='blocked' AND a.result->>'reason'='original_response_unknown')::int AS busy
+    FROM claus_publisher_actions a WHERE a.id LIKE ${'owned:job:'+resourceId+':%'}`;
+   return {backlog:rows[0].backlog,busy:rows[0].busy};
+  },
   async jobs(resourceId,states=[],offset=0,due=false){const rows=await sql`SELECT result FROM claus_publisher_actions WHERE id LIKE ${'owned:job:'+resourceId+':%'} AND (cardinality(${states}::text[])=0 OR result->>'state'=ANY(${states}::text[])) AND (NOT ${due} OR (result->>'nextAt')::timestamptz<=now()) ORDER BY (result->>'nextAt')::timestamptz,created_at,id LIMIT 51 OFFSET ${offset}`;return {items:rows.slice(0,50).map(r=>r.result),nextOffset:rows.length>50?offset+50:null};},
   async get(kind,id){return (await sql`SELECT result FROM claus_publisher_actions WHERE id=${key(kind,id)}`)[0]?.result??null;},
   async list(kind,offset=0){const rows=await sql`SELECT result FROM claus_publisher_actions WHERE id LIKE ${'owned:'+kind+':%'} ORDER BY created_at,id LIMIT 51 OFFSET ${offset}`;return {items:rows.slice(0,50).map(r=>r.result),nextOffset:rows.length>50?offset+50:null};},

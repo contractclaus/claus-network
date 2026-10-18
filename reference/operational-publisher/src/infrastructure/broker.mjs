@@ -1,3 +1,4 @@
+import {queueLoad} from './queue-load.mjs';
 import {runtimeVolumes} from './runtime-volumes.mjs';
 import {runtimeSecrets} from './runtime-secrets.mjs';
 import {managedBuilds} from '../resources/builds.mjs';
@@ -17,7 +18,7 @@ const key=id=>'infrastructure:'+id;
 const safeWork=w=>({id:w.id,projectId:w.projectId,profile:w.profile,manifest:w.manifest,quote:w.quote,createdAt:w.createdAt,leaseUntil:w.leaseUntil,extensions:w.extensions??[]});
 const original=w=>{const {leaseUntil,extensions,...rest}=w;return rest;};
 
-export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus,budget,secrets,volumes}={}){
+export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus,budget,secrets,volumes,loadQueue=queueLoad({now})}={}){
   budget??=infrastructureBudget({request});
   secrets??=runtimeSecrets({now});
   volumes??=runtimeVolumes({now});
@@ -138,6 +139,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
       check(c.enabled&&p?.enabled&&p.provider==='runpod','funding_profile_unavailable');
       return {provider:'runpod',accountId:p.accountId,...await drivers.runpod.fundingHistory(input)};
     }
+    if(operation==='queue_load')return loadQueue(input);
     if(operation==='readiness'){
       const c=config(),items=[];
       const profiles=c.profiles?.length?c.profiles:[{id:'runpod',provider:'runpod',enabled:false},...(process.env.CLAUS_FLY_API_TOKEN?[{id:'fly',provider:'fly',organization:'claus-network',enabled:false}]:[])];
