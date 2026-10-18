@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_6LbuX1GifeMYQAugg4c2z9qnvkQc",
-  "source": "claus-goal-phase22-20261018",
+  "deployed": "dpl_GzS4brFutugew5JtqdB9kW5Y2ARZ",
+  "source": "claus-goal-phase23-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -13,7 +13,7 @@
     "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
-    "src/index.js": "b398329f4fc64756f9c47b88b81838c986ed8cb210e4d7b01202e5b239d30d52",
+    "src/index.js": "17709620bcd5562cff77b5f8c3132f63f81cfb6f6550097f46ece9dab0fbc335",
     "src/infrastructure/broker.mjs": "89ea38b8ab956304678f28c5524e829867a80787473c895c7348e3952a301c62",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
     "src/infrastructure/providers.mjs": "e439e06a49d1f77db1db7a35d9f7ee0dde62271417bf51762925f3ebf27d2db4",
@@ -120,7 +120,9 @@
     "tests/queue-load.test.mjs": "eafe498b7e315b9cb884237c696550547fcd88a375812c09de2ec737c5fbe63e",
     "src/resources/repository-releases.mjs": "b8874eb51511952132fe98af9c9cfff0541562334ff8664dbada8fc2749c443f",
     "src/resources/project-domains.mjs": "efc91af4ec62039a9f7da9992af930cff4ef5a4eb058126560bff50bb068809d",
-    "tests/resource-release-domains.test.mjs": "f21d2438d8dd953e176e1507ea9537dc5a5cac345d75479b4def2dab9ad55277"
+    "tests/resource-release-domains.test.mjs": "f21d2438d8dd953e176e1507ea9537dc5a5cac345d75479b4def2dab9ad55277",
+    "src/recovery/backup-allowance.mjs": "95b6c825347e1fba301494c22d85a7a1df866c627b5dc7cb80f6e6bed30482c2",
+    "tests/backup-allowance.test.mjs": "e9e729a77f0cc050525af68812cec1e3c0583e369554f5a4d1a19b40220717a9"
   },
   "referenceSubset": true
 }
