@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_AggftgSnQRGcRmdQSBmLhwg4zos3",
-  "source": "claus-goal-phase44-20261018",
+  "deployed": "dpl_HEZRTUmuH4zBdB5MWDuo1JoetaGv",
+  "source": "claus-goal-phase45-20261018",
   "files": {
     "package-lock.json": "05648c9e13e38d6836a23f03a10c6fee9b71d740914add3568497a576460902d",
     "package.json": "a5c7446f3697f0cf7780220c8098ac2ef70a0df8d7426fef23cd046492c081c2",
@@ -82,7 +82,7 @@
     "interfaces/resource-objects.mjs": "2b1f3461ad55c9e1c8a71a181344c9702b860c7e115edeaf8df5dc71aef1133a",
     "tests/resource-objects.test.mjs": "4627ab902444aa23107cffeaf4be50a93f7f8c0f9e80a5d2f8b69cc7f23a0d48",
     "src/resources/catalog.mjs": "a2df92e1e9882fd5d4cb39932891b5ab4917949ebf54bddab4f914fa34c2b478",
-    "src/resources/endpoints.mjs": "997d3a08774ec8d3a873cbcbb190ad50d4b4687ac2b68730a6041565f49b2e5b",
+    "src/resources/endpoints.mjs": "6a1cd7bd4a49b7219a8a5c909f649f38c66bcca8dfb2243879c28869790fd8f9",
     "src/resources/endpoint-transport.mjs": "b6fc8d0df460af5e53edf29947c86d873620f9ad9eff1abef1ebe7336d0f5c8a",
     "tests/resource-endpoints.test.mjs": "1f93ab26eb74e7abb4986bc83a129ce402c26ed7563afee3b23bdcab6214f89c",
     "src/infrastructure/fly-billing.mjs": "a768ab24d6685fdfbb52b9343f5ecaa7e847c49419a2037ffdce373467513826",
@@ -138,7 +138,7 @@
     "src/resources/model-format.mjs": "0edc35bd23942a3ded9bdaf34a2f59491ea6315fa76d4a43d2cff7c9b8e74d82",
     "src/resources/database-compatibility.mjs": "2ef920b45af994ff502f49bb9bfbeafc471ff6c31a7fecad74b905e683cf84e1",
     "src/resources/schema-snapshot.mjs": "0527330f745563d567b31dfe2295b0f8afbf37161cf21f5250b9b8604b0ca441",
-    "src/resources/resource-trace.mjs": "288b49b92df06fedc81c3a8c778b3a368e7b3e38bd8bcac105102549c0673822",
+    "src/resources/resource-trace.mjs": "cd5b3cc6c96f2c6c57bc08170acfcc376f80cd61ab716294d0d0ee9c4ba2473e",
     "src/resources/negative-receipt.mjs": "10447dff4acacf4401032067b4e8edcca12eb4bd0c3b6bbd23144245d7afd80c",
     "src/resources/database-retirement.mjs": "fd99d2fc715fe02adec4cb4607b85f9f10ab719492ddc54ac0fb2890f6e8d0de",
     "src/resources/database-retirement-proof.mjs": "e62074f7c7b7e20dc0772025ab46c805e200ef86c3d5c5ccb7389c6596854fe7",
@@ -147,7 +147,9 @@
     "src/infrastructure/fly-diagnostics.mjs": "4d54b75a8a042fe1109222e20f134ad0a1ea445099e517c6a5e9a7cf53f0ff6b",
     "src/resources/cloudflare.mjs": "635b10b54a0a9817490cffe345d46c334ed451045edd74d50df53475dd5eef55",
     "src/resources/mail.mjs": "c3aac1a7f9c563ab1142bee67d968d6603cd6ada54cd7e04a15747a8cf315c62",
-    "src/resources/model-specialists.mjs": "b1e93efaf7c1bb70e83fba6a4585ce1cdbafdf7cc2efdc481cdaa1c397e74a93"
+    "src/resources/model-specialists.mjs": "b1e93efaf7c1bb70e83fba6a4585ce1cdbafdf7cc2efdc481cdaa1c397e74a93",
+    "src/resources/diagnosis.js": "1814e82f646bb1ed8104c6864dc580e5cd9c19772a6f8d19fbdb238706d896b8",
+    "src/resources/payment-trace-client.mjs": "2bb2a8ab1da9637ce505573bd59867c1216f5a253f62278f4fae3eb574f7b77f"
   },
   "referenceSubset": true
 }

@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase44-20261018",
+  "source": "claus-goal-phase45-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -162,12 +162,14 @@
     "src/development-funding.ts": "7541ff101e3acd1953e366bf046a7be095db80de40057b4997e6456ca5ec3971",
     "tests/development-continuation.test.ts": "c82151eaecc374126392de1c47b3c284a8173ff835462a9ea098efedcff986ef",
     "src/inference-admission.ts": "3cfe07bb5b0ba01f547ec4a6e3c77959683bec5be259a826b41a7f817999e04a",
-    "src/operations/resource-help.ts": "0b1a8ecca5e901fe4236b7cbc59e2407064b4de8abf5f25f4fa134e196f3c24b",
+    "src/operations/resource-help.ts": "25c6b83547e032c2d3702119cf1888f4252c550e14bd120829f97d3a48e682d1",
     "src/negative-receipt.ts": "b7c582c641e4028606cf2a976429e45903a45c038789afd3432bd05784c84157",
-    "src/operations/trace.ts": "95c97cb482702fc472df998bb7bc0c625489c22c26fb41e09b1d7202197782eb",
+    "src/operations/trace.ts": "8d669bb77b0fced34e6e8875ca98f05cbc8ab2a4a0d2e34f190c58f8d9557ca1",
     "src/external/browser-events.ts": "444b3a824de5610589a2f087c01e5af162b8588c94a5196354a2e00ba4c3b953",
-    "src/external/runpod-telemetry.ts": "6951d3370f52e9b62cb447ad54527269a4eb7442841541d8002adb69bea90196"
+    "src/external/runpod-telemetry.ts": "6951d3370f52e9b62cb447ad54527269a4eb7442841541d8002adb69bea90196",
+    "src/operations/diagnosis.ts": "e562df6947597125a52d2cb5f056d50fb08bb1746d70dce3e35519b74ff7fd67",
+    "src/operations/payment-trace-client.ts": "c4be7715726caa1616521858d9d55f8d821e7cb887fa1f13cd51a179fbdb9e93"
   },
   "referenceSubset": true,
-  "deployed": "dpl_6MPXfCmUrLVAmMUepK6ok86T3FTP"
+  "deployed": "dpl_B1XJBBbf4cFbCy3A5N8z6Qpqhq3B"
 }

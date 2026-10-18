@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_3ENi1L3KLkUD2S8pm6Xk7iKAVa7a",
-  "source": "claus-goal-phase37-20261018",
+  "deployed": "dpl_CScQj3SMrnMznDSGvADiWZmM2Bco",
+  "source": "claus-goal-phase45-20261018",
   "files": {
-    "src/index.js": "5e770a05879079b72ba24c8a48332c0e58c6d1ea051e0c5f1572798accf6b3fa",
+    "src/index.js": "18dfa4e3f4d9e652e841b294c56a253b69c7683733568feb84ee32ddff5c8c63",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
     "src/credit-work-store.js": "274409e275e0f493f4f6ffc0178573048990391c9a602891936355f3d797cfe7",
     "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
@@ -45,7 +45,9 @@
     "vendor/src/request-budget.js": "a22d765f0a8ba2b7575bf5529f0906384837f39b5fc9b273ae75215a1b21d4e5",
     "vendor/src/structured-format.js": "0edc35bd23942a3ded9bdaf34a2f59491ea6315fa76d4a43d2cff7c9b8e74d82",
     "vendor/src/policy.js": "0b22e45a3b9365807b31c163d15d7b32df03a293f2d57396e87907b5cfd618de",
-    "src/negative-receipt.js": "b4ed70ad4f449457393a70bec822f4f93b28568bfd77e736b2eaf648f3cdedfa"
+    "src/negative-receipt.js": "b4ed70ad4f449457393a70bec822f4f93b28568bfd77e736b2eaf648f3cdedfa",
+    "src/diagnosis.js": "1814e82f646bb1ed8104c6864dc580e5cd9c19772a6f8d19fbdb238706d896b8",
+    "src/payment-trace.js": "c5578a74dada6fdac5cfd4c055f4354f692333606765f4ff0d7e13bef96ea5ac"
   },
   "referenceSubset": true
 }
