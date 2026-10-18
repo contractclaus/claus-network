@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_A7y5rDGG1tkp8fMximXznoX3rELJ",
-  "source": "claus-goal-phase47-20261018",
+  "deployed": "dpl_EXHG7mNf4ph9Nbz3qjCpfNYfDFfm",
+  "source": "claus-goal-phase48-20261018",
   "files": {
     "package-lock.json": "05648c9e13e38d6836a23f03a10c6fee9b71d740914add3568497a576460902d",
     "package.json": "a5c7446f3697f0cf7780220c8098ac2ef70a0df8d7426fef23cd046492c081c2",
@@ -65,10 +65,10 @@
     "src/website-admin/assets.mjs": "38cc1ccf23718738f9be1529a91072c5da2de94690b9c6de4f62577171884165",
     "src/website-admin/dns.mjs": "3a4ab5909f8a14069dbd7bec0301d85f598908e5380343bee3cc24de872abdf9",
     "tests/website-dns.test.mjs": "a58256294fd91cc6abc8c3097039db3680c71886e9a849c0dc391bb65abc1744",
-    "src/resources/store.mjs": "3a64fb2531533e6a44ad4cba869669e24bdace8d0e6288cad459fecbbc3925d6",
+    "src/resources/store.mjs": "009acad1c86574544ba5b49e5b7f917a6fbc0c533dbe736e49e66a1218031ee8",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
     "src/resources/providers.mjs": "cf81c7462102101f4b22c342849b67b9e6c6d5c945f282b5d7cdf435c5e864a3",
-    "src/resources/service.mjs": "32bcdd02a5f61ec973528e9480ab998d127719436893ed29a574bc95d7cc0895",
+    "src/resources/service.mjs": "0d8e79957a79b58ec9f94404a7a6fa5b82686ed49eddfb17c13aa09149327298",
     "src/resources/routes.mjs": "01d33b559af53cf891f44a99be4c4010f0ab9a542c0fa3eabb4341ca3a936fc1",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
@@ -151,7 +151,8 @@
     "src/resources/diagnosis.js": "1814e82f646bb1ed8104c6864dc580e5cd9c19772a6f8d19fbdb238706d896b8",
     "src/resources/payment-trace-client.mjs": "2bb2a8ab1da9637ce505573bd59867c1216f5a253f62278f4fae3eb574f7b77f",
     "src/resources/fleet.mjs": "b496b7c70fd549102e1a0aa4f04f630ae4fb650ed85276014563d89ac6b23a48",
-    "src/resources/finance.mjs": "777e541bf5f81e60c0ee18863ed638e2c9b473db8dfc744c17cf06286dec97b8"
+    "src/resources/finance.mjs": "05611cf1ede6457d8d53883f5b26bc51585aa872dd6c755348afb4a6fc721585",
+    "src/resources/account-usage.mjs": "51c06b1c580fc95ba6a15fb4404cb391d4217b67e2f6751c040522449f7a1258"
   },
   "referenceSubset": true
 }
