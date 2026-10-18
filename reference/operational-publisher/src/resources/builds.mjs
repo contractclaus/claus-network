@@ -161,6 +161,9 @@ export function managedBuilds({store,providers,budget,request=fetch,now=Date.now
    try{
     const accepted=await gh(prefix(r)+'/actions/workflows/'+encodeURIComponent(buildWorkflowPath.split('/').at(-1))+'/dispatches',{method:'POST',body:{ref:prepared.reference,inputs:prepared.dispatchInput,return_run_details:true}});
     if(accepted?.workflow_run_id)await store.put('build-run',id,{runId:positive(accepted.workflow_run_id),resourceId:r.id,createdAt:stamp()});
+    // The dispatch ID arrives before GitHub hydrates run metadata. Defer strict
+    // run identity validation to the original read; do not mislabel indexing lag.
+    return {id,actionId:id,state:'submitted',runId:accepted?.workflow_run_id??null,maximumReservedMicroUsd:prepared.maximum,retry:false,next:'Read build_info with this original actionId. Dispatch acceptance is not execution success.'};
    }catch(e){if([400,401,402,403,404,422].includes(e.status)){await budget('cancel',id,prepared.maximum);return complete({state:'rejected',error:e.message,buildCostAuthorizationCancelled:true});}throw e;}
   }
   const started=await findRun(r,id,a);if(!started)return {id,state:'outcome_unknown',retry:false,maximumReservedMicroUsd:prepared.maximum,next:'Reconcile the same requestId; do not create another build.'};
