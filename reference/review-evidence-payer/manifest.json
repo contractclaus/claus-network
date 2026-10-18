@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_8QNLYuLvaRmZ9SkhV84HeZD83Xz5",
-  "source": "claus-goal-phase3-20261018",
+  "deployed": "dpl_AdSZcFQEAHwYb5csgU7pCNAmcgnV",
+  "source": "claus-goal-phase5-20261018",
   "files": {
     "src/index.js": "32a2838f09866ada9a871e93b7f797ba1b29c78dab0b9bbc5080af50be88e2d4",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
@@ -38,7 +38,7 @@
     "vendor/src/outcomes.js": "eeab785b68adbcd9d4d2fe051a62b3c343c9cd334792c6da3558f851e75bf8c8",
     "vendor-manifest.json": "1b1078957e0fb3dac74cfb9ded458c1c8950590e4a68e39eb4c7ba5ea30fe4e6",
     "src/external-services.js": "0da7b7f482e3f611ddd5e05a122aac146b0cc095c5fd6704aba89f5861695069",
-    "src/operating-budget.js": "fd9b3311de711a8b42855fa33708f507b57e295e0231acbcff29af71de8a4543"
+    "src/operating-budget.js": "f01a4901350e12cec42456135fc76e75f1cc87178b9eece970ea2e42fc1f021d"
   },
   "referenceSubset": true
 }
