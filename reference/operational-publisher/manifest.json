@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_4iirCp6QgLSDa42rjHpgNgFd8ktf",
-  "source": "claus-goal-phase14-20261018",
+  "deployed": "dpl_ABUZEvbSTuCjVwDaxJv9zamAAaiV",
+  "source": "claus-goal-phase16-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -72,7 +72,7 @@
     "src/resources/routes.mjs": "2f296556739b8419dba97e6bd48f918407dc48a076fa5c0d97184ec44a8a6a7b",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
-    "src/resources/database.mjs": "38260233cd8bee70212f5b865478d6e06c1bd1231255d0b33423ed3456e3610b",
+    "src/resources/database.mjs": "9df9a139854b626928dabddd9e29a968d5c2726e5ae1d4651ae75cc9c60092d8",
     "src/resources/repository.mjs": "cb5bfb7bb5409e3667058951f256bf5a6332f8eb7b0e2860d8b55064f9bb7744",
     "src/resources/publishing.mjs": "0108ef391458fa080bc762b6a85ad52756c8e603ac416aab19737d2e788a78bd",
     "src/resources/budget.mjs": "f650e9332c1ef57328b3fdfa2d5bd145e50451433a83942bb30abdc5ee9c504d",
@@ -81,7 +81,7 @@
     "src/resources/object-provider.mjs": "98e3eb3946886911dac13586859ef1af5ca5b2aba23fa9c3757d4568b0883f13",
     "interfaces/resource-objects.mjs": "2b1f3461ad55c9e1c8a71a181344c9702b860c7e115edeaf8df5dc71aef1133a",
     "tests/resource-objects.test.mjs": "4627ab902444aa23107cffeaf4be50a93f7f8c0f9e80a5d2f8b69cc7f23a0d48",
-    "src/resources/catalog.mjs": "8947ee42f116ddea465c8b2a70bb4517174425011cf29e48f0c808b1a4c916c0",
+    "src/resources/catalog.mjs": "444236472dbe137287dbc58ee2846ba64e38a13e390bfdb898647c9d017bcc9b",
     "src/resources/endpoints.mjs": "b578ab4f4c54a2944059c08fdd8e474e497a7d12a33f2667171a3b85978a6966",
     "src/resources/endpoint-transport.mjs": "7239cd30b57ed6325857e2dbf083037972271814efa683632be7c6cf741c9de5",
     "tests/resource-endpoints.test.mjs": "1f93ab26eb74e7abb4986bc83a129ce402c26ed7563afee3b23bdcab6214f89c",
@@ -104,7 +104,9 @@
     "src/wallet-rpc.mjs": "98ad9c441306e339c5654f39c1c2b8fca96c05eea4cf0246ed16c1e61ea1465b",
     "tests/wallet-rpc.test.mjs": "3a1b148c8068c8cd1b6c2f7abc50e6e92f826c5c4691271b714ba7134bb9d9d8",
     "src/resources/runtime-tuning.mjs": "562371c995520eccb72e59cb643e9957d62f4a396b9dd13c657ed4db88bad704",
-    "tests/runtime-tuning.test.mjs": "3b665d8b71c050703c97b4c89cd1776772d892db17c01e0fdb48c5b26126812c"
+    "tests/runtime-tuning.test.mjs": "3b665d8b71c050703c97b4c89cd1776772d892db17c01e0fdb48c5b26126812c",
+    "src/resources/application-migrations.mjs": "0e213e0ef576415fc8a374e69f59b8b16d5dfe90df80987bc167e61422da945e",
+    "tests/application-migrations.test.mjs": "476a0d4651139628a6924da405a7eed183079809e3bd608365601a58e341e7b7"
   },
   "referenceSubset": true
 }
