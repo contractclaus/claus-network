@@ -1,9 +1,9 @@
 {
-  "deployed": "dpl_7yhn2VfRW7iEFAz2ZiQxU8am113S",
-  "source": "claus-goal-phase3-20261018",
+  "deployed": "dpl_HsgTKhj9h1Xw1ysQPUTk7uYDAJec",
+  "source": "claus-goal-phase4-20261018",
   "files": {
-    "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
-    "package.json": "b43eac6342727358a28af7d38a781577e63397bd39c3d263182e42b86c86e9f7",
+    "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
+    "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
     "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2",
     "src/configuration/routes.js": "104614febc26edceb338e905f5944d431d1794b6bf77c908a285d8699b4c7c0c",
     "src/configuration/service.js": "ab9e223e7235e927bd15911b4b6732dda80c4b606d3a25abe592b45568ace5af",
@@ -68,7 +68,7 @@
     "src/resources/store.mjs": "4cf26c0f690068df00723742067b6728f0d916f786600ae9ebf5c7b26a820172",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
     "src/resources/providers.mjs": "3ba6b362acd85d19fdeba3dea6d214a4a2a7c793acaa87d48acb0a79f84983f2",
-    "src/resources/service.mjs": "eb82f543cb68557c46bae6704b2bc8441aa8fa0dffd17f879715e01f08642f46",
+    "src/resources/service.mjs": "ba9ebfc4b9aaabe0523a98b62cd96abd77c1084c5b2651644506ba0af70daee2",
     "src/resources/routes.mjs": "c11543604e08564a766f388c5af477fa92b1d5edda0a7c9b672e63c4b9696859",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
@@ -76,7 +76,12 @@
     "src/resources/repository.mjs": "4393c98e29e2be709424b58a8f771e37f807110a042fd5046498c9a16cd5d61b",
     "src/resources/publishing.mjs": "0108ef391458fa080bc762b6a85ad52756c8e603ac416aab19737d2e788a78bd",
     "src/resources/budget.mjs": "5ac867843bd69e6966416a2bc2716083ddefdae54569a1730d7103fba2cd7656",
-    "tests/resource-publication.test.mjs": "aa2dd0353cca3d12a54b03d0ab955fe115a1377356377ad540acdd30cbb8814e"
+    "tests/resource-publication.test.mjs": "aa2dd0353cca3d12a54b03d0ab955fe115a1377356377ad540acdd30cbb8814e",
+    "src/resources/objects.mjs": "1e55c235ecad85561a2864f0bf0e435f820d3e897a3e43e8ef206306429197c5",
+    "src/resources/object-provider.mjs": "98e3eb3946886911dac13586859ef1af5ca5b2aba23fa9c3757d4568b0883f13",
+    "interfaces/resource-objects.mjs": "2b1f3461ad55c9e1c8a71a181344c9702b860c7e115edeaf8df5dc71aef1133a",
+    "tests/resource-objects.test.mjs": "4627ab902444aa23107cffeaf4be50a93f7f8c0f9e80a5d2f8b69cc7f23a0d48",
+    "src/resources/catalog.mjs": "41b62d0aad3ed304f87609a0f6eae8c77cdd2f252a265e4069551d409dde93c9"
   },
   "referenceSubset": true
 }
