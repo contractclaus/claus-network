@@ -1,3 +1,4 @@
+import {serverState,serverStatePolicy} from './server-state.mjs';
 import {queueLoad} from './queue-load.mjs';
 import {runtimeVolumes} from './runtime-volumes.mjs';
 import {runtimeSecrets} from './runtime-secrets.mjs';
@@ -18,7 +19,7 @@ const key=id=>'infrastructure:'+id;
 const safeWork=w=>({id:w.id,projectId:w.projectId,profile:w.profile,manifest:w.manifest,quote:w.quote,createdAt:w.createdAt,leaseUntil:w.leaseUntil,extensions:w.extensions??[]});
 const original=w=>{const {leaseUntil,extensions,...rest}=w;return rest;};
 
-export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus,budget,secrets,volumes,loadQueue=queueLoad({now})}={}){
+export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus,budget,secrets,volumes,preservation,loadQueue=queueLoad({now})}={}){
   budget??=infrastructureBudget({request});
   secrets??=runtimeSecrets({now});
   volumes??=runtimeVolumes({now});
@@ -31,6 +32,12 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
       const target=flyTarget(found,projectId);check(!c.profiles.some(other=>other.provider==='fly'&&other.app===target.app&&other.projectId!==target.projectId),'project_app_not_isolated');return target;
     }
     check(drivers[p.provider],'provider_unknown');return found;
+  }
+  async function preserve(record,force=false){
+    const policy=serverStatePolicy(record.work);
+    if(policy.kind!=='watch-history')return {...policy,state:policy.kind==='stateless-search'?'immutable-source':'unclassified'};
+    preservation??=serverState({store:resourceStore(),request,now});
+    return preservation.capture(record,{force});
   }
   const releaseApproved=releaseStatus??(w=>runtimeReleaseApproved(w,{request}));
   const sign=(operation,input,result)=>({...result,proof:createHmac('sha256',secret()).update(canonical({operation,input,result})).digest('hex')});
@@ -91,7 +98,8 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     if(!mustStop&&!await secrets.active(c.work)){observed={...observed,guardViolation:'runtime_secret_revoked'};mustStop=true;}
     const releaseRevoked=mustStop?false:!await releaseApproved(c.work);
     if((mustStop||releaseRevoked)&&observed.providerResourceId&&!observed.terminal){
-      await record({...observed,deletionRequested:true});
+      const dataPreservation=await preserve({...c,...observed},true);
+      await record({...observed,dataPreservation,deletionRequested:true});
       observed=await driver.stop(c.work,get(),true,c.providerConfig);
     }
     if(!mustStop&&!releaseRevoked&&c.leaseUntil>now()&&observed.stopped&&!observed.terminal&&!c.stopRequested&&work.manifest.mode!=='job'&&driver.resume){
@@ -103,6 +111,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
         observed=await driver.resume(c.work,get(),c.providerConfig);
       }
     }
+    if(!observed.terminal&&observed.ready&&!mustStop&&!releaseRevoked){const dataPreservation=await preserve({...get(),...observed});await record({dataPreservation});}
     return result(work,await record({...observed,outcome:observed.outcome??null}));
   }
   async function create(work){
@@ -168,7 +177,8 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
       }
       if(operation==='stop'||operation==='delete'){
         if(c.terminal)return result(work,c);
-        await record({stopRequested:true,...(operation==='delete'?{deletionRequested:true}:{})});
+        const dataPreservation=await preserve(c,true);
+        await record({dataPreservation,stopRequested:true,...(operation==='delete'?{deletionRequested:true}:{})});
         return result(work,await record(await driver.stop(c.work,get(),operation==='delete',c.providerConfig)));
       }
       if(operation==='logs'){const redact=await secrets.redactor(c.work);return {content:redact(await driver.logs(c.work,c,c.providerConfig)),instructionAuthority:false};}

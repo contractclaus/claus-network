@@ -1,8 +1,9 @@
+import {serverState} from '../infrastructure/server-state.mjs';
 import {providerRequest} from '../infrastructure/providers.mjs';
 const fail=c=>{throw Error('resource_fleet_'+c);};
 const id=v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(v);
 const stamp=v=>Number.isSafeInteger(v)&&v>=0&&v<=8640000000000000?new Date(v).toISOString():null;
-export const fleetInputs={fleet_inventory:['provider','cursor','app'],fleet_leases:['offset']};
+export const fleetInputs={fleet_inventory:['provider','cursor','app'],fleet_leases:['offset','resourceId','before','limit','refresh']};
 export function classifyFleet(machine,records,now=Date.now()){
  const matches=records.filter(r=>r.provider===machine.provider&&(r.providerResourceId===machine.id||machine.originalResourceId&&r.originalResourceId===machine.originalResourceId||machine.provider==='runpod'&&machine.name==='claus-'+r.originalResourceId?.slice(-40)));
  if(matches.length!==1)return {...machine,binding:matches.length?'ambiguous':'unmapped',originals:matches.map(x=>x.originalResourceId),next:matches.length?'Inspect retained original records; do not stop by name alone.':'Recover the original owner, work and data-retention plan before changing this resource.'};
@@ -22,8 +23,10 @@ export function managedFleet({store,environment=process.env,request=fetch,now=Da
  async function correlate(machines){const originals=await store.infrastructureMatches(machines);return machines.map(m=>classifyFleet(m,originals,now()));}
  return {async call(operation,input){
   if(operation==='fleet_leases'){
+   if(input.resourceId!==undefined)return serverState({store,request,now}).read(input);
+   if(input.before!==undefined||input.limit!==undefined||input.refresh!==undefined)fail('resource_required');
    const offset=input.offset??0;if(!Number.isSafeInteger(offset)||offset<0)fail('page_invalid');const page=await store.infrastructureLeases(offset);
-   return {...page,items:page.items.map(r=>({...r,leaseExpired:Number.isSafeInteger(r.leaseUntil)&&r.leaseUntil<=now(),providerObservationIsCurrent:false})),readOnly:true,meaning:'Retained original broker records. Provider inventory is read separately; an old observation does not prove the machine is still running.'};
+   return {...page,items:page.items.map(r=>({...r,leaseExpired:Number.isSafeInteger(r.leaseUntil)&&r.leaseUntil<=now(),providerObservationIsCurrent:false,serverDataAccess:{operation:'fleet_leases',input:{resourceId:r.originalResourceId},refresh:'Add refresh:true to retain current supported application state before reading it.'}} )),readOnly:true,meaning:'Retained original broker records. Provider inventory is read separately; an old observation does not prove the machine is still running.'};
   }
   if(operation!=='fleet_inventory'||!['runpod','fly'].includes(input.provider))fail('provider_invalid');
   if(input.cursor!==undefined&&(typeof input.cursor!=='string'||!input.cursor.length||input.cursor.length>4000)||input.app!==undefined&&(typeof input.app!=='string'||!/^[a-z0-9][a-z0-9-]{2,62}$/.test(input.app)))fail('page_invalid');
