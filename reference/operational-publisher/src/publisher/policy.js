@@ -1,10 +1,10 @@
 import {webPath,checkFileChange,previousManifest} from './files.mjs';
 import { createHash } from "node:crypto";
 const OPS_TARGETS = {
- repository: { project: "contractclaus/claus-network", name: "claus-network", origin: "https://github.com/contractclaus/claus-network", probe: "/README.md", paths: [/^(?:README\.md|(?:src|runtime|api|adapters|interfaces|scripts|test|tests|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|tsx|jsx|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] },
+ repository: { project: "contractclaus/claus-network", name: "claus-network", origin: "https://github.com/contractclaus/claus-network", probe: "/README.md", paths: [/^(?:README\.md|(?:src|runtime|api|adapters|interfaces|scripts|test|tests|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|mts|cts|ts|tsx|jsx|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] },
   web: { project: "prj_3EPhg3tuhf5oHU9sw2Butj9eRegy", name: "claus", origin: "https://claus.si", probe: "/Network", paths: [{test:webPath}] },
-  api: { project: "prj_rGom8c2zwC8zztmqsSFPaAJj7fXs", name: "claus-network-api", origin: "https://claus-network-api.vercel.app", probe: "/health", paths: [/^(?:(?:src|runtime|api|adapters|interfaces|scripts|tests?|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] },
-  native: { project: "prj_JQEQJQb3Obhgas8Dtx0FIe1Zokah", name: "claus-agent", origin: "https://claus-agent.vercel.app", probe: "/health", paths: [/^(?:(?:src|api|scripts|tests?|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|ts|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] }
+  api: { project: "prj_rGom8c2zwC8zztmqsSFPaAJj7fXs", name: "claus-network-api", origin: "https://claus-network-api.vercel.app", probe: "/health", paths: [/^(?:(?:src|runtime|api|adapters|interfaces|scripts|tests?|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|mts|cts|ts|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] },
+  native: { project: "prj_JQEQJQb3Obhgas8Dtx0FIe1Zokah", name: "claus-agent", origin: "https://claus-agent.vercel.app", probe: "/health", paths: [/^(?:(?:src|api|scripts|tests?|docs)\/[A-Za-z0-9_./-]+\.(?:mjs|cjs|js|mts|cts|ts|json|md|sql)|package(?:-lock)?\.json|tsconfig(?:\.[a-z-]+)?\.json|vercel\.json|modules\.json|[A-Za-z0-9_-]+\.config\.(?:js|mjs|ts))$/] }
 };
 function target(value) {
   if (!Object.hasOwn(OPS_TARGETS, value)) throw Error("operations_target_invalid");

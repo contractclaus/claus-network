@@ -1,8 +1,8 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase1-20261018",
+  "source": "claus-goal-phase2-20261018",
   "files": {
-    "src/operations/policy.ts": "aae7f9f7fc8c3774371f628600b384178e2d6592b540b3119a127a0b2c4a34e9",
+    "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
     "src/operations/store.ts": "79edcece4b088786d08bc9b1a7f6097d4dd529c54a734ca047e67c464b20a3a1",
     "src/operations/service.ts": "cdd3f1e9776441924a93e18bd64440fef94016c5274379283f0f8de7de2814a5",
@@ -19,7 +19,7 @@
     "src/context.ts": "33ee111f17b3a7c820b46b44aa5026cb2eaa2f7976654f5c860de4094e08ade2",
     "src/knowledge.ts": "f98d7fdee97c2af6ac6b06d5229199a565b5836f218c7a8728c29ab7aa0cf581",
     "src/network-care.ts": "736d2a150a32dd325d86e8e5439b0cb8d4dbc3352542ef65de8bac547cb9c9f0",
-    "src/network-operations.ts": "3984c3a50b0ebaf65ccfa8ffdf3d30e177133611862ac1272e0eb6e599cb7ab7",
+    "src/network-operations.ts": "8f7c83debc2f09090ee7096430345370ff3b6df7340eedc8579ff28f199d98f8",
     "src/operation-result.ts": "3f21601d8a920f26170d234391f05c018c210d047acd4d607922881e6aa204aa",
     "src/runtime-access.ts": "ab6af7e009dedcb8f5b98c16f6dc54c30f06a5c95d00b3d082a6712fdccae410",
     "src/tool-visibility.ts": "5d3cc2dbcaf8f21eb28d8bb3e71bfb5fd03045a2a082c61c536f76ec09c98474",
@@ -151,9 +151,9 @@
     "src/operations/files.mjs": "ce9b616e5440890b1d66085c2685712e2f31980c93db427acfbe45d64ac3c010",
     "src/operations/website-admin.ts": "113346188770465f2d2ceae94078afe513c400ba691d220ecb3c41927c55aa10",
     "src/work-graph.ts": "d7c5654bfee7fdfa8a7b25019fe13d734e1b115af5eb60a62fdf42941f2a84e7",
-    "src/operations/resources.ts": "1ac910cf3b9e1c8fef3862ac7acf78052fe41c449fa9038cf22c552de7767dde",
+    "src/operations/resources.ts": "f8970c3c55a07125def83d5161e78f2bb07630ada62bdbbc7e8a4461e88f4f7e",
     "tests/work-graph.test.ts": "c8463ecd78b66b6801eca31c012ea977acba658cd88b554d2f6d6226e6b1e760"
   },
   "referenceSubset": true,
-  "deployed": "dpl_9w7cVzLZfptYXt7pS5wkQLPfVyXu"
+  "deployed": "dpl_9zy73yA31iFHrdCpXriKBpg5kHf6"
 }

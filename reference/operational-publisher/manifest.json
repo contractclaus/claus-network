@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_BJQdryitEhEWT4esDQAt1b9T7seh",
-  "source": "claus-goal-phase1-20261018",
+  "deployed": "dpl_HdyL2pYJqge3YQUow4H9QpsNWK5v",
+  "source": "claus-goal-phase2-20261018",
   "files": {
     "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
     "package.json": "b43eac6342727358a28af7d38a781577e63397bd39c3d263182e42b86c86e9f7",
@@ -16,7 +16,7 @@
     "src/index.js": "a5b87417c1b306e21d9ef4e93c747c5139f060aefacd6fc911401dc3702191a6",
     "src/infrastructure/broker.mjs": "60dd6719a767fafe4a874d2321506b8dfd3bd08fa73203b730c04c511a7029b1",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
-    "src/infrastructure/providers.mjs": "4b8efd29ac8d7450c03cee16aacfb5412a85dd560f4ddaa821bb7bb9a5c343b3",
+    "src/infrastructure/providers.mjs": "a0f8cc7c720da51e2448b65c1fb4ac1d18a1ad86ef496421548c430e996c9280",
     "src/infrastructure/release.mjs": "59cde463509df28234cc4f121d8f7ac639415a58ea6336f0e3a991e5afafde5e",
     "src/infrastructure/routes.mjs": "9be80153654305b23fd064db79dc754374edf1c31dc4c24f993f146c11c81b1a",
     "src/jobs-wallet/network.js": "3f2f96d7e37226694942a80a2f1918ae7690582fab8195b9b11ac7c3223671e3",
@@ -27,7 +27,7 @@
     "src/publisher/controls.js": "a3362da65fb1ca1e627c57bb56defd4a89d2f70a8a9f1a7547f6254b2c232846",
     "src/publisher/host.js": "83739ed73ae2ff6489113dc4a6b224efeb08690efbb1306e401533730ce37e0b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
-    "src/publisher/policy.js": "f66766a9d060da6aa0cb8e5fcea407795438dbce57d40caea6de6a9664d688d1",
+    "src/publisher/policy.js": "f351cf688e16f26044f46f6daeb0ec4b0df02387f1872828c6ce2a5483b9b97f",
     "src/publisher/program.js": "2037abc8fc8d73d33f51a2f72c1c6da8353b87b103890b5d0eff354c68db61a0",
     "src/publisher/repository.js": "ce664f742a8731c1626c2de1798b064a29b29390d3d22400a6f00c1201e2d814",
     "src/publisher/review-evidence.js": "2fb68224e62e34c1a0669d93b5db558eec2bf3ecf0b3185a8a175ed0dfe67ad7",
@@ -50,7 +50,7 @@
     "src/surface-publisher/service.js": "362de09ecda7d6861b1813f32db9e7b7870fab4d070cb36ebbf139ddb685dcb8",
     "src/surface-publisher/source.js": "5870c1dc4f8dfe4f49c42532e1a5046a607aed88a4bf2a0dd7eee31cc9c2357d",
     "tests/fly-target.test.mjs": "15eeab695cfe1e3d469d3275e7ce37c5fd0ab049837156330b2535aa0666bdec",
-    "tests/infrastructure.test.mjs": "36c116f431afe8f44388987963269203a9d073652ca18c32f7ecdd563c373cb0",
+    "tests/infrastructure.test.mjs": "0c08b04b9a13a489d0c114a2fc6f79e482bb2760bd4ea16579cfce4311f445f9",
     "tests/oci-route.test.js": "b9f5ff825c5266106dfc2e3de185c7279970c708d0de5727340fe9697d04183e",
     "tests/oci.test.js": "4badcf959c6333ee1d76688a0a06c586d697e0d0b34230c96c0aee2c948a8f73",
     "tests/runtime-release.test.mjs": "30818da643b26e5b653741d2c03cd54ff6887f72a9c2798b541d46b40f8f7bd4",
@@ -67,10 +67,12 @@
     "tests/website-dns.test.mjs": "a58256294fd91cc6abc8c3097039db3680c71886e9a849c0dc391bb65abc1744",
     "src/resources/store.mjs": "4cf26c0f690068df00723742067b6728f0d916f786600ae9ebf5c7b26a820172",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
-    "src/resources/providers.mjs": "6f1874eb409a16747b2972c60c1ddb8f15392d29f4a1febc732e18a26fc14942",
-    "src/resources/service.mjs": "f9e3d7c9733aae23f562388f9dd159f853fb1c1e0449e0cd84e7b6262327c517",
+    "src/resources/providers.mjs": "8874e1ddb2b0bc27f5d18556581d68791236b7d9ebb33f0ebdd173ed22ea5e42",
+    "src/resources/service.mjs": "6e2c768d8a0d49cea789da5606adc3257d970399bf49062bcda48b23b35f9dcd",
     "src/resources/routes.mjs": "3b8b61ad48c62037986ed8bbc3b24e831fb81183843da3f7d2c7b6f16a78be93",
-    "tests/resources.test.mjs": "663e23a609e9a1667067519a26c7f8950f1a1df525d65da2a839e87b378e5f6d"
+    "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
+    "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
+    "src/resources/database.mjs": "38260233cd8bee70212f5b865478d6e06c1bd1231255d0b33423ed3456e3610b"
   },
   "referenceSubset": true
 }
