@@ -19,7 +19,7 @@ export function endpointTransport({resolve=lookup,request=httpsRequest}={}){
   });
   if(!addresses.length||addresses.some(v=>!publicAddress(v.address)))fail('private_address');signal.throwIfAborted();
   const response=await new Promise((yes,no)=>{
-   const req=request(target,{method,signal,family:4,lookup:(_host,_options,cb)=>cb(null,addresses[0].address,4),headers:{accept:'application/json, text/plain','accept-encoding':'identity',...headers,...(body?{'content-type':'application/json','content-length':String(Buffer.byteLength(body))}:{})}},yes);
+   const req=request(target,{method,signal,family:4,lookup:(_host,_options,cb)=>cb(null,addresses[0].address,4),headers:{'user-agent':'Claus/1.0 (+https://claus.si)',accept:'application/json, text/plain','accept-encoding':'identity',...headers,...(body?{'content-type':'application/json','content-length':String(Buffer.byteLength(body))}:{})}},yes);
    req.on('error',no);req.end(body);
   });
   try{
