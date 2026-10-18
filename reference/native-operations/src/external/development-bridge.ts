@@ -14,7 +14,7 @@ export async function developmentToolsRoute(req:Request):Promise<Response>{
  let input:any;try{input=JSON.parse(body);if(typeof input.requestId!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(input.requestId))throw Error();externalInput(input.request);}catch{return Response.json({error:'request_invalid'},{status:400});}
  const config=await configuration();if(!config.settings.enabled||!operationsEnabled(config)||config.policy.capabilities.networkBuild!==true)return Response.json({error:'development_tools_disabled'},{status:403});
  const row=(await sql()`SELECT status,progress FROM claus_actions WHERE id=${grant.parent} AND kind='development'`)[0];
- if(!row||row.status!=='pending'||!['command_starting','command_running'].includes(row.progress?.execution?.phase)||Date.parse(row.progress?.execution?.deadline??'')!==grant.expires)return Response.json({error:'development_task_not_active'},{status:403});
+ if(!row||!['pending','uncertain'].includes(row.status)||!['command_starting','command_running'].includes(row.progress?.execution?.phase)||Date.parse(row.progress?.execution?.deadline??'')!==grant.expires)return Response.json({error:'development_task_not_active'},{status:403});
  const id='external:guest:'+createHash('sha256').update(grant.parent+'\0'+input.requestId).digest('hex');
  const projectId=row.progress?.project?.id;
  if(!/^p_[a-f0-9]{32}$/.test(projectId??''))return Response.json({error:'development_project_not_available'},{status:403});

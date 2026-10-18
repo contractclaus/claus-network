@@ -1,3 +1,4 @@
+import {DEVELOPMENT_LIMITS} from '../development-limits.js';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 export type Grant={v:1;parent:string;expires:number};
 const signature=(value:string,key:string)=>createHmac('sha256',key).update(value).digest('base64url');
@@ -10,7 +11,7 @@ export function readDevelopmentGrant(token:string,key:string,now=Date.now()):Gra
  const [body,sig,extra]=token.split('.'),expected=signature(body??'',key);
  if(extra||!sig||sig.length!==expected.length||!timingSafeEqual(Buffer.from(sig),Buffer.from(expected)))throw Error('development_tool_grant_invalid');
  const grant=JSON.parse(Buffer.from(body,'base64url').toString('utf8'));
- if(grant.v!==1||typeof grant.parent!=='string'||!grant.parent.startsWith('development:')||!Number.isSafeInteger(grant.expires)||grant.expires<=now||grant.expires>now+660000)throw Error('development_tool_grant_expired');
+ if(grant.v!==1||typeof grant.parent!=='string'||!grant.parent.startsWith('development:')||!Number.isSafeInteger(grant.expires)||grant.expires<=now||grant.expires>now+(DEVELOPMENT_LIMITS.seconds+60)*1000)throw Error('development_tool_grant_expired');
  return grant;
 }
 export function developmentTools(id:string,deadline:string,env:NodeJS.ProcessEnv=process.env){

@@ -1,3 +1,4 @@
+import {developmentFunding} from './development-funding.mjs';
 import {managedVolumes,volumeInputs} from './volumes.mjs';
 import {managedAssets,assetInputs} from './assets.mjs';
 import {runtimeTuning,tuningInputs} from './runtime-tuning.mjs';
@@ -23,8 +24,9 @@ const envName=value=>{if(typeof value!=='string'||! /^[A-Z][A-Z0-9_]{1,100}$/.te
 const same=(a,b)=>digest(a)===digest(b);
 const website={id:'website',provider:'vercel',providerId:'prj_3EPhg3tuhf5oHU9sw2Butj9eRegy',name:'claus',owner:team,kind:'existing-website',protected:true};
 const grantOperations=['queue_info','queue_jobs','object_get','object_list','object_parts','object_upload','object_commit','object_download','resource','deployments','bindings','settings','bind_secret'];
-const inputKeys={...volumeInputs,...assetInputs,...tuningInputs,...serviceInputs,...procedureInputs,...queueInputs,...endpointInputs,...catalogInputs,...objectInputs,repository_file:['resourceId','path','ref','offset'],repository_tree:['resourceId','commit'],repository_write:['resourceId','path','branch','content','encoding','expectedBlobSha','message'],repository_branch:['resourceId','branch','commit'],deployment_stage:['resourceId','repositoryId','commit','expectedDeploymentId'],deployment_promote:['resourceId','deploymentId','expectedDeploymentId','healthPath'],database_create:['name','purpose'],database_schema:['resourceId'],database_migrate:['resourceId','plan'],status:[],identity:['provider'],resources:['offset'],resource:['resourceId'],secrets:['offset'],bindings:['resourceId'],deployments:['resourceId'],logs:['resourceId','deploymentId'],action:['id'],project_create:['name','purpose'],repository_create:['name','purpose','private'],secret_create:['name','expiresAt'],grant_create:['name','expiresAt','resourceIds','secretIds','operations','workId'],secret_rotate:['secretId','expectedRevision'],secret_revoke:['secretId','expectedRevision'],bind_secret:['resourceId','secretId','version','envName'],settings:['resourceId','settings']};
+const inputKeys={development_fund:['actionId','vcpus','seconds'],...volumeInputs,...assetInputs,...tuningInputs,...serviceInputs,...procedureInputs,...queueInputs,...endpointInputs,...catalogInputs,...objectInputs,repository_file:['resourceId','path','ref','offset'],repository_tree:['resourceId','commit'],repository_write:['resourceId','path','branch','content','encoding','expectedBlobSha','message'],repository_branch:['resourceId','branch','commit'],deployment_stage:['resourceId','repositoryId','commit','expectedDeploymentId'],deployment_promote:['resourceId','deploymentId','expectedDeploymentId','healthPath'],database_create:['name','purpose'],database_schema:['resourceId'],database_migrate:['resourceId','plan'],status:[],identity:['provider'],resources:['offset'],resource:['resourceId'],secrets:['offset'],bindings:['resourceId'],deployments:['resourceId'],logs:['resourceId','deploymentId'],action:['id'],project_create:['name','purpose'],repository_create:['name','purpose','private'],secret_create:['name','expiresAt'],grant_create:['name','expiresAt','resourceIds','secretIds','operations','workId'],secret_rotate:['secretId','expectedRevision'],secret_revoke:['secretId','expectedRevision'],bind_secret:['resourceId','secretId','version','envName'],settings:['resourceId','settings']};
 export function createResourceService({objects=null,repository=null,publishing=null,budget=resourceBudget(),database=resourceDatabase(),store=resourceStore(),providers=resourceProviders(),seal=sealSecret,open=openSecret,now=Date.now,environment=process.env,workStatus=async()=>null}={}){
+ const developmentFund=developmentFunding({store,budget,now});
  const volumes=managedVolumes({store,budget,workStatus,now});
  const assets=managedAssets({store,workStatus,now});
  const tuning=runtimeTuning({store,workStatus,now});
@@ -65,6 +67,7 @@ export function createResourceService({objects=null,repository=null,publishing=n
   const keys=buildInputs[operation]??inputKeys[operation];
   if(!keys||Object.keys(input).some(k=>!keys.includes(k)))fail('input_invalid');
   const principal=grant?await authorization(grant,operation,input):'owner';
+  if(operation==='development_fund')return developmentFund(input);
   if(volumeInputs[operation])return volumes.call(operation,input,requestId);
   if(assetInputs[operation])return assets.call(operation,input,requestId);
   if(tuningInputs[operation])return tuning.call(operation,input,requestId);
