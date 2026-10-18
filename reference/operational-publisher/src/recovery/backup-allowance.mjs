@@ -24,7 +24,13 @@ export function installBackupAllowance(app){
   try{
    if(!(await publisherRepository().settings()).enabled)return c.json({error:'backup_disabled'},403);
    const raw=await c.req.text();if(raw.length>128)return c.json({error:'backup_input_invalid'},400);
-   const v=JSON.parse(raw);if(!v||Object.keys(v).join()!=='slot')return c.json({error:'backup_input_invalid'},400);
+   const v=JSON.parse(raw);
+   if(v&&Object.keys(v).join()==='requestId'&&/^bkp_[a-f0-9]{24}$/.test(v.requestId)){
+    const allowance=await resourceStore().get('backup-allowance',v.requestId);
+    if(allowance?.version!==3||allowance.id!==v.requestId||allowance.attempts!==1||allowance.maximum!==400000||!(Date.parse(allowance.expiresAt)>Date.now()))return c.json({error:'backup_allowance_unavailable'},409);
+    return c.json({allowance,signature:createHmac('sha256',process.env.RECOVERY_BACKUP_SECRET).update(JSON.stringify(allowance)).digest('hex')});
+   }
+   if(!v||Object.keys(v).join()!=='slot')return c.json({error:'backup_input_invalid'},400);
    issue??=backupAllowance({store:resourceStore(),budget:resourceBudget(),secret:()=>process.env.RECOVERY_BACKUP_SECRET});
    return c.json(await issue(v.slot));
   }catch{return c.json({error:'backup_allowance_unavailable'},409);}
