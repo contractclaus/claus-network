@@ -2210,126 +2210,6 @@
       "generated": ""
     },
     {
-      "table_name": "claus_network_work",
-      "column_name": "id",
-      "data_type": "text",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "title",
-      "data_type": "text",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "goal",
-      "data_type": "text",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "next_step",
-      "data_type": "text",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "priority",
-      "data_type": "integer",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "status",
-      "data_type": "text",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "revision",
-      "data_type": "integer",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "next_at",
-      "data_type": "timestamp with time zone",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "blocker",
-      "data_type": "text",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "summary",
-      "data_type": "text",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "evidence",
-      "data_type": "jsonb",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "created_at",
-      "data_type": "timestamp with time zone",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "updated_at",
-      "data_type": "timestamp with time zone",
-      "required": true,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "capabilities_hash",
-      "data_type": "text",
-      "required": false,
-      "identity": "",
-      "generated": ""
-    },
-    {
-      "table_name": "claus_network_work",
-      "column_name": "assumption_note",
-      "data_type": "text",
-      "required": false,
-      "identity": "",
-      "generated": ""
-    },
-    {
       "table_name": "claus_operations_control",
       "column_name": "scope",
       "data_type": "text",
@@ -4150,6 +4030,190 @@
       "column_name": "last_error",
       "data_type": "text",
       "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "title",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "goal",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "next_step",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "priority",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "status",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "next_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "blocker",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "summary",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "evidence",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "capabilities_hash",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "assumption_note",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "parent_id",
+      "data_type": "text",
+      "required": false,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "dependencies",
+      "data_type": "text[]",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work",
+      "column_name": "result_stage",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work_history",
+      "column_name": "work_id",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work_history",
+      "column_name": "revision",
+      "data_type": "integer",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work_history",
+      "column_name": "event",
+      "data_type": "text",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work_history",
+      "column_name": "snapshot",
+      "data_type": "jsonb",
+      "required": true,
+      "identity": "",
+      "generated": ""
+    },
+    {
+      "table_name": "claus_network_work_history",
+      "column_name": "recorded_at",
+      "data_type": "timestamp with time zone",
+      "required": true,
       "identity": "",
       "generated": ""
     }

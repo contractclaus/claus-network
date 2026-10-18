@@ -2,6 +2,7 @@ import {neon} from '@neondatabase/serverless';
 import {hash} from './policy.js';
 export function publisherRepository(sql=neon(process.env.PUBLISHER_SOURCE_DATABASE_URL)){
  return {
+  async workStatus(id){return (await sql`SELECT status FROM claus_network_work WHERE id=${id}`)[0]?.status??null;},
   async surfaceCurrent(){return (await sql`SELECT * FROM claus_surface_control WHERE id`)[0];},
   async surfaceRelease(id){return (await sql`SELECT * FROM claus_surface_releases WHERE id=${id}`)[0];},
   async current(scope){return (await sql`SELECT * FROM claus_operations_control WHERE scope=${scope}`)[0];},
