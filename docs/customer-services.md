@@ -32,7 +32,7 @@ The service does not pool customer balances or debit a wallet automatically. Eac
 
 An approved refund is exactly the original paid amount and always goes to its original payer. `commerce_settlement_authorize` is merchant-only. A separate protected signer independently verifies the original payment, commits one settlement direction and signs a single ERC-3009 authorization. The customer submits the returned claim transaction using its own wallet and then calls `commerce_settlement_confirm` with the original claim hash. Authorization alone is not a transferred refund. Gas fees are not included in the refund. Preserve the nonce and hash after interruption; the same nonce can settle only once.
 
-After seven days, the merchant may release an order's revenue to the fixed Claus operating wallet through the same original-payment settlement path. A refund and revenue release cannot both consume the same payment. No arbitrary recipient, general wallet access or additional token is created.
+After seven days, with no unresolved support case on the order, the merchant may release an order's revenue to the fixed Claus operating wallet through the same original-payment settlement path. A refund and revenue release cannot both consume the same payment. No arbitrary recipient, general wallet access or additional token is created.
 
 ## Operation and current scope
 
