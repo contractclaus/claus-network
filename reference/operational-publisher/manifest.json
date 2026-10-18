@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_DheVPYPkvViaDvvsdh5n3fGcq6Ec",
-  "source": "claus-goal-phase21-20261018",
+  "deployed": "dpl_6LbuX1GifeMYQAugg4c2z9qnvkQc",
+  "source": "claus-goal-phase22-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -65,10 +65,10 @@
     "src/website-admin/assets.mjs": "38cc1ccf23718738f9be1529a91072c5da2de94690b9c6de4f62577171884165",
     "src/website-admin/dns.mjs": "3a4ab5909f8a14069dbd7bec0301d85f598908e5380343bee3cc24de872abdf9",
     "tests/website-dns.test.mjs": "a58256294fd91cc6abc8c3097039db3680c71886e9a849c0dc391bb65abc1744",
-    "src/resources/store.mjs": "8b63c3656b4717235e2bc22cdac54d1851620f46f734440755f842d090a98cb5",
+    "src/resources/store.mjs": "6e7a092f93eabfc36d5207c50febe1de080ce85f3453fcabf410a694285cfbee",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
     "src/resources/providers.mjs": "66dd470979b1180cfc7dd1fab68b27657c5267dc227ceb354a23039bd8546cb5",
-    "src/resources/service.mjs": "29b1533a0da8d65988a567741ea0b1e81c51c466802540fca78dc051d64c8da7",
+    "src/resources/service.mjs": "06dc216ea810a4f8dd935bf25d2989769f99b999d17e2cfb112f33a595eaa88a",
     "src/resources/routes.mjs": "6b7f0ef266cf5138ad5729d9e63fb6c45e5e8521004794af69d9b0fd1790393d",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
@@ -117,7 +117,10 @@
     "src/resources/development-funding.mjs": "2da68d4ebf2fd072f607ded6fbc59737abe3a5f4ed5a7b7c2e0f5b21e8a77eb3",
     "tests/development-funding.test.mjs": "b9d79f76c275160c1477b67906d04750d461425081c15bb94831bc4f3d858d17",
     "src/infrastructure/queue-load.mjs": "f1752c2b7adfa68c24e3ecc111f4336e0fb39374d3180ea6b9d3f70180cdcd1f",
-    "tests/queue-load.test.mjs": "eafe498b7e315b9cb884237c696550547fcd88a375812c09de2ec737c5fbe63e"
+    "tests/queue-load.test.mjs": "eafe498b7e315b9cb884237c696550547fcd88a375812c09de2ec737c5fbe63e",
+    "src/resources/repository-releases.mjs": "b8874eb51511952132fe98af9c9cfff0541562334ff8664dbada8fc2749c443f",
+    "src/resources/project-domains.mjs": "efc91af4ec62039a9f7da9992af930cff4ef5a4eb058126560bff50bb068809d",
+    "tests/resource-release-domains.test.mjs": "f21d2438d8dd953e176e1507ea9537dc5a5cac345d75479b4def2dab9ad55277"
   },
   "referenceSubset": true
 }
