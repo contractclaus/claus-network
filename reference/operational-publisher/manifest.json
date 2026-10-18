@@ -1,5 +1,5 @@
 {
-  "deployed": "dpl_EgqrEfABuVN4mKZCsqLBiYPWAi9X",
+  "deployed": "dpl_3cUn5bug8Dkykc4PwK146TJVKjfz",
   "source": "claus-social-execution-boundary-20261018",
   "files": {
     "package-lock.json": "17a170f69c19150c7a17ca9c89a489c5dc769645082c98a4cc199b298bd70662",
@@ -40,11 +40,11 @@
     "src/search/repository.js": "2ed3188ed5a74db0f0999b089fa220cedc3d99c3bd8df7527d888bd1e030fbed",
     "src/search/routes.js": "0563bfb04479ba743a7ab8506377650f86a19f53508c167b9b0569a74677d620",
     "src/search/service.js": "8f3016ce4ec353c80a0b2dd7069b34b2c60064e079174e0475e32247dbd86118",
-    "src/social/policy.js": "8d6c768b1c0a21f009f255e57ec4e5eba10f007199e4d323e8c185bef8d5046b",
+    "src/social/policy.js": "14a29a18e50609260a24908c22fa3c164252bf0004e47bf1be342d6ac904f624",
     "src/social/provider.js": "e9d066afcf5806217a2156af1ab61e4c74261e7672ac73fa707df2101966b028",
     "src/social/repository.js": "9dd5c1d3af5abe1b42d8a04c781c1db082d57d2074eb65d47b3b984bdef297fb",
     "src/social/routes.js": "531fe2356cdd44d9c3951030555462a05aa664b56141e8a446826420e94c70e9",
-    "src/social/service.js": "62b619dd6026ffcc022601103f358a3ba666d83bf78f41aced5891a6a979e6f8",
+    "src/social/service.js": "65830e2598ef4fdab727c5fd6d538251c7a9630575c99fc4f6012e716c17a65a",
     "src/surface-publisher/host.js": "ab1ee1877a0977a7ef6be49ed11dfed5193c75336bd9e07af9516968fff121c8",
     "src/surface-publisher/routes.js": "15fc3c2f73837886b57e56ce5acca41cb11a9a0610aff9c43d5da6bb6b3e95ab",
     "src/surface-publisher/service.js": "362de09ecda7d6861b1813f32db9e7b7870fab4d070cb36ebbf139ddb685dcb8",
