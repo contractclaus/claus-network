@@ -1,3 +1,5 @@
+import {runtimeVolumes} from './runtime-volumes.mjs';
+import {volumeProvider} from '../resources/volume-provider.mjs';
 import {flyBilling} from './fly-billing.mjs';
 import {flyApps} from './fly-target.mjs';
 import {retryTime} from '../resources/providers.mjs';
@@ -34,7 +36,7 @@ export async function providerRequest(request,url,token,{method='GET',body,strea
   const raw=Buffer.concat(parts).toString('utf8');return stream?raw:JSON.parse(raw);
 }
 
-export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
+export function runpodDriver({token,request=fetch,now=()=>Date.now(),volumes=runtimeVolumes({provider:volumeProvider({token,request,now}),now})}){
   const api=(path,options)=>providerRequest(request,'https://api.runpod.io/v2'+path,token(),options);
   function matches(pod,work){
     check(typeof pod?.id==='string'&&/^[a-zA-Z0-9]+$/.test(pod.id)&&pod.name==='claus-'+work.id.slice(-40),'resource_identity_mismatch');
@@ -47,10 +49,10 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
     const stopped=terminated||pod.status==='EXITED'||pod.status==='ERROR';
     const endpoint=work.manifest.port&&!terminated?'https://'+pod.id+'-'+work.manifest.port+'.proxy.runpod.net':null;
     const rate=pod.cost===undefined?null:microUsd(pod.cost).toString();
-    return {providerResourceId:pod.id,state:pod.status,ready:running&&!work.manifest.port,terminal:terminated,stopped,endpoint,hourlyMicroUsd:rate,storageRetained:!terminated,costFinal:false};
+    return {providerResourceId:pod.id,state:pod.status,ready:running&&!work.manifest.port,terminal:terminated,stopped,endpoint,hourlyMicroUsd:rate,storageRetained:!terminated||!!work.manifest.networkVolume,costFinal:false};
   }
   async function observe(pod,work){
-    const value=observation(pod,work);
+    await volumes.matches(pod,work);const value=observation(pod,work);
     if(pod.status==='RUNNING'&&work.manifest.port){
       try{const health=await request(value.endpoint+work.manifest.healthPath,{method:'GET',redirect:'error',signal:AbortSignal.timeout(5000)});value.ready=health.ok;await health.body?.cancel();}catch{value.ready=false;}
     }
@@ -97,7 +99,7 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
       return {authenticated:true,capacity:{kind:'cpu',observedAt:now(),cpuType:item.id,minVcpu:item.vcpu?.min??null,maxVcpu:item.vcpu?.max??null,ramGbPerVcpu:item.ramGbPerVcpu??null,availableRegions:item.dataCenters.filter(d=>['LOW','MEDIUM','HIGH'].includes(d.availability)).map(d=>d.id),hourlyMicroUsdPerVcpu:microUsd(item.price.securePerVcpu).toString(),meaning:'Current capacity only; select a permitted available region before preparing the exact runtime release and its independent review.'}};
     },
     async quote(work,config){
-      const m=work.manifest;check(m.storageGiB===0,'persistent_storage_requires_profile');
+      const m=work.manifest;check(m.storageGiB===0||config.networkVolumes===true,'persistent_storage_requires_profile');await volumes.load(work);
       if(m.image.startsWith('ghcr.io/'))check(config.privateImages===true&&/^ghcr\.io\/contractclaus\/claus-[a-z0-9-]+@sha256:[a-f0-9]{64}$/.test(m.image)&&!!process.env.RESOURCE_RUNPOD_REGISTRY_ID,'private_registry_access_missing');
       const gpu=m.gpu!==null,count=gpu?(m.gpuCount??1):0;
       check(Number.isInteger(count)&&count>=(gpu?1:0)&&count<=(gpu?(config.maxGpuCount??1):0),'gpu_count_not_allowed');
@@ -119,14 +121,14 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
       return {hourlyMicroUsd:hourly.toString(),providerHourlyMicroUsd:base.toString(),bootDiskGiB:config.bootDiskGiB,cpuType:gpu?null:config.cpuType,gpuCount:count,...(gpu?{vramGiBPerGpu:item.memory??null}:{}),priceObservedAt:now()};
     },
     async create(work,quote,_config,environment={}){
-      const m=work.manifest;
-      const pod=await api('/pods',{method:'POST',body:{name:'claus-'+work.id.slice(-40),image:m.image,...(Object.keys(environment).length?{env:environment}:{}),...(m.image.startsWith('ghcr.io/contractclaus/')?{registry:process.env.RESOURCE_RUNPOD_REGISTRY_ID}:{}),cloud:'SECURE',dataCenterIds:[m.region],disk:quote.bootDiskGiB,ports:m.port?[m.port+'/http']:[],entrypoint:m.command.length?m.command:undefined,startSsh:false,startJupyter:false,...(m.gpu?{globalNetworking:false}:{}),...(m.gpu?{gpu:{id:m.gpu,count:m.gpuCount??1,minVcpuCountPerGpu:Math.ceil(m.cpu/(m.gpuCount??1)),minRamPerGpu:Math.ceil(m.memoryMiB/1024/(m.gpuCount??1))}}:{cpu:{id:quote.cpuType,vcpuCount:m.cpu}})}});
+      const m=work.manifest,mount=await volumes.load(work);
+      const pod=await api('/pods',{method:'POST',body:{name:'claus-'+work.id.slice(-40),image:m.image,...(Object.keys(environment).length?{env:environment}:{}),...(m.image.startsWith('ghcr.io/contractclaus/')?{registry:process.env.RESOURCE_RUNPOD_REGISTRY_ID}:{}),cloud:'SECURE',dataCenterIds:[m.region],...(mount?{mounts:{network:[mount]}}:{}),disk:quote.bootDiskGiB,ports:m.port?[m.port+'/http']:[],entrypoint:m.command.length?m.command:undefined,startSsh:false,startJupyter:false,...(m.gpu?{globalNetworking:false}:{}),...(m.gpu?{gpu:{id:m.gpu,count:m.gpuCount??1,minVcpuCountPerGpu:Math.ceil(m.cpu/(m.gpuCount??1)),minRamPerGpu:Math.ceil(m.memoryMiB/1024/(m.gpuCount??1))}}:{cpu:{id:quote.cpuType,vcpuCount:m.cpu}})}});
       return observe(pod,work);
     },
     async inspect(work,checkpoint){
       if(checkpoint.providerResourceId){
         try{return observe(await api('/pods/'+encodeURIComponent(checkpoint.providerResourceId)),work);}
-        catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return {providerResourceId:checkpoint.providerResourceId,state:'TERMINATED',terminal:true,stopped:true,ready:false,storageRetained:false,costFinal:false};throw e;}
+        catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return {providerResourceId:checkpoint.providerResourceId,state:'TERMINATED',terminal:true,stopped:true,ready:false,storageRetained:!!work.manifest.networkVolume,costFinal:false};throw e;}
       }
       // Search every page, persisting the cursor. An empty page is never proof
       // that an uncertain create did not happen.
@@ -140,19 +142,19 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
       check(checkpoint.providerResourceId,'resource_not_identified');
       // Bind the live resource before every destructive operation.
       const path='/pods/'+encodeURIComponent(checkpoint.providerResourceId);
-      try{matches(await api(path),work);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return this.inspect(work,checkpoint);throw e;}
-      if(remove){await api(path,{method:'DELETE'});return {providerResourceId:checkpoint.providerResourceId,state:'TERMINATED',ready:false,terminal:true,stopped:true,storageRetained:false,deletionConfirmed:true,costFinal:false};}
+      try{const pod=await api(path);matches(pod,work);await volumes.matches(pod,work);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return this.inspect(work,checkpoint);throw e;}
+      if(remove){await api(path,{method:'DELETE'});return {providerResourceId:checkpoint.providerResourceId,state:'TERMINATED',ready:false,terminal:true,stopped:true,storageRetained:!!work.manifest.networkVolume,deletionConfirmed:true,costFinal:false};}
       const pod=await api(path+'/action',{method:'POST',body:{action:'stop'}});return observe(pod,work);
     },
     async resume(work,checkpoint){
       check(checkpoint.providerResourceId,'resource_not_identified');
       const path='/pods/'+encodeURIComponent(checkpoint.providerResourceId);
-      matches(await api(path),work);
+      const pod=await api(path);matches(pod,work);await volumes.matches(pod,work);
       return observe(await api(path+'/action',{method:'POST',body:{action:'start'}}),work);
     },
     async logs(work,checkpoint){
       check(checkpoint.providerResourceId,'resource_not_identified');
-      matches(await api('/pods/'+encodeURIComponent(checkpoint.providerResourceId)),work);
+      const pod=await api('/pods/'+encodeURIComponent(checkpoint.providerResourceId));matches(pod,work);await volumes.matches(pod,work);
       return api('/pods/'+encodeURIComponent(checkpoint.providerResourceId)+'/logs',{stream:true});
     },
     async cost(work,checkpoint){

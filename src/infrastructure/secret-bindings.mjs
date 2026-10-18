@@ -1,3 +1,4 @@
+import {validateNetworkVolume} from './volume-bindings.mjs';
 import {requireThat} from '../shared/index.mjs';
 import {CLAUS_IDENTITY} from '../partner-launch/policy.mjs';
 export function validateSecretBindings(bindings=[]){
@@ -10,5 +11,6 @@ export function validateSecretBindings(bindings=[]){
  return bindings;
 }
 export function requireSecretBindingOwner(manifest,owner){
+ if(validateNetworkVolume(manifest))requireThat(owner?.chainId===1&&owner.address?.toLowerCase()===CLAUS_IDENTITY,'runtime_image_volume_owner_required');
  if(validateSecretBindings(manifest.secretBindings).length)requireThat(owner?.chainId===1&&owner.address?.toLowerCase()===CLAUS_IDENTITY,'runtime_image_secret_owner_required');
 }

@@ -590,7 +590,7 @@ export const networkRoutes:Record<string,any>={
             "maxStorageGiB": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 2000
+              "maximum": 4096
             },
             "gpuTypes": {
               "type": "array",
@@ -888,7 +888,7 @@ export const networkRoutes:Record<string,any>={
             "storageGiB": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 2000
+              "maximum": 4096
             },
             "gpuCount": {
               "type": "integer",
@@ -899,6 +899,26 @@ export const networkRoutes:Record<string,any>={
               "type": "integer",
               "minimum": 0,
               "maximum": 1024
+            },
+            "networkVolume": {
+              "type": "object",
+              "properties": {
+                "resourceId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 28
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "resourceId",
+                "path"
+              ],
+              "additionalProperties": false
             },
             "secretBindings": {
               "type": "array",
@@ -1642,7 +1662,7 @@ export const networkRoutes:Record<string,any>={
             "storageGiB": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 2000
+              "maximum": 4096
             },
             "releaseHash": {
               "type": "string",
@@ -1658,6 +1678,26 @@ export const networkRoutes:Record<string,any>={
               "type": "integer",
               "minimum": 0,
               "maximum": 1024
+            },
+            "networkVolume": {
+              "type": "object",
+              "properties": {
+                "resourceId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 28
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "resourceId",
+                "path"
+              ],
+              "additionalProperties": false
             },
             "secretBindings": {
               "type": "array",
@@ -2024,7 +2064,7 @@ export const networkRoutes:Record<string,any>={
             "maxStorageGiB": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 2000
+              "maximum": 4096
             },
             "gpuTypes": {
               "type": "array",
@@ -11453,7 +11493,7 @@ export const networkRoutes:Record<string,any>={
             "storageGiB": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 2000
+              "maximum": 4096
             },
             "gpuCount": {
               "type": "integer",
@@ -11464,6 +11504,26 @@ export const networkRoutes:Record<string,any>={
               "type": "integer",
               "minimum": 0,
               "maximum": 1024
+            },
+            "networkVolume": {
+              "type": "object",
+              "properties": {
+                "resourceId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 28
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "resourceId",
+                "path"
+              ],
+              "additionalProperties": false
             },
             "secretBindings": {
               "type": "array",

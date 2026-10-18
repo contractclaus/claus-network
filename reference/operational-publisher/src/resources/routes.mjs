@@ -5,7 +5,7 @@ let service;
 const current=()=>service??=createResourceService({workStatus:id=>publisherRepository().workStatus(id)});
 export async function processResourceQueues(){
  if(process.env.SERVICE_ROLE!=='operator'||process.env.PUBLISHER_ENABLED!=='true'||!(await publisherRepository().settings()).enabled)return {state:'disabled'};
- return current().tickQueues();
+ const queues=await current().tickQueues();const volumes=await current().tickVolumes().catch(()=>({state:'unavailable'}));return {...queues,volumes};
 }
 export function installResources(app){
  app.post('/api/resource-events/:resourceId',async c=>{
