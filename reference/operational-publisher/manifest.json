@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_7eskXPyDdEnZWgza82sLWJDGQwsk",
-  "source": "claus-goal-phase57-20261018",
+  "deployed": "dpl_5xUzDnSexJEZFDowVqP2vxPt6ggV",
+  "source": "claus-goal-phase58-20261018",
   "files": {
     "package-lock.json": "17a170f69c19150c7a17ca9c89a489c5dc769645082c98a4cc199b298bd70662",
     "package.json": "c9dba632aa7e64fdc8fe6c12a481833d5cede7df6563d8e30e19147e3a8f69bb",
@@ -16,7 +16,7 @@
     "src/index.js": "6b252170517b51ac3e2c821346d29b46e649a58813933c68e7ce46660e99ccd1",
     "src/infrastructure/broker.mjs": "3dd74c7183844415cffe46a420d56bac9050b52efeb6241d60e473b92baff782",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
-    "src/infrastructure/providers.mjs": "d8b3a5d02bddfbe4be543300c77545522d0837f2e6f843589f506a49f0f601cb",
+    "src/infrastructure/providers.mjs": "83c9ebebf321c3e7ed592301e1398c7d936406d7774a5b298039ee357ab107bf",
     "src/infrastructure/release.mjs": "771146626303ef174cfd3ce02090b4aed3c8e77bc3bac27d97ab82e9a625e399",
     "src/infrastructure/routes.mjs": "9bae193265355252d248af7ba6cf7ab44c0e2722197d0cda2cdc70a34498582a",
     "src/jobs-wallet/network.js": "3f2f96d7e37226694942a80a2f1918ae7690582fab8195b9b11ac7c3223671e3",

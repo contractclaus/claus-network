@@ -113,12 +113,15 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now(),volumes=run
         check(count<=(item.maxCount?.secure??1),'gpu_count_unavailable');
         if(m.minimumVramGiB)check(Number.isFinite(item.memory)&&item.memory>=m.minimumVramGiB,'gpu_vram_unavailable');
       }
+      // CPU container-disk ceilings are per vCPU, unlike the shared GPU default.
+      // https://docs.runpod.io/flash/configuration/storage
+      if(!gpu)check(['cpu3c','cpu3g','cpu5c'].includes(item.id),'cpu_disk_limit_unknown');
       const base=microUsd(gpu?item.price?.secure*count:item.price?.securePerVcpu*m.cpu);
       check(base>0n,'price_invalid');
       // The protected configuration reserves boot disk and shutdown headroom.
       const hourly=base+BigInt(config.diskHourlyMicroUsd);
       check(hourly<=BigInt(config.maxHourlyMicroUsd),'price_over_limit');
-      return {hourlyMicroUsd:hourly.toString(),providerHourlyMicroUsd:base.toString(),bootDiskGiB:config.bootDiskGiB,cpuType:gpu?null:config.cpuType,gpuCount:count,...(gpu?{vramGiBPerGpu:item.memory??null}:{}),priceObservedAt:now()};
+      return {hourlyMicroUsd:hourly.toString(),providerHourlyMicroUsd:base.toString(),bootDiskGiB:gpu?config.bootDiskGiB:Math.min(config.bootDiskGiB,m.cpu*({cpu3c:10,cpu3g:10,cpu5c:15}[item.id]??0)),cpuType:gpu?null:config.cpuType,gpuCount:count,...(gpu?{vramGiBPerGpu:item.memory??null}:{}),priceObservedAt:now()};
     },
     async create(work,quote,_config,environment={}){
       const m=work.manifest,mount=await volumes.load(work);
