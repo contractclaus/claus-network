@@ -20,6 +20,7 @@ export function resourceProviders({request=fetch,env=process.env}={}){
  function project(v){if(v.accountId!==team)throw Error('resource_owner_mismatch');return {provider:'vercel',providerId:v.id,name:v.name,owner:team,url:v.targets?.production?.url?'https://'+v.targets.production.url:null,deployment:v.targets?.production?.id??null};}
  function repository(v){if(v.owner?.login!==owner)throw Error('resource_owner_mismatch');return {provider:'github',providerId:String(v.id),name:v.name,owner,url:v.html_url,private:v.private,defaultBranch:v.default_branch};}
  return {
+  call,
   configured:()=>({database:!!env.RESOURCE_DATABASE_URL,vercel:!!(env.RESOURCE_VERCEL_TOKEN||env.OPERATIONS_WEB_TOKEN),vercelProjectCreation:!!env.RESOURCE_VERCEL_TOKEN,github:!!env.CLAUS_GITHUB_TOKEN,cloudflareDns:!!env.WEBSITE_CLOUDFLARE_TOKEN,runpod:!!env.CLAUS_RUNPOD_API_KEY,vault:/^[a-f0-9]{64}$/.test(env.RESOURCE_VAULT_KEY??'')}),
   async identity(provider){
    if(provider==='github'){const v=await github('/user');if(v.login!==owner)throw Error('resource_owner_mismatch');return {provider,owner:v.login,id:v.id};}

@@ -1,3 +1,4 @@
+import {operatingBudget} from './operating-budget.js';
 import {createExternalServices} from './external-services.js';
 import {installCapitalRoutes} from './capital/routes.mjs';
 import {capitalSnapshot,refreshCapitalCash} from './capital/budget.js';
@@ -99,6 +100,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   app.use('/api/*',async(c,next)=>{
     const path=c.req.path;
     let decodedPath='';try {decodedPath=decodeURIComponent(path);}catch { /* Refused below. */ }
+    const operating=c.req.method==='POST'&&path==='/api/operating-budget';
     const externalService=['GET','POST'].includes(c.req.method)&&path==='/api/external-services';
     const payment=c.req.method==='POST'&&['/api/completion','/api/images'].includes(path);
     const setup=c.req.method==='POST'&&path==='/api/setup';
@@ -111,8 +113,8 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     const reviewReceipt=['GET','POST'].includes(c.req.method)&&/^\/api\/review-evidence\/[a-zA-Z0-9:_-]{1,160}$/.test(decodedPath);
     const computeId=payment?c.req.header('idempotency-key'):(status?decodedPath.slice('/api/requests/'.length):(admission?decodedPath.slice('/api/admission/'.length):computeReceipt?decodedPath.slice('/api/compute/'.length):''));
     const compute=/^network-compute:[a-f0-9]{64}$/.test(computeId??'');
-    if(!externalService&&!payment&&!setup&&!recovery&&!status&&!budget&&!admission&&!computeReceipt&&!reviewReceipt&&!resource)return c.json({error:'payment_route_disabled'},403);
-    if(!authorized(c.req.header('authorization'),reviewReceipt?env.PUBLISHER_REVIEW_SECRET:compute?env.NETWORK_COMPUTE_SECRET:setup||recovery||budget?env.OPERATOR_SECRET:env.INFERENCE_SECRET))return c.json({error:'unauthorized'},401);
+    if(!operating&&!externalService&&!payment&&!setup&&!recovery&&!status&&!budget&&!admission&&!computeReceipt&&!reviewReceipt&&!resource)return c.json({error:'payment_route_disabled'},403);
+    if(!authorized(c.req.header('authorization'),(operating||reviewReceipt)?env.PUBLISHER_REVIEW_SECRET:compute?env.NETWORK_COMPUTE_SECRET:setup||recovery||budget?env.OPERATOR_SECRET:env.INFERENCE_SECRET))return c.json({error:'unauthorized'},401);
     if(compute&&payment){
       if(path!=='/api/completion'||env.NETWORK_COMPUTE_ENABLED!=='true')return c.json({error:'compute_disabled',payment:'not_signed'},403);
       const b=await c.req.json().catch(()=>null);
@@ -127,10 +129,11 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     if(Number(c.req.header('content-length')??0)>(path==='/api/completion'||reviewReceipt?4200000:10000))return c.json({error:'request_too_large'},413);
     return await next();
   });
+  app.post('/api/operating-budget',async c=>{try{return c.json(await operatingBudget(sql(),await c.req.json()));}catch(error){return c.json({error:/^operating_budget_[a-z_]+$/.test(error?.message??'')?error.message:'operating_budget_unavailable'},409);}});
   app.get('/api/external-services',async c=>c.json(externalServices().catalog()));
   app.post('/api/external-services',async c=>{try{const input=await c.req.json();if(!input||!['quote','call','status'].includes(input.operation))return c.json({error:'external_service_operation_invalid'},400);const service=externalServices();return c.json(input.operation==='status'?await service.status(input.id):input.operation==='quote'?await service.quote(input.input):await service.call(input.id,input.input));}catch(error){return c.json({error:/^external_service_[a-z_]+$/.test(error?.message??'')?error.message:'external_service_unavailable'},409);}});
   app.post('/api/setup',async c=>{await setupBudget(sql());return c.json({ready:true,payer,budget:await budgetSnapshot(sql())});});
-  app.get('/api/resources',async c=>{c.header('Cache-Control','no-store');const value=await resources();await refreshCapitalCash(sql());const capital=await capitalSnapshot(sql());if(capital){value.capital=capital;if(capital.state==='active'){value.budget.remainingMicroUsdc=capital.availableMicroUsdc;value.budget.limitMicroUsdc=String(BigInt(value.budget.committedMicroUsdc)+BigInt(capital.availableMicroUsdc));value.capacity={...value.capacity,state:BigInt(capital.availableMicroUsdc)===0n?'exhausted':BigInt(capital.availableMicroUsdc)<2000000n?'limited':'available',remainingAuthorizationMicroUsdc:capital.availableMicroUsdc,nativeTwoUsdcReservations:String(BigInt(capital.availableMicroUsdc)/2000000n),payerThreeUsdcReservations:String(BigInt(capital.availableMicroUsdc)/3000000n),nextAction:BigInt(capital.availableMicroUsdc)<2000000n?'wait_for_operating_capacity_or_use_smaller_authorized_request':'continue_within_rolling_capital_envelope'};}}return c.json(value);});
+  app.get('/api/resources',async c=>{c.header('Cache-Control','no-store');const value=await resources();await refreshCapitalCash(sql());const capital=await capitalSnapshot(sql());if(capital){value.capital=capital;if(capital.state==='active'){value.budget.remainingMicroUsdc=capital.availableMicroUsdc;value.budget.limitMicroUsdc=String(BigInt(value.budget.committedMicroUsdc)+BigInt(capital.availableMicroUsdc));if(BigInt(capital.availableMicroUsdc)>0n&&value.funding?.reason==='operating_budget_exhausted')value.funding={...value.funding,reason:null,nextAction:'continue_within_rolling_capital_envelope'};value.capacity={...value.capacity,state:BigInt(capital.availableMicroUsdc)===0n?'exhausted':BigInt(capital.availableMicroUsdc)<2000000n?'limited':'available',remainingAuthorizationMicroUsdc:capital.availableMicroUsdc,nativeTwoUsdcReservations:String(BigInt(capital.availableMicroUsdc)/2000000n),payerThreeUsdcReservations:String(BigInt(capital.availableMicroUsdc)/3000000n),nextAction:BigInt(capital.availableMicroUsdc)<2000000n?'wait_for_operating_capacity_or_use_smaller_authorized_request':'continue_within_rolling_capital_envelope'};}}return c.json(value);});
   app.get('/api/budget',async c=>c.json({...await budgetSnapshot(sql()),...(creditLedgerEnabled()?{prepaid:await creditSnapshot(sql())}:{})}));
   app.get('/api/review-evidence/:id',async c=>{
     c.header('Cache-Control','no-store');

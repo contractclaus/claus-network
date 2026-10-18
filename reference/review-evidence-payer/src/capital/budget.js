@@ -12,5 +12,5 @@ export async function refreshCapitalCash(db,readCash=readPayerCash){
 }
 export async function capitalSnapshot(db){
  const [row]=await db`SELECT policy_hash,state,daily_micro::text,monthly_micro::text,reserve_micro::text,investment_micro::text,cash_micro::text,cash_started_at::text,claus_capital_available(false)::text AS available FROM claus_capital_control WHERE id=true`;
- return row?{policyHash:row.policy_hash,state:row.state,duration:'until_owner_revocation',dailyMaximumMicroUsdc:row.daily_micro,rolling30DayMaximumMicroUsdc:row.monthly_micro,cashReserveMicroUsdc:row.reserve_micro,investmentAllocationMicroUsdc:row.investment_micro,cashMicroUsdc:row.cash_micro,cashObservedAt:row.cash_started_at,availableMicroUsdc:row.available}:null;
+ return row?{policyHash:row.policy_hash,state:row.state,duration:'until_owner_revocation',includes:['model_usage','paid_external_apis','maximum_authorized_server_leases'],serverAccounting:'Maximum lease cost counts on confirmed authorization; unknown reservations remain held. This is a spending authorization, not a provider bill.',dailyMaximumMicroUsdc:row.daily_micro,rolling30DayMaximumMicroUsdc:row.monthly_micro,cashReserveMicroUsdc:row.reserve_micro,investmentAllocationMicroUsdc:row.investment_micro,cashMicroUsdc:row.cash_micro,cashObservedAt:row.cash_started_at,availableMicroUsdc:row.available}:null;
 }

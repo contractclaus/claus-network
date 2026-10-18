@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_HdyL2pYJqge3YQUow4H9QpsNWK5v",
-  "source": "claus-goal-phase2-20261018",
+  "deployed": "dpl_7yhn2VfRW7iEFAz2ZiQxU8am113S",
+  "source": "claus-goal-phase3-20261018",
   "files": {
     "package-lock.json": "8b85b62eaf870cb97ab842b42f321ec7f12be1696ca86d80fc68c4f35de68eff",
     "package.json": "b43eac6342727358a28af7d38a781577e63397bd39c3d263182e42b86c86e9f7",
@@ -67,12 +67,16 @@
     "tests/website-dns.test.mjs": "a58256294fd91cc6abc8c3097039db3680c71886e9a849c0dc391bb65abc1744",
     "src/resources/store.mjs": "4cf26c0f690068df00723742067b6728f0d916f786600ae9ebf5c7b26a820172",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
-    "src/resources/providers.mjs": "8874e1ddb2b0bc27f5d18556581d68791236b7d9ebb33f0ebdd173ed22ea5e42",
-    "src/resources/service.mjs": "6e2c768d8a0d49cea789da5606adc3257d970399bf49062bcda48b23b35f9dcd",
-    "src/resources/routes.mjs": "3b8b61ad48c62037986ed8bbc3b24e831fb81183843da3f7d2c7b6f16a78be93",
+    "src/resources/providers.mjs": "3ba6b362acd85d19fdeba3dea6d214a4a2a7c793acaa87d48acb0a79f84983f2",
+    "src/resources/service.mjs": "eb82f543cb68557c46bae6704b2bc8441aa8fa0dffd17f879715e01f08642f46",
+    "src/resources/routes.mjs": "c11543604e08564a766f388c5af477fa92b1d5edda0a7c9b672e63c4b9696859",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
-    "src/resources/database.mjs": "38260233cd8bee70212f5b865478d6e06c1bd1231255d0b33423ed3456e3610b"
+    "src/resources/database.mjs": "38260233cd8bee70212f5b865478d6e06c1bd1231255d0b33423ed3456e3610b",
+    "src/resources/repository.mjs": "4393c98e29e2be709424b58a8f771e37f807110a042fd5046498c9a16cd5d61b",
+    "src/resources/publishing.mjs": "0108ef391458fa080bc762b6a85ad52756c8e603ac416aab19737d2e788a78bd",
+    "src/resources/budget.mjs": "5ac867843bd69e6966416a2bc2716083ddefdae54569a1730d7103fba2cd7656",
+    "tests/resource-publication.test.mjs": "aa2dd0353cca3d12a54b03d0ab955fe115a1377356377ad540acdd30cbb8814e"
   },
   "referenceSubset": true
 }

@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_8t2McCuDrBtstP2APgHRoski64bd",
-  "source": "claus-autonomy-access-payer-r2-20261017",
+  "deployed": "dpl_8QNLYuLvaRmZ9SkhV84HeZD83Xz5",
+  "source": "claus-goal-phase3-20261018",
   "files": {
-    "src/index.js": "2c6cc8f5898e00a6f7e8889140aa8716d3054174b77b7fc29df20a6ecf87908c",
+    "src/index.js": "32a2838f09866ada9a871e93b7f797ba1b29c78dab0b9bbc5080af50be88e2d4",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
     "src/credit-work-store.js": "274409e275e0f493f4f6ffc0178573048990391c9a602891936355f3d797cfe7",
     "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
@@ -11,7 +11,7 @@
     "src/credit-store.js": "3df03030341dd83d07234c411b381af4234bfbe2229620d8457c27392611351a",
     "src/credit-work-admission.js": "a52b2dae3dbc4c42a7012e9ab10022dffd1ddd31c6a860ca7ca0b360c742d931",
     "src/compute-conversation.js": "04e8bf6d3ef4a0fbbd673a8c66d20a804877e0eea2d5631a1a10c05092421554",
-    "src/capital/budget.js": "e6b3006eaf516f32266dc2fdb3b740783480e41e58cd423e3440932a09d388bc",
+    "src/capital/budget.js": "3f58440819ffe74a7be8b2e23db6f1556653f3bd1cf01f2be0c01f17104c3aaa",
     "src/compute-funding-legacy/cycle.mjs": "7e1ca25a472e0ed7fa1c1a18b54f70293f484584b98b44e207aa20ad93d77025",
     "src/compute-funding-legacy/executor.mjs": "20f5a97abf8cfe1eadd800e8ea6db8ef44d892f658373daef17d187c3e6c7031",
     "src/compute-funding-legacy/policy.mjs": "008a8328a827e69c4340fa83a2ad04dad6f3be259b6b21880544e494f8331b19",
@@ -37,7 +37,8 @@
     "src/capital/store.mjs": "0b43fd729641235801d227af51bf4da014b9a20d445e114c213574448d2a5879",
     "vendor/src/outcomes.js": "eeab785b68adbcd9d4d2fe051a62b3c343c9cd334792c6da3558f851e75bf8c8",
     "vendor-manifest.json": "1b1078957e0fb3dac74cfb9ded458c1c8950590e4a68e39eb4c7ba5ea30fe4e6",
-    "src/external-services.js": "0da7b7f482e3f611ddd5e05a122aac146b0cc095c5fd6704aba89f5861695069"
+    "src/external-services.js": "0da7b7f482e3f611ddd5e05a122aac146b0cc095c5fd6704aba89f5861695069",
+    "src/operating-budget.js": "fd9b3311de711a8b42855fa33708f507b57e295e0231acbcff29af71de8a4543"
   },
   "referenceSubset": true
 }
