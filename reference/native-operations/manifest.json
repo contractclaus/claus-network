@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase10-20261018",
+  "source": "claus-goal-phase11-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -23,7 +23,7 @@
     "src/operation-result.ts": "3f21601d8a920f26170d234391f05c018c210d047acd4d607922881e6aa204aa",
     "src/runtime-access.ts": "ab6af7e009dedcb8f5b98c16f6dc54c30f06a5c95d00b3d082a6712fdccae410",
     "src/tool-visibility.ts": "5d3cc2dbcaf8f21eb28d8bb3e71bfb5fd03045a2a082c61c536f76ec09c98474",
-    "src/tools.ts": "6c4227a39a1a7cf46bc98d82a6bc462013299bdcdaf6f10c8bd9867767dccdcc",
+    "src/tools.ts": "127f5b6a38fc71c476ee4ed3304541f2761c5a3255b3043a9a6b6f1f455af061",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "3460b1ad2c54373afb5d57db3ea999ff115ef5101ad7839699d3dc95b73b545c",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
@@ -98,9 +98,9 @@
     "package.json": "966f78b5c789d7f7ef8837a89b27ef8a945dd11309d384a9a889889e34f7641c",
     "src/external/development-bridge.ts": "3d68f95e159d7f2e4bb68f643b02bf1d19d8e583c3a24146d7fe69c9030b6c5e",
     "src/external/development-grant.ts": "2bfe6f06d4a960d24b7bc59f7b84e02102481f01162a93add710390f777cb43f",
-    "src/external/providers.ts": "1cbc518d380585e84897478e04de7e1885e5fba269c82c31eb0a96f3defef174",
-    "src/external/service.ts": "84817f42d99f22c7ef490ab4bcf9251d22df7c78638881ce81114a6196af6b69",
-    "src/index.ts": "df776f167c533e25cb9c76995931ebefa9b5400d5272289394f177a8c912984d",
+    "src/external/providers.ts": "384ad74c7d2838d6b88750f02f7e52eeb5c67bb82a93717ceeef1702d87bef95",
+    "src/external/service.ts": "dbf9d15c11c5ba3e4d3632f4919fac05501d757f7ca363d2634a41c90cc609e6",
+    "src/index.ts": "29995cb68e4d613ce775e81b81954aecb7560115bb0d922b5a35550c900cd0bb",
     "src/external/adapters.ts": "9a07a65cd96233659098dfdf83a2833bb8bb6129e6537db41e2d08429b454777",
     "src/external/browser-diagnostics.ts": "8ae656bb85eeb010ffe5d8dfd014f73e56026ef5542416e9490821fbec742f36",
     "src/config.ts": "2a704c099ac6d47c88e86d83dc2b873f94f5068a4810a2836d1f4fc6ec3ba027",
@@ -121,7 +121,7 @@
     "src/application/main.js": "2f4e5b41a4d9dd506d438f499999ccef33e775fe8571f44ab0396f0e0c8ac744",
     "src/application/source.json": "9502a24b0a70969e976d192f5c3826b0b6d03c8b06fbb2ffa1b150ec1fd43536",
     "src/decision-due.ts": "9af7590a0237b8ab04476bccdaba72c0607a158f87d4e85d6aba2c782657e6b8",
-    "src/external/browser-workflow.ts": "6092ebbada4852a536fb5efdf39507efd43bac5aeae9e9246e18fdf87244d763",
+    "src/external/browser-workflow.ts": "f892e6cfa97a3b3f13984ee5b1571354367762302ab8c48a72db22632ce4775e",
     "src/external/connected-read.ts": "8d9ce70fbd803a6a5fde6512e87a553519d8cfc30606243aae80e448856176ab",
     "src/external/github.ts": "7a4b80556e67b262be7ddd74743d7915fff8d6ef63be37a5092259f34ce58335",
     "src/external/health.ts": "c33f618b5af895307a39bd96c962c124cbd38a697bfd4e8900ebd09f1a72a56b",
@@ -153,8 +153,12 @@
     "src/work-graph.ts": "d7c5654bfee7fdfa8a7b25019fe13d734e1b115af5eb60a62fdf42941f2a84e7",
     "src/operations/resources.ts": "de0dace299768cfa6cd0a2d3f3ea9733c4c37abfb55460d9fa53c670c9c45196",
     "tests/work-graph.test.ts": "c8463ecd78b66b6801eca31c012ea977acba658cd88b554d2f6d6226e6b1e760",
-    "tests/resources-continuation.test.ts": "125f60859cd13d36bf6d74a74dfca72b7f218c6fd13daff5e85995f2148ba69d"
+    "tests/resources-continuation.test.ts": "125f60859cd13d36bf6d74a74dfca72b7f218c6fd13daff5e85995f2148ba69d",
+    "src/external/browser-targets.ts": "f1e651cd7f78ed4f2dfcb0f9860eb9ae419da712c87d35da3b6796f5489617ed",
+    "src/external/browser-access.ts": "eda29c0b2787bd71eb2f01246c92ff290d27f2ec71f5abc360e2771f51cde5b6",
+    "src/external/browser-downloads.ts": "a8e38a47497b0b33b2f5c5d726b29d2f396d0f64a3d251db9bd309535f113b31",
+    "tests/browser-access.test.ts": "1f625452d8e1ef3fc5cc9ce6f32e42abadf2c9c231f07cfd7b59c0935ea6d24f"
   },
   "referenceSubset": true,
-  "deployed": "dpl_dGdz5uiT4jn191kjLe1fzZDTJh5B"
+  "deployed": "dpl_2S8ggfAEpjNh5dp9Nd7DmXRx9rMw"
 }
