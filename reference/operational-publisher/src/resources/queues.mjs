@@ -26,7 +26,7 @@ export function managedQueues({store,endpoints,workStatus,open,now=Date.now}){
  async function saveJob(q,j,changes){const v={...j,...changes,revision:j.revision+1,updatedAt:stamp()};await store.change('job',key(q.id,j.id),j.revision,v);await store.put('job-history',key(q.id,j.id)+':'+v.revision,view(v));return v;}
  async function enqueue(q,input,requestId,seal){
   q=await queue(q.id);const own=await store.get('resource',q.id);if(own?.retirementPlanId||!q.enabled||!activeWork(await workStatus(q.workId)))fail('inactive');
-  const e=await endpoint(q);endpointArguments(e.definition.inputSchema,input.arguments);
+  const schema=q.delivery==='pull'?q.inputSchema:(await endpoint(q)).definition.inputSchema;endpointArguments(schema,input.arguments);
   const raw=JSON.stringify(input.arguments);if(Buffer.byteLength(raw)>1000000)fail('arguments_too_large');
   const dependencies=input.dependsOn??[];if(!Array.isArray(dependencies)||dependencies.length>100||new Set(dependencies).size!==dependencies.length)fail('dependencies_invalid');
   for(const id of dependencies)await job(q,id);
@@ -37,6 +37,7 @@ export function managedQueues({store,endpoints,workStatus,open,now=Date.now}){
   const saved=await store.put('job',key(q.id,id),v);if(saved.value.inputHash!==inputHash)fail('request_conflict');return view(saved.value);
  }
  async function run(q,id,{manual=false}={}){
+  if(q.delivery==='pull')fail('pull_worker_required');
   let j=await job(q,id);if(terminal.has(j.state)||j.state==='blocked'&&!manual)return view(j);
   if(j.leaseUntil>now())return {...view(j),busy:true};
   const originalId='act_'+digest(['owner',j.originalRequestId]).slice(0,24),original=await store.get('endpoint-response',originalId);
@@ -86,7 +87,7 @@ export function managedQueues({store,endpoints,workStatus,open,now=Date.now}){
   if(operation==='queue_cancel'){
    const j=await job(q,input.jobId);if(j.state==='cancelled')return view(j);if(j.revision!==input.expectedRevision)fail('revision_conflict');
    const action=await store.get('action','act_'+digest(['owner',j.originalRequestId]).slice(0,24));
-   if(j.leaseUntil>now()||action?.phase==='dispatched'||terminal.has(j.state))fail('original_response_must_be_reconciled');
+   if(j.worker||j.leaseUntil>now()||action?.phase==='dispatched'||terminal.has(j.state))fail('original_response_must_be_reconciled');
    return view(await saveJob(q,j,{state:'cancelled',reason:'owner_cancelled_before_dispatch'}));
   }
   const requestHash=digest({operation,input});if(q.lastChange===requestHash)return q;
@@ -109,7 +110,7 @@ export function managedQueues({store,endpoints,workStatus,open,now=Date.now}){
  }
  async function tick(){
   const cursor=await store.get('queue-cursor','main'),page=await store.list('queue',cursor?.offset??0),results=[];
-  for(const q of page.items){if(!q.enabled)continue;const jobs=await store.jobs(q.id,runnable,0,true);for(const j of jobs.items){if(results.length>=4)break;try{results.push(await run(q,j.id));}catch(e){results.push({resourceId:q.id,jobId:j.id,state:'inspection_failed',reason:/^resource_[a-z0-9_]+$/.test(e.message)?e.message:'resource_queue_unavailable'});}}if(results.length>=4)break;}
+  for(const q of page.items){if(!q.enabled||q.delivery==='pull')continue;const jobs=await store.jobs(q.id,runnable,0,true);for(const j of jobs.items){if(results.length>=4)break;try{results.push(await run(q,j.id));}catch(e){results.push({resourceId:q.id,jobId:j.id,state:'inspection_failed',reason:/^resource_[a-z0-9_]+$/.test(e.message)?e.message:'resource_queue_unavailable'});}}if(results.length>=4)break;}
   // Rotate by queue even when one has a large backlog. Jobs are ordered by
   // next eligible time, so terminal history cannot starve new requests.
   const advance=results.length>=4?Math.min((cursor?.offset??0)+1,(cursor?.offset??0)+page.items.length):page.nextOffset??0;

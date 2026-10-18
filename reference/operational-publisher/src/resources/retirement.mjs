@@ -18,7 +18,7 @@ export function managedRetirement({store,providers,invoke,now=Date.now}){
  async function inventory(id){
   const r=await resource(id),[queues,services,secrets,bindings,objects,assets,actions]=await Promise.all(['queue','service','secret','binding','object','asset','action'].map(all));
   const relatedQueues=queues.filter(q=>q.id===id||q.endpointId===id),jobs=[];
-  for(const q of relatedQueues){let offset=0;do{const p=await store.jobs(q.id,[],offset);jobs.push(...p.items.map(j=>({resourceId:q.id,id:j.id,state:j.state,revision:j.revision,leaseUntil:j.leaseUntil??0,originalRequestId:j.originalRequestId})));offset=p.nextOffset;}while(offset!==null);}
+  for(const q of relatedQueues){let offset=0;do{const p=await store.jobs(q.id,[],offset);jobs.push(...p.items.map(j=>({resourceId:q.id,id:j.id,state:j.state,revision:j.revision,leaseUntil:j.leaseUntil??0,worker:j.worker??null,originalRequestId:j.originalRequestId})));offset=p.nextOffset;}while(offset!==null);}
   const pending=[];
   for(const a of actions){if(a.operation?.startsWith('retirement_')||a.output||a.phase!=='dispatched'||!resourceReferences([a.input,a.prepared]).includes(id))continue;pending.push({actionId:a.actionId,operation:a.operation,phase:a.phase});}
   return {resource:{id:r.id,provider:r.provider,providerId:r.providerId,name:r.name,kind:r.kind,revision:r.revision,status:r.status??'active'},queues:relatedQueues.map(q=>({id:q.id,revision:q.revision,enabled:q.enabled,workId:q.workId})),jobs,services:services.filter(s=>resourceReferences(s.targets).includes(id)).map(s=>({name:s.name,revision:s.revision,enabled:s.enabled})),grants:secrets.filter(s=>s.kind==='broker-grant'&&s.status==='active'&&s.rules?.resourceIds?.includes(id)).map(s=>({id:s.id,revision:s.revision,resourceIds:s.rules.resourceIds})),bindings:bindings.filter(b=>b.resourceId===id).map(b=>({envName:b.envName,secretId:b.secretId,version:b.version,status:b.status})),objects:objects.filter(o=>o.resourceId===id&&o.state!=='removed').map(o=>({id:o.id,state:o.state,sha256:o.sha256,bytes:o.bytes,expiresAt:o.expiresAt})),assets:assets.filter(a=>a.status==='active'&&a.files.some(f=>f.resourceId===id)).map(a=>({name:a.name,version:a.version,revision:a.revision})),pendingActions:pending,observedAt:stamp(),historyWillBeRetained:true,externalSubscriptionsIncluded:false};
@@ -62,6 +62,7 @@ export function managedRetirement({store,providers,invoke,now=Date.now}){
    const actionId='act_'+digest(['owner',j.originalRequestId]).slice(0,24),a=await store.get('action',actionId),response=await store.get('endpoint-response',actionId);
    if(j.leaseUntil>now()){unresolved.push({queueId:j.resourceId,jobId:j.id,reason:'active_lease'});continue;}
    if(response&&j.state!=='accepted'){await invoke('queue_run',{resourceId:j.resourceId,jobId:j.id},p.id+':reconcile:'+j.id);continue;}
+   if(j.worker){unresolved.push({queueId:j.resourceId,jobId:j.id,reason:'worker_completion_or_stop_unproven'});continue;}
    if(j.state==='accepted'||a?.phase==='dispatched'){unresolved.push({queueId:j.resourceId,jobId:j.id,actionId,reason:j.state==='accepted'?'asynchronous_completion_unproven':'original_response_unknown'});continue;}
    await invoke('queue_cancel',{resourceId:j.resourceId,jobId:j.id,expectedRevision:j.revision},p.id+':cancel:'+j.id);
   }
