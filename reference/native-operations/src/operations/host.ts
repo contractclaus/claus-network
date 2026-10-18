@@ -20,6 +20,8 @@ export class OperationsHost{
  async diagnostics(scope:string){return this.call('diagnostics',scope,[]);}
  async project(scope:string){return this.call('project',scope,[]);}
  async baseline(scope:string,deployment:string,manifest:FileRef[]){return this.call('baseline',scope,[deployment,manifest]);}
+ async asset(id:string){return this.call('asset','web',[id]);}
+ async readAsset(scope:string,deployment:string,file:FileRef){return this.call('readAsset',scope,[deployment,file]);}
  async read(scope:string,deployment:string,file:FileRef){return this.call('read',scope,[deployment,file]);}
  async deployment(scope:string,id:string){return this.call('deployment',scope,[id]);}
  async deploy(scope:string,base:string,manifest:FileRef[],files:any[],id:string,sourceHash:string){return this.call('deploy',scope,[base,manifest,files,id,sourceHash]);}

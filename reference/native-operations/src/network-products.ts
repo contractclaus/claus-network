@@ -19,7 +19,16 @@ export async function observeProducts(network:{call:(name:string,input:any)=>Pro
  await Promise.race([Promise.all(Array.from({length:Math.min(4,tasks.length)},worker)),new Promise<void>(resolve=>{const timer=setTimeout(()=>{pending.delete(timer);closed=true;resolve();},remaining());pending.add(timer);})]);
  closed=true;
  const help=await assistance;
- const snapshot={observedAt:new Date().toISOString(),available:true,items:items.map(item=>({...item,infrastructure:runtimeResourceView(item.resources,item.resourceProfiles)})),nextCursor:page.value.nextCursor,helpRequests:help.available?help.value:null,helpRequestsStatus:help.available?'available':'unavailable',...(!help.available?{helpRequestsFailure:help}:{})};
+ function productMetricsObservation(project:any,metrics:any,publicView:any){
+ const record=(v:any)=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+ if(!record(project)||typeof project.id!=='string'||!project.id||
+    !record(metrics)||metrics.available!==false||metrics.error!=='not_found'||metrics.status!==404||
+    !record(publicView)||publicView.available!==true||!record(publicView.value)||
+    publicView.value.projectId!==project.id||publicView.value.published!==true||
+    !Object.prototype.hasOwnProperty.call(publicView.value,'application')||publicView.value.application!==null)return metrics;
+ return {available:true,value:{state:'not-applicable',applicable:false,reason:'no-managed-app',projectId:project.id,publicApplication:null,sourceObservation:metrics,scope:'Managed-app counters only. No claim about visitors or external service activity.'}};
+}
+ const snapshot={observedAt:new Date().toISOString(),available:true,items:items.map(item=>({...item,metrics:productMetricsObservation(item.project,item.metrics,item.publicView),infrastructure:runtimeResourceView(item.resources,item.resourceProfiles)})),nextCursor:page.value.nextCursor,helpRequests:help.available?help.value:null,helpRequestsStatus:help.available?'available':'unavailable',...(!help.available?{helpRequestsFailure:help}:{})};
  return {...snapshot,analysis:await analyze(snapshot)};
  }finally{closed=true;for(const timer of pending)clearTimeout(timer);}
 }

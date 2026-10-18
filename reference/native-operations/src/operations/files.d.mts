@@ -1,0 +1,13 @@
+export type FileRef={path:string;sha:string;size:number;gitSha?:string};
+export type FileChange={path:string;before:string;after:string;action?:'patch'|'replace'|'delete';encoding?:'base64';expectedSha?:string;assetId?:string};
+export type Asset={id:string;sha:string;sha256?:string;size:number};
+export type AppliedChange={path:string;before:string;content:string;encoding?:'base64';created?:boolean;deleted?:boolean;oldRef?:FileRef;index?:number;asset?:Asset};
+export type Schedule={path:string;schedule:string};
+export function binaryPath(path:string):boolean;
+export function webPath(path:string):boolean;
+export function bytes(value:string,encoding?:'base64'):Buffer;
+export function checkFileChange(scope:string,change:FileChange,allowed:(path:string)=>boolean):void;
+export function applyChange(ref:FileRef|undefined,before:string,change:FileChange,sha:(bytes:Buffer)=>string,index:number,asset?:Asset):AppliedChange;
+export function changedManifest(base:FileRef[],files:AppliedChange[],sha:(bytes:Buffer)=>string):FileRef[];
+export function previousManifest(release:{scope?:string;manifest:FileRef[];files:AppliedChange[]},sha:(bytes:Buffer)=>string,gitBlobSha?:(content:string)=>string):FileRef[];
+export function schedulesFor(release:{files:Pick<AppliedChange,'path'|'content'|'deleted'>[]},current:Schedule[]):Schedule[];

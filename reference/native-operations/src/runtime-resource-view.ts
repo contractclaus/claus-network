@@ -27,7 +27,7 @@ export function runtimeResourceView(resources:any,profiles:any,now=Date.now()){
   const limit=amount(grant?.limit),reserved=amount(grant?.reserved),spent=amount(grant?.spent);
   const remaining=limit!==null&&reserved!==null&&spent!==null?limit-reserved-spent:null;
   const grantExpiry=time(grant?.expiresAt),expiry=time(r.leaseUntil),providerExpiry=time(r.providerLeaseUntil),maintenance=r.maintenance??null,issues:string[]=[];
-  const fundingStatus=grant&&remaining!==null&&grantExpiry!==null&&typeof grant.enabled==='boolean'?'available'
+  const fundingStatus=grant&&remaining!==null&&(grant.expiresAt===null||grantExpiry!==null)&&typeof grant.enabled==='boolean'?'available'
    :!grant&&!duplicates.has(id)&&observedProjects.has(r.projectId)?'unassigned':active(r)?'unavailable':'unknown';
   if(active(r)){
    if(r.renewalPending)issues.push('provider_extension_not_confirmed');
@@ -41,7 +41,7 @@ export function runtimeResourceView(resources:any,profiles:any,now=Date.now()){
    if(grant?.enabled===false)issues.push('allowance_disabled');
    const maintenanceUntil=time(maintenance?.until),ceiling=amount(maintenance?.maxTotalCost),committed=amount(r.cost?.maximum);
    const blocked=maintenance?.last?.state==='blocked';
-   const deadline=maintenance!==null&&(maintenanceUntil===null||maintenanceUntil<=now||expiry!==null&&maintenanceUntil-expiry<60000);
+   const deadline=maintenance!==null&&maintenance.until!==null&&(maintenanceUntil===null||maintenanceUntil<=now||expiry!==null&&maintenanceUntil-expiry<60000);
    const exhausted=ceiling!==null&&committed!==null&&committed>=ceiling;
    if(blocked)issues.push(text(maintenance.last.code)?maintenance.last.code:'maintenance_blocked');
    if(deadline)issues.push('maintenance_deadline_reached');

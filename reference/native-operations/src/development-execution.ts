@@ -5,13 +5,14 @@ import {developmentSandboxFetch} from './sandbox-fetch.js';
 import {developmentOutput} from './development-output.js';
 import {developmentSource,developmentWriter,type DevelopmentSource,type SourceFile} from './development-source.js';
 
-export const DEVELOPMENT_LIMITS=Object.freeze({files:64,sourceBytes:500000,seconds:300,daily:100,active:4});
+import {DEVELOPMENT_LIMITS} from './development-limits.js';
+export {DEVELOPMENT_LIMITS} from './development-limits.js';
 export type DevelopmentInput={projectId?:string;expectedVersion?:number;title?:string;purpose?:string;command:string;files:{path:string;content:string}[];timeoutSeconds?:number;source?:DevelopmentSource};
 export function developmentInput(value:any):DevelopmentInput {
  if(!value||typeof value!=='object'||Object.keys(value).some(k=>!['projectId','expectedVersion','title','purpose','command','files','timeoutSeconds','source'].includes(k)))throw Error('development_input_invalid');
  if(typeof value.command!=='string'||!value.command.trim()||value.command.length>12000||!Array.isArray(value.files)||value.files.length>DEVELOPMENT_LIMITS.files)throw Error('development_input_invalid');
  if(value.projectId!==undefined?(!/^p_[a-f0-9]{32}$/.test(value.projectId)||!Number.isSafeInteger(value.expectedVersion)||value.expectedVersion<1):(value.expectedVersion!==undefined||typeof value.title!=='string'||!value.title.trim()||value.title.length>240||typeof value.purpose!=='string'||!value.purpose.trim()||value.purpose.length>8000))throw Error('development_project_invalid');
- if(value.timeoutSeconds!==undefined&&(!Number.isInteger(value.timeoutSeconds)||value.timeoutSeconds<10||value.timeoutSeconds>DEVELOPMENT_LIMITS.seconds))throw Error('development_timeout_invalid');
+ if(value.timeoutSeconds!==undefined&&(!Number.isInteger(value.timeoutSeconds)||value.timeoutSeconds<DEVELOPMENT_LIMITS.minSeconds||value.timeoutSeconds>DEVELOPMENT_LIMITS.seconds))throw Error('development_timeout_invalid');
  if(value.source!==undefined)developmentSource(value.source);
  const paths=new Set<string>();let size=0;
  for(const f of value.files){if(!f||typeof f.path!=='string'||!f.path||f.path.length>240||f.path.startsWith('/')||f.path.includes('\\')||/[\x00-\x1f]/.test(f.path)||f.path.split('/').some((p:string)=>!p||p==='.'||p==='..')||paths.has(f.path)||typeof f.content!=='string')throw Error('development_file_invalid');paths.add(f.path);size+=Buffer.byteLength(f.content);}

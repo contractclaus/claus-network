@@ -92,7 +92,8 @@ export async function cycle(generation:number,fromClubWake=false) {
     await reconcilePendingProgrammable();
     await reconcileNetworkPrograms();
     const {blocking:outstanding,held:unresolvedNetworkPrograms}=isolateProgramActions(await unresolved());
-    const {blocking:pending,isolated}=twitterOnly(config)?await isolateUncertainReplies(outstanding):{blocking:outstanding,isolated:[]};
+    // Uncertain social delivery holds its own thread in every role, not unrelated engineering work.
+    const {blocking:pending,isolated}=await isolateUncertainReplies(outstanding);
     if(pending.length) {
       const reconcilable=canReconcileActions(pending);
       await release(id,memory,agenda,nextAt,reconcilable?'waiting_for_effect':'blocked',continuation);
