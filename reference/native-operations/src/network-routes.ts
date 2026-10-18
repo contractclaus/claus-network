@@ -900,6 +900,35 @@ export const networkRoutes:Record<string,any>={
               "minimum": 0,
               "maximum": 1024
             },
+            "secretBindings": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "envName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 101
+                  },
+                  "secretId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "envName",
+                  "secretId",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            },
             "egressBudgetMiB": {
               "type": "integer",
               "minimum": 1,
@@ -1629,6 +1658,35 @@ export const networkRoutes:Record<string,any>={
               "type": "integer",
               "minimum": 0,
               "maximum": 1024
+            },
+            "secretBindings": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "envName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 101
+                  },
+                  "secretId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "envName",
+                  "secretId",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
             },
             "egressBudgetMiB": {
               "type": "integer",
@@ -11406,6 +11464,35 @@ export const networkRoutes:Record<string,any>={
               "type": "integer",
               "minimum": 0,
               "maximum": 1024
+            },
+            "secretBindings": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "envName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 101
+                  },
+                  "secretId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "envName",
+                  "secretId",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
             },
             "egressBudgetMiB": {
               "type": "integer",

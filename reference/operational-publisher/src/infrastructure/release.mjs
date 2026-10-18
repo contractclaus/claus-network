@@ -13,5 +13,5 @@ export async function runtimeReleaseApproved(work,{request=fetch}={}){
  const result=v.result??v;
  check(result.releaseId===id&&typeof result.approved==='boolean','release_response_invalid');
  if(!result.approved)return false;
- return result.projectId===work.projectId&&result.image===work.manifest.image&&result.manifestHash===digest(work.manifest)&&/^sha256:[a-f0-9]{64}$/.test(result.reviewHash??'')&&/^sha256:[a-f0-9]{64}$/.test(result.decisionHash??'');
+ return (!work.manifest.secretBindings?.length||result.ownerSecretBindings===true)&&result.projectId===work.projectId&&result.image===work.manifest.image&&result.manifestHash===digest(work.manifest)&&/^sha256:[a-f0-9]{64}$/.test(result.reviewHash??'')&&/^sha256:[a-f0-9]{64}$/.test(result.decisionHash??'');
 }

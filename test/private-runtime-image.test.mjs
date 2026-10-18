@@ -15,7 +15,7 @@ test('owned private image retains private source and requires its actual owner r
  let inspections=0;
  const receipt={version:1,resourceId:'res_'+'1'.repeat(24),actionId:'act_'+'2'.repeat(24),private:true,architecture:'amd64',runAttempt:1,runId:123,image:'ghcr.io/contractclaus/claus-source@'+digest('image'),imageDigest:digest('image'),artifactDigest:digest('receipt'),sourceCommit:'a'.repeat(40),repository:'contractclaus/claus-source'};
  const service=createRuntimeReleases({store,identity,origin:'https://api.example.com',inspectOwnedBuild:async()=>{inspections++;return receipt;}});
- const manifest={version:1,mode:'worker',image:receipt.image,region:'EU-RO-1',cpu:2,memoryMiB:4096,gpu:null,port:null,healthPath:null,command:[],storageGiB:0};
+ const manifest={version:1,mode:'worker',image:receipt.image,region:'EU-RO-1',cpu:2,memoryMiB:4096,gpu:null,port:null,healthPath:null,command:[],storageGiB:0,secretBindings:[{envName:'MODEL_API_KEY',secretId:'sec_'+'a'.repeat(24),version:1}]};
  const input={resourceId:receipt.resourceId,actionId:receipt.actionId,manifest};
  await assert.rejects(service.prepareExternal('claus','foreign',input),/owner_scope_denied/);assert.equal(inspections,0);
  const release=await service.prepareExternal('claus','owned',input);assert.equal(release.sourcePrivate,true);assert.equal(release.approved,false);
@@ -27,7 +27,7 @@ test('owned private image retains private source and requires its actual owner r
  await assert.rejects(service.publicOwnerReview(review.id),/not_found/);assert.equal((await service.status(release.id)).approved,false);
  await assert.rejects(service.ownerApprove('other','owned',release.id,{reviewId:review.id,reportHash:review.reportHash,acknowledgedFindings:[],expectedRevision:1,reason:'Approve the actual reviewed private worker.'}),/claus_required/);
  await service.ownerApprove('claus','owned',release.id,{reviewId:review.id,reportHash:review.reportHash,acknowledgedFindings:[],expectedRevision:1,reason:'Approve the actual reviewed private worker.'});
- assert.equal((await service.status(release.id)).approved,true);
+ assert.equal((await service.status(release.id)).approved,true);assert.equal((await service.status(release.id)).ownerSecretBindings,true);
  await store.transaction(async tx=>{const old=await tx.read('projects','owned');await tx.write('projects','owned',{ownerId:'other'},old.revision);});
  assert.equal((await service.status(release.id)).approved,false);
 });

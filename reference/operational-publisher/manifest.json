@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_Hxdo17KJH7MWfKSpwGnEnHvxGPi4",
-  "source": "claus-goal-phase10-20261018",
+  "deployed": "dpl_6h6jmw2QThxFr4f3JwEKCVhJUbEn",
+  "source": "claus-goal-phase12-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -14,10 +14,10 @@
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
     "src/index.js": "b398329f4fc64756f9c47b88b81838c986ed8cb210e4d7b01202e5b239d30d52",
-    "src/infrastructure/broker.mjs": "0ab8ba8fbeb6298cf8df460f6d307758e1c460a077104c2a3850a768ddb6d49d",
+    "src/infrastructure/broker.mjs": "c4f6dba377ed4e5bf634dc14c6c6e6f80f7ea452b6f99b203bdebd3865bf81da",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
-    "src/infrastructure/providers.mjs": "8a6c0f0556ab583fba4dda62dd6c41bf1b5578e012d7b112020dc6a920a7d694",
-    "src/infrastructure/release.mjs": "59cde463509df28234cc4f121d8f7ac639415a58ea6336f0e3a991e5afafde5e",
+    "src/infrastructure/providers.mjs": "d2bcdbc269d278183330f82f9044b455ec0f3aaf0f01db533c0c20b24ddcde66",
+    "src/infrastructure/release.mjs": "f100dbb57727dd05b9648b029c3b62fdab0f7645f9d5e35cfb1bc311e6ebe971",
     "src/infrastructure/routes.mjs": "9bae193265355252d248af7ba6cf7ab44c0e2722197d0cda2cdc70a34498582a",
     "src/jobs-wallet/network.js": "3f2f96d7e37226694942a80a2f1918ae7690582fab8195b9b11ac7c3223671e3",
     "src/jobs-wallet/routes.js": "f61884c6444227a370e5ffea79010d934588493a9b24db9a1b028be2c443664d",
@@ -96,7 +96,9 @@
     "src/resources/queues.mjs": "0819044cf821cd06405dda4d039ec767f30ee2d4e7d030667401fa6a5003c267",
     "tests/resource-queues.test.mjs": "c3bb7d0172ddf8f2ccc64340b214cbaf7f4beada1a6f0d93c6f2a28b8029ba62",
     "src/resources/procedures.mjs": "693586b10a51d1b8f1b6fd91700e13ff3b150db91194a2b21789768e29149870",
-    "tests/resource-procedures.test.mjs": "47d43a9fcc25151817a0606aadec589fc47b447ae5f5f90b93b89d98b66e94c0"
+    "tests/resource-procedures.test.mjs": "47d43a9fcc25151817a0606aadec589fc47b447ae5f5f90b93b89d98b66e94c0",
+    "src/infrastructure/runtime-secrets.mjs": "e9893fe93abdade68dff2ae1b0f86e4a9bebad0b4e7d615377c47d6adcbdc05a",
+    "tests/runtime-secrets.test.mjs": "782c4765cd9663b87b556c67fc6cbbb124e53b51aae146da3e5ff7307f715136"
   },
   "referenceSubset": true
 }

@@ -1,3 +1,4 @@
+import {validateSecretBindings} from './secret-bindings.mjs';
 import {canonical,copy,contentHash,integer,requireThat,shape,text} from '../shared/index.mjs';
 
 export const INFRASTRUCTURE_VERSION='claus-infrastructure/1';
@@ -5,7 +6,8 @@ const MODES=['http','worker','job','model'];
 function optionalShape(input,required,optional){requireThat(input!==null&&typeof input==='object','invalid_shape');shape(input,[...required,...optional.filter(k=>Object.hasOwn(input,k))]);}
 export const gpuCount=manifest=>manifest.gpu===null?0:(manifest.gpuCount??1);
 export function validateManifest(input) {
-  optionalShape(input,['version','mode','image','region','cpu','memoryMiB','gpu','port','healthPath','command','storageGiB','releaseHash'],['gpuCount','minimumVramGiB','egressBudgetMiB']);
+  optionalShape(input,['version','mode','image','region','cpu','memoryMiB','gpu','port','healthPath','command','storageGiB','releaseHash'],['gpuCount','minimumVramGiB','egressBudgetMiB','secretBindings']);
+  validateSecretBindings(input.secretBindings);
   requireThat(input.version===1&&MODES.includes(input.mode),'invalid_infrastructure_manifest');
   requireThat(typeof input.image==='string'&&/^[a-z0-9.-]+\/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$/.test(input.image),'immutable_image_required');
   requireThat(typeof input.region==='string'&&/^[A-Za-z0-9-]{2,40}$/.test(input.region),'invalid_region');

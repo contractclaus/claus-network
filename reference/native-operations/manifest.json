@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase11-20261018",
+  "source": "claus-goal-phase12-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -15,7 +15,7 @@
     "src/work-wallet.ts": "bd0bdeede358a160c54d36dc521a63c065db05c7b745021228da9806aa144c39",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "3fd7abd5060453618d9b505bb3062768b38c1b90a859d55447c39ff4310108a2",
+    "src/network-access.ts": "cef7810588fa7d1ac7619db59ead6db1f21ad69b69ff86a49b122e44eea70572",
     "src/context.ts": "33ee111f17b3a7c820b46b44aa5026cb2eaa2f7976654f5c860de4094e08ade2",
     "src/knowledge.ts": "f98d7fdee97c2af6ac6b06d5229199a565b5836f218c7a8728c29ab7aa0cf581",
     "src/network-care.ts": "736d2a150a32dd325d86e8e5439b0cb8d4dbc3352542ef65de8bac547cb9c9f0",
@@ -30,7 +30,7 @@
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
     "src/isolated/runner.mjs": "664b14555698224c02880e743535873e08e6a82e5f64629ba6461edd8b217df9",
     "src/network-products.ts": "992923d4ac74121ec070bc30efdb3c4a56ed9c17e85d5224c7bcb794bd76dd1b",
-    "src/network-routes.ts": "d754483bf35c4badcd45582655b5393d2e46e473f4c973307f356f9ffcaf2545",
+    "src/network-routes.ts": "5a705daf781f1232c80bd6dc7fd9fabf4e56b2396dd6de684dd0d07ccf7d989f",
     "src/operational-capabilities.ts": "7ae32f2368e69cdd88f995622f2daba006485fdf4b2786e421cbf12e1569c4a1",
     "src/cycle.ts": "13315375f00329251b603a9bbe6533b35175171b331f9e8a446a955fe4a09078",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
@@ -160,5 +160,5 @@
     "tests/browser-access.test.ts": "1f625452d8e1ef3fc5cc9ce6f32e42abadf2c9c231f07cfd7b59c0935ea6d24f"
   },
   "referenceSubset": true,
-  "deployed": "dpl_2S8ggfAEpjNh5dp9Nd7DmXRx9rMw"
+  "deployed": "dpl_A62wNocUU2mzipgBN468YyAvHHqH"
 }
