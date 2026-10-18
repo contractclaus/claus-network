@@ -1,3 +1,4 @@
+import {browserNavigation} from './browser-targets.js';
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import {chromium} from 'playwright-core';
@@ -20,7 +21,7 @@ export function externalPolicy(env:NodeJS.ProcessEnv=process.env):ExternalPolicy
 export const externalStatus=(p=externalPolicy(),env:NodeJS.ProcessEnv=process.env)=>({
  profile:'claus-external-tools/3',adapters:{available:true,immutable:true,permissions:'current-provider-policy',scope:'claus-library-and-own-project'},development:{configured:!!env.CLAUS_TOOL_GATEWAY_SECRET&&!!env.CLAUS_TOOL_GATEWAY_ORIGIN},publicWeb:true,paidServices:{configured:!!env.INFERENCE_SECRET,accounting:'existing-operating-budget',services:['exa_search','exa_contents'],maximumMicroUsdc:'20000',replay:false},github:{documentationPublication:'read_operational_code/change_operational_code scope=repository; independent review and exact commit',configured:!!env.PUBLISHER_SECRET,identity:'contractclaus',repositories:['contractclaus/claus-network','contractclaus/claus-network-contracts'],operations:['status','tree','file','pulls','publish','recover','continuity_status']},bazaar:{discovery:true,payments:false},
  composio:{configured:!!env.COMPOSIO_API_KEY&&!!p.composio,tools:Object.keys(p.composio?.tools??{}),grantedToolkits:[...new Set(Object.values(p.composio?.tools??{}).map(rule=>rule.toolkit))],readToolkits:p.composio?.readToolkits??[],connectToolkits:p.composio?.connectToolkits??[],missing:env.COMPOSIO_API_KEY&&p.composio?[]:['connected-provider-session']},
- browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',diagnostics:true,workflows:true,contextPersistence:true,secretsExposed:false,missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
+ browser:{configured:!!env.BROWSERBASE_API_KEY&&!!p.browser,origins:p.browser?.origins??[],mode:p.browser?.mode??'persistent',diagnostics:true,workflows:true,contextPersistence:true,taskOrigins:true,downloadFiles:true,secretsExposed:false,missing:env.BROWSERBASE_API_KEY&&p.browser?[]:['browser-provider-account']},
  runpod:{configured:!!env.CLAUS_RUNPOD_API_KEY,operations:['describe','read'],views:['gpus','datacenters','pods','balance'],provisioning:false,secretsExposed:false},
  secretsExposed:false,instructionAuthority:false
 });
@@ -91,7 +92,7 @@ export async function browserRequest(p:ExternalPolicy,operation:string,input:any
  const headers={'X-BB-API-Key':key,'content-type':'application/json'};
  let opened:any;
  if(operation==='browser_open'){
-  browserUrl(p,input.url);
+  try{await browserNavigation(p,input.url);}catch{throw new ProviderFailure('browser_public_navigation_refused',true);}
   const r=await providerJson('https://api.browserbase.com/v1/sessions',{method:'POST',headers,body:JSON.stringify({projectId:spec.projectId,timeout:spec.seconds,keepAlive:spec.mode!=='single-request',userMetadata:{clausAction:original},browserSettings:{solveCaptchas:false,recordSession:false,logSession:false,ignoreCertificateErrors:false,allowedDomains:spec.origins.map(o=>new URL(o).hostname),...(spec.contextId?{context:{id:spec.contextId,persist:true}}:{})}})},false);
   if(typeof r.id!=='string')throw new ProviderFailure('browser_missing_session',false);
   // Navigation is a separate original action: a failed navigation cannot lose
@@ -109,9 +110,9 @@ export async function browserRequest(p:ExternalPolicy,operation:string,input:any
  try{
   browser=await chromium.connectOverCDP(session.connectUrl,{timeout:20000});
   const context=browser.contexts()[0];if(!context)throw new ProviderFailure('browser_context_missing',true);
-  await context.route('**/*',async route=>{const req=route.request();if(req.isNavigationRequest()&&req.frame()===req.frame().page().mainFrame()){try{browserUrl(p,req.url());}catch{await route.abort();return;}}await route.continue();});
+  await context.route('**/*',async route=>{const req=route.request();if(req.isNavigationRequest()){try{await browserNavigation(p,req.url());}catch{await route.abort();return;}}await route.continue();});
   const page=context.pages()[0]??await context.newPage();page.setDefaultTimeout(10000);
-  if(operation==='browser_navigate')await page.goto(browserUrl(p,input.url),{waitUntil:'domcontentloaded',timeout:20000});
+  if(operation==='browser_navigate')await page.goto(await browserNavigation(p,input.url),{waitUntil:'domcontentloaded',timeout:20000});
   else if(operation==='browser_action'){
    browserUrl(p,page.url());
    const selector=boundedObject(input.target,2000);let loc;
@@ -119,7 +120,12 @@ export async function browserRequest(p:ExternalPolicy,operation:string,input:any
    else if(typeof selector.label==='string')loc=page.getByLabel(selector.label,{exact:true});
    else throw new ProviderFailure('browser_target_invalid',true);
    if(await loc.count()!==1)throw new ProviderFailure('browser_target_not_unique',true);
-   if(input.action==='click')await loc.click();else if(input.action==='fill'&&typeof input.value==='string'&&input.value.length<=8000)await loc.fill(input.value);else throw new ProviderFailure('browser_action_invalid',true);
+   if(input.action==='download'){
+    const client=await context.newCDPSession(page);await client.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:'downloads',eventsEnabled:true});
+    const [download]=await Promise.all([page.waitForEvent('download',{timeout:20000}),loc.click()]);
+    const failure=await download.failure();if(failure)throw new ProviderFailure('browser_download_outcome_unavailable',false);
+    return {sessionId:input.sessionId,filename:download.suggestedFilename(),state:'downloaded',next:'browser_downloads',instructionAuthority:false};
+   }else if(input.action==='click')await loc.click();else if(input.action==='fill'&&typeof input.value==='string'&&input.value.length<=8000){if(await loc.getAttribute('type')==='password')throw new ProviderFailure('browser_secret_entry_denied',true);await loc.fill(input.value);}else throw new ProviderFailure('browser_action_invalid',true);
   }else if(operation!=='browser_read')throw new ProviderFailure('external_operation_invalid',true);
   if(page.url()!=='about:blank')browserUrl(p,page.url());
   const text=(await page.locator('body').innerText()).slice(0,24000);

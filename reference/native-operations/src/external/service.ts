@@ -1,3 +1,5 @@
+import {browserAccess,browserPolicyForWork} from './browser-access.js';
+import {browserDownloads,ownedBrowserSession} from './browser-downloads.js';
 import {textWindow} from '../text.js';
 import {connectedReadPolicy} from './connected-read.js';
 import {runpodRequest} from './runpod.js';
@@ -10,7 +12,7 @@ import {once,sql,ConfirmedFailure,settleAction} from '../store.js';
 import {externalPolicy,externalStatus,ProviderFailure,boundedObject,composioRequest,bazaarRequest,browserRequest,publicWeb,selectTool} from './providers.js';
 import {saveAdapter,getAdapter,listAdapters,renderAdapter} from './adapters.js';
 
-export const externalOperations=['status','health','quote','connections','toolkits','search','describe','call','connect','read','receipt','adapter_save','adapter_list','adapter_read','adapter_call','browser_context_create','browser_workflow','browser_open','browser_navigate','browser_read','browser_action','browser_close'] as const;
+export const externalOperations=['browser_origins','browser_origin_set','browser_downloads','browser_download','status','health','quote','connections','toolkits','search','describe','call','connect','read','receipt','adapter_save','adapter_list','adapter_read','adapter_call','browser_context_create','browser_workflow','browser_open','browser_navigate','browser_read','browser_action','browser_close'] as const;
 type Call={operation:string;provider?:string;input?:string;actionId?:string;offset?:number};
 export function externalInput(raw:any):Call {
  const value=boundedObject(raw,32000);
@@ -32,16 +34,20 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
  if(call.operation==='health'){if(principal!=='claus')throw new ConfirmedFailure('external_health_owner_scope_required');return externalHealth();}
  if(call.operation==='receipt'){
   if(!call.actionId)throw new ConfirmedFailure('external_action_id_required');
-  const row=(await db`SELECT id,status,result,input FROM claus_actions WHERE id=${call.actionId} AND kind IN ('external_tools','external_adapter')`)[0];
+  const row=(await db`SELECT id,status,result,input FROM claus_actions WHERE id=${call.actionId} AND kind IN ('external_tools','external_adapter','browser_scope')`)[0];
   if(!row||principal!=='claus'&&row.input?.principal!==principal)throw new ConfirmedFailure('external_receipt_unavailable');
   return {status:row.status,...resultPage(row.id,row.result??{status:row.status,retry:false},call.offset)};
  }
  let input:any;try{input=boundedObject(JSON.parse(call.input??'{}'));}catch{throw new ConfirmedFailure('external_input_invalid');}
+ if(['browser_origins','browser_origin_set'].includes(call.operation)){
+  if(call.provider!=='browserbase')throw new ConfirmedFailure('browser_provider_required');
+  return resultPage(id,await browserAccess(id,call.operation,input,principal,db),call.offset);
+ }
  if(call.provider==='paid'&&principal!=='claus')throw new ConfirmedFailure('paid_service_owner_scope_required');
  if(call.provider==='github'&&principal!=='claus')throw new ConfirmedFailure('github_owner_scope_required');
  if(call.provider==='runpod'&&principal!=='claus')throw new ConfirmedFailure('runpod_owner_scope_required');
  if(call.provider==='composio'&&principal!=='claus'&&['connections','toolkits','connect'].includes(call.operation))throw new ConfirmedFailure('external_account_owner_scope_required');
- if(call.provider==='browserbase'&&call.operation==='browser_workflow'){workflowInput(policy,input);if(input.contextId){const own=(await db`SELECT id FROM claus_actions WHERE kind='external_tools' AND status='completed' AND input->>'principal'=${principal} AND input->>'operation'='browser_context_create' AND result->>'contextId'=${input.contextId}`)[0];if(!own)throw new ConfirmedFailure('browser_context_not_owned');}}
+
  if(call.operation==='adapter_save')return resultPage(id,await saveAdapter(id,input,principal,libraryOwner,db),call.offset);
  if(call.operation==='adapter_list')return listAdapters(libraryOwner,call.offset,db);
  let adapterTrace:unknown;
@@ -54,8 +60,17 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
   call={...renderAdapter(saved.definition,input.parameters??{},policy),offset:call.offset};
   input=JSON.parse(call.input!);
  }
+ if(call.provider==='browserbase'){
+  if(!['browser_open','browser_workflow','browser_context_create'].includes(call.operation)){
+   const owner=await ownedBrowserSession(input.sessionId,principal,db);
+   if(input.workId!==undefined&&input.workId!==owner.workId)throw new ConfirmedFailure('browser_session_work_mismatch');
+   if(owner.workId){input={...input,workId:owner.workId};call={...call,input:JSON.stringify(input)};}
+  }
+  if(call.operation!=='browser_close')policy=await browserPolicyForWork(policy,input.workId,principal,db);
+ }
+ if(call.provider==='browserbase'&&call.operation==='browser_workflow'){workflowInput(policy,input);if(input.contextId){const own=(await db`SELECT id FROM claus_actions WHERE kind='external_tools' AND status='completed' AND input->>'principal'=${principal} AND input->>'operation'='browser_context_create' AND result->>'contextId'=${input.contextId}`)[0];if(!own)throw new ConfirmedFailure('browser_context_not_owned');}}
  if(principal==='claus'&&call.provider==='composio'&&call.operation==='call')policy=await connectedReadPolicy(policy,input.tool);
- const readOnly=call.provider==='runpod'&&['read','describe'].includes(call.operation)||call.provider==='paid'&&['quote','read','describe'].includes(call.operation)||call.provider==='github'&&['status','tree','file','pulls','recover','continuity_status'].includes(input.operation)||call.provider==='web'||call.provider==='bazaar'||call.provider==='browserbase'&&call.operation==='browser_read'||call.provider==='composio'&&(['connections','toolkits','search','describe'].includes(call.operation)||call.operation==='call'&&selectTool(policy,input.tool,input.arguments??{}).rule.effect==='read');
+ const readOnly=call.provider==='runpod'&&['read','describe'].includes(call.operation)||call.provider==='paid'&&['quote','read','describe'].includes(call.operation)||call.provider==='github'&&['status','tree','file','pulls','recover','continuity_status'].includes(input.operation)||call.provider==='web'||call.provider==='bazaar'||call.provider==='browserbase'&&['browser_read','browser_downloads','browser_download'].includes(call.operation)||call.provider==='composio'&&(['connections','toolkits','search','describe'].includes(call.operation)||call.operation==='call'&&selectTool(policy,input.tool,input.arguments??{}).rule.effect==='read');
  const original={...call,principal,readOnly,...(adapterTrace?{adapter:adapterTrace}:{})};
  const admit=async()=>{
   const [,rows]=await db.transaction([db`SELECT pg_advisory_xact_lock(746201605)`,db`INSERT INTO claus_actions(id,kind,input_hash,status,input,visibility) SELECT ${id},'external_tools',${digest(original)},'pending',${JSON.stringify(original)}::jsonb,'private_network' WHERE ${readOnly} OR NOT EXISTS(SELECT 1 FROM claus_actions WHERE kind='external_tools' AND status NOT IN ('completed','failed') AND input->>'provider'=${call.provider??''} AND input->>'readOnly'='false') ON CONFLICT DO NOTHING RETURNING id`]);
@@ -75,12 +90,7 @@ export async function externalTool(id:string,raw:any,principal='claus',libraryOw
    else if(call.provider==='bazaar')result=await bazaarRequest(call.operation,input);
    else if(call.provider==='composio')result=await composioRequest(policy,call.operation,input);
    else if(call.provider==='browserbase'){
-    if(!['browser_open','browser_context_create','browser_workflow'].includes(call.operation)){
-     // A guessed provider session ID never grants access to another task's browser.
-     const owner=(await db`SELECT id FROM claus_actions WHERE kind='external_tools' AND status='completed' AND input->>'principal'=${principal} AND input->>'operation'='browser_open' AND result->>'sessionId'=${input.sessionId??''} LIMIT 1`)[0];
-     if(!owner)throw new ProviderFailure('browser_session_not_owned',true);
-    }
-    result=call.operation==='browser_context_create'?await browserContext(policy,id):call.operation==='browser_workflow'?await browserWorkflow(policy,input,id):await browserRequest(policy,call.operation,input,id);
+    result=['browser_downloads','browser_download'].includes(call.operation)?await browserDownloads(call.operation,input,principal,db):call.operation==='browser_context_create'?await browserContext(policy,id):call.operation==='browser_workflow'?await browserWorkflow(policy,input,id):await browserRequest(policy,call.operation,input,id);
    }else throw new ProviderFailure('external_operation_invalid',true);
    const safe=safeResult(result);if(Buffer.byteLength(JSON.stringify(safe))>1000000)throw new ProviderFailure('external_response_too_large',false);
    return safe;

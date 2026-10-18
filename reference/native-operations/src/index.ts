@@ -1,3 +1,4 @@
+import {browserDownloadRoute} from './external/browser-downloads.js';
 import {developmentToolsRoute} from './external/development-bridge.js';
 import {managedSchemaReady} from './database-schema.js';
 import {isolatedHealth} from './isolated/bridge.js';
@@ -56,6 +57,7 @@ import {networkReviewRoutes} from './network-review-routes.js';
 import {networkOperations,networkOperationsEnabled} from './network-operations.js';
 
 const app=new Hono();
+app.get('/internal/browser-download',c=>browserDownloadRoute(c.req.raw));
 app.post('/internal/development/tools',c=>developmentToolsRoute(c.req.raw));
 app.route('/internal/network',networkReviewRoutes);
 app.get('/public/lab/:view',async c=>{const view=c.req.param('view');if(!['feed','ideas'].includes(view))return c.json({error:'not_found'},404);const limit=Number(c.req.query('limit')??20);if(!Number.isInteger(limit)||limit<1||limit>50)return c.json({error:'invalid_limit'},400);const data=await publicLab(view,{after:c.req.query('after'),before:c.req.query('before'),id:c.req.query('idea'),limit});c.header('Cache-Control','no-store');return data?c.json(data):c.json({error:'not_available'},404);});

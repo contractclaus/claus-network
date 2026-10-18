@@ -1,14 +1,15 @@
+import {browserNavigation} from './browser-targets.js';
 import {chromium} from 'playwright-core';
 import {browserUrl,providerJson,ProviderFailure,type ExternalPolicy} from './providers.js';
 
 export function workflowInput(policy:ExternalPolicy,input:any){
- if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['url','contextId','steps'].includes(k))||!Array.isArray(input.steps)||input.steps.length>12)throw new ProviderFailure('browser_workflow_invalid',true);
+ if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['url','contextId','workId','steps'].includes(k))||!Array.isArray(input.steps)||input.steps.length>12)throw new ProviderFailure('browser_workflow_invalid',true);
  browserUrl(policy,input.url);
  if(input.contextId!==undefined&&!/^[a-zA-Z0-9-]{8,100}$/.test(input.contextId))throw new ProviderFailure('browser_context_invalid',true);
  for(const s of input.steps){
-  if(!s||typeof s!=='object'||!['read','navigate','click','fill'].includes(s.action)||Object.keys(s).some(k=>!['action','url','target','value'].includes(k)))throw new ProviderFailure('browser_step_invalid',true);
+  if(!s||typeof s!=='object'||!['read','navigate','click','fill','download'].includes(s.action)||Object.keys(s).some(k=>!['action','url','target','value'].includes(k)))throw new ProviderFailure('browser_step_invalid',true);
   if(s.action==='navigate')browserUrl(policy,s.url);
-  if(['click','fill'].includes(s.action)||s.action==='read'&&s.target!==undefined){
+  if(['click','fill','download'].includes(s.action)||s.action==='read'&&s.target!==undefined){
    const t=s.target;if(!t||typeof t!=='object'||Object.keys(t).some(k=>!['role','name','label'].includes(k))||!(typeof t.role==='string'&&typeof t.name==='string'||typeof t.label==='string')||JSON.stringify(t).length>1000)throw new ProviderFailure('browser_target_invalid',true);
   }
   if(s.action==='fill'&&(typeof s.value!=='string'||s.value.length>8000))throw new ProviderFailure('browser_value_invalid',true);
@@ -32,9 +33,10 @@ export async function browserContext(policy:ExternalPolicy,original:string){
  if(typeof r.id!=='string')throw new ProviderFailure('browser_context_outcome_unknown',false);
  return {contextId:r.id,original,retention:'provider-managed-encrypted-context',cookiesExposed:false};
 }
-export async function browserWorkflow(policy:ExternalPolicy,input:any,original:string){
+export async function browserWorkflow(policy:ExternalPolicy,input:any,original:string,navigate=browserNavigation){
  const plan=workflowInput(policy,input),spec=policy.browser!,key=process.env.BROWSERBASE_API_KEY;
  if(!key)throw new ProviderFailure('browser_not_connected',true);
+ try{await navigate(policy,plan.url);}catch{throw new ProviderFailure('browser_public_navigation_refused',true);}
  const headers={'X-BB-API-Key':key,'content-type':'application/json'};
  const session=await providerJson('https://api.browserbase.com/v1/sessions',{method:'POST',headers,body:JSON.stringify({projectId:spec.projectId,timeout:spec.seconds,keepAlive:false,userMetadata:{clausAction:original},browserSettings:{solveCaptchas:false,recordSession:false,logSession:false,ignoreCertificateErrors:false,...(plan.contextId?{context:{id:plan.contextId,persist:true}}:{})}})},false);
  const connect=new URL(session.connectUrl??'https://invalid');
@@ -45,7 +47,7 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
   browser=await chromium.connectOverCDP(session.connectUrl,{timeout:15000});
   const context=browser.contexts()[0];if(!context)throw new ProviderFailure('browser_context_missing',true);
   await context.route('**/*',async route=>{
-   const req=route.request();if(req.isNavigationRequest()){try{browserUrl(policy,req.url());}catch{await route.abort();return;}}
+   const req=route.request();if(req.isNavigationRequest()){try{await navigate(policy,req.url());}catch{await route.abort();return;}}
    await route.continue();
   });
   const page=context.pages()[0]??await context.newPage();page.setDefaultTimeout(5000);
@@ -56,8 +58,8 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
    failedStep=stepIndex;failurePhase='action';
    browserUrl(policy,page.url());
    let report;
-   if(step.action==='navigate')await page.goto(step.url,{waitUntil:'domcontentloaded',timeout:15000});
-   if(step.action==='click'||step.action==='fill'||step.action==='read'&&step.target!==undefined){
+   if(step.action==='navigate')await page.goto(await navigate(policy,step.url),{waitUntil:'domcontentloaded',timeout:15000});
+   if(step.action==='click'||step.action==='fill'||step.action==='download'||step.action==='read'&&step.target!==undefined){
     const t=step.target,loc=typeof t.label==='string'?page.getByLabel(t.label,{exact:true}):page.getByRole(t.role,{name:t.name,exact:true});
     if(await loc.count()!==1||!await loc.isVisible())throw new ProviderFailure('browser_target_not_unique',true);
     if(step.action==='read'){
@@ -66,6 +68,11 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
     }else if(step.action==='fill'){
      if((await loc.getAttribute('type'))==='password')throw new ProviderFailure('browser_secret_entry_denied',true);
      await loc.fill(step.value);
+    }else if(step.action==='download'){
+     const client=await context.newCDPSession(page);await client.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:'downloads',eventsEnabled:true});
+     const [download]=await Promise.all([page.waitForEvent('download',{timeout:20000}),loc.click()]);
+     if(await download.failure())throw new ProviderFailure('browser_download_outcome_unavailable',false);
+     report={filename:download.suggestedFilename(),state:'downloaded',next:'browser_downloads'};
     }else await loc.click();
    }
    completedSteps++;failurePhase='observation';observations.push({...await observe(),...(report?{report}:{})});
