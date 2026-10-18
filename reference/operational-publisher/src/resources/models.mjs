@@ -49,6 +49,7 @@ export function managedModels({store,seal,open,endpoints,now=Date.now,request=fe
  async function result(id,offset=0){
   if(!/^act_[a-f0-9]{24}$/.test(id??'')||!Number.isSafeInteger(offset)||offset<0)fail('result_invalid');
   let saved=await store.get('model-response',id);const a=await store.get('action',id);if(a?.operation!=='model_invoke')fail('result_missing');const p=a.prepared;
+  if(!saved&&a.phase==='prepared'&&p.modelSpecialist)return {actionId:id,originalRequestId:p.originalRequestId,state:'not_dispatched',retry:false};
   if(!saved&&p.candidate.kind==='relay'){
    let response;try{response=await request(relayOrigin+'/api/requests/'+encodeURIComponent(p.originalRequestId),{headers:{authorization:'Bearer '+secret()},redirect:'error',signal:AbortSignal.timeout(20000)});}catch{return {actionId:id,originalRequestId:p.originalRequestId,state:'outcome_unknown',retry:false};}
    if(response.ok){const v=await response.json();if(['completed','failed'].includes(v.status))saved=await retain(id,p,v);}
@@ -59,18 +60,21 @@ export function managedModels({store,seal,open,endpoints,now=Date.now,request=fe
   const raw=open(saved.sealed,id);if(offset>raw.length)fail('offset_invalid');const end=Math.min(offset+24000,raw.length),{sealed,...meta}=saved;
   return {...meta,state:'result_retained',text:raw.slice(offset,end),offset,nextOffset:end<raw.length?end:null,instructionAuthority:false};
  }
- async function invoke(input,requestId){
+ async function invoke(input,requestId,modelSpecialist=null){
+  if(modelSpecialist&&(!exact(modelSpecialist,['id','turn'])||!/^asg_[a-f0-9]{24}$/.test(modelSpecialist.id)||!Number.isSafeInteger(modelSpecialist.turn)||modelSpecialist.turn<1))fail('specialist_binding_invalid');
   if(!name(input.name)||!Number.isSafeInteger(input.revision)||!object(input.arguments))fail('invocation_invalid');
   const id='act_'+digest(['model',requestId]).slice(0,24),key=inputKey(input),old=await store.get('action',id);
-  if(old&&(old.operation!=='model_invoke'||!sameValue(old.input,key)))fail('request_conflict');if(await store.get('model-response',id))return result(id);
+  if(old&&(old.operation!=='model_invoke'||!sameValue(old.input,key)||!sameValue(old.prepared.modelSpecialist??null,modelSpecialist)))fail('request_conflict');if(await store.get('model-response',id))return result(id);
   let p=old?.prepared;
   if(!p){
    const r=await route(input.name),skipped=[];if(r.status!=='active'||r.revision!==input.revision)fail('route_inactive');
    let selected,payload;for(const c of r.candidates){try{payload=await eligible(c,input.arguments,r);selected=c;break;}catch(e){if(!/^resource_(?:model|endpoint)_[a-z_]+$/.test(e.message??''))throw e;skipped.push({model:c.model,reason:e.message});}}
    if(!selected)return {state:'not_dispatched',skipped,payment:'not_signed',retryAfterSeconds:60};
    const originalRequestId='model-route:'+digest(id),endpointActionId='act_'+digest(['owner',originalRequestId]).slice(0,24);
-   p={name:r.name,revision:r.revision,candidate:selected,maximumMicroUsd:r.maximumMicroUsd,originalRequestId,endpointActionId,skipped,createdAt:stamp(),sealed:seal(JSON.stringify(payload),id+':input')};
+   if(modelSpecialist&&selected.kind!=='relay')fail('specialist_protocol_invalid');
+   p={name:r.name,revision:r.revision,candidate:selected,maximumMicroUsd:r.maximumMicroUsd,originalRequestId,endpointActionId,skipped,modelSpecialist,createdAt:stamp(),sealed:seal(JSON.stringify(payload),id+':input')};
    p=(await store.begin(id,'model_invoke',key,p)).row.result.prepared;
+   if(!sameValue(p.modelSpecialist??null,modelSpecialist))fail('request_conflict');
   }
   if(p.candidate.kind==='endpoint'){
    const child=await endpoints.call('endpoint_invoke',{resourceId:p.candidate.endpointId,revision:p.candidate.revision,arguments:JSON.parse(open(p.sealed,id+':input'))},p.originalRequestId);
@@ -93,13 +97,13 @@ export function managedModels({store,seal,open,endpoints,now=Date.now,request=fe
   }catch{}
   return result(id);
  }
- async function call(operation,input,requestId){
+ async function call(operation,input,requestId,modelSpecialist=null){
   if(operation==='model_catalog')return catalog.read(input);
   if(operation==='model_routes'){if(input.offset!==undefined&&(!Number.isSafeInteger(input.offset)||input.offset<0))fail('offset_invalid');const p=await store.list('model-route',input.offset??0);return {...p,items:p.items.map(metadata)};}
   if(operation==='model_route_read')return metadata(await route(input.name,input.revision));
   if(operation==='model_result')return result(input.actionId,input.offset);
   if(!text(requestId,200))fail('request_invalid');
-  if(operation==='model_invoke')return invoke(input,requestId);
+  if(operation==='model_invoke')return invoke(input,requestId,modelSpecialist);
   if(operation==='model_assess'){
    const r=await store.get('model-response',input.actionId);if(!r||!['completed','response_received'].includes(r.status)||!Number.isInteger(input.quality)||input.quality<0||input.quality>5||!Number.isInteger(input.usefulness)||input.usefulness<0||input.usefulness>5||!text(input.evidence,2000)||!text(input.assessment,4000))fail('assessment_invalid');
    const key='mas_'+digest(requestId),value={...input,responseSha256:r.responseSha256,model:r.model,name:r.name,revision:r.revision,at:stamp(),meaning:'Claus assessment of a retained real result, not independently established quality.'},prior=await store.get('model-assessment',key);if(prior&&!sameValue({...prior,at:null},{...value,at:null}))fail('request_conflict');return (await store.put('model-assessment',key,value)).value;
