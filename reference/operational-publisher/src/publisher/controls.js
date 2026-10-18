@@ -1,5 +1,6 @@
 import {Pool,neonConfig} from '@neondatabase/serverless';
 import {hash} from './policy.js';
+import {schedulesFor} from './files.mjs';
 const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
 const equal=(a,b)=>canonical(a)===canonical(b);
 const authority=c=>c?.scope?{scope:c.scope,enabled:c.enabled,revision:c.revision,deployment:c.deployment,manifest:c.manifest,crons:c.crons}:{id:c?.id,enabled:c?.enabled,revision:c?.revision,project_id:c?.project_id,active_id:c?.active_id,fallback_id:c?.fallback_id};
@@ -30,12 +31,12 @@ export function publicationControls(db=publicationDatabase()){
   async activated(kind,id,action='activate'){return (await db.query('SELECT after_state FROM claus_publication_audit WHERE id=$1',[kind+':'+id+':'+action])).rows[0]?.after_state??null;},
   async activateOperation(c,r,proof){return change('operation:'+r.id+':activate','operation',c,r,async q=>{
    if(c.revision!==r.base_revision||c.deployment!==r.base_deployment||r.state!=='verified')fail();
-   const next=(await q.query('UPDATE claus_operations_control SET revision=revision+1,deployment=$2,manifest=$3::jsonb,updated_at=now() WHERE scope=$1 AND revision=$4 RETURNING *',[r.scope,r.deployment.id,JSON.stringify(r.manifest),c.revision])).rows[0];if(!next)fail();
+   const next=(await q.query('UPDATE claus_operations_control SET revision=revision+1,deployment=$2,manifest=$3::jsonb,crons=$5::jsonb,updated_at=now() WHERE scope=$1 AND revision=$4 RETURNING *',[r.scope,r.deployment.id,JSON.stringify(r.manifest),c.revision,JSON.stringify(schedulesFor(r,c.crons))])).rows[0];if(!next)fail();
    await q.query("UPDATE claus_operations_releases SET state='active',proof=$2::jsonb,updated_at=now() WHERE id=$1",[r.id,JSON.stringify(proof)]);return next;
   });},
   async rollbackOperation(c,r,manifest,proof){return change('operation:'+r.id+':rollback','operation',c,r,async q=>{
    if(!['rollback_pending','rolling_back'].includes(r.state)||!(c.deployment===r.deployment?.id&&c.revision===r.base_revision+1||c.deployment===r.base_deployment&&c.revision===r.base_revision))fail();
-   const next=c.deployment===r.base_deployment?c:(await q.query('UPDATE claus_operations_control SET revision=revision+1,deployment=$2,manifest=$3::jsonb,updated_at=now() WHERE scope=$1 AND revision=$4 RETURNING *',[r.scope,r.base_deployment,JSON.stringify(manifest),c.revision])).rows[0];if(!next)fail();
+   const next=c.deployment===r.base_deployment?c:(await q.query('UPDATE claus_operations_control SET revision=revision+1,deployment=$2,manifest=$3::jsonb,crons=$5::jsonb,updated_at=now() WHERE scope=$1 AND revision=$4 RETURNING *',[r.scope,r.base_deployment,JSON.stringify(manifest),c.revision,JSON.stringify(r.files.find(f=>f.path==='vercel.json')?JSON.parse(r.files.find(f=>f.path==='vercel.json').before).crons??[]:c.crons)])).rows[0];if(!next)fail();
    await q.query("UPDATE claus_operations_releases SET state='rolled_back',proof=$2::jsonb,updated_at=now() WHERE id=$1",[r.id,JSON.stringify(proof)]);return next;
   });},
   async activateSurface(c,r,proof){return change('surface:'+r.id+':activate','surface',c,r,async q=>{

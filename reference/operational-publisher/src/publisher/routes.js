@@ -9,7 +9,7 @@ export function installPublisherRoutes(app,{role=()=>process.env.SERVICE_ROLE,se
   if(role()!=='operator'||!enabled())return c.json({error:'publisher_disabled'},403);
   if(!authorized(c.req.header('authorization'),secret()))return c.json({error:'unauthorized'},401);
   try{
-   const raw=await c.req.text();if(Buffer.byteLength(raw)>600000)return c.json({error:'request_too_large'},413);
+   const raw=await c.req.text();if(Buffer.byteLength(raw)>3500000)return c.json({error:'request_too_large'},413);
    const v=JSON.parse(raw);if(repositoryMode&&v?.scope!=='repository')return c.json({error:'publisher_scope_invalid'},400);
    if(!v||typeof v!=='object'||Object.keys(v).sort().join(',')!=='args,operation,scope')return c.json({error:'publisher_input_invalid'},400);
    return c.json({result:await (repositoryMode?(repositoryProduction??=createRepositoryPublisher({repository:publisherRepository(),ledger:publisherLedger()})):service()).call(v.operation,v.scope,v.args)});
