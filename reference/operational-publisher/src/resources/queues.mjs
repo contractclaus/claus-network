@@ -25,7 +25,7 @@ export function managedQueues({store,endpoints,workStatus,open,now=Date.now}){
  async function secret(q){const s=q.webhook&&await store.get('secret',q.webhook.secretId);if(!s||!['application','external-service'].includes(s.kind)||s.status!=='active'||s.version!==q.webhook.version||s.expiresAt&&Date.parse(s.expiresAt)<=now())fail('webhook_unavailable');return open(s.sealed,s.id+':'+s.version);}
  async function saveJob(q,j,changes){const v={...j,...changes,revision:j.revision+1,updatedAt:stamp()};await store.change('job',key(q.id,j.id),j.revision,v);await store.put('job-history',key(q.id,j.id)+':'+v.revision,view(v));return v;}
  async function enqueue(q,input,requestId,seal){
-  if(!q.enabled||!activeWork(await workStatus(q.workId)))fail('inactive');
+  q=await queue(q.id);const own=await store.get('resource',q.id);if(own?.retirementPlanId||!q.enabled||!activeWork(await workStatus(q.workId)))fail('inactive');
   const e=await endpoint(q);endpointArguments(e.definition.inputSchema,input.arguments);
   const raw=JSON.stringify(input.arguments);if(Buffer.byteLength(raw)>1000000)fail('arguments_too_large');
   const dependencies=input.dependsOn??[];if(!Array.isArray(dependencies)||dependencies.length>100||new Set(dependencies).size!==dependencies.length)fail('dependencies_invalid');
@@ -41,7 +41,8 @@ export function managedQueues({store,endpoints,workStatus,open,now=Date.now}){
   if(j.leaseUntil>now())return {...view(j),busy:true};
   const originalId='act_'+digest(['owner',j.originalRequestId]).slice(0,24),original=await store.get('endpoint-response',originalId);
   if(original){const successful=original.status>=200&&original.status<300;return view(await saveJob(q,j,{state:original.status===202?'accepted':successful?'succeeded':'failed',receipt:{actionId:originalId,httpStatus:original.status,responseSha256:original.digest,observedAt:original.at},reason:successful?null:'endpoint_response_'+original.status,leaseUntil:null,leaseToken:null}));}
-  if(!q.enabled||!activeWork(await workStatus(q.workId)))return view(await saveJob(q,j,{state:'blocked',reason:'work_or_queue_inactive',leaseUntil:null}));
+  q=await queue(q.id);
+  if(q.retirementPlanId||!q.enabled||!activeWork(await workStatus(q.workId)))return view(await saveJob(q,j,{state:'blocked',reason:'work_or_queue_inactive',leaseUntil:null}));
   if(!manual&&Date.parse(j.nextAt)>now())return view(j);
   for(const dep of j.dependencies){const d=await job(q,dep);if(d.state!=='succeeded')return view(await saveJob(q,j,{state:terminal.has(d.state)||d.state==='blocked'?'blocked':'waiting',reason:'dependency_'+d.state,nextAt:new Date(now()+60000).toISOString()}));}
   try{await endpoint(q);}catch(e){if(e.message==='resource_queue_endpoint_changed')return view(await saveJob(q,j,{state:'blocked',reason:'endpoint_changed'}));throw e;}

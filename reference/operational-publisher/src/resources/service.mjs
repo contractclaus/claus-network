@@ -1,3 +1,5 @@
+import {validateRepositoryScopes,authorizeRepositoryScope} from './repository-grants.mjs';
+import {managedRetirement,retirementInputs,assertResourcesActive} from './retirement.mjs';
 import {accountCosts,costInputs} from './account-costs.mjs';
 import {managedReleases,releaseInputs} from './repository-releases.mjs';
 import {managedDomains,domainInputs} from './project-domains.mjs';
@@ -26,9 +28,10 @@ const safeName=value=>{if(typeof value!=='string'||! /^[a-z][a-z0-9-]{1,40}$/.te
 const envName=value=>{if(typeof value!=='string'||! /^[A-Z][A-Z0-9_]{1,100}$/.test(value)||/^(?:NEXT_PUBLIC_|PUBLIC_|VITE_|VERCEL_|NODE_)/.test(value))fail('secret_environment_invalid');return value;};
 const same=sameValue;
 const website={id:'website',provider:'vercel',providerId:'prj_3EPhg3tuhf5oHU9sw2Butj9eRegy',name:'claus',owner:team,kind:'existing-website',protected:true};
-const grantOperations=['endpoint_info','endpoint_invoke','endpoint_result','queue_info','queue_jobs','object_get','object_list','object_parts','object_upload','object_commit','object_download','resource','deployments','bindings','settings','bind_secret'];
-const inputKeys={...costInputs,...releaseInputs,...domainInputs,development_fund:['actionId','vcpus','seconds'],...volumeInputs,...assetInputs,...tuningInputs,...serviceInputs,...procedureInputs,...queueInputs,...endpointInputs,...catalogInputs,...objectInputs,repository_file:['resourceId','path','ref','offset'],repository_tree:['resourceId','commit'],repository_write:['resourceId','path','branch','content','encoding','expectedBlobSha','message'],repository_branch:['resourceId','branch','commit'],deployment_stage:['resourceId','repositoryId','commit','expectedDeploymentId'],deployment_promote:['resourceId','deploymentId','expectedDeploymentId','healthPath'],database_create:['name','purpose'],database_schema:['resourceId'],database_migrate:['resourceId','plan'],status:[],identity:['provider'],resources:['offset'],resource:['resourceId'],secrets:['offset'],bindings:['resourceId'],deployments:['resourceId'],logs:['resourceId','deploymentId'],action:['id'],project_create:['name','purpose'],repository_create:['name','purpose','private'],secret_create:['name','expiresAt'],grant_create:['name','expiresAt','resourceIds','secretIds','operations','workId','maximumSpendMicroUsd'],secret_rotate:['secretId','expectedRevision'],secret_revoke:['secretId','expectedRevision'],bind_secret:['resourceId','secretId','version','envName'],settings:['resourceId','settings']};
+const grantOperations=['repository_file','repository_write','endpoint_info','endpoint_invoke','endpoint_result','queue_info','queue_jobs','object_get','object_list','object_parts','object_upload','object_commit','object_download','resource','deployments','bindings','settings','bind_secret'];
+const inputKeys={...retirementInputs,...costInputs,...releaseInputs,...domainInputs,development_fund:['actionId','vcpus','seconds'],...volumeInputs,...assetInputs,...tuningInputs,...serviceInputs,...procedureInputs,...queueInputs,...endpointInputs,...catalogInputs,...objectInputs,repository_file:['resourceId','path','ref','offset'],repository_tree:['resourceId','commit'],repository_write:['resourceId','path','branch','content','encoding','expectedBlobSha','message'],repository_branch:['resourceId','branch','commit'],deployment_stage:['resourceId','repositoryId','commit','expectedDeploymentId'],deployment_promote:['resourceId','deploymentId','expectedDeploymentId','healthPath'],database_create:['name','purpose'],database_schema:['resourceId'],database_migrate:['resourceId','plan'],status:[],identity:['provider'],resources:['offset'],resource:['resourceId'],secrets:['offset'],bindings:['resourceId'],deployments:['resourceId'],logs:['resourceId','deploymentId'],action:['id'],project_create:['name','purpose'],repository_create:['name','purpose','private'],secret_create:['name','expiresAt'],grant_create:['name','expiresAt','resourceIds','secretIds','operations','workId','maximumSpendMicroUsd','repositoryScopes'],secret_rotate:['secretId','expectedRevision'],secret_revoke:['secretId','expectedRevision'],bind_secret:['resourceId','secretId','version','envName'],settings:['resourceId','settings']};
 export function createResourceService({objects=null,repository=null,publishing=null,budget=resourceBudget(),database=resourceDatabase(),store=resourceStore(),providers=resourceProviders(),seal=sealSecret,open=openSecret,now=Date.now,environment=process.env,workStatus=async()=>null}={}){
+ const retirement=managedRetirement({store,providers,now,invoke:(operation,input,requestId)=>call(operation,input,requestId,{retiring:true})});
  const costs=accountCosts({store,env:environment,now});
  const releases=managedReleases({store,call:providers.call,now});
  const domains=managedDomains({store,call:providers.call,now});
@@ -55,6 +58,7 @@ export function createResourceService({objects=null,repository=null,publishing=n
  async function authorization(token,operation,input){
   const m=/^claus_(sec_[a-f0-9]{24})\.[a-zA-Z0-9_-]{43}$/.exec(token??'');if(!m)fail('grant_invalid');
   const s=await secret(m[1]);active(s);if(s.kind!=='broker-grant'||!s.rules?.operations.includes(operation)||!s.rules.resourceIds.includes(input.resourceId))fail('grant_scope_denied');
+  authorizeRepositoryScope(s.rules,operation,input);
   if(input.secretId&&!s.rules.secretIds.includes(input.secretId))fail('grant_scope_denied');
   if(!['ready','working','waiting'].includes(await workStatus(s.rules.workId)))fail('grant_work_inactive');
   const bytes=Buffer.from(open(s.sealed,s.id+':'+s.version)),given=Buffer.from(token);if(bytes.length!==given.length||!timingSafeEqual(bytes,given))fail('grant_invalid');return {id:s.id,version:s.version};
@@ -68,11 +72,14 @@ export function createResourceService({objects=null,repository=null,publishing=n
   const clean=s=>{for(const v of values)if(v.length>=8)s=s.split(v).join('[redacted]');return s.replace(/Bearer\s+[A-Za-z0-9_.~+\/-]+/gi,'Bearer [redacted]').replace(/([?&](?:token|key|secret|signature|password)=)[^&\s]+/gi,'$1[redacted]');};
   return {...logs,events:logs.events.map(e=>({...e,text:clean(e.text)}))};
  }
- async function call(operation,input,requestId,{grant=null}={}){
+ async function call(operation,input,requestId,{grant=null,retiring=false}={}){
   if(!input||typeof input!=='object'||Array.isArray(input))fail('input_invalid');
   const keys=buildInputs[operation]??inputKeys[operation];
   if(!keys||Object.keys(input).some(k=>!keys.includes(k)))fail('input_invalid');
   const delegation=grant?await authorization(grant,operation,input):null,principal=delegation?.id??'owner';
+  if(retirementInputs[operation]){if(grant)fail('grant_scope_denied');return retirement.call(operation,input,requestId);}
+  const reads=new Set(['status','identity','resources','resource','secrets','bindings','deployments','logs','action','repository_file','repository_tree','database_schema','endpoint_info','endpoint_result','endpoint_reconcile','queue_info','queue_jobs','queue_run','queue_cancel','volume_info','volume_cost','object_get','object_list','object_parts','object_download']);
+  if(!retiring&&!reads.has(operation))await assertResourcesActive(store,input);
   if(costInputs[operation])return costs(input);
   if(releaseInputs[operation])return releases.call(operation,input,requestId);
   if(domainInputs[operation])return domains.call(operation,input,requestId);
@@ -88,7 +95,7 @@ export function createResourceService({objects=null,repository=null,publishing=n
   if(catalogInputs[operation])return catalog.call(operation,input);
   if(objectInputs[operation])return objects.call(operation,input,requestId,principal);
   const offset=input.offset??0;if(!Number.isSafeInteger(offset)||offset<0)fail('offset_invalid');
-  if(operation==='status')return {version:1,configured:{...providers.configured(),objectStorage:objects.configured()},scope:'Claus-owned projects, application secret references and revocable broker grants',website:metadata(website),operations:[...Object.keys(costInputs),...Object.keys(releaseInputs),...Object.keys(domainInputs),...Object.keys(volumeInputs),...Object.keys(assetInputs),...Object.keys(tuningInputs),...Object.keys(serviceInputs),...Object.keys(procedureInputs),...Object.keys(queueInputs),...Object.keys(buildInputs),...Object.keys(endpointInputs),...Object.keys(catalogInputs),...Object.keys(objectInputs),'repository_file','repository_tree','repository_write','repository_branch','deployment_stage','deployment_promote','resources','resource','identity','project_create','repository_create','database_create','database_schema','database_migrate','settings','deployments','logs','secrets','secret_create','secret_rotate','secret_revoke','grant_create','bind_secret','bindings','action'],providerBilling:'Project/repository creation does not reserve a running server. Deployment stages reserve USD0.50 per Basic build under the shared USD200/24h and USD6000/30d operating budget. This maximum authorization is not an invoice; compute leases retain their own recorded reservations.',secretValuesReturned:false};
+  if(operation==='status')return {version:1,configured:{...providers.configured(),objectStorage:objects.configured()},scope:'Claus-owned projects, application secret references and revocable broker grants',website:metadata(website),operations:[...Object.keys(retirementInputs),...Object.keys(costInputs),...Object.keys(releaseInputs),...Object.keys(domainInputs),...Object.keys(volumeInputs),...Object.keys(assetInputs),...Object.keys(tuningInputs),...Object.keys(serviceInputs),...Object.keys(procedureInputs),...Object.keys(queueInputs),...Object.keys(buildInputs),...Object.keys(endpointInputs),...Object.keys(catalogInputs),...Object.keys(objectInputs),'repository_file','repository_tree','repository_write','repository_branch','deployment_stage','deployment_promote','resources','resource','identity','project_create','repository_create','database_create','database_schema','database_migrate','settings','deployments','logs','secrets','secret_create','secret_rotate','secret_revoke','grant_create','bind_secret','bindings','action'],providerBilling:'Project/repository creation does not reserve a running server. Deployment stages reserve USD0.50 per Basic build under the shared USD200/24h and USD6000/30d operating budget. This maximum authorization is not an invoice; compute leases retain their own recorded reservations.',secretValuesReturned:false};
   if(operation==='repository_file'||operation==='repository_tree'){const r=await resource(input.resourceId);return operation==='repository_file'?repository.repositoryFile(r,input):repository.repositoryTree(r,input.commit);}
   if(operation==='identity'){if(!['vercel','github'].includes(input.provider))fail('provider_invalid');const observation=await providers.identity(input.provider);await catalog.observe(input.provider,observation);return observation;}
   if(operation==='resources'){const p=await store.list('resource',offset);return {...p,items:p.items.map(metadata)};}
@@ -130,7 +137,9 @@ export function createResourceService({objects=null,repository=null,publishing=n
      for(const id of input.secretIds??[])active(await secret(id));
      const maximum=input.maximumSpendMicroUsd??'0';
      if(typeof maximum!=='string'||!/^(0|[1-9][0-9]{0,8})$/.test(maximum)||BigInt(maximum)>200000000n)fail('grant_budget_invalid');
-     rules={resourceIds:[...new Set(input.resourceIds)],secretIds:[...new Set(input.secretIds??[])],operations:[...new Set(input.operations)],workId:input.workId,maximumSpendMicroUsd:maximum,spending:'Lifetime maximum exposure for explicitly scoped endpoint calls, also gated by the shared operating budget. Dispatched or unknown outcomes remain allocated. No financial rights or resource-creation authority.'};
+     const repositoryScopes=validateRepositoryScopes(input.repositoryScopes,input.resourceIds,input.operations);
+     for(const scope of repositoryScopes){const r=await resource(scope.resourceId);if(r.provider!=='github'||r.defaultBranch===scope.branch)fail('grant_repository_scope');const branch=await providers.call('github','/repos/contractclaus/'+encodeURIComponent(r.name)+'/git/ref/heads/'+encodeURIComponent(scope.branch));if(!/^[a-f0-9]{40}$/.test(branch.object?.sha??''))fail('grant_repository_branch');}
+     rules={repositoryScopes,resourceIds:[...new Set(input.resourceIds)],secretIds:[...new Set(input.secretIds??[])],operations:[...new Set(input.operations)],workId:input.workId,maximumSpendMicroUsd:maximum,spending:'Lifetime maximum exposure for explicitly scoped endpoint calls, also gated by the shared operating budget. Dispatched or unknown outcomes remain allocated. No financial rights or resource-creation authority.'};
     }
     const value=kind==='broker-grant'?'claus_'+id+'.'+newSecretValue():newSecretValue();
     prepared={id,name:input.name,kind,rules,version:1,revision:1,status:'active',createdAt:stamp(),updatedAt:stamp(),expiresAt:input.expiresAt??null,sealed:seal(value,id+':1'),lastAction:actionId};
@@ -151,9 +160,9 @@ export function createResourceService({objects=null,repository=null,publishing=n
    if(reservation.row.result.output)return reservation.row.result.output;
   }
   const complete=result=>store.complete(actionId,{id:actionId,...result});
-  if(operation==='repository_write'||operation==='repository_branch'){const result=operation==='repository_write'?await repository.repositoryWrite(prepared.resource,input,actionId,()=>store.dispatch(actionId)):await repository.repositoryBranch(prepared.resource,input,()=>store.dispatch(actionId));return result.state==='outcome_unknown'?{id:actionId,...result}:complete(result);}
-  if(operation==='deployment_stage'){const result=await publishing.stage(prepared,actionId,()=>store.dispatch(actionId));if(result.pending)return {id:actionId,...result};if(result.deployment)await store.put('publication',result.deployment.id,{...result,actionId,resourceId:prepared.resource.id,repositoryId:prepared.repository.id,at:stamp()});return complete(result);}
-  if(operation==='deployment_promote'){const result=await publishing.promote(prepared.resource,input,actionId,()=>store.dispatch(actionId));return result.pending?{id:actionId,...result}:complete(result);}
+  if(operation==='repository_write'||operation==='repository_branch'){const result=operation==='repository_write'?await repository.repositoryWrite(prepared.resource,input,actionId,()=>store.dispatch(actionId,delegation)):await repository.repositoryBranch(prepared.resource,input,()=>store.dispatch(actionId,delegation));return result.state==='outcome_unknown'?{id:actionId,...result}:complete(result);}
+  if(operation==='deployment_stage'){const result=await publishing.stage(prepared,actionId,()=>store.dispatch(actionId,delegation));if(result.pending)return {id:actionId,...result};if(result.deployment)await store.put('publication',result.deployment.id,{...result,actionId,resourceId:prepared.resource.id,repositoryId:prepared.repository.id,at:stamp()});return complete(result);}
+  if(operation==='deployment_promote'){const result=await publishing.promote(prepared.resource,input,actionId,()=>store.dispatch(actionId,delegation));return result.pending?{id:actionId,...result}:complete(result);}
   if(operation==='database_create'){
    const key=prepared.secret,connection=open(key.sealed,key.id+':1'),created=await database.provision(prepared.id,connection);
    const stored=await store.put('secret',key.id,key);if(stored.value.lastAction!==actionId)fail('secret_conflict');await store.put('secret-version',key.id+':1',key);
@@ -176,7 +185,7 @@ export function createResourceService({objects=null,repository=null,publishing=n
   }
   if(operation==='project_create'||operation==='repository_create'){
    let r=await providers.find(prepared.provider,prepared.name);
-   if(!r&&await store.dispatch(actionId))r=await providers.create(prepared.provider,prepared.name,input);
+   if(!r&&await store.dispatch(actionId,delegation))r=await providers.create(prepared.provider,prepared.name,input);
    if(!r)return {id:actionId,state:'outcome_unknown',retry:false,next:'Keep this request ID and reconcile; do not create a replacement project.'};
    const id='res_'+digest([r.provider,r.providerId]).slice(0,24),saved={...r,id,kind:'managed-project',revision:1,purpose:input.purpose,createdAt:stamp(),creationAction:actionId};
    const stored=await store.put('resource',id,saved);return complete({resource:metadata(stored.value),runningComputeCreated:false});
@@ -186,7 +195,7 @@ export function createResourceService({objects=null,repository=null,publishing=n
    const value=open(prepared.sealed,prepared.secretId+':'+prepared.version),r=prepared.resource;
    let envs=await providers.envs(r),found=envs.find(e=>e.key===prepared.envName&&e.target?.includes('production'));
    let matched=found&&await providers.envValue(r,found.id)===value;
-   if(!matched&&await store.dispatch(actionId)){
+   if(!matched&&await store.dispatch(actionId,delegation)){
     if(found&&found.id!==prepared.priorEnv?.id)fail('environment_changed');
     await providers.setEnv(r,prepared.envName,value,found);
     envs=await providers.envs(r);found=envs.find(e=>e.key===prepared.envName&&e.target?.includes('production'));matched=found&&await providers.envValue(r,found.id)===value;
@@ -200,7 +209,7 @@ export function createResourceService({objects=null,repository=null,publishing=n
   }
   if(operation==='settings'){
    let current=await providers.readSettings(prepared.resource,Object.keys(input.settings));
-   if(!same(current,input.settings)&&await store.dispatch(actionId)){await providers.settings(prepared.resource,input.settings);current=await providers.readSettings(prepared.resource,Object.keys(input.settings));}
+   if(!same(current,input.settings)&&await store.dispatch(actionId,delegation)){await providers.settings(prepared.resource,input.settings);current=await providers.readSettings(prepared.resource,Object.keys(input.settings));}
    if(!same(current,input.settings))return {id:actionId,state:'outcome_unknown',retry:false};
    return complete({resourceId:prepared.resource.id,settings:current,requiresDeployment:true});
   }
