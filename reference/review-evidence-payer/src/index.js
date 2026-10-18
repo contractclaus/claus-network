@@ -1,3 +1,5 @@
+import {continuityEnabled} from './continuity-gate.mjs';
+import {hostContinuity,hostMiddleware,responseRecord} from './continuity-host.mjs';
 import {hasInterruptedCreditProof} from './interrupted-credit-settlement.js';
 import {operatingLedger} from './operating-ledger.js';
 import {paymentTrace} from './payment-trace.js';
@@ -72,6 +74,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   funding=inferenceFunding,outcome=paymentOutcome,exactScheme=ExactEvmScheme,uptoScheme=UptoEvmScheme,
   reserve=reservePayment,reconcile=reconcilePayment,pending=reconcilePending,retain=retainCompletion}={}) {
   const app=new Hono();
+  app.use('/api/*',hostMiddleware(c=>!['/api/completion','/api/images'].includes(c.req.path)&&(['POST','PUT','PATCH','DELETE'].includes(c.req.method)||c.req.method==='GET'&&c.req.path.endsWith('/process'))));
   installCapitalRoutes(app,{env});
   const computeFunding=installFundingRoutes(app,'payer',env);
   const sql=database??(()=>neon(env.PAYMENT_DATABASE_URL));
@@ -191,10 +194,10 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     return result?c.json(result):c.json({error:'not_found'},404);
   });
   for(const path of ['/api/completion','/api/images'])app.post(path,async c=>{
+    const execute=async()=>{
     const id=c.req.header('idempotency-key');
     if(!validRequestId(id))return c.json({error:'stable_request_id_required'},400);
-    const deliver=handler=>path==='/api/completion'&&c.req.header('x-inference-purpose')==='research'
-      ?streamCompletion(()=>handler(c),work=>retain(work,c.env)):handler(c);
+    const deliver=handler=>!continuityEnabled()&&path==='/api/completion'&&c.req.header('x-inference-purpose')==='research'?streamCompletion(()=>handler(c),work=>retain(work,c.env)):handler(c);
     const db=sql(),rows=await db`SELECT status FROM claus_inference WHERE id=${id}`;
     const savedCredit=await readCredit(db,id);
     if(savedCredit)return credit(c);
@@ -223,6 +226,10 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
       return deliver(credit);
     }
     return rows.length?completion(c):deliver(completion);
+    };
+    if(!continuityEnabled())return execute();
+    const run=async()=>{let response;const input=await c.req.json();await hostContinuity(path,c.req.header('idempotency-key')??null,input,async()=>{response=await execute();return responseRecord(response);});return response;};
+    return path==='/api/completion'&&c.req.header('x-inference-purpose')==='research'?streamCompletion(run,work=>retain(work,c.env)):run();
   });
   app.get('/api/compute/:id',async c=>{
     const id=c.req.param('id'),db=sql();

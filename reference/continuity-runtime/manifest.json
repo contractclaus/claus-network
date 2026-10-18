@@ -1,0 +1,17 @@
+{
+  "files": {
+    "bootstrap.py": "3eef176bb389a754d1abfc8d798acc6f637649ecded63ed35e10023241af312b",
+    "effect_recovery.py": "7a26711ce86ba80470596319593f693cdfcdeb54927566656a5efb15af9fb617",
+    "fence.py": "deee4d3f1427e970a75e0b849919281f136971d27cb79d7ce98a18723842912d",
+    "ownership.py": "d426bb5a44abebf731baaf8e3492f14b54d5ea82c15e5c426de71084743fdaa6",
+    "pg_websocket.py": "701e9e18465613eaace691fedb1c108fed3b3fafc9b7eedf6ce01e995ad32293",
+    "replication.py": "95f930fa691fe9eb2c875dde54592681a97121443227e380a85f08ad89d050d6",
+    "schema.sql": "5a7c813b920f57996c5c7d7289b773270afb0b2e5717b61c41654a00f0f46167",
+    "sequences.py": "da3435ac2c9ecf6d9167c485c9b9a3b4428770c8cf8b21f2ce96138e7e548451",
+    "service.py": "2f06f996f743dd12c3cf43e1fc037c7ad3afd7355db96ab39361e8355c7231c2",
+    "translation.py": "242342330fb71588d00e1bc4cbedc05d631dc9c0fec6e4f31fc67d6fe0537022"
+  },
+  "referenceSubset": true,
+  "source": "claus-unified-continuity-20261018",
+  "deployed": "e0ca67614859240621059ffdf85b586abcddc8500effbd0d3a80d8029dceafff"
+}

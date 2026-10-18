@@ -1,3 +1,5 @@
+import {clubPublicConversations} from './person-continuity.js';
+import {agentContinuity,agentContinuityGuidance,continuityReceipt} from './agent-continuity.js';
 import {networkContext} from './network-access.js';
 import {compactClubContext,clubOperatingContext,clubProgress} from './club-context.js';
 import {contributionAttention} from './workspaces/review-service.js';
@@ -32,17 +34,18 @@ export async function clubCycle(owner:string,initial:Configuration){
    const config=await configuration();if(!clubEnabled(config))break;
    if(!pending){
     context=await clubContext(config);if(!context?.enabled)break;
+    context.linkedPublicConversations=await clubPublicConversations(context);
     const publication=publicationContext(await publicState());
     const adaptation=await readAdaptationContext(config);
     progress=clubProgress(history,progress);
-    const system={role:'system',content:systemPrompt(config)+'\n\n'+clubScope+'\nPRIVATE CLUB TURN: Use a relaxed conversational voice. This turn has no public posting or public research-queue tools. Finish saves only private Club memory. Use public readers for factual sources when needed. Reuse the private workProgress receipt index across interruptions. Address a pending question once its relevant evidence is sufficient; do not repeatedly restart the same market, builder and knowledge research. If evidence is missing, state the specific uncertainty instead of claiming a result.\n\n'+preferencePolicy};
-    const view=clubOperatingContext({time:new Date().toISOString(),configurationRevision:config.revision,club:compactClubContext(context),memory,agenda,publication,adaptation,work:await workContext({publicOnly:true}),network:await networkContext(),buildReview,weeklyRecap,workProgress:progress},value=>contextFits([system,{role:'user',content:JSON.stringify(value)}],config.settings,'club',180000));
+    const system={role:'system',content:systemPrompt(config)+'\n\n'+agentContinuityGuidance+'\n\n'+clubScope+'\nPRIVATE CLUB TURN: Use a relaxed conversational voice. This turn has no public posting or public research-queue tools. Finish saves only private Club memory. Use public readers for factual sources when needed. Reuse the private workProgress receipt index across interruptions. Address a pending question once its relevant evidence is sufficient; do not repeatedly restart the same market, builder and knowledge research. If evidence is missing, state the specific uncertainty instead of claiming a result.\n\n'+preferencePolicy};
+    const view=clubOperatingContext({time:new Date().toISOString(),configurationRevision:config.revision,club:compactClubContext(context),memory,agenda,publication,adaptation,self:await agentContinuity(config,'club'),work:await workContext({publicOnly:true}),network:await networkContext(),buildReview,weeklyRecap,workProgress:progress},value=>contextFits([system,{role:'user',content:JSON.stringify(value)}],config.settings,'club',180000));
     const base=[system,{role:'user',content:JSON.stringify(view)}];
     history=conversationWindow(history,base,m=>contextFits(m,config.settings,'club'));
     const messages=[...base,...history];if(!contextFits(messages,config.settings,'club'))break;
     // A JSON string retains exact request bytes, including tool definitions,
     // through jsonb checkpoints and subsequent configuration/code changes.
-    pending={id:`club:${owner}:model:${sequence++}`,messages,requestJson:JSON.stringify(inferenceRequest(messages,config.settings,'club')),events:(context.events??[]).map((e:any)=>e.id),revision:config.revision,settings:config.settings,publication,adaptation:{revision:adaptation.revision,hash:adaptation.hash}};await save();
+    pending={id:`club:${owner}:model:${sequence++}`,messages,requestJson:JSON.stringify(inferenceRequest(messages,config.settings,'club')),events:(context.events??[]).map((e:any)=>e.id),revision:config.revision,settings:config.settings,publication,adaptation:{revision:adaptation.revision,hash:adaptation.hash},continuity:continuityReceipt(view.self)};await save();
    }
    await clubPresence(owner,true);
    if(!pending.response){
@@ -54,7 +57,7 @@ export async function clubCycle(owner:string,initial:Configuration){
      // Legacy paid requests need their stored result, never a rebuilt toolset.
      pending.response=savedRequest.result;
     }else pending.response=pending.requestJson?await completeRequest(pending.id,JSON.parse(pending.requestJson)):await complete(pending.id,pending.messages,pending.settings??config.settings,'club');
-    await save();await journal('inference','Private Club response received',{turn:owner,visibility:'private_club',model:pending.response.model,configRevision:pending.revision,publicationFactsHash:pending.publication?.factsHash??null,adaptationRevision:pending.adaptation?.revision??null,adaptationHash:pending.adaptation?.hash??null,usage:pending.response.usage});}
+    await save();await journal('inference','Private Club response received',{turn:owner,visibility:'private_club',model:pending.response.model,configRevision:pending.revision,publicationFactsHash:pending.publication?.factsHash??null,adaptationRevision:pending.adaptation?.revision??null,adaptationHash:pending.adaptation?.hash??null,usage:pending.response.usage,continuity:pending.continuity??null});}
    const response=pending.response.message,calls=response.tool_calls??[];
    if(calls.length!==1){history.push(response,...calls.map((c:any)=>({role:'tool',tool_call_id:c.id,content:'{"error":"Use one tool per step."}'})));if(!calls.length)history.push({role:'user',content:'Use a Club action or finish to save the private checkpoint.'});pending=null;await save();continue;}
    const call=calls[0];let args:any={};try{args=JSON.parse(call.function.arguments);}catch{}

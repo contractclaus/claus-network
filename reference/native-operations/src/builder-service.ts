@@ -1,3 +1,4 @@
+import {nativeContinuity} from './native-continuity.js';
 import {buildAllowances} from './builder-limits.js';
 import {BuilderStore} from './builder-store.js';
 import {BuilderWorker} from './builder-worker.js';
@@ -7,7 +8,7 @@ import {labInference} from './lab-model.js';
 import {builderEnabled,builderRuntimeEnabled,BUILD_LIMITS} from './builder-schema.js';
 let instance:BuilderStore|undefined;
 export const builderStore=()=>instance??=new BuilderStore(productionLabDatabase());
-export const builderTick=(id?:string)=>new BuilderWorker(builderStore(),labInference(),configuration).tick(id);
+export const builderTick=(id?:string)=>nativeContinuity('native','builder',id??null,{},()=>new BuilderWorker(builderStore(),labInference(),configuration).tick(id));
 export async function readBuilder(args:any={},scope='claus'){
  builderStore().owner(scope);const visibility=scope==='claus'?'private_club':'private_workspace';
  const config=await configuration();

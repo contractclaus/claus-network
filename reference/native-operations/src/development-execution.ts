@@ -61,6 +61,7 @@ export class DevelopmentExecution {
  async recover(action:any,save:Save){
   const p=action.progress?.execution;if(!p)return null;
   if(p.result)return p.result;
+  if(p.recoveryObservation?.state==='stopped_outcome_unknown'&&!p.commandResult)return null;
   if(p.phase==='funding'){try{const funding=await this.funding(action.id,developmentShape(action.input).vcpus,action.input.timeoutSeconds??100);return {exitCode:null,checkpointSnapshotId:null,checkpointApplied:false,resourceCreated:false,funding,reason:'funding_reconciled_no_command_dispatched'};}catch{return null;}}
   // GET never resumes the VM and no execution command is sent during recovery.
   let box:Sandbox|undefined,stopAfter=false;
@@ -70,7 +71,9 @@ export class DevelopmentExecution {
    let result=p.commandResult;
    if(!result&&p.commandId){
     const command=await session.getCommand(p.commandId);
-    if(command.exitCode==null&&box.status!=='stopped'){stopAfter=Date.now()>Date.parse(p.deadline)+30000;return null;}
+    // Detached metadata can keep exitCode null until wait() observes completion.
+    // Read the original output with a bound instead of waiting for VM shutdown.
+    stopAfter=box.status!=='stopped'&&Date.now()>Date.parse(p.deadline)+30000;
     result=await developmentOutput(command,AbortSignal.timeout(10000));
    }
    if(!result)return null;stopAfter=true;
@@ -80,6 +83,9 @@ export class DevelopmentExecution {
    if(!snapshotId||snapshotId===p.baseSnapshot)return null;
    const output={...result,funding:p.funding,checkpointSnapshotId:snapshotId,inputHash:createHash('sha256').update(JSON.stringify(action.input)).digest('hex'),baseSnapshot:p.baseSnapshot};
    await save({...p,phase:'snapshotted',result:output});return output;
-  }catch{return null;}finally{if(box&&stopAfter)await box.stop().catch(()=>{});}
+  }catch{
+   if(box?.status==='stopped')await save({...p,recoveryObservation:{state:'stopped_outcome_unknown',observedAt:new Date().toISOString(),sessionId:p.sessionId,commandId:p.commandId??null,checkpointSnapshotId:box.currentSnapshotId&&box.currentSnapshotId!==p.baseSnapshot?box.currentSnapshotId:null,reason:'original_command_receipt_unavailable_after_stop'}});
+   return null;
+  }finally{if(box&&stopAfter)await box.stop().catch(()=>{});}
  }
 }

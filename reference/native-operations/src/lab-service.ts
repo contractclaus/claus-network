@@ -1,3 +1,5 @@
+import {nativeContinuity} from './native-continuity.js';
+import {agentContinuity} from './agent-continuity.js';
 import {syncClubResearch} from './club-research.js';
 import {publicResearchVoice} from './lab-voice.js';
 import {LabStore} from './lab-store.js';
@@ -67,7 +69,8 @@ export async function researchTool(name:string,args:Record<string,any>){
   }
   throw Error('lab_tool_not_allowed');
 }
-export async function tickResearch(){
+export async function tickResearch(){return nativeContinuity('lab','research',null,{},()=>tickResearchUnfenced());}
+async function tickResearchUnfenced(){
   const store=labStore();
   const {settings,config}=await currentLab();
   if(config.settings.enabled&&settings.enabled&&settings.autonomous&&settings.developments){try{await new Developments(researchCache()).observe(store,settings);}catch{/* A read-only feed failure must not block conversations or other research. */}}
@@ -79,6 +82,7 @@ export async function tickResearch(){
     search:args=>searchWeb(args,researchCache()),developments:()=>new Developments(researchCache()).read(),experiments:new LabExperiments(store),extensions:()=>researchExtensions(settings),
     publicContext:labPublicContext,
     adaptation:()=>readAdaptationContext(),
+    continuity:async()=>agentContinuity(await configuration(),'research'),
     voice:async()=>publicResearchVoice((await configuration()).identity),
     readSource:(url,source,options)=>readLabSource(url,source,undefined,undefined,options),
     observe:readLabObservation,funded:researchFundingAvailable,

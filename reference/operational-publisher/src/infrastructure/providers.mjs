@@ -145,7 +145,7 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now(),volumes=run
       check(checkpoint.providerResourceId,'resource_not_identified');
       // Bind the live resource before every destructive operation.
       const path='/pods/'+encodeURIComponent(checkpoint.providerResourceId);
-      try{const pod=await api(path);matches(pod,work);await volumes.matches(pod,work);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return this.inspect(work,checkpoint);throw e;}
+      try{const pod=await api(path);matches(pod,work);await volumes.matches(pod,work);if(!remove&&pod.status==='EXITED')return observe(pod,work);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return this.inspect(work,checkpoint);throw e;}
       if(remove){await api(path,{method:'DELETE'});return {providerResourceId:checkpoint.providerResourceId,state:'TERMINATED',ready:false,terminal:true,stopped:true,storageRetained:!!work.manifest.networkVolume,deletionConfirmed:true,costFinal:false};}
       const pod=await api(path+'/action',{method:'POST',body:{action:'stop'}});return observe(pod,work);
     },

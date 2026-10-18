@@ -1,3 +1,5 @@
+import {nativeContinuity} from './native-continuity.js';
+import {agentContinuity,agentContinuityGuidance,continuityReceipt} from './agent-continuity.js';
 import {reconcileDevelopmentExports} from './development-export.js';
 import {reconcileDevelopment} from './development-workspace.js';
 import {operatingContext} from './operating-context.js';
@@ -51,6 +53,9 @@ export function interruptionPlan(pending:any[],failures=0,now=Date.now()) {
 }
 
 export async function cycle(generation:number,fromClubWake=false) {
+ return nativeContinuity('native','cycle','generation:'+generation,{fromClubWake},()=>cycleUnfenced(generation,fromClubWake));
+}
+async function cycleUnfenced(generation:number,fromClubWake=false) {
   const config=await configuration();
   if(!config.settings.enabled) {await pauseIdle(generation);return {status:'paused',nextAt:null};}
   if(!modelReady()) return {status:'inference_not_connected',nextAt:null};
@@ -71,7 +76,7 @@ export async function cycle(generation:number,fromClubWake=false) {
   let messages:any[]=[],showingClubPresence=false;
   const presence=async(active:boolean)=>{if(active||showingClubPresence)await clubPresence(id,active);showingClubPresence=active;};
   let continuation=state.continuation??null;
-  let awaitingInference:{id:string;postIds:string[];decisionContext?:PublicDecisionContext}|null=null;
+  let awaitingInference:{id:string;postIds:string[];decisionContext?:PublicDecisionContext;continuity?:ReturnType<typeof continuityReceipt>}|null=null;
   let recoveredInference:{id:string;postIds:string[];response:any;decisionContext?:PublicDecisionContext}|null=null;
   const saveContinuation=async(summary:string)=>{
     if(messages.length<=2&&!awaitingInference)return;
@@ -152,9 +157,9 @@ export async function cycle(generation:number,fromClubWake=false) {
     const [recent,archive,published,work,network,networkWork]=await Promise.all([recentSummaries(8),archiveOverview(),publicState(),workContext(),networkContext(),networkOperationsEnabled(config)?(networkDue?networkOperations.begin():networkOperations.read()).catch(()=>({available:false,error:'network_work_unavailable'})):null]);
     const networkFocus=networkDue&&networkWork&&'focus' in networkWork?networkWork.focus:null;
     const publication=publicationContext(published);
-    const social=config.policy.capabilities.xReply?await socialContext(config):null;
+    const social=config.policy.capabilities.xReply||config.policy.capabilities.xPublish?await socialContext(config):null;
     const club=null;
-    messages=[{role:'system',content:systemPrompt(config)+(networkOperationsEnabled(config)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')},{role:'user',content:JSON.stringify({time:new Date().toISOString(),mode:config.settings.mode,configurationRevision:config.revision,memory,agenda,continuation,recent,archive,social,publication,club,work,network,networkWork,unresolvedNetworkPrograms:unresolvedNetworkPrograms.map(a=>({id:a.id,workId:a.input?.workId,projectId:a.input?.projectId,reason:a.kind==='external_tools'?'Original external tool response retained. Read external_tools receipt with this id. New writes to that provider are held; unrelated work may continue.':a.kind==='development'?'Original development command retained. Do not repeat it or reuse its working branch. Other work and conversations may continue.':'Original non-financial app outcome retained. That project/work cannot start another program until resolved. Unrelated work may continue.'}))})}];
+    messages=[{role:'system',content:systemPrompt(config)+'\n\n'+agentContinuityGuidance+(networkOperationsEnabled(config)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')},{role:'user',content:JSON.stringify({time:new Date().toISOString(),mode:config.settings.mode,configurationRevision:config.revision,memory,agenda,continuation,recent,archive,social,publication,club,work,network,networkWork,self:await agentContinuity(config,'operator',networkWork),unresolvedNetworkPrograms:unresolvedNetworkPrograms.map(a=>({id:a.id,workId:a.input?.workId,projectId:a.input?.projectId,reason:a.kind==='external_tools'?'Original external tool response retained. Read external_tools receipt with this id. New writes to that provider are held; unrelated work may continue.':a.kind==='development'?'Original development command retained. Do not repeat it or reuse its working branch. Other work and conversations may continue.':'Original non-financial app outcome retained. That project/work cannot start another program until resolved. Unrelated work may continue.'}))})}];
     // Reserve room for several source pages and their complete tool exchanges.
     // Compact the separately retrievable overview before dropping work history.
     messages[1].content=JSON.stringify(operatingContext(JSON.parse(messages[1].content),view=>contextFits([messages[0],{role:'user',content:JSON.stringify(view)}],config.settings,'public',180000)));
@@ -164,7 +169,7 @@ export async function cycle(generation:number,fromClubWake=false) {
         const modelAction=saved.awaitingInference?(await sql()`SELECT kind,status,requested_model,result FROM claus_actions WHERE id=${saved.awaitingInference.id}`)[0]:null;
         const restored=restoredInference(saved,modelAction);
         recoveredInference=restored.pending;
-        if(recoveredInference)awaitingInference={id:recoveredInference.id,postIds:recoveredInference.postIds,decisionContext:recoveredInference.decisionContext};
+        if(recoveredInference)awaitingInference={id:recoveredInference.id,postIds:recoveredInference.postIds,decisionContext:recoveredInference.decisionContext,continuity:saved.awaitingInference?.continuity??null};
         const history=restored.history;
         // A tool may have completed during reconciliation after its saved call.
         const last=history.at(-1),call=last?.tool_calls?.length===1?last.tool_calls[0]:null;
@@ -192,13 +197,14 @@ export async function cycle(generation:number,fromClubWake=false) {
       // request receives current preferences; never refresh an existing ID.
       if(!recoveredInference){
         const missions=await activeMissions();
-        messages[0]={role:'system',content:systemPrompt(current)+'\n\n'+preferencePolicy+(networkOperationsEnabled(current)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')};
+        messages[0]={role:'system',content:systemPrompt(current)+'\n\n'+agentContinuityGuidance+'\n\n'+preferencePolicy+(networkOperationsEnabled(current)?'\n\n'+networkOperatingMandate:'')+(missions.length?'\n\nAUTHENTICATED OWNER MISSIONS\n'+JSON.stringify(missions):'')};
         // Make room during a turn as well as on restart. Complete exchanges stay
         // together; older evidence already lives in the private action/journal
         // archive. A full window must not force a new onboarding cycle.
         const view=JSON.parse(messages[1].content);view.workProgress=workProgress(messages);
         if(networkOperationsEnabled(current))view.networkWork=await networkOperations.read().then(work=>({...work,due:networkDue})).catch(()=>({available:false,error:'network_work_unavailable'}));
-        if(current.policy.capabilities.xReply){if(current.policy.capabilities.xRead)await pollMentions();view.social=await socialContext(current);view.publication=view.social.published;}
+        if(current.policy.capabilities.xReply||current.policy.capabilities.xPublish){if(current.policy.capabilities.xRead)await pollMentions();view.social=await socialContext(current);view.publication=view.social.published;}
+        view.self=await agentContinuity(current,'operator',view.networkWork);
         view.configurationRevision=current.revision;view.time=new Date().toISOString();view.adaptation=await readAdaptationContext(current);messages[1].content=JSON.stringify(operatingContext(view,value=>contextFits([messages[0],{role:'user',content:JSON.stringify(value)}],current.settings,'public',180000)));
         // Private Club work uses its own context on the next shared-lease turn.
         const leading=messages.slice(0,2);
@@ -206,14 +212,16 @@ export async function cycle(generation:number,fromClubWake=false) {
         if(!contextFits(messages,current.settings))throw Error('inference_base_context_too_large');
       }
       const decisionView=JSON.parse(messages[1].content);
+      const selfReceipt=recoveredInference?awaitingInference?.continuity??null:continuityReceipt(decisionView.self);
       awaitingInference=recoveredInference?{id:recoveredInference.id,postIds:recoveredInference.postIds,decisionContext:recoveredInference.decisionContext}:{id:`${id}:model:${i}`,postIds:(decisionView.social?.messages??[]).map((m:any)=>m.postId),decisionContext:{clubEventIds:(decisionView.club?.events??[]).map((e:any)=>e.id),configurationRevision:current.revision,factsHash:decisionView.publication.factsHash,adaptation:{revision:decisionView.adaptation.revision,hash:decisionView.adaptation.hash},replyContexts:(decisionView.social?.threadContexts??[]).flatMap((c:any)=>c.available&&c.stamp?[c.stamp]:[]) }};
+      awaitingInference.continuity=selfReceipt;
       await presence(clubEnabled(current)&&(decisionView.club?.events?.length??0)>0);
       const response=recoveredInference?.response??await complete(awaitingInference.id,messages,current.settings);
       const effectPrefix=awaitingInference.id.replace(':model:',':tool:');
       recoveredInference=null;
       messages.push(response.message);
       await markMessagesDelivered(awaitingInference.postIds.map(postId=>({postId})));
-      await journal('inference','Model response received',{turn:id,model:response.model,configRevision:awaitingInference.decisionContext?.configurationRevision??current.revision,publicationFactsHash:awaitingInference.decisionContext?.factsHash??null,adaptationRevision:awaitingInference.decisionContext?.adaptation?.revision??null,adaptationHash:awaitingInference.decisionContext?.adaptation?.hash??null,usage:response.usage,telemetry:response.telemetry});
+      await journal('inference','Model response received',{turn:id,model:response.model,configRevision:awaitingInference.decisionContext?.configurationRevision??current.revision,publicationFactsHash:awaitingInference.decisionContext?.factsHash??null,adaptationRevision:awaitingInference.decisionContext?.adaptation?.revision??null,adaptationHash:awaitingInference.decisionContext?.adaptation?.hash??null,usage:response.usage,telemetry:response.telemetry,continuity:awaitingInference.continuity});
       const calls=response.message.tool_calls??[];
       if(calls.length>1) {
         for(const call of calls)messages.push({role:'tool',tool_call_id:call.id,content:JSON.stringify({error:'Use one tool per step so effects can be checkpointed individually.'})});

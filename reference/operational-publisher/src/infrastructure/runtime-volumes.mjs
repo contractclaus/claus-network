@@ -26,7 +26,7 @@ export function runtimeVolumes({store,provider=volumeProvider(),workStatus=id=>p
   const requiredUntil=work.leaseUntil??now()+(work.leaseSeconds??60)*1000;
   if(Date.parse(b.resource.fundedUntil)<requiredUntil)fail('renew_storage_before_compute_lease');
   const v=await provider.read(b.resource.providerId);
-  if(!v||v.name!==b.resource.providerName||v.size!==b.resource.sizeGb||v.dataCenter!==b.resource.region||v.type!=='STANDARD')fail('provider_changed');
+  if(!v||v.name!==b.resource.providerName||v.size!==b.resource.sizeGb||v.dataCenter!==b.resource.region||v.type!==(b.resource.volumeType??'STANDARD'))fail('provider_changed');
   return b.mount;
  }
  async function matches(pod,work){

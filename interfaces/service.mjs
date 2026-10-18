@@ -1,3 +1,4 @@
+import {hostContinuity} from '../src/continuity-host.mjs';
 import {ROUTES,validate} from './contract.mjs';
 
 export function createService({searchAdmission,dataRecords,dataFiles,runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals}){
@@ -308,7 +309,7 @@ export function createService({searchAdmission,dataRecords,dataFiles,runtimeRele
    const route=ROUTES.find(r=>r.name===name);
    if(!route||!operations[name])throw Object.assign(Error('not_found'),{code:'not_found'});
    validate(route.inputSchema,input);if(!route.public)await identity.credential(actor);
-   return operations[name](route.public?null:actor,input,{});
+   const run=()=>operations[name](route.public?null:actor,input,{});return route.method==='GET'?run():hostContinuity(name,input.requestId??input.idempotencyKey??input.actionId??null,{actor:route.public?null:actor,input},run);
   },
   async execute(name,input,rawToken,context={}){
    const route=ROUTES.find(r=>r.name===name);
@@ -316,7 +317,7 @@ export function createService({searchAdmission,dataRecords,dataFiles,runtimeRele
    validate(route.inputSchema,input);
    const actor=route.public?null:await identity.authenticate(rawToken);
    if(actor){const who=await identity.credential(actor);if(who.kind==='app'&&(who.appId!==input.projectId||!who.actions.includes(name)))throw Object.assign(Error('scope_denied'),{code:'scope_denied'});}
-   return operations[name](actor,input,context);
+   const run=()=>operations[name](actor,input,context);return route.method==='GET'?run():hostContinuity(name,input.requestId??input.idempotencyKey??input.actionId??null,{actor,input},run);
   }
  };
 }

@@ -1,3 +1,4 @@
+import {xPersonContinuity} from './person-continuity.js';
 import {networkOperations,networkOperationsEnabled} from './network-operations.js';
 import {clubDue} from './club.js';
 import {randomUUID} from 'node:crypto';
@@ -146,7 +147,7 @@ export async function recallConversation(input:ConversationQuery,db:SocialQuery=
 export async function socialContext(config:Configuration) {
   const available=repliesAvailable(config);
   const onlyTwitter=twitterOnly(config);
-  const [messages,published,projects,originalPost]=await Promise.all([available?inboxMessages(config.settings.priorityXAuthorIds,onlyTwitter):Promise.resolve([]),publicState(),onlyTwitter?Promise.resolve([]):sql()`SELECT id,title,summary,version,last_exit_code,updated_at FROM claus_projects ORDER BY updated_at DESC LIMIT 4`,onlyTwitter?originalPostContext(config):Promise.resolve(null)]);
+  const [messages,published,projects,originalPost]=await Promise.all([available?inboxMessages(config.settings.priorityXAuthorIds,onlyTwitter):Promise.resolve([]),publicState(),onlyTwitter?Promise.resolve([]):sql()`SELECT id,title,summary,version,last_exit_code,updated_at FROM claus_projects ORDER BY updated_at DESC LIMIT 4`,originalPostContext(config)]);
   const reads=new Map<string,ReturnType<typeof cachedXContext>>();
   const cache:typeof cachedXContext=(key,load,ttl)=>{
     if(!reads.has(key))reads.set(key,cachedXContext(key,load,ttl));
@@ -156,12 +157,13 @@ export async function socialContext(config:Configuration) {
   const ready=messages.filter((_,i)=>threadContexts[i].available);
   for(const context of threadContexts)if(!context.available)await sql()`UPDATE claus_x_inbox SET deferred_until=${context.retryAt}::timestamptz,reason='awaiting_thread_context' WHERE post_id=${context.postId} AND status='pending'`;
   const authors=[...new Set(ready.map(m=>String(m.author_id)))];
-  const [conversations,relatedHistory,recentPublicConversation]=await Promise.all([
+  const [conversations,relatedHistory,recentPublicConversation,memberContinuity]=await Promise.all([
     Promise.all(authors.map(authorId=>recallConversation({authorId,limit:6}))),
     relatedSocialHistory(ready,config.settings.blockedXAccounts??[]),
-    originalPost?.due?recentSocialHistory(config.settings.blockedXAccounts??[]):Promise.resolve(null)
+    originalPost?.due?recentSocialHistory(config.settings.blockedXAccounts??[]):Promise.resolve(null),
+    xPersonContinuity(authors)
   ]);
-  return {observedAt:new Date().toISOString(),repliesAvailable:available,...(!available?{notice:'Replies are currently disabled by owner policy. Received conversations are retained; do not claim to have answered.'}:{}),messages:ready,threadContexts:threadContexts.filter(c=>c.available),conversations,relatedHistory,recentPublicConversation,people:ecosystemContext(ready),published:publicationContext(published),projects,originalPost,instructionAuthority:false};
+  return {observedAt:new Date().toISOString(),repliesAvailable:available,...(!available?{notice:'Replies are currently disabled by owner policy. Received conversations are retained; do not claim to have answered.'}:{}),messages:ready,threadContexts:threadContexts.filter(c=>c.available),conversations,relatedHistory,recentPublicConversation,memberContinuity,people:ecosystemContext(ready),published:publicationContext(published),projects,originalPost,instructionAuthority:false};
 }
 export async function originalPostContext(config:Configuration,db:SocialQuery=sql(),now=Date.now()) {
   // Keep the agent's own thoughts visible even during a run of release posts.
@@ -381,7 +383,7 @@ export async function wakeDecision(generation:number) {
       newMessage=await pendingReplyDue(twitterOnly(config),config.settings.replyXAuthorIds)||(await replyRetryCandidates()).length>0;
     }
   }
-  if(twitterOnly(config)&&config.policy.capabilities.xPublish&&!publicChannelBlocked(config.policy,'publish_post')) {
+  if(config.policy.capabilities.xPublish&&!publicChannelBlocked(config.policy,'publish_post')) {
     const schedule=await originalPostContext(config);
     if(current.status==='waiting'&&schedule.delivery.mayCompose&&schedule.nextAt&&Date.parse(schedule.nextAt)<Date.parse(current.next_at))current.next_at=schedule.nextAt;
   }

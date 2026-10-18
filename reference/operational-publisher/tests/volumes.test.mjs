@@ -86,3 +86,30 @@ test('automatic renewal requires active work; ended work retains data and report
  f.end();f.advance(2*day);await f.service.tick();r=await f.store.get('resource',one.resource.id);
  assert.equal(r.maintenance.state,'retention_needs_action');assert.equal(f.counts().removed,0);
 });
+
+import {volumeProvider} from '../src/resources/volume-provider.mjs';
+test('high-performance originals retain their tier through uncertain creation, binding and renewal',async()=>{
+ const f=fixture(),seen=[];
+ f.provider.pricing=async(type)=>{seen.push(type);return {maximumMicroUsdPerGbMonth:type==='HIGH_PERFORMANCE'?'140000':'70000'};};
+ f.onCreate(v=>{f.external.set('vol1',{id:'vol1',name:v.name,size:v.sizeGb,dataCenter:v.region,type:v.volumeType});throw Error('accepted without receipt');});
+ const input={...f.input,volumeType:'HIGH_PERFORMANCE'};
+ await assert.rejects(f.service.call('volume_create',input,'original-hp'),/accepted without receipt/);
+ const one=await f.service.call('volume_create',input,'original-hp');assert.equal(one.resource.volumeType,'HIGH_PERFORMANCE');assert.equal(f.counts().created,1);
+ const binding=runtimeVolumes({store:f.store,provider:f.provider,workStatus:f.workStatus,now:f.now});
+ const work={projectId:'prj_model',leaseSeconds:3600,manifest:{region:input.region,storageGiB:100,networkVolume:{resourceId:one.resource.id,path:'/workspace'}}};
+ assert.equal((await binding.load(work)).volumeId,'vol1');
+ await f.service.call('volume_renew',{resourceId:one.resource.id,expectedRevision:1,fundedDays:1},'renew-hp');
+ assert(seen.every(x=>x==='HIGH_PERFORMANCE'));
+ f.external.get('vol1').type='STANDARD';await assert.rejects(binding.load(work),/provider_changed/);
+});
+test('high-performance quotes require current evidence for the requested region',async()=>{
+ const old=process.env.RUNPOD_HIGH_PERFORMANCE_PRICE_JSON,time=Date.parse('2026-10-18T12:00:00Z');
+ const p=volumeProvider({now:()=>time});
+ try{
+  process.env.RUNPOD_HIGH_PERFORMANCE_PRICE_JSON=JSON.stringify({type:'HIGH_PERFORMANCE',maximumMicroUsdPerGbMonth:'140000',regions:['US-CA-2'],observedAt:new Date(time-1000).toISOString(),validUntil:new Date(time+86400000).toISOString()});
+  assert.equal((await p.pricing('HIGH_PERFORMANCE','US-CA-2')).maximumMicroUsdPerGbMonth,'140000');
+  await assert.rejects(p.pricing('HIGH_PERFORMANCE','EU-CZ-1'),/price_unavailable/);
+  const expired=JSON.parse(process.env.RUNPOD_HIGH_PERFORMANCE_PRICE_JSON);expired.validUntil=new Date(time-1).toISOString();process.env.RUNPOD_HIGH_PERFORMANCE_PRICE_JSON=JSON.stringify(expired);
+  await assert.rejects(p.pricing('HIGH_PERFORMANCE','US-CA-2'),/price_unavailable/);
+ }finally{if(old===undefined)delete process.env.RUNPOD_HIGH_PERFORMANCE_PRICE_JSON;else process.env.RUNPOD_HIGH_PERFORMANCE_PRICE_JSON=old;}
+});

@@ -26,8 +26,11 @@ export function clubOperatingContext(view:any,fits:(value:any)=>boolean){
 const excerpt=(value:any,max:number)=>typeof value==='string'?value.slice(0,max):'';
 export function compactClubContext(value:any){
  if(!value?.enabled)return value;
+ const relevant=new Set([...(value.events??[]),...(value.messages??[])].map((m:any)=>m.address));
  return {
   enabled:true,identity:value.identity,support:value.support,visibility:'private_club',instructionAuthority:false,
+  transport:value.transport?{...value.transport,members:(value.transport.members??[]).filter((m:any)=>relevant.has(m.address)).slice(0,50),messages:(value.transport.messages??[]).slice(0,60)}:null,
+  linkedPublicConversations:(value.linkedPublicConversations??[]).slice(0,6),
   events:(value.events??[]).slice(0,12).map((e:any)=>({...e,text:excerpt(e.text,2200),truncated:(e.text?.length??0)>2200})),
   messages:(value.messages??[]).slice(-20).map((m:any)=>({id:m.id,username:m.username,address:m.address,agent:m.agent,body:excerpt(m.body,700),reply:m.reply,created_at:m.created_at,idea_id:m.idea_id,poll_id:m.poll_id,topicId:m.topicId,threadId:m.threadId,truncated:(m.body?.length??0)>700})),
   ideas:(value.ideas??[]).slice(0,12).map((i:any)=>({id:i.id,title:i.title,body:excerpt(i.body,500),status:i.status,likes:i.likes,poll_id:i.poll_id,research:i.research,truncated:(i.body?.length??0)>500})),
