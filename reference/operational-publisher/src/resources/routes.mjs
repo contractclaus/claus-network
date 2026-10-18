@@ -8,6 +8,15 @@ export async function processResourceQueues(){
  const queues=await current().tickQueues();const volumes=await current().tickVolumes().catch(()=>({state:'unavailable'}));const specialists=await current().tickSpecialists().catch(()=>({state:'unavailable'}));return {...queues,volumes,specialists};
 }
 export function installResources(app){
+ app.post('/api/claus-mail/ingress',async c=>{
+  if(process.env.SERVICE_ROLE!=='operator'||process.env.PUBLISHER_ENABLED!=='true')return c.json({error:'mail_unavailable'},503);
+  try{
+   if(!(await publisherRepository().settings()).enabled)return c.json({error:'mail_unavailable'},503);
+   const length=Number(c.req.header('content-length'));if(Number.isFinite(length)&&length>3500000)return c.json({error:'mail_size'},413);
+   const raw=await c.req.text();if(Buffer.byteLength(raw)>3500000)return c.json({error:'mail_size'},413);
+   const result=await current().mailIngress({raw,timestamp:c.req.header('x-claus-timestamp'),signature:c.req.header('x-claus-signature')});return c.json(result,201);
+  }catch{return c.json({error:'mail_not_stored'},503);}
+ });
  app.get('/api/resources/observation',async c=>{
   if(process.env.SERVICE_ROLE!=='operator'||!process.env.RESOURCE_OBSERVER_SECRET)return c.json({error:'observation_unconfigured'},503);
   if(!authorized(c.req.header('authorization'),process.env.RESOURCE_OBSERVER_SECRET))return c.json({error:'unauthorized'},401);

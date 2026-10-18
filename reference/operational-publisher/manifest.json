@@ -1,9 +1,9 @@
 {
-  "deployed": "dpl_HnkqY1zDtRq6kqvVHoFEeCDAGXMn",
-  "source": "claus-goal-phase41-20261018",
+  "deployed": "dpl_CFK4zhR3ThCCGsJCEQQdinivFgi1",
+  "source": "claus-goal-phase42-20261018",
   "files": {
-    "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
-    "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
+    "package-lock.json": "05648c9e13e38d6836a23f03a10c6fee9b71d740914add3568497a576460902d",
+    "package.json": "a5c7446f3697f0cf7780220c8098ac2ef70a0df8d7426fef23cd046492c081c2",
     "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2",
     "src/configuration/routes.js": "104614febc26edceb338e905f5944d431d1794b6bf77c908a285d8699b4c7c0c",
     "src/configuration/service.js": "918e6c9b2872b2b3382bbf22d663be5f5b94aecbb8f0ede92921efaed91ed3c1",
@@ -68,8 +68,8 @@
     "src/resources/store.mjs": "57d0de514209f834b8df31e61009cde765a0962d1db06281c50d3a2906e8ce58",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
     "src/resources/providers.mjs": "cf81c7462102101f4b22c342849b67b9e6c6d5c945f282b5d7cdf435c5e864a3",
-    "src/resources/service.mjs": "bea245cbbc84ed1f26c825b8addf19212865e7e47a83ac485d9f1b4693f0df53",
-    "src/resources/routes.mjs": "1c13fc8da97a97642afcf5f164d1e02fe7a821fe46fb3e7c6adef289a1499dd2",
+    "src/resources/service.mjs": "aae0876a1310e7577867ee1658c051767d22c96cbdaf7da9b6de2897f71f1f10",
+    "src/resources/routes.mjs": "01d33b559af53cf891f44a99be4c4010f0ab9a542c0fa3eabb4341ca3a936fc1",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
     "src/resources/database.mjs": "ce9116fda4ca2d0532ee6f935601a748f14edb0d26a5c3819ceb1065206bbdb6",
@@ -144,7 +144,9 @@
     "src/resources/database-retirement-proof.mjs": "e62074f7c7b7e20dc0772025ab46c805e200ef86c3d5c5ccb7389c6596854fe7",
     "src/resources/database-retirement.sql": "6a80c93b3802a8846816bd125831196661ec446a39a3a2490215c0616bafa5f7",
     "src/resources/database-provision.sql": "6657bf15a542a9e18fab15424ed79dfa7172f74f251fd572c012b0102b0caf0e",
-    "src/infrastructure/fly-diagnostics.mjs": "4d54b75a8a042fe1109222e20f134ad0a1ea445099e517c6a5e9a7cf53f0ff6b"
+    "src/infrastructure/fly-diagnostics.mjs": "4d54b75a8a042fe1109222e20f134ad0a1ea445099e517c6a5e9a7cf53f0ff6b",
+    "src/resources/cloudflare.mjs": "635b10b54a0a9817490cffe345d46c334ed451045edd74d50df53475dd5eef55",
+    "src/resources/mail.mjs": "c3aac1a7f9c563ab1142bee67d968d6603cd6ada54cd7e04a15747a8cf315c62"
   },
   "referenceSubset": true
 }
