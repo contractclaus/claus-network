@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase36-20261018",
+  "source": "claus-goal-phase37-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -54,7 +54,7 @@
     "src/lab-store.ts": "e0cfba14443032f7ce2a3790ad0cb19658f30818ee520b01ec3aeb9c9b575c05",
     "src/network-incidents.ts": "5e219b6f1c075798f9bc6209ca529ac11d26b54b2528895b91e659cc6b97d866",
     "src/network-releases.ts": "e6ad2528ffda667de0cc45967c459d294aa9f65e48a33a458bb9fb0388e07ed2",
-    "src/network-review.ts": "edcc7e884b64d06d780a8f6762cc757df9be2ffbef95933e1b1fb0964a70a475",
+    "src/network-review.ts": "5986bd091b026991850d018c47ec78a66bcd54286d9b8788f7e4b3eb50c32f6a",
     "src/site/feature-store.ts": "112b5f17ed25d94fb323f82af2ee400959bf8d4e26c7aa6f99f45b068f49ed19",
     "src/site/store.ts": "a20bc479eb9dab3daa5d47add36118325d34a3a9ccb6bac45380ae2edf899bbd",
     "src/surface/store.ts": "e844e51557a149c5b0b8966f8ccd761821ff52015a79b6b8bca1f5f420c87f00",
@@ -64,7 +64,7 @@
     "src/operating-resources.ts": "21a472a04bd6c94f1b5268cef4c16e53c67ec33e9ad420a3f20ed8e91558adde",
     "src/missions.ts": "2953ba58944c45fc2b3fba4895578f5279ddfad47f56310da546f3e80e53a829",
     "src/x.ts": "7e52e37958b017eb70ed47bc8e28f9120ee7d78782805b5fae94944451946055",
-    "src/visuals.ts": "d1ecd46b0299f3a843e071ee8bb3177d8dd99c08968e096db20e0c3b1a25f354",
+    "src/visuals.ts": "987c77781e162a3349a51eab4ddf3834854ce833893719a3a17694572370a153",
     "src/reaction-gifs.ts": "79907484a1bd7973ef84dbf49d47f6eeb30992a989017cf23227e674a242749d",
     "src/sender-recovery.ts": "8408ed060dd86e050936114e0e2d425156ad790a42cbc82ed38864ec45122268",
     "src/web-search.ts": "e83333214e23b89000850db4722a327b5cf5bcc8073942cdc4e9075785a72dd7",
@@ -115,7 +115,7 @@
     "src/builder-life.ts": "763a97b9098083d355c4e1c8279c329937ba155273abf3ef87977ef0939b6d97",
     "src/builder-progress.ts": "f5905970b3d6ed248345c51bdc37a95a72a208f836418aedb084f487c0bd77b5",
     "src/inference-outcome.ts": "4306762fe0a0fa983d4fe6fe9e67f3df2211fbb4668ee6c9d5f989defbd9d3c5",
-    "src/model.ts": "d6f64afb382b279fd4bd22bccfb3a961f409580dfc9c2f96fc682397b906a486",
+    "src/model.ts": "a9d321d266e752b8a6d706bf46da8cbb935234bde51b8eb2aa6976343bdf5f1c",
     "nitro.config.ts": "aa5e38a14ed6b2252dc602534330bb68fadad3cf6f1dfabd68c8da96f5066d6c",
     "scripts/prepare-application.mjs": "ad28d7a5cb15a7e2b8648728439cec82880363abea5f768c652dd3d419f8cda0",
     "src/application/main.js": "2f4e5b41a4d9dd506d438f499999ccef33e775fe8571f44ab0396f0e0c8ac744",
@@ -151,7 +151,7 @@
     "src/operations/files.mjs": "ce9b616e5440890b1d66085c2685712e2f31980c93db427acfbe45d64ac3c010",
     "src/operations/website-admin.ts": "113346188770465f2d2ceae94078afe513c400ba691d220ecb3c41927c55aa10",
     "src/work-graph.ts": "d7c5654bfee7fdfa8a7b25019fe13d734e1b115af5eb60a62fdf42941f2a84e7",
-    "src/operations/resources.ts": "dff8c153ba69a0d9a0f462b51ac5a0815661668c9380d116d2c4e66a02bccdcc",
+    "src/operations/resources.ts": "fc73acc05ea02e9c99fb2a692e30d2d66d3099920d31b3e9ac7a4be16f1c7a72",
     "tests/work-graph.test.ts": "c8463ecd78b66b6801eca31c012ea977acba658cd88b554d2f6d6226e6b1e760",
     "tests/resources-continuation.test.ts": "125f60859cd13d36bf6d74a74dfca72b7f218c6fd13daff5e85995f2148ba69d",
     "src/external/browser-targets.ts": "f1e651cd7f78ed4f2dfcb0f9860eb9ae419da712c87d35da3b6796f5489617ed",
@@ -161,8 +161,10 @@
     "src/development-profile.ts": "11b4915fc087cd702302864e00c0d568624960f319f083ad5396a2bfbbb8a5ed",
     "src/development-funding.ts": "7541ff101e3acd1953e366bf046a7be095db80de40057b4997e6456ca5ec3971",
     "tests/development-continuation.test.ts": "c82151eaecc374126392de1c47b3c284a8173ff835462a9ea098efedcff986ef",
-    "src/inference-admission.ts": "b45843a1072d15258b6b814aeb6e986a615f9d76193c3ab3f16aee0148a651f8"
+    "src/inference-admission.ts": "3cfe07bb5b0ba01f547ec4a6e3c77959683bec5be259a826b41a7f817999e04a",
+    "src/operations/resource-help.ts": "d708f2b43fec867963851dd6455953bbaa4b209aca2319a6c04b6df23c2830fb",
+    "src/negative-receipt.ts": "b7c582c641e4028606cf2a976429e45903a45c038789afd3432bd05784c84157"
   },
   "referenceSubset": true,
-  "deployed": "dpl_8SqbnJkchHJTLB14FkxxN73MfN29"
+  "deployed": "dpl_Eab1c5fYxpaZtnBFuxcp1eBaKAqj"
 }

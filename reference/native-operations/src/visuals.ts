@@ -1,3 +1,4 @@
+import {confirmedNoExecution} from './negative-receipt.js';
 import {textPrefix} from './text.ts';
 import {createHash} from 'node:crypto';
 import {configuration,once,sql,unresolved,settleAction,ConfirmedFailure} from './store.js';
@@ -117,7 +118,7 @@ export async function reconcilePendingImages() {
     if(a.kind!=='image')continue;
     try {
       const r=await fetch(`${process.env.INFERENCE_URL}/api/requests/${encodeURIComponent(a.id)}`,{headers:{Authorization:`Bearer ${process.env.INFERENCE_SECRET}`},redirect:'error',signal:AbortSignal.timeout(15000)});
-      if(r.status===404&&Date.now()-Date.parse(a.created_at)>300000){await settleAction(a.id,{error:'image_not_reserved',payment:'not_signed'},'failed');continue;}
+      if(Date.now()-Date.parse(a.created_at)>300000&&await confirmedNoExecution(r,a.id,process.env.INFERENCE_URL!)){await settleAction(a.id,{error:'image_not_reserved',payment:'not_signed'},'failed');continue;}
       if(!r.ok)continue;const j=await r.json();
       if(j.status==='completed'){
         try{await settleAction(a.id,await prepareGeneratedResult(j.response));}
