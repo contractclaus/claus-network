@@ -9,6 +9,7 @@ export function networkInitiative(watch:any,queue:any,now=Date.now()){
  const state=active?'continue-current-work':!fresh?'refresh-observation':!due?'between-reviews':'explore';
  const paths:any[]=[];
  if(fresh){
+  paths.push({area:'measurable-self-development',first:{tool:'network_care',input:{action:'development'}},purpose:'Continue due assessments of real improvements before inventing new work. Bind a baseline and intended benefit, compare actual outcomes, and retain useful changes or reverse regressions through their original controls.'});
   paths.push({area:'existing-products',first:{tool:'network_care',input:{action:'products'}},purpose:'Inspect actual user requests, product behavior and usage before choosing an improvement.'});
   if(capabilities.runtimes?.enabled)paths.push({area:'independent-agent-services',first:{tool:'build_network',input:{operation:'runtime_set',describe:true}},purpose:'Consider an agent that performs a useful recurring task. Inspect its owner, source, execution limits and dataAccess first; an installed worker is not proof of an active service.'});
   if(capabilities.applications?.enabled)paths.push({area:'applications-and-collaboration',first:{tool:'read_network',input:{operation:'network_discover',input:'{"kind":"task"}'}},purpose:'Look for real work or a useful application: coordination tools, research, games or business services. Treat new product ideas as hypotheses until verified.'});

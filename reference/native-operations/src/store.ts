@@ -1,3 +1,4 @@
+import {requireDatabasePermit} from './database-fence.js';
 import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {recoverOverdueGeneration} from './recovery.js';
 import {initializeClubPrivacy} from './club-privacy.js';
@@ -78,11 +79,13 @@ export async function beginGeneration(expected:number) {
   return rows[0]?.generation as number|undefined;
 }
 export async function recoverGeneration(expected:number,mentions=false) {
+ await requireDatabasePermit();
  if(!await import('./runtime-host.js').then(m=>m.runtimeHostPermit(expected)))return undefined;
  return recoverOverdueGeneration({query:async<T=any>(statement:string,params?:any[])=>({rows:await sql().query(statement,params) as T[]})},expected,mentions);
 }
 
 export async function acquire(id: string, generation:number,waitingOnly=false):Promise<any> {
+ await requireDatabasePermit();
  if(!await import('./runtime-host.js').then(m=>m.runtimeHostPermit(generation)))return null;
   const rows=await sql()`UPDATE claus_state SET lease_until=now()+interval '15 minutes',lease_owner=${id},status='working',updated_at=now() WHERE id=1 AND generation=${generation} AND status NOT IN ('paused','blocked') AND (lease_until IS NULL OR lease_until<now()) AND (NOT ${waitingOnly} OR status='waiting') RETURNING *`;
   return rows[0] ?? null;
@@ -132,6 +135,7 @@ export async function reconcileInference(id:string,status:'completed'|'failed',r
 // A committed reservation precedes each effect. Uncertain results never resend
 // automatically, including after workflow replay or a process crash.
 export async function once<T>(id:string,kind:string,input:unknown,fn:()=>Promise<T>,db:ActionQuery=sql(),admit?:()=>Promise<any[]>):Promise<T> {
+  await requireDatabasePermit();
   const hash=digest(input);
   const model=kind==='inference'?(input as any)?.model??null:null;
   const inserted=admit?await admit():await db`INSERT INTO claus_actions(id,kind,input_hash,status,requested_model,input,visibility) VALUES(${id},${kind},${hash},'pending',${model},${kind==='inference'?null:JSON.stringify(input)}::jsonb,${id.startsWith('club:')?'private_club':['network_program','network_program_run','programmable_api','external_tools','external_adapter'].includes(kind)?'private_network':'public'}) ON CONFLICT DO NOTHING RETURNING id`;
@@ -143,6 +147,7 @@ export async function once<T>(id:string,kind:string,input:unknown,fn:()=>Promise
     return row.result as T;
   }
   try {
+    await requireDatabasePermit();
     const result=await fn();
     const saved=await db`UPDATE claus_actions SET status='completed',result=${JSON.stringify(result)}::jsonb,completed_at=now() WHERE id=${id} AND status NOT IN ('completed','failed') RETURNING result`;
     if(saved.length)return saved[0].result as T;
