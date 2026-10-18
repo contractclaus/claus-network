@@ -1,4 +1,4 @@
-import {digest} from './store.mjs';
+import {digest,sameValue} from './store.mjs';
 const fail=c=>{throw Error('resource_development_'+c);};
 // Deliberately above current iad1 CPU/memory prices; these are maximum
 // authorizations, not invoices. Existing snapshot storage stays separate.
@@ -19,9 +19,9 @@ export function developmentFunding({store,budget,request=fetch,now=Date.now}){
  }
  return async input=>{
   const maximum=developmentMaximum(input),id='act_'+digest(['development',input.actionId]).slice(0,24),existing=await store.get('development-funding',id);
-  if(existing&&digest(existing.input)!==digest(input))fail('request_conflict');if(existing?.output)return existing.output;
+  if(existing&&!sameValue(existing.input,input))fail('request_conflict');if(existing?.output)return existing.output;
   const observed=await pricing();const saved=(await store.put('development-funding',id,{input,maximum,price:observed,revision:1})).value;
-  if(digest(saved.input)!==digest(input))fail('request_conflict');
+  if(!sameValue(saved.input,input))fail('request_conflict');
   await budget('reserve',id,saved.maximum,'build');await budget('commit',id,saved.maximum,'build');
   const output={actionId:input.actionId,maximumMicroUsd:saved.maximum,price:saved.price,meaning:'Conservative CPU/memory execution authorization in the shared operating budget, not an actual invoice. Unknown execution does not release it. Persistent snapshots and account transfer billing remain separately observable provider costs.'};
   try{await store.change('development-funding',id,saved.revision,{...saved,revision:saved.revision+1,output});}catch{const current=await store.get('development-funding',id);if(!current?.output)throw Error('resource_development_funding_unconfirmed');return current.output;}

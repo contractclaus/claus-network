@@ -1,7 +1,7 @@
 import {privateRegistry} from './private-registry.mjs';
 import {readBuildReceiptZip} from './build-receipt.mjs';
 import {createHash} from 'node:crypto';
-import {digest} from './store.mjs';
+import {digest,sameValue} from './store.mjs';
 import {buildWorkflow,buildWorkflowPath} from './build-workflow.mjs';
 import {repositoryIdentity} from './repository.mjs';
 export const buildInputs={build_image:['resourceId','actionId'],build_install:['resourceId'],build_start:['resourceId','commit','architecture','timeoutMinutes','mode','command','cacheKey','context','dockerfile'],build_info:['resourceId','actionId'],build_logs:['resourceId','actionId','jobId','offset'],build_artifact:['resourceId','actionId','artifactId'],build_cancel:['resourceId','actionId'],build_caches:['resourceId','page']};
@@ -82,7 +82,7 @@ export function managedBuilds({store,providers,budget,request=fetch,now=Date.now
   const image=await registry.inspect({repository:r.name,imageDigest:receipt.imageDigest,source:a.input.commit,actionId:id,architecture:a.input.architecture??'amd64'});
   const {layerDigests,...metadata}=image;
   const evidence={version:1,resourceId:r.id,actionId:id,repositoryId:r.providerId,repository:'contractclaus/'+r.name,sourceCommit:a.input.commit,workflowCommit:a.prepared.workflowCommit,workflowSha:a.prepared.workflowSha,runId:v.id,runAttempt:1,artifactId:artifact.id,artifactDigest:artifact.digest,...metadata};
-  const stored=await store.put('build-image',id,evidence);if(digest(stored.value)!==digest(evidence))fail('image_evidence_changed');return stored.value;
+  const stored=await store.put('build-image',id,evidence);if(!sameValue(stored.value,evidence))fail('image_evidence_changed');return stored.value;
  }
  async function call(operation,input,requestId){
   const r=await resource(input.resourceId);
@@ -106,7 +106,7 @@ export function managedBuilds({store,providers,budget,request=fetch,now=Date.now
   }
   if(typeof requestId!=='string'||!requestId||requestId.length>200)fail('request_id_invalid');
   const id='act_'+digest(['owner',requestId]).slice(0,24),existing=await store.get('action',id);
-  if(existing&&(existing.operation!==operation||digest(existing.input)!==digest(input)))fail('request_conflict');
+  if(existing&&(existing.operation!==operation||!sameValue(existing.input,input)))fail('request_conflict');
   if(existing?.output)return existing.output;
   let prepared=existing?.prepared;
   if(!prepared){

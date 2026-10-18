@@ -1,4 +1,4 @@
-import {digest} from './store.mjs';
+import {digest,sameValue} from './store.mjs';
 import {volumeProvider} from './volume-provider.mjs';
 import {volumeFunding} from './volume-funding.mjs';
 const fail=c=>{throw Error('resource_volume_'+c);};
@@ -38,7 +38,7 @@ export function managedVolumes({store,budget,workStatus,provider=volumeProvider(
   if(operation==='volume_cost'){const r=await resource(input.resourceId);return provider.cost(r.providerId,r.createdAt);}
   if(!text(requestId,200))fail('request_invalid');
   const id='act_'+digest(['owner',requestId]).slice(0,24),existing=await store.get('action',id);
-  if(existing&&(existing.operation!==operation||digest(existing.input)!==digest(input)))fail('request_conflict');
+  if(existing&&(existing.operation!==operation||!sameValue(existing.input,input)))fail('request_conflict');
   if(existing?.output)return existing.output;
   let p=existing?.prepared;
   if(!p){
