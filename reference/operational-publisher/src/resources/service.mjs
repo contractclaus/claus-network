@@ -1,3 +1,5 @@
+import {managedProcedures,procedureInputs} from './procedures.mjs';
+import {managedQueues,queueInputs} from './queues.mjs';
 import {managedEndpoints,endpointInputs} from './endpoints.mjs';
 import {managedBuilds,buildInputs} from './builds.mjs';
 import {resourceCatalog,catalogInputs} from './catalog.mjs';
@@ -16,11 +18,13 @@ const safeName=value=>{if(typeof value!=='string'||! /^[a-z][a-z0-9-]{1,40}$/.te
 const envName=value=>{if(typeof value!=='string'||! /^[A-Z][A-Z0-9_]{1,100}$/.test(value)||/^(?:NEXT_PUBLIC_|PUBLIC_|VITE_|VERCEL_|NODE_)/.test(value))fail('secret_environment_invalid');return value;};
 const same=(a,b)=>digest(a)===digest(b);
 const website={id:'website',provider:'vercel',providerId:'prj_3EPhg3tuhf5oHU9sw2Butj9eRegy',name:'claus',owner:team,kind:'existing-website',protected:true};
-const grantOperations=['object_get','object_list','object_parts','object_upload','object_commit','object_download','resource','deployments','bindings','settings','bind_secret'];
-const inputKeys={...endpointInputs,...catalogInputs,...objectInputs,repository_file:['resourceId','path','ref','offset'],repository_tree:['resourceId','commit'],repository_write:['resourceId','path','branch','content','encoding','expectedBlobSha','message'],repository_branch:['resourceId','branch','commit'],deployment_stage:['resourceId','repositoryId','commit','expectedDeploymentId'],deployment_promote:['resourceId','deploymentId','expectedDeploymentId','healthPath'],database_create:['name','purpose'],database_schema:['resourceId'],database_migrate:['resourceId','plan'],status:[],identity:['provider'],resources:['offset'],resource:['resourceId'],secrets:['offset'],bindings:['resourceId'],deployments:['resourceId'],logs:['resourceId','deploymentId'],action:['id'],project_create:['name','purpose'],repository_create:['name','purpose','private'],secret_create:['name','expiresAt'],grant_create:['name','expiresAt','resourceIds','secretIds','operations','workId'],secret_rotate:['secretId','expectedRevision'],secret_revoke:['secretId','expectedRevision'],bind_secret:['resourceId','secretId','version','envName'],settings:['resourceId','settings']};
+const grantOperations=['queue_info','queue_jobs','object_get','object_list','object_parts','object_upload','object_commit','object_download','resource','deployments','bindings','settings','bind_secret'];
+const inputKeys={...procedureInputs,...queueInputs,...endpointInputs,...catalogInputs,...objectInputs,repository_file:['resourceId','path','ref','offset'],repository_tree:['resourceId','commit'],repository_write:['resourceId','path','branch','content','encoding','expectedBlobSha','message'],repository_branch:['resourceId','branch','commit'],deployment_stage:['resourceId','repositoryId','commit','expectedDeploymentId'],deployment_promote:['resourceId','deploymentId','expectedDeploymentId','healthPath'],database_create:['name','purpose'],database_schema:['resourceId'],database_migrate:['resourceId','plan'],status:[],identity:['provider'],resources:['offset'],resource:['resourceId'],secrets:['offset'],bindings:['resourceId'],deployments:['resourceId'],logs:['resourceId','deploymentId'],action:['id'],project_create:['name','purpose'],repository_create:['name','purpose','private'],secret_create:['name','expiresAt'],grant_create:['name','expiresAt','resourceIds','secretIds','operations','workId'],secret_rotate:['secretId','expectedRevision'],secret_revoke:['secretId','expectedRevision'],bind_secret:['resourceId','secretId','version','envName'],settings:['resourceId','settings']};
 export function createResourceService({objects=null,repository=null,publishing=null,budget=resourceBudget(),database=resourceDatabase(),store=resourceStore(),providers=resourceProviders(),seal=sealSecret,open=openSecret,now=Date.now,environment=process.env,workStatus=async()=>null}={}){
  const builds=managedBuilds({store,providers,budget,now,environment});
  const endpoints=managedEndpoints({store,budget,seal,open,now});
+ const procedures=managedProcedures({store,workStatus,now});
+ const queues=managedQueues({store,endpoints,workStatus,open,now});
  const catalog=resourceCatalog({store,providers,workStatus,now});
  objects??=managedObjects({store,budget,seal,open,now});
  repository??=managedRepository({call:providers.call});
@@ -53,17 +57,19 @@ export function createResourceService({objects=null,repository=null,publishing=n
   const keys=buildInputs[operation]??inputKeys[operation];
   if(!keys||Object.keys(input).some(k=>!keys.includes(k)))fail('input_invalid');
   const principal=grant?await authorization(grant,operation,input):'owner';
+  if(procedureInputs[operation])return procedures.call(operation,input,requestId);
+  if(queueInputs[operation])return queues.call(operation,input,requestId,seal);
   if(buildInputs[operation])return builds.call(operation,input,requestId);
   if(endpointInputs[operation])return endpoints.call(operation,input,requestId);
   if(catalogInputs[operation])return catalog.call(operation,input);
   if(objectInputs[operation])return objects.call(operation,input,requestId,principal);
   const offset=input.offset??0;if(!Number.isSafeInteger(offset)||offset<0)fail('offset_invalid');
-  if(operation==='status')return {version:1,configured:{...providers.configured(),objectStorage:objects.configured()},scope:'Claus-owned projects, application secret references and revocable broker grants',website:metadata(website),operations:[...Object.keys(buildInputs),...Object.keys(endpointInputs),...Object.keys(catalogInputs),...Object.keys(objectInputs),'repository_file','repository_tree','repository_write','repository_branch','deployment_stage','deployment_promote','resources','resource','identity','project_create','repository_create','database_create','database_schema','database_migrate','settings','deployments','logs','secrets','secret_create','secret_rotate','secret_revoke','grant_create','bind_secret','bindings','action'],providerBilling:'Project/repository creation does not reserve a running server. Deployment stages reserve USD0.50 per Basic build under the shared USD200/24h and USD6000/30d operating budget. This maximum authorization is not an invoice; compute leases retain their own recorded reservations.',secretValuesReturned:false};
+  if(operation==='status')return {version:1,configured:{...providers.configured(),objectStorage:objects.configured()},scope:'Claus-owned projects, application secret references and revocable broker grants',website:metadata(website),operations:[...Object.keys(procedureInputs),...Object.keys(queueInputs),...Object.keys(buildInputs),...Object.keys(endpointInputs),...Object.keys(catalogInputs),...Object.keys(objectInputs),'repository_file','repository_tree','repository_write','repository_branch','deployment_stage','deployment_promote','resources','resource','identity','project_create','repository_create','database_create','database_schema','database_migrate','settings','deployments','logs','secrets','secret_create','secret_rotate','secret_revoke','grant_create','bind_secret','bindings','action'],providerBilling:'Project/repository creation does not reserve a running server. Deployment stages reserve USD0.50 per Basic build under the shared USD200/24h and USD6000/30d operating budget. This maximum authorization is not an invoice; compute leases retain their own recorded reservations.',secretValuesReturned:false};
   if(operation==='repository_file'||operation==='repository_tree'){const r=await resource(input.resourceId);return operation==='repository_file'?repository.repositoryFile(r,input):repository.repositoryTree(r,input.commit);}
   if(operation==='identity'){if(!['vercel','github'].includes(input.provider))fail('provider_invalid');const observation=await providers.identity(input.provider);await catalog.observe(input.provider,observation);return observation;}
   if(operation==='resources'){const p=await store.list('resource',offset);return {...p,items:p.items.map(metadata)};}
   if(operation==='database_schema'){const r=await resource(input.resourceId);if(r.provider!=='postgresql')fail('provider_invalid');const key=await secret(r.connectionSecretId);active(key);return database.inspect(r.id,open(key.sealed,key.id+':'+key.version));}
-  if(operation==='resource'){const r=await resource(input.resourceId);return {...metadata(r),observation:r.provider==='http'?{state:r.status,endpoint:r.definition,configurationIsNotExecutionProof:true}:r.provider==='r2'?await objects.inspect(r):r.provider==='postgresql'?await database.inspect(r.id,await databaseConnection(r)):await providers.read(r),observedAt:stamp()};}
+  if(operation==='resource'){const r=await resource(input.resourceId);return {...metadata(r),observation:r.kind==='managed-queue'?await queues.call('queue_info',{resourceId:r.id}):r.provider==='http'?{state:r.status,endpoint:r.definition,configurationIsNotExecutionProof:true}:r.provider==='r2'?await objects.inspect(r):r.provider==='postgresql'?await database.inspect(r.id,await databaseConnection(r)):await providers.read(r),observedAt:stamp()};}
   if(operation==='secrets'){const p=await store.list('secret',offset);return {...p,items:p.items.map(secretMetadata)};}
   if(operation==='bindings')return {items:(await all('binding')).filter(b=>!input.resourceId||b.resourceId===input.resourceId).map(b=>({resourceId:b.resourceId,secretId:b.secretId,version:b.version,envName:b.envName,status:b.status,updatedAt:b.updatedAt,requiresDeployment:true}))};
   if(operation==='deployments'){const r=await resource(input.resourceId);if(r.provider!=='vercel')fail('provider_invalid');return {items:await providers.deployments(r)};}
@@ -173,5 +179,5 @@ export function createResourceService({objects=null,repository=null,publishing=n
    return complete({resourceId:prepared.resource.id,settings:current,requiresDeployment:true});
   }
  }
- return {call,authorization};
+ return {call,authorization,tickQueues:()=>queues.tick(),webhook:(id,input)=>queues.webhook(id,input,seal)};
 }

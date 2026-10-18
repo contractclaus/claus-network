@@ -1,3 +1,4 @@
+import {processResourceQueues} from '../resources/routes.mjs';
 import {authorized} from '../policy.js';
 import {publisherLedger} from '../publisher/repository.js';
 import {createInfrastructureBroker} from './broker.mjs';
@@ -17,6 +18,6 @@ export function installInfrastructureRoutes(app){
     if(process.env.SERVICE_ROLE!=='operator')return c.json({error:'infrastructure_not_configured'},503);
     if(!authorized(c.req.header('authorization'),process.env.CRON_SECRET))return c.json({error:'unauthorized'},401);
     c.header('Cache-Control','no-store');
-    try{return c.json(await current().guard());}catch{return c.json({error:'infrastructure_guard_unavailable'},503);}
+    try{const result=await current().guard();const queues=await processResourceQueues().catch(()=>({state:'unavailable'}));return c.json({...result,queues});}catch{return c.json({error:'infrastructure_guard_unavailable'},503);}
   });
 }

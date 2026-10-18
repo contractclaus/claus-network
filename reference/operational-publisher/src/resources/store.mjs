@@ -4,6 +4,7 @@ export const digest=value=>createHash('sha256').update(typeof value==='string'?v
 const key=(kind,id)=>'owned:'+kind+':'+id;
 export function resourceStore(sql=neon(process.env.DATABASE_URL)){
  return {
+  async jobs(resourceId,states=[],offset=0,due=false){const rows=await sql`SELECT result FROM claus_publisher_actions WHERE id LIKE ${'owned:job:'+resourceId+':%'} AND (cardinality(${states}::text[])=0 OR result->>'state'=ANY(${states}::text[])) AND (NOT ${due} OR (result->>'nextAt')::timestamptz<=now()) ORDER BY (result->>'nextAt')::timestamptz,created_at,id LIMIT 51 OFFSET ${offset}`;return {items:rows.slice(0,50).map(r=>r.result),nextOffset:rows.length>50?offset+50:null};},
   async get(kind,id){return (await sql`SELECT result FROM claus_publisher_actions WHERE id=${key(kind,id)}`)[0]?.result??null;},
   async list(kind,offset=0){const rows=await sql`SELECT result FROM claus_publisher_actions WHERE id LIKE ${'owned:'+kind+':%'} ORDER BY created_at,id LIMIT 51 OFFSET ${offset}`;return {items:rows.slice(0,50).map(r=>r.result),nextOffset:rows.length>50?offset+50:null};},
   async put(kind,id,value){const rows=await sql`INSERT INTO claus_publisher_actions(id,input_hash,status,result) VALUES(${key(kind,id)},${digest([kind,id])},'completed',${JSON.stringify(value)}::jsonb) ON CONFLICT DO NOTHING RETURNING result`;return {created:rows.length===1,value:rows[0]?.result??await this.get(kind,id)};},
