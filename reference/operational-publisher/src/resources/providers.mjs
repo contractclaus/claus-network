@@ -10,7 +10,7 @@ export function resourceProviders({request=fetch,env=process.env}={}){
   if(!token)throw Error('resource_'+provider+'_not_connected');
   const origin=provider==='vercel'?'https://api.vercel.com':'https://api.github.com';
   const url=origin+path+(provider==='vercel'?(path.includes('?')?'&':'?')+'teamId='+team:'');
-  const r=await request(url,{method,headers:{authorization:'Bearer '+token,accept:'application/json','content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.timeout(25000)});
+  const r=await request(url,{method,headers:{...(provider==='github'?{'x-github-api-version':'2026-03-10'}:{}),authorization:'Bearer '+token,accept:'application/json','content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.timeout(25000)});
   if(missing&&r.status===404)return null;
   if(!r.ok)throw new ResourceProviderError(r.status,provider,retryTime(r.headers.get('retry-after')));
   if(r.status===204)return null;

@@ -1,4 +1,5 @@
 import {managedEndpoints,endpointInputs} from './endpoints.mjs';
+import {managedBuilds,buildInputs} from './builds.mjs';
 import {resourceCatalog,catalogInputs} from './catalog.mjs';
 import {managedObjects,objectInputs} from './objects.mjs';
 import {managedRepository} from './repository.mjs';
@@ -18,6 +19,7 @@ const website={id:'website',provider:'vercel',providerId:'prj_3EPhg3tuhf5oHU9sw2
 const grantOperations=['object_get','object_list','object_parts','object_upload','object_commit','object_download','resource','deployments','bindings','settings','bind_secret'];
 const inputKeys={...endpointInputs,...catalogInputs,...objectInputs,repository_file:['resourceId','path','ref','offset'],repository_tree:['resourceId','commit'],repository_write:['resourceId','path','branch','content','encoding','expectedBlobSha','message'],repository_branch:['resourceId','branch','commit'],deployment_stage:['resourceId','repositoryId','commit','expectedDeploymentId'],deployment_promote:['resourceId','deploymentId','expectedDeploymentId','healthPath'],database_create:['name','purpose'],database_schema:['resourceId'],database_migrate:['resourceId','plan'],status:[],identity:['provider'],resources:['offset'],resource:['resourceId'],secrets:['offset'],bindings:['resourceId'],deployments:['resourceId'],logs:['resourceId','deploymentId'],action:['id'],project_create:['name','purpose'],repository_create:['name','purpose','private'],secret_create:['name','expiresAt'],grant_create:['name','expiresAt','resourceIds','secretIds','operations','workId'],secret_rotate:['secretId','expectedRevision'],secret_revoke:['secretId','expectedRevision'],bind_secret:['resourceId','secretId','version','envName'],settings:['resourceId','settings']};
 export function createResourceService({objects=null,repository=null,publishing=null,budget=resourceBudget(),database=resourceDatabase(),store=resourceStore(),providers=resourceProviders(),seal=sealSecret,open=openSecret,now=Date.now,environment=process.env,workStatus=async()=>null}={}){
+ const builds=managedBuilds({store,providers,budget,now,environment});
  const endpoints=managedEndpoints({store,budget,seal,open,now});
  const catalog=resourceCatalog({store,providers,workStatus,now});
  objects??=managedObjects({store,budget,seal,open,now});
@@ -48,13 +50,15 @@ export function createResourceService({objects=null,repository=null,publishing=n
  }
  async function call(operation,input,requestId,{grant=null}={}){
   if(!input||typeof input!=='object'||Array.isArray(input))fail('input_invalid');
-  if(!inputKeys[operation]||Object.keys(input).some(k=>!inputKeys[operation].includes(k)))fail('input_invalid');
+  const keys=buildInputs[operation]??inputKeys[operation];
+  if(!keys||Object.keys(input).some(k=>!keys.includes(k)))fail('input_invalid');
   const principal=grant?await authorization(grant,operation,input):'owner';
+  if(buildInputs[operation])return builds.call(operation,input,requestId);
   if(endpointInputs[operation])return endpoints.call(operation,input,requestId);
   if(catalogInputs[operation])return catalog.call(operation,input);
   if(objectInputs[operation])return objects.call(operation,input,requestId,principal);
   const offset=input.offset??0;if(!Number.isSafeInteger(offset)||offset<0)fail('offset_invalid');
-  if(operation==='status')return {version:1,configured:{...providers.configured(),objectStorage:objects.configured()},scope:'Claus-owned projects, application secret references and revocable broker grants',website:metadata(website),operations:[...Object.keys(endpointInputs),...Object.keys(catalogInputs),...Object.keys(objectInputs),'repository_file','repository_tree','repository_write','repository_branch','deployment_stage','deployment_promote','resources','resource','identity','project_create','repository_create','database_create','database_schema','database_migrate','settings','deployments','logs','secrets','secret_create','secret_rotate','secret_revoke','grant_create','bind_secret','bindings','action'],providerBilling:'Project/repository creation does not reserve a running server. Deployment stages reserve USD0.50 per Basic build under the shared USD200/24h and USD6000/30d operating budget. This maximum authorization is not an invoice; compute leases retain their own recorded reservations.',secretValuesReturned:false};
+  if(operation==='status')return {version:1,configured:{...providers.configured(),objectStorage:objects.configured()},scope:'Claus-owned projects, application secret references and revocable broker grants',website:metadata(website),operations:[...Object.keys(buildInputs),...Object.keys(endpointInputs),...Object.keys(catalogInputs),...Object.keys(objectInputs),'repository_file','repository_tree','repository_write','repository_branch','deployment_stage','deployment_promote','resources','resource','identity','project_create','repository_create','database_create','database_schema','database_migrate','settings','deployments','logs','secrets','secret_create','secret_rotate','secret_revoke','grant_create','bind_secret','bindings','action'],providerBilling:'Project/repository creation does not reserve a running server. Deployment stages reserve USD0.50 per Basic build under the shared USD200/24h and USD6000/30d operating budget. This maximum authorization is not an invoice; compute leases retain their own recorded reservations.',secretValuesReturned:false};
   if(operation==='repository_file'||operation==='repository_tree'){const r=await resource(input.resourceId);return operation==='repository_file'?repository.repositoryFile(r,input):repository.repositoryTree(r,input.commit);}
   if(operation==='identity'){if(!['vercel','github'].includes(input.provider))fail('provider_invalid');const observation=await providers.identity(input.provider);await catalog.observe(input.provider,observation);return observation;}
   if(operation==='resources'){const p=await store.list('resource',offset);return {...p,items:p.items.map(metadata)};}
