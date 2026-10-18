@@ -1,6 +1,7 @@
+import {operatingRpc} from './wallet-rpc.mjs';
 // Fixed-purpose ordinary burn/FOMO batches. Separate from the discontinued arbitrage program.
 import fs from 'node:fs';
-import {createPublicClient,http,parseAbi,encodeFunctionData,decodeFunctionData,decodeEventLog,parseTransaction,keccak256} from 'viem';
+import {createPublicClient,parseAbi,encodeFunctionData,decodeFunctionData,decodeEventLog,parseTransaction,keccak256} from 'viem';
 import {mainnet} from 'viem/chains';
 import {privateKeyToAccount} from 'viem/accounts';
 import {neon} from '@neondatabase/serverless';
@@ -115,7 +116,7 @@ export async function processOrdinaryBuybacks(deps={}){
  if(!config.enabled||!config.implementation||!config.runtimeHash||BigInt(config.gasBudgetWei)<=0n)return {status:'not_configured'};
  if(!Number.isInteger(config.slippageBps)||config.slippageBps<0||config.slippageBps>100||
    !Number.isInteger(config.waitSeconds)||config.waitSeconds<60)throw Error('ordinary_buyback_invalid_config');
- const l=limits(config),c=deps.client??createPublicClient({chain:mainnet,transport:http(process.env.ETHEREUM_RPC_URL,{timeout:15000,retryCount:0})});
+ const l=limits(config),c=deps.client??createPublicClient({chain:mainnet,transport:operatingRpc(1,process.env.ETHEREUM_RPC_URL)});
  const account=deps.account??privateKeyToAccount(process.env.SIGNER_PRIVATE_KEY);
  if(account.address.toLowerCase()!==address.toLowerCase()||await c.getChainId()!==1)throw Error('ordinary_buyback_wallet_mismatch');
  const repo=deps.repository??walletRepository(),state=deps.state??store();
