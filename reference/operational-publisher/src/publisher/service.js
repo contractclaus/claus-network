@@ -1,3 +1,4 @@
+import {applyChange,changedManifest,schedulesFor} from './files.mjs';
 import {OperationsHost} from './host.js';
 import {target,hash,sha,validateManifest,validateChanges,patch,denyNewAuthority,isolatedPath,baseManifest} from './policy.js';
 import {validateProgram} from './program.js';
@@ -15,6 +16,7 @@ const deploymentView=d=>({id:d.id,url:d.url,projectId:d.projectId,readyState:d.r
 // No caller-selected provider path, URL, environment, build command or SQL.
 // The original release and its completed review come from a read-only DB role.
 export function createPublisher({repository,ledger,host=new OperationsHost(),reviewEvidence=trustedReview,controls,nativeArchive}){
+ async function asset(id){if(!/^asset_[a-f0-9]{32}$/.test(id??''))fail('asset_invalid');const row=await ledger.get('website-asset:'+id);if(row?.status!=='completed')fail('asset_not_ready');return row.result.asset;}
  const control=()=>controls??=publicationControls();
  const retainNative=(scope,deployment,manifest)=>scope==='native'?(nativeArchive??=new NativeArchive({host})).retain(deployment,manifest):Promise.resolve(null);
  async function context(scope){target(scope);const c=await repository.current(scope);if(!c)fail('scope_missing');validateManifest(c.manifest);return c;}
@@ -30,8 +32,8 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
   const settings=await repository.settings();if(!settings.enabled)fail('disabled');
   validateChanges(r.scope,r.changes);validateManifest(r.manifest);
   if(!Array.isArray(r.files)||r.files.length!==r.changes.length||new Set(r.files.map(f=>f.path)).size!==r.files.length)fail('files_invalid');
-  const expected=structuredClone(c.manifest);
-  for(const change of r.changes){const file=r.files.find(f=>f.path===change.path);let ref=expected.find(f=>f.path===change.path);if(!file||(!ref?(file.created!==true||file.before!==''||change.before!==''):(file.created===true||sha(file.before)!==ref.sha||Buffer.byteLength(file.before)!==ref.size))||patch(file.before,change)!==file.content)fail('source_binding');if(!ref){ref={path:file.path,sha:sha(file.content),size:Buffer.byteLength(file.content)};expected.push(ref);}if(r.scope!=='web'&&isolatedPath(file.path)){denyNewAuthority(file.before,file.content);validateProgram(file.path==='src/application/main.js'?{version:2,lines:file.content.split('\n')}:JSON.parse(file.content));}ref.sha=sha(file.content);ref.size=Buffer.byteLength(file.content);}
+  for(const change of r.changes){const file=r.files.find(f=>f.path===change.path),index=c.manifest.findIndex(f=>f.path===change.path),ref=c.manifest[index];if(!file||!equal(applyChange(ref,file.before,change,sha,index,change.assetId?await asset(change.assetId):undefined),file))fail('source_binding');if(!file.deleted&&r.scope!=='web'&&isolatedPath(file.path)){denyNewAuthority(file.before,file.content);validateProgram(file.path==='src/application/main.js'?{version:2,lines:file.content.split('\n')}:JSON.parse(file.content));}}
+  const expected=changedManifest(c.manifest,r.files,sha);schedulesFor(r,c.crons);
   if(!equal(expected,r.manifest)||hash(expected)!==r.source_hash)fail('manifest_binding');
   const e=await repository.review(r.review_effect);if(!e||e.project_id!==r.build_id||e.kind!=='model'||e.status!=='completed')fail('review_incomplete');
   const output=await reviewEvidence(e,'operational');
@@ -63,7 +65,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
  }
  return {async call(operation,scope,args){
   if(!Array.isArray(args))fail('input_invalid');target(scope);
-  const arities={diagnostics:0,project:0,baseline:2,read:2,deployment:1,reconcile:3,verify:3,deploy:5,promote:2,restored:1,activate:1,finishRollback:1,adopt:1};
+  const arities={asset:1,diagnostics:0,project:0,baseline:2,read:2,readAsset:2,deployment:1,reconcile:3,verify:3,deploy:5,promote:2,restored:1,activate:1,finishRollback:1,adopt:1};
   if(!Object.hasOwn(arities,operation)||args.length!==arities[operation])fail('operation_denied');
   const c=await context(scope);
   if(operation==='adopt'){if(scope!=='native'||args[0]!==c.deployment||(await host.project(scope)).targets?.production?.id!==args[0])fail('base_changed');return control().adoptNative(args[0]);}
@@ -93,13 +95,14 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
    const standby=await retainNative(scope,id,manifest);
    const schedules=p=>(p??[]).map(({path,schedule})=>({path,schedule})).sort((a,b)=>a.path.localeCompare(b.path));
    const live=await host.project(scope);if(live.targets?.production?.id!==id)fail('production_changed');
-   if(!equal(schedules(live.crons?.definitions),schedules(c.crons)))fail('schedule_changed');
-   return rollback?control().rollbackOperation(c,r,manifest,{passed:true,rollback:{completedAt:new Date().toISOString(),verification:proof},standby}):control().activateOperation(c,r,{passed:true,sourceHash:r.source_hash,reviewEffect:r.review_effect,production:proof,standby,verifiedBy:'fixed-publisher'});
+   if(!equal(schedules(live.crons?.definitions),schedules(rollback?(r.files.find(f=>f.path==='vercel.json')?JSON.parse(r.files.find(f=>f.path==='vercel.json').before).crons??[]:c.crons):schedulesFor(r,c.crons))))fail('schedule_changed');
+   return rollback?control().rollbackOperation(c,r,manifest,{passed:true,rollback:{completedAt:new Date().toISOString(),verification:proof},standby}):control().activateOperation(c,r,{passed:true,sourceHash:r.source_hash,reviewEffect:r.review_effect,production:proof,standby,crons:schedulesFor(r,c.crons),verifiedBy:'fixed-publisher'});
   }
+  if(operation==='asset'){if(scope!=='web')fail('asset_scope');return asset(args[0]);}
   if(operation==='diagnostics'){const p=await host.project(scope),d=await host.api('/v13/deployments/'+c.deployment,{},scope);return {observedAt:new Date().toISOString(),project:projectView(p),deployment:deploymentView(d),errorCode:typeof d.errorCode==='string'?d.errorCode.slice(0,120):null,controlMatchesProduction:p.targets?.production?.id===c.deployment};}
   if(operation==='project')return projectView(await host.project(scope));
   if(operation==='baseline'){const [id,manifest]=args;if(id!==c.deployment||!equal(manifest,c.manifest))fail('base_changed');return projectView(await host.baseline(scope,id,c.manifest));}
-  if(operation==='read'){const [id,file]=args,b=await bound(scope,id);if(!target(scope).paths.some(p=>p.test(file?.path))||!b.manifest.some(f=>equal(f,file)))fail('file_denied');return host.read(scope,id,file);}
+  if(operation==='read'||operation==='readAsset'){const [id,file]=args,b=await bound(scope,id);if(!target(scope).paths.some(p=>p.test(file?.path))||!b.manifest.some(f=>equal(f,file)))fail('file_denied');return operation==='readAsset'?(await host.readBytes(scope,id,file)).toString('base64'):host.read(scope,id,file);}
   if(operation==='deployment'){const [id]=args;await bound(scope,id);return deploymentView(await host.api('/v13/deployments/'+id,{},scope));}
   if(operation==='restored'){await bound(scope,args[0]);return host.restored(scope,args[0]);}
   if(operation==='reconcile'){const [id,sourceHash,known]=args,r=await release(scope,id);if(sourceHash!==r.source_hash||known&&known!==r.deployment?.id)fail('release_binding');return reconcileDeployment(r);}

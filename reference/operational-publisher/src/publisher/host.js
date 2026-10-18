@@ -70,7 +70,7 @@ class OperationsHost {
     const p = target(scope);
     await this.project(scope);
     const changes = new Map(files.map((f) => [f.path, f]));
-    const r = await this.api("/v13/deployments?skipAutoDetectionConfirmation=1", { method: "POST", body: JSON.stringify({ name: p.name, project: p.project, target: "production", deploymentId: base, autoAssignCustomDomains: false, ...scope === "api" ? { env: { CLAUS_NETWORK_RELEASE: "ops:" + sourceHash } } : {}, files: manifest.map((f) => changes.has(f.path) ? { file: f.path, data: changes.get(f.path).content, encoding: "utf-8" } : { file: f.path, sha: f.sha, size: f.size }), meta: { clausOperationId: id, clausSourceHash: sourceHash }, gitMetadata: { commitAuthorName: "Claus", commitAuthorEmail: "341484431+contractclaus@users.noreply.github.com", commitMessage: "Reviewed operational update" } }) }, scope);
+    const r = await this.api("/v13/deployments?skipAutoDetectionConfirmation=1", { method: "POST", body: JSON.stringify({ name: p.name, project: p.project, target: "production", deploymentId: base, autoAssignCustomDomains: false, ...scope === "api" ? { env: { CLAUS_NETWORK_RELEASE: "ops:" + sourceHash } } : {}, files: manifest.map((f) => changes.has(f.path) && !changes.get(f.path).asset ? { file: f.path, data: changes.get(f.path).content, encoding: changes.get(f.path).encoding === "base64" ? "base64" : "utf-8" } : { file: f.path, sha: f.sha, size: f.size }), meta: { clausOperationId: id, clausSourceHash: sourceHash }, gitMetadata: { commitAuthorName: "Claus", commitAuthorEmail: "341484431+contractclaus@users.noreply.github.com", commitMessage: "Reviewed operational update" } }) }, scope);
     return this.receipt(scope, id, sourceHash, r);
   }
   receipt(scope, id, sourceHash, d) {
