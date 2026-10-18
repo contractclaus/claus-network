@@ -1,3 +1,4 @@
+import {flyBilling} from './fly-billing.mjs';
 import {flyApps} from './fly-target.mjs';
 import {retryTime} from '../resources/providers.mjs';
 export const check=(value,code)=>{if(!value)throw Error('infrastructure_'+code);};
@@ -9,7 +10,7 @@ export const microUsd=value=>{
   return BigInt(Math.ceil(value*1000000));
 };
 export async function providerRequest(request,url,token,{method='GET',body,stream=false}={}){
-  const response=await request(url,{method,redirect:'error',signal:AbortSignal.timeout(stream?5000:18000),headers:{authorization:'Bearer '+token,accept:stream?'text/event-stream':'application/json',...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
+  const response=await request(url,{method,redirect:'error',signal:AbortSignal.timeout(stream?5000:18000),headers:{authorization:token.startsWith('FlyV1 ')?token:'Bearer '+token,accept:stream?'text/event-stream':'application/json',...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
   if(!response.ok){
     const retryAt=retryTime(response.headers.get('retry-after'));
     let details=null;
@@ -166,8 +167,8 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
   };
 }
 
-export function flyDriver({token,request=fetch}){
-  const apps=flyApps({request,token});
+export function flyDriver({token,request=fetch,now=Date.now}){
+  const apps=flyApps({request,token}),billing=flyBilling({token,request,now});
   const api=(path,options)=>providerRequest(request,'https://api.machines.dev/v1'+path,token(),options);
   const appPath=config=>'/apps/'+encodeURIComponent(config.app);
   function project(work,config){check(config.projectId===work.projectId&&/^[a-z0-9][a-z0-9-]{2,62}$/.test(config.app??''),'project_app_not_isolated');}
@@ -175,15 +176,16 @@ export function flyDriver({token,request=fetch}){
   function matches(machine,work){check(machine?.config?.metadata?.claus_resource===work.id&&machine.config.metadata.claus_project===work.projectId,'resource_identity_mismatch');check(machine.config.image===work.manifest.image,'resource_image_changed');return machine;}
   function observation(machine,work,config){matches(machine,work);return {providerResourceId:machine.id,state:machine.state,ready:machine.state==='started'&&(!work.manifest.port||(machine.checks??[]).length>0&&(machine.checks??[]).every(x=>x.status==='passing')),terminal:machine.state==='destroyed',stopped:['stopped','destroyed'].includes(machine.state),endpoint:work.manifest.port?'https://'+config.app+'.fly.dev':null,storageRetained:machine.state!=='destroyed',costFinal:false};}
   return {
-    async readiness(config){if(!config.app){check(config.organization==='claus-network','provider_account_mismatch');const list=await api('/apps?org_slug='+encodeURIComponent(config.organization));check(Array.isArray(list.apps),'provider_shape_invalid');return {authenticated:true,organization:config.organization,projectIsolationConfigured:false};}await account(config);return {authenticated:true,projectId:config.projectId??null,projectIsolationConfigured:typeof config.projectId==='string'};},
+    async readiness(config){if(config.billingMode==='postpaid')return {authenticated:true,projectIsolationConfigured:config.projectIsolation===true,...await billing.readiness(config),regions:config.regions.map(r=>r.code),cpuCounts:[1,2,4,6,8],maxMemoryMiB:65536,pricing:'live official pricing page; complete shape is priced at quote time'};if(!config.app){check(config.organization==='claus-network','provider_account_mismatch');const list=await api('/apps?org_slug='+encodeURIComponent(config.organization));check(Array.isArray(list.apps),'provider_shape_invalid');return {authenticated:true,organization:config.organization,projectIsolationConfigured:false};}await account(config);return {authenticated:true,projectId:config.projectId??null,projectIsolationConfigured:typeof config.projectId==='string'};},
     async quote(work,config){
       project(work,config);const m=work.manifest;check(m.storageGiB===0&&!m.gpu,'fly_shape_unavailable');
+      if(config.billingMode==='postpaid'){await apps.inspect(config);return billing.quote(work,config);}
       // A single small-machine price must not authorize every size in a profile.
       const rate=config.rates?.find(r=>r.cpu===m.cpu&&r.memoryMiB===m.memoryMiB&&r.region===m.region);
       check(rate&&/^[1-9][0-9]*$/.test(rate.hourlyMicroUsd??'')&&typeof rate.priceSource==='string'&&rate.priceSource.length>0,'price_not_configured');
       if(config.projectIsolation===true){await apps.inspect(config);}else await account(config);return {hourlyMicroUsd:rate.hourlyMicroUsd,priceSource:rate.priceSource,bootDiskGiB:0,shape:{cpu:m.cpu,memoryMiB:m.memoryMiB,region:m.region}};
     },
-    async create(work,quote,config){project(work,config);const m=work.manifest;check(quote.shape?.cpu===m.cpu&&quote.shape.memoryMiB===m.memoryMiB&&quote.shape.region===m.region,'price_shape_mismatch');if(config.projectIsolation===true)await apps.prepare(config,{publicHttp:!!m.port});await account(config);const machine=await api(appPath(config)+'/machines',{method:'POST',body:{name:'claus-'+work.id.slice(-40),region:m.region,config:{image:m.image,metadata:{claus_resource:work.id,claus_project:work.projectId},init:m.command.length?{exec:m.command}:{},guest:{cpu_kind:'shared',cpus:m.cpu,memory_mb:m.memoryMiB},restart:{policy:m.mode==='job'?'no':'always'},auto_destroy:false,services:m.port?[{protocol:'tcp',internal_port:m.port,ports:[{port:443,handlers:['tls','http']}],autostop:false,autostart:false,}]:[],checks:m.port?{readiness:{type:'http',port:m.port,path:m.healthPath,method:'GET',interval:'30s',timeout:'5s'}}:{}}}});return observation(machine,work,config);},
+    async create(work,quote,config){project(work,config);const m=work.manifest;check(quote.shape?.cpu===m.cpu&&quote.shape.memoryMiB===m.memoryMiB&&quote.shape.region===m.region,'price_shape_mismatch');if(config.billingMode==='postpaid')await billing.account(config);if(config.projectIsolation===true)await apps.prepare(config,{publicHttp:!!m.port});await account(config);const machine=await api(appPath(config)+'/machines',{method:'POST',body:{name:'claus-'+work.id.slice(-40),region:m.region,config:{image:m.image,metadata:{claus_resource:work.id,claus_project:work.projectId},init:m.command.length?{exec:m.command}:{},guest:{cpu_kind:'shared',cpus:m.cpu,memory_mb:m.memoryMiB},restart:{policy:m.mode==='job'?'no':'always'},auto_destroy:false,services:m.port?[{protocol:'tcp',internal_port:m.port,ports:[{port:443,handlers:['tls','http']}],autostop:false,autostart:false,}]:[],checks:m.port?{readiness:{type:'http',port:m.port,path:m.healthPath,method:'GET',interval:'30s',timeout:'5s'}}:{}}}});return observation(machine,work,config);},
     async inspect(work,checkpoint,config){if(checkpoint.providerResourceId){try{return observation(await api(appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId)),work,config);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return {providerResourceId:checkpoint.providerResourceId,state:'destroyed',terminal:true,stopped:true,ready:false,storageRetained:false,costFinal:false};throw e;}}
       const machines=await api(appPath(config)+'/machines?include_deleted=true');check(Array.isArray(machines),'provider_shape_invalid');const found=machines.filter(x=>x.config?.metadata?.claus_resource===work.id);check(found.length<=1,'duplicate_resource');return found.length?observation(found[0],work,config):{state:'unknown',outcome:'unknown',ready:false,terminal:false};},
     async stop(work,checkpoint,remove,config){check(checkpoint.providerResourceId,'resource_not_identified');const path=appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId);let m;try{m=matches(await api(path),work);}catch(e){if(e.status===404&&(checkpoint.deletionConfirmed||checkpoint.deletionRequested))return this.inspect(work,checkpoint,config);throw e;}
@@ -195,6 +197,7 @@ export function flyDriver({token,request=fetch}){
       return observation(await api(path),work,config);
     },
     async logs(work,checkpoint,config){const m=matches(await api(appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId)),work);return JSON.stringify({state:m.state,events:m.events??[],checks:m.checks??[],applicationLogsAvailable:false}).slice(0,16000);},
+    async usage(work,checkpoint,config){return billing.usage(work,checkpoint,config);},
     async cost(){return {final:false,source:'provider-invoice-required'};}
   };
 }

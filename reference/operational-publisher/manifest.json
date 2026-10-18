@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_EeUSfRdWjxA551XSaqZZqefbMwnt",
-  "source": "claus-goal-phase5-20261018",
+  "deployed": "dpl_3ctZNVC4JvQps3E3ijRp5NjdoEXw",
+  "source": "claus-goal-phase6-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -14,9 +14,9 @@
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
     "src/index.js": "a5b87417c1b306e21d9ef4e93c747c5139f060aefacd6fc911401dc3702191a6",
-    "src/infrastructure/broker.mjs": "60dd6719a767fafe4a874d2321506b8dfd3bd08fa73203b730c04c511a7029b1",
+    "src/infrastructure/broker.mjs": "03ee8087c611bfbbcb04c0f756e5dddb0fd83e4d4bb402baef1110b1a66f61b8",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
-    "src/infrastructure/providers.mjs": "a0f8cc7c720da51e2448b65c1fb4ac1d18a1ad86ef496421548c430e996c9280",
+    "src/infrastructure/providers.mjs": "a696f77e731176a16afb48300e0a1dea2c38f7958e83329ad931eb792b6be65d",
     "src/infrastructure/release.mjs": "59cde463509df28234cc4f121d8f7ac639415a58ea6336f0e3a991e5afafde5e",
     "src/infrastructure/routes.mjs": "9be80153654305b23fd064db79dc754374edf1c31dc4c24f993f146c11c81b1a",
     "src/jobs-wallet/network.js": "3f2f96d7e37226694942a80a2f1918ae7690582fab8195b9b11ac7c3223671e3",
@@ -50,7 +50,7 @@
     "src/surface-publisher/service.js": "362de09ecda7d6861b1813f32db9e7b7870fab4d070cb36ebbf139ddb685dcb8",
     "src/surface-publisher/source.js": "5870c1dc4f8dfe4f49c42532e1a5046a607aed88a4bf2a0dd7eee31cc9c2357d",
     "tests/fly-target.test.mjs": "15eeab695cfe1e3d469d3275e7ce37c5fd0ab049837156330b2535aa0666bdec",
-    "tests/infrastructure.test.mjs": "0c08b04b9a13a489d0c114a2fc6f79e482bb2760bd4ea16579cfce4311f445f9",
+    "tests/infrastructure.test.mjs": "e28bbf22b435bd5d0182393a6c99b8e072c11162ff7d877f3846c81e9e721ed7",
     "tests/oci-route.test.js": "b9f5ff825c5266106dfc2e3de185c7279970c708d0de5727340fe9697d04183e",
     "tests/oci.test.js": "4badcf959c6333ee1d76688a0a06c586d697e0d0b34230c96c0aee2c948a8f73",
     "tests/runtime-release.test.mjs": "30818da643b26e5b653741d2c03cd54ff6887f72a9c2798b541d46b40f8f7bd4",
@@ -81,10 +81,12 @@
     "src/resources/object-provider.mjs": "98e3eb3946886911dac13586859ef1af5ca5b2aba23fa9c3757d4568b0883f13",
     "interfaces/resource-objects.mjs": "2b1f3461ad55c9e1c8a71a181344c9702b860c7e115edeaf8df5dc71aef1133a",
     "tests/resource-objects.test.mjs": "4627ab902444aa23107cffeaf4be50a93f7f8c0f9e80a5d2f8b69cc7f23a0d48",
-    "src/resources/catalog.mjs": "41b62d0aad3ed304f87609a0f6eae8c77cdd2f252a265e4069551d409dde93c9",
+    "src/resources/catalog.mjs": "749e6d9a958bedb696990a1df9abf4d4a7412a1e1ee94a7dc360eb0ebd0101e1",
     "src/resources/endpoints.mjs": "b578ab4f4c54a2944059c08fdd8e474e497a7d12a33f2667171a3b85978a6966",
     "src/resources/endpoint-transport.mjs": "7239cd30b57ed6325857e2dbf083037972271814efa683632be7c6cf741c9de5",
-    "tests/resource-endpoints.test.mjs": "1f93ab26eb74e7abb4986bc83a129ce402c26ed7563afee3b23bdcab6214f89c"
+    "tests/resource-endpoints.test.mjs": "1f93ab26eb74e7abb4986bc83a129ce402c26ed7563afee3b23bdcab6214f89c",
+    "src/infrastructure/fly-billing.mjs": "32bbfbf603be072148f8333923cb3784e6130c26ce011e43149b6431dcdd3336",
+    "tests/fly-billing.test.mjs": "eb685958a3197258fb04824e6ea567cb008b0b1558d5f3973952c16ea0e304ee"
   },
   "referenceSubset": true
 }

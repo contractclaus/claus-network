@@ -139,3 +139,9 @@ test('confirmed provider rejection retains bounded useful error details',async()
  const rejected=await f.call('create',f.work);assert.equal(rejected.error,'infrastructure_provider_400');assert.equal(rejected.errorDetails.detail,'CPU pods reject globalNetworking');assert.equal(rejected.receipt.actual,'0');assert.equal(rejected.terminal,true);
  await assert.rejects(providerRequest(async()=>Response.json({title:'Bad request',detail:'Bearer do-not-return\n'+'.'.repeat(600),errors:['$.cpu invalid']},{status:400}),'https://api.runpod.io/v2/pods','private',{method:'POST',body:{}}),e=>e.status===400&&e.details.detail.length<=500&&!e.details.detail.includes('do-not-return')&&e.details.errors[0]==='$.cpu invalid');
 });
+
+test('loss of postpaid transfer metering deletes only the original machine and retains its bill',async()=>{
+ const f=await fixture();f.config.profiles[0].billingMode='postpaid';f.driver.usage=async()=>{throw Error('meter offline');};
+ await f.call('create',f.work);const observed=await f.call('inspect',f.work);
+ assert.equal(f.deletes(),1);assert.equal(observed.terminal,true);assert.equal(observed.receipt,undefined);assert.equal(observed.guardViolation,'transfer_meter_unavailable');
+});

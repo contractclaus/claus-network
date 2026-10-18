@@ -5,10 +5,11 @@ const MODES=['http','worker','job','model'];
 function optionalShape(input,required,optional){requireThat(input!==null&&typeof input==='object','invalid_shape');shape(input,[...required,...optional.filter(k=>Object.hasOwn(input,k))]);}
 export const gpuCount=manifest=>manifest.gpu===null?0:(manifest.gpuCount??1);
 export function validateManifest(input) {
-  optionalShape(input,['version','mode','image','region','cpu','memoryMiB','gpu','port','healthPath','command','storageGiB','releaseHash'],['gpuCount','minimumVramGiB']);
+  optionalShape(input,['version','mode','image','region','cpu','memoryMiB','gpu','port','healthPath','command','storageGiB','releaseHash'],['gpuCount','minimumVramGiB','egressBudgetMiB']);
   requireThat(input.version===1&&MODES.includes(input.mode),'invalid_infrastructure_manifest');
   requireThat(typeof input.image==='string'&&/^[a-z0-9.-]+\/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$/.test(input.image),'immutable_image_required');
   requireThat(typeof input.region==='string'&&/^[A-Za-z0-9-]{2,40}$/.test(input.region),'invalid_region');
+  if(input.egressBudgetMiB!==undefined)integer(input.egressBudgetMiB,1,1000000);
   integer(input.cpu,1,64);integer(input.memoryMiB,256,524288);integer(input.storageGiB,0,2000);
   requireThat(input.gpu===null||typeof input.gpu==='string'&&/^[A-Za-z0-9 _.-]{1,100}$/.test(input.gpu),'invalid_gpu');
   if(input.gpuCount!==undefined)integer(input.gpuCount,input.gpu===null?0:1,input.gpu===null?0:8);
@@ -23,7 +24,8 @@ export function validateManifest(input) {
 }
 
 export function validateProfile(input) {
-  optionalShape(input,['id','enabled','provider','accountId','asset','fundingAccount','permissionHash','maxLeaseSeconds','maxPerLease','maxActive','imagePrefixes','regions','maxCpu','maxMemoryMiB','maxStorageGiB','gpuTypes'],['maxGpuCount']);
+  optionalShape(input,['id','enabled','provider','accountId','asset','fundingAccount','permissionHash','maxLeaseSeconds','maxPerLease','maxActive','imagePrefixes','regions','maxCpu','maxMemoryMiB','maxStorageGiB','gpuTypes'],['maxGpuCount','billingMode']);
+  if(input.billingMode!==undefined)requireThat(input.billingMode==='postpaid'&&input.provider==='fly'&&input.asset==='USD'&&input.fundingAccount==='postpaid:fly:'+input.accountId,'invalid_postpaid_profile');
   if(input.maxGpuCount!==undefined)integer(input.maxGpuCount,0,input.provider==='fly'?0:8);
   for(const key of ['id','provider','accountId','asset','fundingAccount'])text(input[key]);
   requireThat(['fly','runpod'].includes(input.provider)&&typeof input.enabled==='boolean','invalid_infrastructure_profile');

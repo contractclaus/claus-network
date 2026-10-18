@@ -1,6 +1,7 @@
 import {operatingProject} from '../operating-access/index.mjs';
 import {amount,copy,digest,integer,requireThat,shape,text,sourceText} from '../shared/index.mjs';
 import {balance} from '../billing/index.mjs';
+import {postpaid} from './funding-policy.mjs';
 import {validateProfile} from './manifest.mjs';
 
 
@@ -29,7 +30,7 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
   }
   function publicPolicy(row) {
     const {profileId,enabled,expiresAt,totalLimit,perProjectLimit,dailyLimit,allocated}=row.value;
-    return {pooledFunding:row.value.pooledFunding===true,allocationMeaning:row.value.pooledFunding?'Overlapping own-project ceilings; all reservations share the single real provider balance and custody daily budget.':'Exclusive project allocations',profileId,enabled:enabled&&(expiresAt===null||expiresAt>now()),expiresAt,totalLimit,
+    return {billingMode:row.value.billingMode??'prepaid',allowanceMeaning:row.value.billingMode==='postpaid'?'Per-request ceiling under shared operating budget; reserved and invoiced obligations are retained separately.':'Cumulative funded allowance',pooledFunding:row.value.pooledFunding===true,allocationMeaning:row.value.pooledFunding?'Overlapping own-project ceilings; all reservations share the single real provider balance and custody daily budget.':'Exclusive project allocations',profileId,enabled:enabled&&(expiresAt===null||expiresAt>now()),expiresAt,totalLimit,
       perProjectLimit,dailyLimit,allocated,remaining:row.value.pooledFunding?null:(amount(totalLimit)-amount(allocated)).toString(),revision:row.revision};
   }
   return {
@@ -63,15 +64,16 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
           for (const r of rows) if(r.id!==profile.id&&r.value.fundingAccount===profile.fundingAccount&&r.value.asset===profile.asset)otherLimits+=amount(r.value.totalLimit);
           if(rows.length<100)break;after=rows.at(-1).id;
         }
-        requireThat(amount(totalLimit)+(old?.value.pooledFunding?0n:otherLimits)<=amount(funds.available)+amount(funds.reserved)+amount(funds.spent),'infrastructure_funding_insufficient');
+        if(postpaid(profile))requireThat(amount(totalLimit)<=200000000n,'postpaid_operating_limit');
+        else requireThat(amount(totalLimit)+(old?.value.pooledFunding?0n:otherLimits)<=amount(funds.available)+amount(funds.reserved)+amount(funds.spent),'infrastructure_funding_insufficient');
         await tx.write('infrastructure-profiles',profile.id,profile,priorProfile?.revision??0);
-        const result=await tx.write('infrastructure-controls',profile.id,{profileId:profile.id,fundingAccount:profile.fundingAccount,asset:profile.asset,operators,enabled,expiresAt,totalLimit,perProjectLimit,dailyLimit,allocated,...(old?.value.pooledFunding?{pooledFunding:true}:{}),...(old?.value.providerFundingId?{providerFundingId:old.value.providerFundingId}:{})},expectedRevision);
+        const result=await tx.write('infrastructure-controls',profile.id,{profileId:profile.id,fundingAccount:profile.fundingAccount,asset:profile.asset,...(postpaid(profile)?{billingMode:'postpaid',pooledFunding:true}:{}),operators,enabled,expiresAt,totalLimit,perProjectLimit,dailyLimit,allocated,...(old?.value.pooledFunding?{pooledFunding:true}:{}),...(old?.value.providerFundingId?{providerFundingId:old.value.providerFundingId}:{})},expectedRevision);
         await tx.event({type:'infrastructure.policy_changed',profileId:profile.id,at:now(),revision:result.revision});
         return publicPolicy(result);
       });
     },
     async policy(actor,profileId) {
-      const read=async reader=>{const {row}=await issuer(actor,profileId,reader);const funding=row.value.providerFundingId?(await reader.read('infrastructure-funding',row.value.providerFundingId))?.value:null;return {...publicPolicy(row),funds:await balance(reader,row.value.fundingAccount,row.value.asset),...(funding?{automaticFunding:{enabled:funding.enabled,last:funding.last??null,nextAt:funding.nextAt}}:{})};};
+      const read=async reader=>{const {row}=await issuer(actor,profileId,reader);const funding=row.value.providerFundingId?(await reader.read('infrastructure-funding',row.value.providerFundingId))?.value:null;return {...publicPolicy(row),funds:row.value.billingMode==='postpaid'?{kind:'postpaid',providerDeposit:false,obligations:(await reader.read('infrastructure-postpaid-obligations',digest({account:row.value.fundingAccount,asset:row.value.asset})))?.value??null}:await balance(reader,row.value.fundingAccount,row.value.asset),...(funding?{automaticFunding:{enabled:funding.enabled,last:funding.last??null,nextAt:funding.nextAt}}:{})};};
       return store.snapshot?store.snapshot(read):store.transaction(read);
     },
     async grant(actor,projectId,input) {
@@ -92,12 +94,13 @@ export function createResourceControl({store,identity,now=()=>Date.now()}) {
         requireThat((old?.revision??0)===expectedRevision,'revision_conflict');
         const reserved=old?.value.reserved??'0',spent=old?.value.spent??'0';
         const exposure=amount(reserved)+amount(spent),nextLimit=amount(limit),oldLimit=amount(old?.value.limit??'0');
-        requireThat(nextLimit>=exposure,'infrastructure_allowance_below_exposure');
+        if(postpaid(profile))requireThat(await operatingProject(tx,projectId),'postpaid_owned_project_required');
+        else requireThat(nextLimit>=exposure,'infrastructure_allowance_below_exposure');
         requireThat(!enabled||policy.enabled&&(policy.expiresAt===null||policy.expiresAt>now())&&profile.enabled,'infrastructure_policy_unavailable');
         requireThat(!enabled||(expiresAt===null?policy.expiresAt===null:expiresAt>now()&&(policy.expiresAt===null||expiresAt<=policy.expiresAt)),'invalid_profile_expiry');
         // Revocation releases only unspent/unreserved allocation. Old pending
         // effects still settle against the same allowance and money account.
-        requireThat(enabled||nextLimit===exposure,'revoked_infrastructure_grant_must_preserve_exposure');
+        requireThat(enabled||nextLimit===(postpaid(profile)?0n:exposure),'revoked_infrastructure_grant_must_preserve_exposure');
         requireThat(nextLimit<=amount(policy.perProjectLimit)||nextLimit<=oldLimit,'infrastructure_project_limit');
         const allocated=amount(policy.allocated)-oldLimit+nextLimit;
         requireThat(allocated>=0n&&(policy.pooledFunding===true||allocated<=amount(policy.totalLimit)),'infrastructure_budget_exhausted');

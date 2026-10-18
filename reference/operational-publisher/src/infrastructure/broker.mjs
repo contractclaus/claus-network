@@ -13,7 +13,7 @@ const original=w=>{const {leaseUntil,extensions,...rest}=w;return rest;};
 
 export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus,budget}={}){
   budget??=infrastructureBudget({request});
-  drivers??={runpod:runpodDriver({token:()=>process.env.CLAUS_RUNPOD_API_KEY,request,now}),fly:flyDriver({token:()=>process.env.CLAUS_FLY_API_TOKEN,request})};
+  drivers??={runpod:runpodDriver({token:()=>process.env.CLAUS_RUNPOD_API_KEY,request,now}),fly:flyDriver({token:()=>process.env.CLAUS_FLY_API_TOKEN,request,now})};
   function profile(p,projectId){
     const c=config(),found=c.profiles?.find(x=>x.id===p.id);
     check(found&&found.profileHash===digest(p)&&found.accountId===p.accountId&&found.provider===p.provider,'profile_not_authorized');
@@ -36,7 +36,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     const p=profile(input.profile,input.projectId);check(Number.isSafeInteger(input.leaseSeconds)&&input.leaseSeconds>=60&&input.leaseSeconds<=input.profile.maxLeaseSeconds,'lease_invalid');
     const price=await drivers[p.provider].quote(input,p);
     const hourly=BigInt(price.hourlyMicroUsd);check(hourly>0n&&hourly<=BigInt(p.maxHourlyMicroUsd),'price_over_limit');
-    const maximum=(hourly*BigInt(input.leaseSeconds+(p.shutdownHeadroomSeconds??300))+3599n)/3600n;
+    const maximum=(hourly*BigInt(input.leaseSeconds+(p.shutdownHeadroomSeconds??300))+3599n)/3600n+BigInt(price.extraMaximumMicroUsd??'0');
     check(maximum<=BigInt(input.profile.maxPerLease),'quote_over_limit');
     const id=digest({request:input.requestHash,price,at:now()}),result={id,requestHash:input.requestHash,accountId:p.accountId,asset:input.profile.asset,maximum:maximum.toString(),expiresAt:now()+300000,totalLifecycle:true,...price};
     check(input.profile.asset==='USD','billing_asset_invalid');
@@ -50,7 +50,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     check(saved.input.projectId===work.projectId&&digest(saved.input.profile)===digest(work.profile)&&digest(saved.input.manifest)===digest(work.manifest),'quote_binding_invalid');
     return saved.result;
   }
-  const result=(w,r)=>({operationId:w.id,accountId:w.profile.accountId,providerResourceId:r.providerResourceId??null,state:r.state??'unknown',outcome:r.outcome??null,ready:r.ready===true,terminal:r.terminal===true,stopped:r.stopped===true,endpoint:r.endpoint??null,storageRetained:r.storageRetained??null,providerLeaseUntil:r.leaseUntil??w.leaseUntil,hourlyMicroUsd:r.hourlyMicroUsd??null,costObservation:r.costObservation??null,error:r.error??null,errorDetails:r.errorDetails??null,...(r.receipt?{receipt:r.receipt}:{})});
+  const result=(w,r)=>({operationId:w.id,accountId:w.profile.accountId,providerResourceId:r.providerResourceId??null,state:r.state??'unknown',outcome:r.outcome??null,ready:r.ready===true,terminal:r.terminal===true,stopped:r.stopped===true,endpoint:r.endpoint??null,storageRetained:r.storageRetained??null,providerLeaseUntil:r.leaseUntil??w.leaseUntil,hourlyMicroUsd:r.hourlyMicroUsd??null,costObservation:r.costObservation??null,error:r.error??null,errorDetails:r.errorDetails??null,traffic:r.traffic??null,guardViolation:r.guardViolation??null,...(r.receipt?{receipt:r.receipt}:{})});
   async function locked(work,operation){
     const token=randomUUID(),row=await ledger.infrastructureLock(key(work.id),token,now());check(row,'resource_busy');
     let current=row.result;
@@ -67,11 +67,16 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     if(c.phase==='prepared')return result(work,{...c,outcome:'not_started'});
     const driver=drivers[c.providerConfig.provider];
     let observed=await driver.inspect(c.work,c,c.providerConfig);
+    if(c.providerConfig.billingMode==='postpaid'&&observed.providerResourceId&&!observed.terminal){
+      try{const traffic=await driver.usage(c.work,{...c,providerResourceId:observed.providerResourceId},c.providerConfig);observed={...observed,traffic,guardViolation:traffic.state==='limit-reached'?'transfer_budget_reached':null};}
+      catch{observed={...observed,guardViolation:'transfer_meter_unavailable'};}
+      await record(observed);
+    }
     if(observed.providerResourceId)await budget('commit',c.work);
     for(const extension of c.work.extensions??[])await budget('commit',c.work,extension);
     const overPrice=observed.hourlyMicroUsd&&BigInt(observed.hourlyMicroUsd)>BigInt(c.price.hourlyMicroUsd);
     const revoked=!config().enabled||!config().profiles?.some(p=>p.id===c.providerConfig.id&&p.enabled&&p.profileHash===c.providerConfig.profileHash);
-    const mustStop=c.leaseUntil<=now()||revoked||overPrice||c.deletionRequested;
+    const mustStop=c.leaseUntil<=now()||revoked||overPrice||c.deletionRequested||!!observed.guardViolation;
     const releaseRevoked=mustStop?false:!await releaseApproved(c.work);
     if((mustStop||releaseRevoked)&&observed.providerResourceId&&!observed.terminal){
       await record({...observed,deletionRequested:true});
