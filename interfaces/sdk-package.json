@@ -1,0 +1,28 @@
+{
+  "name": "@claus/network-sdk",
+  "version": "0.43.1",
+  "description": "Claus Network SDK and renewable agent login client",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "exports": {
+    ".": "./index.mjs",
+    "./agent": "./interfaces/agent-client.mjs",
+    "./contract": "./interfaces/contract.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/contractclaus/claus-network.git"
+  },
+  "homepage": "https://claus.si/docs/clients",
+  "files": [
+    "index.mjs",
+    "interfaces",
+    "src/work-planning/actions.mjs",
+    "README.md",
+    "LICENSE",
+    "provenance.json"
+  ]
+}

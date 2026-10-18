@@ -139,3 +139,20 @@ test('an admitted owner runtime survives login expiry but still stops on explici
  f.identity.ongoingInfrastructureAllowed=async()=>false;
  await f.api.reconcile(r.id);assert.equal((await f.store.read('infrastructure-resources',r.id)).value.state,'settled');assert.equal((await f.balance()).spent,'30');
 });
+
+
+test('confirmed deletion permits exactly one linked replacement while retaining the full original hold',async t=>{
+ const f=await fixture(t),q=await f.quote(),r=await f.api.request('owner','project',{quoteId:q.id,idempotencyKey:'create'});
+ await f.api.reconcile(r.id);
+ f.ports.inspect=async()=>({operationId:r.id,accountId:'account',providerResourceId:'instance',ready:false,terminal:true,storageRetained:false});
+ await f.api.reconcile(r.id);
+ const before=await f.api.get('owner','project',r.id);
+ const nextQuote=await f.api.quote('owner','project',{profileId:'cpu',manifest:f.manifest,leaseSeconds:300,idempotencyKey:'replacement-quote'});
+ const input={quoteId:nextQuote.id,idempotencyKey:'replace',expectedRevision:before.revision};
+ const next=await f.api.update('owner','project',r.id,input);
+ assert.equal(next.replaces,r.id);assert.equal((await f.balance()).reserved,'200');
+ const original=await f.api.get('owner','project',r.id);assert.equal(original.cost.state,'reserved');assert.equal(original.cost.actual,null);assert.equal(original.replacement.id,next.id);
+ assert.equal((await f.api.update('owner','project',r.id,input)).id,next.id);
+ await assert.rejects(f.api.update('owner','project',r.id,{...input,idempotencyKey:'different',expectedRevision:original.revision}),{code:'resource_already_replaced'});
+ assert.equal((await f.balance()).reserved,'200');
+});
