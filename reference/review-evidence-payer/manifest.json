@@ -1,8 +1,8 @@
 {
-  "deployed": "dpl_2vGLnQNQG8yvdwpRwzbfEtS56ZqV",
+  "deployed": "dpl_6JVHDLDJ4ezUJyZodpj1kWtfXNYy",
   "source": "claus-unified-continuity-20261018",
   "files": {
-    "src/index.js": "2a5871eb3b95e2b2c8b11aa57fa52e35606364473967e3a9c2948e8bb1f96763",
+    "src/index.js": "2a81a67ec0860aa7e8f10e01c57f4abe5ee9519903e2692a16bbc26d3027c2a4",
     "src/credit-provider.js": "3aa04dc171d3209245d4dee601add253904cbe34a358d78436cccb5cf4eb7b68",
     "src/credit-work-store.js": "274409e275e0f493f4f6ffc0178573048990391c9a602891936355f3d797cfe7",
     "src/review-evidence.js": "ad81691a59af200ee6d418cb5f3df5f911875365013664b1410d69bebe300a3d",
@@ -51,7 +51,9 @@
     "src/operating-ledger.js": "80b596e358d87ef727d3946783093398f5fe312e0905d064c08f9d79f0844957",
     "src/interrupted-credit-settlement.js": "9b640591511dcf9401e295fb903ae1317b416ef9683cdc1ba19b357ea5449efc",
     "src/continuity-gate.mjs": "0d5689cf57a0354bd62d4cd26e2de758fa8c3eb52aa0e51e0cebbd13553d4a4b",
-    "src/continuity-host.mjs": "77b993c1b062c4e11574d2a7948b232032b6dc394ccc38f406d9fb81df515490"
+    "src/continuity-host.mjs": "77b993c1b062c4e11574d2a7948b232032b6dc394ccc38f406d9fb81df515490",
+    "src/runtime-export.mjs": "e8839bec2e817cbc1722cbb2735fc1ebeb86a7389f158ba449fe5d01035b49e4",
+    "src/runtime-export-scope.json": "76f6843530b23f04f576ed4c24a58dc8265e8f323b640743a17908acad654d2a"
   },
   "referenceSubset": true
 }

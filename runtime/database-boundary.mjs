@@ -17,10 +17,20 @@ const expected = [
 const expression = value => (value ?? '').replace(/[\s()]/g, '');
 const unavailable = () => { throw Error('network_database_boundary_unavailable'); };
 
-export function validateDatabaseBoundary(facts, policies) {
+export function expectedDatabaseName(env=process.env) {
+  if(env.CONTINUITY_INSTANCE!=='standby'||env.CONTINUITY_EFFECTS_ENABLED!=='true')return 'claus_network_v1';
+  try {
+    const database=new URL(env.CLAUS_NETWORK_DATABASE_URL),coordinator=new URL(env.CONTINUITY_URL);
+    if(!['postgres:','postgresql:'].includes(database.protocol)||coordinator.protocol!=='https:'||
+       database.hostname!==coordinator.hostname||database.pathname!=='/recovery_network')return unavailable();
+    return 'recovery_network';
+  }catch{return unavailable();}
+}
+
+export function validateDatabaseBoundary(facts, policies, database='claus_network_v1') {
   const recovery = Array.isArray(policies) && policies.find(row => row.policyname === 'claus_recovery_read_v1');
   const allowed = recovery ? [...expected, ['claus_recovery_read_v1', recoveryRole, 'SELECT', 'true', null]] : expected;
-  if (!facts || facts.role !== runtimeRole || facts.database !== 'claus_network_v1' ||
+  if (!['claus_network_v1','recovery_network'].includes(database)||!facts || facts.role !== runtimeRole || facts.database !== database ||
       facts.rls !== true || facts.safe_role !== true || facts.safe_privileges !== true ||
       (recovery && facts.safe_backup_role !== true) ||
       !Array.isArray(policies) || policies.length !== allowed.length) unavailable();
@@ -34,7 +44,7 @@ export function validateDatabaseBoundary(facts, policies) {
   return { profile: 'network-controls-v1', verified: true };
 }
 
-export async function readDatabaseBoundary(pool) {
+export async function readDatabaseBoundary(pool, database='claus_network_v1') {
   const { rows } = await pool.query(`SELECT current_user AS role, current_database() AS database,
     c.relrowsecurity AS rls,
     NOT (r.rolsuper OR r.rolcreaterole OR r.rolcreatedb OR r.rolbypassrls OR c.relowner=r.oid
@@ -55,6 +65,6 @@ export async function readDatabaseBoundary(pool) {
       FROM pg_policies p WHERE p.schemaname='claus_network' AND p.tablename='documents') AS policies
     FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE r.rolname=current_user AND n.nspname='claus_network' AND c.relname='documents'`);
-  const boundary=validateDatabaseBoundary(rows[0], rows[0]?.policies);
+  const boundary=validateDatabaseBoundary(rows[0], rows[0]?.policies,database);
   return {...boundary,receipts:await readAppReceiptBoundary(pool)};
 }

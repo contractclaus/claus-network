@@ -4,7 +4,7 @@ import {createApplication} from './server.mjs';
 import {openPostgresStore} from '../src/postgres/index.mjs';
 import {openStore} from '../src/storage/index.mjs';
 import {openAppPostgres} from '../src/app-storage/index.mjs';
-import {readDatabaseBoundary} from './database-boundary.mjs';
+import {readDatabaseBoundary,expectedDatabaseName} from './database-boundary.mjs';
 import {sourceObjects} from './source-objects.mjs';
 import {dataObjects} from './data-objects.mjs';
 import {imageArchive} from './image-objects.mjs';
@@ -29,7 +29,8 @@ export async function openRuntime({env=process.env,allowLocal=false}={}){
    neonConfig.webSocketConstructor=ws;
    pool=new Pool({connectionString:env.CLAUS_NETWORK_DATABASE_URL,max:3,connectionTimeoutMillis:8000});
    pool.on('error',()=>{});
-   databaseBoundary=()=>readDatabaseBoundary(pool);
+   const expectedDatabase=expectedDatabaseName(env);
+   databaseBoundary=()=>readDatabaseBoundary(pool,expectedDatabase);
    await databaseBoundary();
    store=await openPostgresStore({pool});
   }else{

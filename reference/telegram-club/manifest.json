@@ -9,9 +9,14 @@
     "api/club-agent.mjs": "15f139f8707259d2b8bee365ca07d9c2facc379bde2c0c21406e8dfba8c14dab",
     "source/club-telegram.mjs": "c5de94a4f26eeb8ae83d09454737a7d4f3df695cbe3994519265ad4c609bdd94",
     "club-telegram.css": "9018f0ca64837c2389442e4989175e1743adedfc602c1a430a2ca0ba7db12fbf",
-    "db/migrations/20261018-club-telegram.sql": "9791c0053ad44f606c94f4e1ae17c0f4109c030e615522b733912e45a000c30e"
+    "db/migrations/20261018-club-telegram.sql": "9791c0053ad44f606c94f4e1ae17c0f4109c030e615522b733912e45a000c30e",
+    "lib/runtime-export.mjs": "e8839bec2e817cbc1722cbb2735fc1ebeb86a7389f158ba449fe5d01035b49e4",
+    "lib/runtime-export-scope.json": "b01b0f20dafee0b8ddfe2c53df363776c46bdc06eb6a11067a5263219a5eb839",
+    "api/continuity-export.mjs": "1c0bde9c165eb9b562ec9044c8dcbc39868f78b4b512c643066cef07155cb00f",
+    "lib/club-agent.mjs": "28470d08e7a2a1b1a20cb17d907e07f51b03c62f0f50eb2b30bd7d0063b33ef0",
+    "lib/club-ballots.mjs": "dbf678765347c7b691d92278d77e4e9f1a7368df822c471d158f15b24ef8b303"
   },
   "referenceSubset": true,
   "source": "claus-unified-continuity-20261018",
-  "deployed": "dpl_CgSAEZA9zZN2z1MrqkJ52ngWeoG9"
+  "deployed": "dpl_F2BLYybbktPumkhdAcmAAydMdb6w"
 }

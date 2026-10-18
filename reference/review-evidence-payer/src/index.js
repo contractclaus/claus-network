@@ -1,3 +1,4 @@
+import {runtimeExport} from './runtime-export.mjs';
 import {continuityEnabled} from './continuity-gate.mjs';
 import {hostContinuity,hostMiddleware,responseRecord} from './continuity-host.mjs';
 import {hasInterruptedCreditProof} from './interrupted-credit-settlement.js';
@@ -74,6 +75,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   funding=inferenceFunding,outcome=paymentOutcome,exactScheme=ExactEvmScheme,uptoScheme=UptoEvmScheme,
   reserve=reservePayment,reconcile=reconcilePayment,pending=reconcilePending,retain=retainCompletion}={}) {
   const app=new Hono();
+app.get('/internal/recovery/runtime-environment',c=>runtimeExport(c.req.header('authorization'),env));
   app.use('/api/*',hostMiddleware(c=>!['/api/completion','/api/images'].includes(c.req.path)&&(['POST','PUT','PATCH','DELETE'].includes(c.req.method)||c.req.method==='GET'&&c.req.path.endsWith('/process'))));
   installCapitalRoutes(app,{env});
   const computeFunding=installFundingRoutes(app,'payer',env);
