@@ -5,6 +5,11 @@ const hostname=v=>typeof v==='string'&&v.length<=253&&v===v.toLowerCase()&&v.end
 export const domainInputs={project_domain_info:['resourceId','domain'],project_domain_add:['resourceId','domain'],project_domain_verify:['resourceId','domain'],project_domain_remove:['resourceId','domain','expectedVersion']};
 export function managedDomains({store,call,now=Date.now}){
  const api=(path,options)=>call('vercel',path,options);
+ async function ownedHostname(name){
+  if(hostname(name))return true;
+  if(typeof name!=='string'||name.length>253||name!==name.toLowerCase()||!name.split('.').every(x=>/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(x)))return false;
+  const labels=name.split('.');for(let i=0;i<labels.length-1;i++){const record=await store.get('registrar-domain',labels.slice(i).join('.'));if(record?.status==='registered'&&record.owner===team)return true;}return false;
+ }
  async function project(id){
   const r=await store.get('resource',id);if(!r||r.protected||r.provider!=='vercel'||r.owner!==team)fail('scope_invalid');
   const p=await api('/v9/projects/'+r.providerId);if(p.id!==r.providerId||p.accountId!==team)fail('owner_changed');return r;
@@ -12,7 +17,7 @@ export function managedDomains({store,call,now=Date.now}){
  function view(v){if(!v)return null;const body={domain:v.name,projectId:v.projectId,verified:v.verified===true,gitBranch:v.gitBranch??null,redirect:v.redirect??null,createdAt:v.createdAt??null,updatedAt:v.updatedAt??null};return {...body,version:digest(body),verification:(v.verification??[]).map(x=>({type:x.type,domain:x.domain,value:x.value})),meaning:'Hosting binding and ownership challenge. Verified ownership is not an independent TLS or application-health test.'};}
  async function current(r,name){const v=await api('/v9/projects/'+r.providerId+'/domains/'+encodeURIComponent(name),{missing:true});if(v&&(v.projectId!==r.providerId||v.name!==name))fail('provider_mismatch');return v;}
  async function change(operation,input,requestId){
-  if(!hostname(input.domain))fail('outside_owned_subdomains');const r=await project(input.resourceId),name=input.domain;
+  if(!await ownedHostname(input.domain))fail('outside_owned_subdomains');const r=await project(input.resourceId),name=input.domain;
   if(operation==='project_domain_info'){
    const v=await current(r,name);if(!v)return {exists:false,domain:name};
    const configuration=await api('/v6/domains/'+encodeURIComponent(name)+'/config?projectIdOrName='+encodeURIComponent(r.providerId));
