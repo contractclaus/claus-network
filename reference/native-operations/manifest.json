@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase42-20261018",
+  "source": "claus-goal-phase44-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -151,7 +151,7 @@
     "src/operations/files.mjs": "ce9b616e5440890b1d66085c2685712e2f31980c93db427acfbe45d64ac3c010",
     "src/operations/website-admin.ts": "113346188770465f2d2ceae94078afe513c400ba691d220ecb3c41927c55aa10",
     "src/work-graph.ts": "d7c5654bfee7fdfa8a7b25019fe13d734e1b115af5eb60a62fdf42941f2a84e7",
-    "src/operations/resources.ts": "8aa9dd5436501ad3c3ec4fdbd5f7625d45b5dc52a4fd47abd49176d53cc875de",
+    "src/operations/resources.ts": "e0c59b7c40922ed0675324b05379fe8734c79fcf64a751612783f9daee215770",
     "tests/work-graph.test.ts": "c8463ecd78b66b6801eca31c012ea977acba658cd88b554d2f6d6226e6b1e760",
     "tests/resources-continuation.test.ts": "125f60859cd13d36bf6d74a74dfca72b7f218c6fd13daff5e85995f2148ba69d",
     "src/external/browser-targets.ts": "f1e651cd7f78ed4f2dfcb0f9860eb9ae419da712c87d35da3b6796f5489617ed",
@@ -162,12 +162,12 @@
     "src/development-funding.ts": "7541ff101e3acd1953e366bf046a7be095db80de40057b4997e6456ca5ec3971",
     "tests/development-continuation.test.ts": "c82151eaecc374126392de1c47b3c284a8173ff835462a9ea098efedcff986ef",
     "src/inference-admission.ts": "3cfe07bb5b0ba01f547ec4a6e3c77959683bec5be259a826b41a7f817999e04a",
-    "src/operations/resource-help.ts": "5e6f77aa128ea85c332d9ee21495aaad90015f37cbce52988d495a7e382eeeb6",
+    "src/operations/resource-help.ts": "0b1a8ecca5e901fe4236b7cbc59e2407064b4de8abf5f25f4fa134e196f3c24b",
     "src/negative-receipt.ts": "b7c582c641e4028606cf2a976429e45903a45c038789afd3432bd05784c84157",
     "src/operations/trace.ts": "95c97cb482702fc472df998bb7bc0c625489c22c26fb41e09b1d7202197782eb",
     "src/external/browser-events.ts": "444b3a824de5610589a2f087c01e5af162b8588c94a5196354a2e00ba4c3b953",
     "src/external/runpod-telemetry.ts": "6951d3370f52e9b62cb447ad54527269a4eb7442841541d8002adb69bea90196"
   },
   "referenceSubset": true,
-  "deployed": "dpl_6MA2ABferh6aSiaYiPVZtbY8rTDE"
+  "deployed": "dpl_6MPXfCmUrLVAmMUepK6ok86T3FTP"
 }

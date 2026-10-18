@@ -29,15 +29,19 @@ export function resourceStore(sql=neon(process.env.DATABASE_URL)){
    const action=await this.get('action',id);if(!action)return false;
    const refs=resourceReferences([action.input,action.prepared]).map(id=>key('resource',id));
    const plan=action.operation==='retirement_provider'?action.input?.planId:null;
+   const specialist=action.prepared?.modelSpecialist??null;
    const rows=await sql.query(`WITH resources AS MATERIALIZED (
     SELECT result FROM claus_publisher_actions WHERE id=ANY($2::text[]) ORDER BY id FOR SHARE
    ), grant_row AS MATERIALIZED (
     SELECT result FROM claus_publisher_actions WHERE id='owned:secret:'||$4::text FOR SHARE
+   ), specialist_row AS MATERIALIZED (
+    SELECT result FROM claus_publisher_actions WHERE id='owned:model-specialist:'||$6::text FOR SHARE
    ) UPDATE claus_publisher_actions SET result=jsonb_set(result,'{phase}','"dispatched"'::jsonb),updated_at=now()
     WHERE id=$1 AND status='reserved' AND (result->>'phase'='prepared' OR result->>'phase'='provider_retry' AND (result->>'retryAt')::timestamptz<=now())
      AND NOT EXISTS(SELECT 1 FROM resources WHERE (result ? 'retirementPlanId' OR result->>'status'=ANY(ARRAY['retiring','retired','removed','archived'])) AND ($3::text IS NULL OR result->>'retirementPlanId' IS DISTINCT FROM $3))
      AND ($4::text IS NULL OR EXISTS(SELECT 1 FROM grant_row WHERE result->>'kind'='broker-grant' AND result->>'status'='active' AND (result->>'version')::int=$5::int AND (result->>'expiresAt')::timestamptz>now()))
-    RETURNING id`,[key('action',id),refs,plan,delegation?.id??null,delegation?.version??null]);return rows.length===1;
+     AND ($6::text IS NULL OR EXISTS(SELECT 1 FROM specialist_row WHERE result->>'state'='running' AND COALESCE((result->>'stopRequested')::boolean,false)=false AND (result->>'turn')::int=$7::int AND (result->>'deadline')::timestamptz>now()))
+    RETURNING id`,[key('action',id),refs,plan,delegation?.id??null,delegation?.version??null,specialist?.id??null,specialist?.turn??null]);return rows.length===1;
   },
   async deferRejected(id,retryAt){if(!Number.isFinite(Date.parse(retryAt)))throw Error('resource_retry_time_invalid');const rows=await sql`UPDATE claus_publisher_actions SET result=result||${JSON.stringify({phase:'provider_retry',retryAt})}::jsonb,updated_at=now() WHERE id=${key('action',id)} AND status='reserved' AND result->>'phase'='dispatched' AND result->>'operation'=ANY(${['repository_merge_apply','volume_create','volume_resize','repository_fastforward','repository_release_prepare','repository_release_publish','project_domain_add','project_domain_verify','project_domain_remove']}::text[]) RETURNING id`;if(rows.length!==1)throw Error('resource_retry_state_conflict');},
   async complete(id,result){await sql`UPDATE claus_publisher_actions SET status='completed',result=jsonb_set(result,'{output}',${JSON.stringify(result)}::jsonb),updated_at=now() WHERE id=${key('action',id)}`;return result;}

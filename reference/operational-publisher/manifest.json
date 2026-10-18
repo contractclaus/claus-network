@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_CFK4zhR3ThCCGsJCEQQdinivFgi1",
-  "source": "claus-goal-phase42-20261018",
+  "deployed": "dpl_AggftgSnQRGcRmdQSBmLhwg4zos3",
+  "source": "claus-goal-phase44-20261018",
   "files": {
     "package-lock.json": "05648c9e13e38d6836a23f03a10c6fee9b71d740914add3568497a576460902d",
     "package.json": "a5c7446f3697f0cf7780220c8098ac2ef70a0df8d7426fef23cd046492c081c2",
@@ -65,10 +65,10 @@
     "src/website-admin/assets.mjs": "38cc1ccf23718738f9be1529a91072c5da2de94690b9c6de4f62577171884165",
     "src/website-admin/dns.mjs": "3a4ab5909f8a14069dbd7bec0301d85f598908e5380343bee3cc24de872abdf9",
     "tests/website-dns.test.mjs": "a58256294fd91cc6abc8c3097039db3680c71886e9a849c0dc391bb65abc1744",
-    "src/resources/store.mjs": "57d0de514209f834b8df31e61009cde765a0962d1db06281c50d3a2906e8ce58",
+    "src/resources/store.mjs": "aa94e905ef38637e42ac5641ce7fa2f8736dde28c01581ef8a4f5bd40909da5d",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
     "src/resources/providers.mjs": "cf81c7462102101f4b22c342849b67b9e6c6d5c945f282b5d7cdf435c5e864a3",
-    "src/resources/service.mjs": "aae0876a1310e7577867ee1658c051767d22c96cbdaf7da9b6de2897f71f1f10",
+    "src/resources/service.mjs": "7b50506f3dad7a979687d11bc0c54991ba4cb5481e916127dcd40d759a5132bd",
     "src/resources/routes.mjs": "01d33b559af53cf891f44a99be4c4010f0ab9a542c0fa3eabb4341ca3a936fc1",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
@@ -134,7 +134,7 @@
     "src/resources/worker-client.mjs": "0e8061f1b1feb5f8b42cbca5112c07d2465202496c944b7b3bc276b96ab73f84",
     "src/resources/repository-merge.mjs": "1c299ac8d082e70839849cb084f1a87b56411019d906a2be9000ccb550ace166",
     "src/resources/model-catalog.mjs": "c8de984d984387f268bb3f9d7d58cb7a391c68f8772e6f7b35f92a549dea8f8d",
-    "src/resources/models.mjs": "a668b35d9e53e1e2bd91aae8751510a29440af169d5821c0b8feeb7c70bb11be",
+    "src/resources/models.mjs": "66147283915dd943d05a57678e0d6c0dc70e8a0bcfd63264a7d454ac0528120f",
     "src/resources/model-format.mjs": "0edc35bd23942a3ded9bdaf34a2f59491ea6315fa76d4a43d2cff7c9b8e74d82",
     "src/resources/database-compatibility.mjs": "2ef920b45af994ff502f49bb9bfbeafc471ff6c31a7fecad74b905e683cf84e1",
     "src/resources/schema-snapshot.mjs": "0527330f745563d567b31dfe2295b0f8afbf37161cf21f5250b9b8604b0ca441",
@@ -146,7 +146,8 @@
     "src/resources/database-provision.sql": "6657bf15a542a9e18fab15424ed79dfa7172f74f251fd572c012b0102b0caf0e",
     "src/infrastructure/fly-diagnostics.mjs": "4d54b75a8a042fe1109222e20f134ad0a1ea445099e517c6a5e9a7cf53f0ff6b",
     "src/resources/cloudflare.mjs": "635b10b54a0a9817490cffe345d46c334ed451045edd74d50df53475dd5eef55",
-    "src/resources/mail.mjs": "c3aac1a7f9c563ab1142bee67d968d6603cd6ada54cd7e04a15747a8cf315c62"
+    "src/resources/mail.mjs": "c3aac1a7f9c563ab1142bee67d968d6603cd6ada54cd7e04a15747a8cf315c62",
+    "src/resources/model-specialists.mjs": "b1e93efaf7c1bb70e83fba6a4585ce1cdbafdf7cc2efdc481cdaa1c397e74a93"
   },
   "referenceSubset": true
 }
