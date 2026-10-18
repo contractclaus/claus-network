@@ -18,7 +18,7 @@ export function resourceDatabase({env=process.env,poolFactory=options=>new Pool(
     const prior=(await db.query('SELECT source_hash,result FROM '+table('_claus_migrations')+' WHERE id=$1',[actionId])).rows[0];
     if(prior){if(prior.source_hash!==sourceHash)throw Error('resource_database_migration_conflict');await db.query('COMMIT');return prior.result;}
     const backups=[];
-    for(let i=0;i<statements.length;i++){const s=statements[i];if(s.backup){const name='retained_'+createHash('sha256').update(actionId+':'+i).digest('hex').slice(0,28);await db.query('CREATE TABLE '+table(name)+' (LIKE '+table(s.backup)+' INCLUDING ALL)');await db.query('INSERT INTO '+table(name)+' SELECT * FROM '+table(s.backup));backups.push({original:s.backup,retained:name});}await db.query(s.sql);}
+    for(let i=0;i<statements.length;i++){const s=statements[i];if(s.backup){const name='retained_'+createHash('sha256').update(actionId+':'+i).digest('hex').slice(0,28);await db.query('CREATE TABLE '+table(name)+' (LIKE '+table(s.backup)+' INCLUDING ALL EXCLUDING GENERATED EXCLUDING IDENTITY)');await db.query('INSERT INTO '+table(name)+' SELECT * FROM '+table(s.backup));backups.push({original:s.backup,retained:name});}await db.query(s.sql);}
     const result={applied:true,resourceId:id,database:'claus_applications',schema,steps:statements.length,backups,sourceHash,at:new Date().toISOString(),codeRollbackRestoresData:false};
     await db.query('INSERT INTO '+table('_claus_migrations')+'(id,source_hash,result) VALUES($1,$2,$3::jsonb)',[actionId,sourceHash,JSON.stringify(result)]);await db.query('COMMIT');return result;
    }catch(e){await db.query('ROLLBACK');if(/^resource_/.test(e.message))throw e;throw Error('resource_database_migration_failed');}finally{db.release();}});
