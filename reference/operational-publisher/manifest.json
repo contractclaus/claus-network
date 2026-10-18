@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_7pRHHpvDmpEKKGXLBmUTJx4rViDa",
-  "source": "claus-goal-phase30-20261018",
+  "deployed": "dpl_9DtEbz9bgqM7uTmboiirqpg9tJUn",
+  "source": "claus-goal-phase31-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -13,7 +13,7 @@
     "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
-    "src/index.js": "17709620bcd5562cff77b5f8c3132f63f81cfb6f6550097f46ece9dab0fbc335",
+    "src/index.js": "6b252170517b51ac3e2c821346d29b46e649a58813933c68e7ce46660e99ccd1",
     "src/infrastructure/broker.mjs": "89ea38b8ab956304678f28c5524e829867a80787473c895c7348e3952a301c62",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
     "src/infrastructure/providers.mjs": "e439e06a49d1f77db1db7a35d9f7ee0dde62271417bf51762925f3ebf27d2db4",
@@ -29,7 +29,7 @@
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
     "src/publisher/policy.js": "f351cf688e16f26044f46f6daeb0ec4b0df02387f1872828c6ce2a5483b9b97f",
     "src/publisher/program.js": "2037abc8fc8d73d33f51a2f72c1c6da8353b87b103890b5d0eff354c68db61a0",
-    "src/publisher/repository.js": "ce664f742a8731c1626c2de1798b064a29b29390d3d22400a6f00c1201e2d814",
+    "src/publisher/repository.js": "c429f251f399a5672a47e04ceaacc0dc9850b6fa8a8efa512983923a84010bb8",
     "src/publisher/review-evidence.js": "2fb68224e62e34c1a0669d93b5db558eec2bf3ecf0b3185a8a175ed0dfe67ad7",
     "src/publisher/review-prompts.json": "51532d005517a904f93e9cc345be10a568e43e337129233c1bce3a0523af7bf5",
     "src/publisher/routes.js": "6ad948112fbacffd1858dd22475a3e1f47e8338ecf09ac4e60b771e2731556fe",
@@ -67,9 +67,9 @@
     "tests/website-dns.test.mjs": "a58256294fd91cc6abc8c3097039db3680c71886e9a849c0dc391bb65abc1744",
     "src/resources/store.mjs": "da38a1b9bafa133c5150866a4842e994a14ff4b10fb4126d7abac2c2a934e59c",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
-    "src/resources/providers.mjs": "66dd470979b1180cfc7dd1fab68b27657c5267dc227ceb354a23039bd8546cb5",
-    "src/resources/service.mjs": "c5dee2c0ba9dab2a84f51fd0ea2c072bfaae7d04a77aeb2f64c9d1bc45e579a4",
-    "src/resources/routes.mjs": "6b7f0ef266cf5138ad5729d9e63fb6c45e5e8521004794af69d9b0fd1790393d",
+    "src/resources/providers.mjs": "cf81c7462102101f4b22c342849b67b9e6c6d5c945f282b5d7cdf435c5e864a3",
+    "src/resources/service.mjs": "ff5085b3b1cc46c1bd588e2bd93cbb862cc34b58693fa356c111bf663394765f",
+    "src/resources/routes.mjs": "088efc0463e87e80881c1a3f2351d76a8fdcbc0f0d6827b4915322ca9d7c93ef",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
     "src/resources/database.mjs": "af8d3c4f87a641576ad18eb571674366490c0de382dde1760db39199e4a1b54e",
@@ -81,7 +81,7 @@
     "src/resources/object-provider.mjs": "98e3eb3946886911dac13586859ef1af5ca5b2aba23fa9c3757d4568b0883f13",
     "interfaces/resource-objects.mjs": "2b1f3461ad55c9e1c8a71a181344c9702b860c7e115edeaf8df5dc71aef1133a",
     "tests/resource-objects.test.mjs": "4627ab902444aa23107cffeaf4be50a93f7f8c0f9e80a5d2f8b69cc7f23a0d48",
-    "src/resources/catalog.mjs": "9598b2bf6f83a02b58441698447ee019f6c88290612a5bef133b694a67d152ee",
+    "src/resources/catalog.mjs": "05faccfdcec02227733a6700c21913cbba237ffccebb9187cc7f8ffc2558fadd",
     "src/resources/endpoints.mjs": "997d3a08774ec8d3a873cbcbb190ad50d4b4687ac2b68730a6041565f49b2e5b",
     "src/resources/endpoint-transport.mjs": "7239cd30b57ed6325857e2dbf083037972271814efa683632be7c6cf741c9de5",
     "tests/resource-endpoints.test.mjs": "1f93ab26eb74e7abb4986bc83a129ce402c26ed7563afee3b23bdcab6214f89c",
@@ -127,7 +127,9 @@
     "tests/account-costs.test.mjs": "4ad0a5591cbd209b3f9ba31dddec967ee5cef1fee3804ca98ab498fc0098b09c",
     "src/resources/grant-spending.mjs": "0fa66d8c8cf82c1e32aecf676af223f7502a98158d3c47ea2db39d4feb277b11",
     "src/resources/retirement.mjs": "3f523b0f93bc6e52058d9a39879d2181bc1253a4c58510c17c138643ae0ff493",
-    "src/resources/repository-grants.mjs": "cc9ebbd101ebf32a861ef7beea02218dab37f68a41e8ab46529b0ab497948f7a"
+    "src/resources/repository-grants.mjs": "cc9ebbd101ebf32a861ef7beea02218dab37f68a41e8ab46529b0ab497948f7a",
+    "src/resources/specialists.mjs": "1cc23ae4dc6fa10013cc5d91f1f8d0db220a50b8f16e5abe88671434b2849cd7",
+    "src/resources/operational-observation.mjs": "a250d344c84654f86983ae0890843b2ec26466d186bb32b8f0291916b7aff00e"
   },
   "referenceSubset": true
 }

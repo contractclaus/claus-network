@@ -2,6 +2,7 @@ import {neon} from '@neondatabase/serverless';
 import {hash} from './policy.js';
 export function publisherRepository(sql=neon(process.env.PUBLISHER_SOURCE_DATABASE_URL)){
  return {
+  async operationalObservation(){const [v]=await sql`SELECT (SELECT count(lease_until)::int FROM claus_state WHERE lease_until<now()-interval '5 minutes') AS expired_runtime_leases,(SELECT count(w.id)::int FROM claus_network_work w WHERE status IN ('ready','working','waiting') AND next_at<now()-interval '1 hour' AND NOT EXISTS(SELECT 1 FROM claus_network_work d WHERE d.id=ANY(w.dependencies) AND d.status<>'completed')) AS overdue_runnable_work`;return {expiredRuntimeLeases:v.expired_runtime_leases,overdueRunnableWork:v.overdue_runnable_work};},
   async workStatus(id){return (await sql`SELECT status FROM claus_network_work WHERE id=${id}`)[0]?.status??null;},
   async surfaceCurrent(){return (await sql`SELECT * FROM claus_surface_control WHERE id`)[0];},
   async surfaceRelease(id){return (await sql`SELECT * FROM claus_surface_releases WHERE id=${id}`)[0];},

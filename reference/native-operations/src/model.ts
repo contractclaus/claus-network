@@ -13,6 +13,7 @@ import { definitions } from './tools.js';
 import {twitterTools} from './twitter-policy.js';
 import { responseInput,responseTools } from './responses.js';
 import {terminalInferenceFailure} from './inference-outcome.js';
+import {fencedInferenceRejection} from './inference-admission.js';
 
 export function modelReady() {return !!(process.env.INFERENCE_URL&&process.env.INFERENCE_SECRET);}
 export async function reconcilePendingInference() {
@@ -55,20 +56,10 @@ export async function completeRequest(id:string,request:any) {
   return once(id,'inference',request,async()=>{
     // Apply a lower quote ceiling only inside a newly reserved effect. Existing
     // IDs keep their original payer reservation and are never resent by once().
-    const response=await fetch(`${process.env.INFERENCE_URL}/api/completion`,{method:'POST',headers:{Authorization:`Bearer ${process.env.INFERENCE_SECRET}`,'Content-Type':'application/json','Idempotency-Key':id,'X-Max-Quote-Micro-USDC':'2000000'},body:JSON.stringify(request),redirect:'error',signal:AbortSignal.timeout(270000)});
+    const response=await fetch(`${process.env.INFERENCE_URL}/api/completion`,{method:'POST',headers:{Authorization:`Bearer ${process.env.INFERENCE_SECRET}`,'Content-Type':'application/json','Idempotency-Key':id,'X-Max-Quote-Micro-USDC':'2000000',...(process.env.INFERENCE_URL==='https://claus-ecosystem-payments.vercel.app'?{'X-Inference-Reservation':'quoted-v1'}:{})},body:JSON.stringify(request),redirect:'error',signal:AbortSignal.timeout(270000)});
     if(!response.ok) {
-      let fencedAbsent=false;
-      // This fixed payer returns 404 only after atomically fencing the ID
-      // against future admission, including its frozen predecessor's journal.
-      // A rejection alone says nothing about payment; an unavailable lookup or
-      // an existing/ambiguous record must still retain the original effect.
-      if([409,503].includes(response.status)&&process.env.INFERENCE_URL==='https://claus-ecosystem-payments.vercel.app') {
-        try {
-          const status=await fetch(`${process.env.INFERENCE_URL}/api/requests/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${process.env.INFERENCE_SECRET}`},redirect:'error',signal:AbortSignal.timeout(15000)});
-          fencedAbsent=status.status===404&&(await status.json())?.error==='not_found';
-        } catch { /* The original effect remains uncertain. */ }
-      }
-      if(fencedAbsent)throw new ConfirmedFailure('inference_request_not_reserved',new Date(Date.now()+60000).toISOString());
+      const rejection=await fencedInferenceRejection(response,id,process.env.INFERENCE_URL!,process.env.INFERENCE_SECRET!);
+      if(rejection)throw new ConfirmedFailure(rejection.reason,rejection.retryAt);
       throw new Error(`inference_http_${response.status}`);
     }
     const body=await response.json();

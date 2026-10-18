@@ -5,9 +5,16 @@ let service;
 const current=()=>service??=createResourceService({workStatus:id=>publisherRepository().workStatus(id)});
 export async function processResourceQueues(){
  if(process.env.SERVICE_ROLE!=='operator'||process.env.PUBLISHER_ENABLED!=='true'||!(await publisherRepository().settings()).enabled)return {state:'disabled'};
- const queues=await current().tickQueues();const volumes=await current().tickVolumes().catch(()=>({state:'unavailable'}));return {...queues,volumes};
+ const queues=await current().tickQueues();const volumes=await current().tickVolumes().catch(()=>({state:'unavailable'}));const specialists=await current().tickSpecialists().catch(()=>({state:'unavailable'}));return {...queues,volumes,specialists};
 }
 export function installResources(app){
+ app.get('/api/resources/observation',async c=>{
+  if(process.env.SERVICE_ROLE!=='operator'||!process.env.RESOURCE_OBSERVER_SECRET)return c.json({error:'observation_unconfigured'},503);
+  if(!authorized(c.req.header('authorization'),process.env.RESOURCE_OBSERVER_SECRET))return c.json({error:'unauthorized'},401);
+  try{const enabled=process.env.PUBLISHER_ENABLED==='true'&&(await publisherRepository().settings()).enabled;
+   return c.json(await current().observe({enabled,native:()=>publisherRepository().operationalObservation()}));
+  }catch{return c.json({error:'observation_unavailable'},503);}
+ });
  app.post('/api/resource-events/:resourceId',async c=>{
   if(process.env.SERVICE_ROLE!=='operator'||process.env.PUBLISHER_ENABLED!=='true')return c.json({error:'resource_disabled'},403);
   try{
