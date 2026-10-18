@@ -1,6 +1,7 @@
 import {createFundingService as createLegacyFundingService} from '../compute-funding-legacy/service.mjs';
 import {Pool,neonConfig} from '@neondatabase/serverless';
-import {createPublicClient,http} from 'viem';
+import {createPublicClient} from 'viem';
+import {operatingRpc} from '../wallet-rpc.mjs';
 import {mainnet,base} from 'viem/chains';
 import {privateKeyToAccount} from 'viem/accounts';
 import {timingSafeEqual} from 'node:crypto';
@@ -30,7 +31,7 @@ export function createFundingService({role,env=process.env,config,request=fetch}
   if(config.policyHash!==fundingHash(P))throw Error('compute_policy_mismatch');
   const binding={address:P.prepaidAddress,keyId:P.prepaidKeyId};
   const pool=new Pool({connectionString:role==='payer'?env.PAYMENT_DATABASE_URL:env.DATABASE_URL,max:2});pool.on('error',()=>{});
-  const clients={1:createPublicClient({chain:mainnet,transport:http(env.ETHEREUM_RPC_URL||'https://ethereum-rpc.publicnode.com',{timeout:12000,retryCount:0})}),8453:createPublicClient({chain:base,transport:http(env.BASE_RPC_URL||'https://mainnet.base.org',{timeout:12000,retryCount:0})})};
+  const clients={1:createPublicClient({chain:mainnet,transport:operatingRpc(1,env.ETHEREUM_RPC_URL)}),8453:createPublicClient({chain:base,transport:operatingRpc(8453,env.BASE_RPC_URL)})};
   const store=role==='payer'?fundingRepository(pool,{binding}):null;
   const wallet=fundingWalletRepository(pool);
   const remote=async(target,body)=>{
