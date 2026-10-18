@@ -1,3 +1,4 @@
+import {hostContinuity} from '../src/continuity-host.mjs';
 import { timingSafeEqual } from 'node:crypto';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
@@ -27,6 +28,7 @@ export default async function handler(req, res) {
         return { store, app };
       } catch (error) { await pool.end().catch(() => {}); throw error; }
     })().catch(error => { loaded = null; throw error; });
+    const outcome=await hostContinuity('worker:compile',null,{},async()=>{
     const { store, app } = await loaded;
     const maintenance = await store.pruneEphemeral();
     const result = await app.builds.runOne(compileSnapshot);
@@ -35,6 +37,6 @@ export default async function handler(req, res) {
       await tx.write('worker-health', 'compile', { observedAt: Date.now(), release: process.env.CLAUS_NETWORK_RELEASE,
         idle: result.idle === true, state: result.state ?? null, maintenance }, old?.revision ?? 0);
     });
-    res.status(200).json({ ok: true, idle: result.idle === true, state: result.state ?? null });
+    return { ok: true, idle: result.idle === true, state: result.state ?? null };});res.status(200).json(outcome);
   } catch { res.status(503).json({ error: 'worker_unavailable' }); }
 }

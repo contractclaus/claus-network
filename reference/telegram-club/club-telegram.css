@@ -1,0 +1,10 @@
+.telegram-club{margin:1rem auto 1.5rem;padding:1.1rem 1.25rem;max-width:54rem;border:1px solid currentColor;border-radius:1rem;background:var(--cream,#fff2d8);color:#17130f}
+.telegram-club h2{margin:0 0 .4rem;font:inherit;font-weight:700;font-size:1.25rem}
+.telegram-club p{margin:.35rem 0;line-height:1.5}
+.telegram-actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1rem;align-items:center}
+.telegram-actions button,.telegram-actions a{min-height:44px;padding:.65rem 1rem;text-align:center}
+.telegram-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.telegram-club-ready .composer-wrap{display:none}
+.telegram-club-ready #panel-chat::after{content:'Chat now happens in Telegram. Earlier conversations stay here.';padding:.75rem 1rem;font-size:.875rem;line-height:1.5}
+.telegram-actions :focus-visible{outline:2px solid #17130f;outline-offset:4px}
+@media(max-width:600px){.telegram-club{margin-inline:.75rem}.telegram-actions>*{flex:1 1 auto}}

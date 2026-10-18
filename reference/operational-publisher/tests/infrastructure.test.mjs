@@ -145,3 +145,9 @@ test('loss of postpaid transfer metering deletes only the original machine and r
  await f.call('create',f.work);const observed=await f.call('inspect',f.work);
  assert.equal(f.deletes(),1);assert.equal(observed.terminal,true);assert.equal(observed.receipt,undefined);assert.equal(observed.guardViolation,'transfer_meter_unavailable');
 });
+
+test('already exited Runpod original is observed without another stop request',async()=>{
+ const work={id:'sha256:'+ 'a'.repeat(64),projectId:'prj_original',manifest:{image:'image@sha256:'+ 'b'.repeat(64),port:0,storageGiB:0}},calls=[];
+ const d=runpodDriver({token:()=> 'fixture',request:async(url,init)=>{calls.push({url,method:init.method});assert.equal(init.method,'GET');return Response.json({id:'pod1',name:'claus-'+work.id.slice(-40),image:work.manifest.image,status:'EXITED',cost:0.06});}});
+ const result=await d.stop(work,{providerResourceId:'pod1'},false);assert.equal(result.stopped,true);assert.equal(result.terminal,false);assert.equal(result.costFinal,false);assert.equal(calls.length,1);
+});

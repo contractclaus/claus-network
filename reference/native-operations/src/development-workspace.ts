@@ -51,7 +51,9 @@ export async function reconcileDevelopment(){
  }
 }
 
-function pendingDevelopment(a:any){const e=a.progress?.execution??{};return {actionId:a.id,state:'running_or_reconciling',pending:true,projectId:a.progress?.project?.id,phase:e.phase,deadline:e.deadline,shape:e.shape,funding:e.funding,next:'Read this original actionId with development_status. Do not repeat the command.'};}
+function pendingDevelopment(a:any){const e=a.progress?.execution??{},observation=e.recoveryObservation;
+ if(observation?.state==='stopped_outcome_unknown')return {actionId:a.id,state:observation.state,pending:false,outcome:'unknown',projectId:a.progress?.project?.id,phase:e.phase,deadline:e.deadline,shape:e.shape,funding:e.funding,recovery:observation,next:'The original VM is stopped and its command receipt is unavailable. Repeated status reads cannot recover this receipt. Preserve the original uncertain action and its cost; do not repeat its command. The retained filesystem snapshot may be inspected in a separate scoped workspace without replaying the original operation. A snapshot does not prove command success.'};
+ return {actionId:a.id,state:'running_or_reconciling',pending:true,projectId:a.progress?.project?.id,phase:e.phase,deadline:e.deadline,shape:e.shape,funding:e.funding,next:'Read this original actionId with development_status. Do not repeat the command.'};}
 export async function developmentStatus(args:any){
  if(!args||Object.keys(args).join()!=='actionId'||typeof args.actionId!=='string'||!args.actionId.startsWith('development:')||args.actionId.length>250)throw Error('development_status_invalid');
  let a=(await sql()`SELECT id,status,input,progress,result FROM claus_actions WHERE id=${args.actionId} AND kind='development'`)[0];if(!a)throw Error('development_action_missing');
@@ -59,6 +61,7 @@ export async function developmentStatus(args:any){
  if(a.status==='uncertain'&&a.progress?.execution?.phase==='funding'||a.progress?.execution?.deferred||Date.parse(a.progress?.execution?.deadline??'')<Date.now()){
   const result=await execution.recover(a,value=>actionProgress(a.id,{...a.progress,execution:value}));
   if(result){await settleAction(a.id,await applyCheckpoint(a,result));a=(await sql()`SELECT id,status,progress,result FROM claus_actions WHERE id=${args.actionId}`)[0];return {actionId:a.id,state:a.status,result:a.result};}
+  a=(await sql()`SELECT id,status,progress,result FROM claus_actions WHERE id=${args.actionId}`)[0];
  }
  return pendingDevelopment(a);
 }

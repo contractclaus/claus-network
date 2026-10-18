@@ -1,3 +1,4 @@
+import {maintainContinuityGrant} from './continuity-grants.mjs';
 import {authorized} from './policy.js';
 
 const origin='https://claus-agent.vercel.app';
@@ -28,7 +29,7 @@ export function installRuntimeGuardian(app,{role=()=>process.env.SERVICE_ROLE,cr
   if(role()!=='operator')return c.json({error:'guardian_disabled'},403);
   if(!authorized(c.req.header('authorization'),cronSecret()))return c.json({error:'unauthorized'},401);
   c.header('Cache-Control','no-store');
-  try{return c.json(await guardRuntime({snapshot,secret:recoverySecret()}));}
+  try{const [runtime,grant]=await Promise.allSettled([guardRuntime({snapshot,secret:recoverySecret()}),maintainContinuityGrant()]);return c.json({...runtime.status==='fulfilled'?runtime.value:{state:'observation_unavailable',recoveryAttempted:false},independentInference:grant.status==='fulfilled'?grant.value:{state:'funding_unavailable',existingGrantsPreserved:true}});}
   catch{return c.json({state:'observation_unavailable',recoveryAttempted:false},503);}
  });
 }

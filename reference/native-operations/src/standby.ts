@@ -1,3 +1,4 @@
+import {databasePermit} from './database-fence.js';
 import {pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 import {managedSchemaReady} from './database-schema.js';
@@ -27,7 +28,9 @@ export async function standbyProbe(){
 }
 export async function runStandby(planned=false){
  await managedSchemaReady();
- if(!planned){if(await primaryHealthy())return {status:'primary_healthy',claimed:false};
+ const independent=process.env.CONTINUITY_EFFECTS_ENABLED==='true'&&process.env.CONTINUITY_INSTANCE==='standby';
+ if(independent&&!await databasePermit())return {status:'independent_writer_fenced',claimed:false};
+ if(!independent&&!planned){if(await primaryHealthy())return {status:'primary_healthy',claimed:false};
  await pause(15000);if(await primaryHealthy())return {status:'primary_recovered',claimed:false};}
  const db=productionLabDatabase(),executor=process.env.CLAUS_RUNTIME_EXECUTOR,deployment=process.env.VERCEL_DEPLOYMENT_ID;
  if(!executor||!deployment)throw Error('standby_identity_missing');
@@ -43,7 +46,7 @@ export async function runStandby(planned=false){
  const timer=setInterval(async()=>{if(pulsing)return;pulsing=true;try{permitted=await runtimeHostPulse(generation);}catch{permitted=false;}finally{pulsing=false;}},25000);timer.unref();
  try{
   while(!stopping&&permitted&&Date.now()<deadline-14*60_000){
-   if((!planned||turns>0)&&await primaryHealthy()){
+   if(!independent&&(!planned||turns>0)&&await primaryHealthy()){
     returned=(await db.query('SELECT public.claus_native_host_return($1,$2,$3) AS returned',[executor,generation,epoch])).rows[0]?.returned===true;
     if(returned)break;
    }
@@ -51,7 +54,7 @@ export async function runStandby(planned=false){
    if(wake.run){const result=await cycle(generation);turns++;await journal('standby_turn','Standby completed an original runtime turn',{executor,generation,epoch,planned,status:result.status,nextAt:result.nextAt??null});}
    else await pause(Math.max(1000,Math.min(30000,Date.parse(wake.nextAt)-Date.now())));
   }
-  if(!returned&&await primaryHealthy())returned=(await db.query('SELECT public.claus_native_host_return($1,$2,$3) AS returned',[executor,generation,epoch])).rows[0]?.returned===true;
+  if(!independent&&!returned&&await primaryHealthy())returned=(await db.query('SELECT public.claus_native_host_return($1,$2,$3) AS returned',[executor,generation,epoch])).rows[0]?.returned===true;
   return {status:returned?'return_requested':'lease_will_expire',claimed:true,generation,epoch,turns};
  }finally{clearInterval(timer);process.removeListener('SIGTERM',stop);process.removeListener('SIGINT',stop);}
 }

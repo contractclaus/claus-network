@@ -94,7 +94,9 @@ type RecoveryDependencies={store:BuilderStore;configuration:()=>Promise<any>;sta
 export async function recoverBuilder(deps:RecoveryDependencies={store:builderStore(),configuration,start:startBuilder,forward:forwardBuilderRecovery}){
  const config=await deps.configuration(),sent=await nextBuilderReconciliation(deps.store);
  if(!builderEnabled(config))return sent?deps.start(sent.id):{state:'disabled'};
- if(sent&&!await workEnabled(deps.store,await deps.store.detail(sent.id),config))return deps.start(sent.id);
+ // Old disabled work retains its receipt lookup, but cannot take every wake
+ // ahead of eligible work once its live execution window has expired.
+ // BuilderStore.next still enforces active leases and execution windows.
  try{
  await deps.store.coordination.assertCurrent();
  await deps.store.wakeCapacityWaiters();

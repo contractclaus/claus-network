@@ -1,3 +1,5 @@
+import {nativeContinuity} from './native-continuity.js';
+import {independentInferenceConfigured,independentNeeded,independentInferenceOriginal,independentComplete,independentStatus,validIndependentModel} from './independent-inference.js';
 import {confirmedNoExecution} from './negative-receipt.js';
 import {feedbackBuildTools} from './feedback-builds.js';
 import {adaptationTools} from './adaptation-service.js';
@@ -16,11 +18,20 @@ import { responseInput,responseTools } from './responses.js';
 import {terminalInferenceFailure} from './inference-outcome.js';
 import {fencedInferenceRejection} from './inference-admission.js';
 
-export function modelReady() {return !!(process.env.INFERENCE_URL&&process.env.INFERENCE_SECRET);}
+export function modelReady() {return !!(process.env.INFERENCE_URL&&process.env.INFERENCE_SECRET)||independentInferenceConfigured();}
 export async function reconcilePendingInference() {
   for(const action of await unresolved()) {
     if(action.kind!=='inference')continue;
     try {
+      if(await independentInferenceOriginal(action.id)){
+        const original=await independentStatus(action.id);
+        if(original.status==='completed'&&validIndependentModel(original.response,action.requested_model,action.id)){
+          const r=original.response;
+          await reconcileInference(action.id,'completed',{model:r.model,message:r.choices[0].message,usage:r.usage,receipt:r.receipt,telemetry:r.telemetry,responseStatus:r.responseStatus,finishReason:r.choices[0].finish_reason,routing:r.routing});
+        }else if(original.status==='not_dispatched')await reconcileInference(action.id,'failed',{failure:'independent_original_not_dispatched',payment:'not_signed'});
+        else if(original.status==='failed')await reconcileInference(action.id,'failed',{failure:'independent_original_failed',accounting:'original_authorization_retained',diagnostic:original.diagnostic});
+        continue;
+      }
       const response=await fetch(`${process.env.INFERENCE_URL}/api/requests/${encodeURIComponent(action.id)}`,{headers:{Authorization:`Bearer ${process.env.INFERENCE_SECRET}`},redirect:'error',signal:AbortSignal.timeout(15000)});
       if(Date.now()-Date.parse(action.created_at)>300000&&await confirmedNoExecution(response,action.id,process.env.INFERENCE_URL!)) {
         await reconcileInference(action.id,'failed',{failure:'relay_request_not_reserved',payment:'not_signed'});
@@ -53,8 +64,15 @@ export async function complete(id:string,messages:unknown[],settings:Configurati
   return completeRequest(id,request);
 }
 export async function completeRequest(id:string,request:any) {
+ return nativeContinuity('native','inference',id,request,()=>completeRequestUnfenced(id,request));
+}
+async function completeRequestUnfenced(id:string,request:any) {
   if(!modelReady())throw new Error('inference_not_connected');
   return once(id,'inference',request,async()=>{
+    if(await independentNeeded(id,'2000000')){
+      const body=await independentComplete(id,request,'2000000',fetch,process.env,240000);
+      return {model:body.model,message:body.choices[0].message,usage:body.usage,receipt:body.receipt,telemetry:body.telemetry,responseStatus:body.responseStatus,finishReason:body.choices[0].finish_reason,routing:body.routing};
+    }
     // Apply a lower quote ceiling only inside a newly reserved effect. Existing
     // IDs keep their original payer reservation and are never resent by once().
     const response=await fetch(`${process.env.INFERENCE_URL}/api/completion`,{method:'POST',headers:{Authorization:`Bearer ${process.env.INFERENCE_SECRET}`,'Content-Type':'application/json','Idempotency-Key':id,'X-Max-Quote-Micro-USDC':'2000000',...(process.env.INFERENCE_URL==='https://claus-ecosystem-payments.vercel.app'?{'X-Inference-Reservation':'quoted-v1'}:{})},body:JSON.stringify(request),redirect:'error',signal:AbortSignal.timeout(270000)});

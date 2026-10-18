@@ -1,3 +1,4 @@
+import {nativeContinuity} from './native-continuity.js';
 import {requireDatabasePermit} from './database-fence.js';
 import {resourcesDefinition,resourcesTool} from './operations/resources.js';
 import {DEVELOPMENT_LIMITS} from './development-limits.js';
@@ -170,6 +171,9 @@ export function toolEnabled(config:Configuration,name:string) {
   return config.settings.enabled&&!!permission[name]&&!!config.policy.capabilities[permission[name]]&&(!twitterOnly(config)||twitterTools.has(name))&&!(name==='publish_post'&&publicChannelBlocked(config.policy,name));
 }
 export async function executeTool(id:string,name:string,args:Record<string,any>,decisionContext?:import('./public.js').PublicDecisionContext) {
+ return nativeContinuity('native','tool:'+name,id,{name,args,channel:decisionContext?.channel??'public'},()=>executeToolUnfenced(id,name,args,decisionContext));
+}
+async function executeToolUnfenced(id:string,name:string,args:Record<string,any>,decisionContext?:import('./public.js').PublicDecisionContext) {
   await requireDatabasePermit();
   const config=await configuration();
   if(!channelAllows(name,decisionContext?.channel??'public'))return {error:'tool_unavailable_in_this_channel',name};
@@ -263,19 +267,8 @@ export async function executeTool(id:string,name:string,args:Record<string,any>,
     return saveDraft(id,args.text,args.replyTo);
   }
   if(name==='publish_post') {
-    if(twitterOnly(config)){
-      if(!decisionContext)return {error:'current_publication_context_required'};
-      return publishOriginal(args.text,args.attributions??[],config,decisionContext,args.imageId,args.gifId);
-    }
-    validatePost(args.text,args.attributions??[]);
-    const account=await verifyX();
-    return once(id,'x_post',args,async()=>{
-      const result=await xRequest('tweets','POST',{text:args.text},undefined,id);
-      if(!/^\d{1,19}$/.test(result.data?.id??''))throw Error('x_post_response_missing');
-      await actionProgress(id,{result});
-      await journal('x_post','Published an original post',{postId:result.data?.id,account:account.username});
-      return result;
-    });
+    if(!decisionContext)return {error:'current_publication_context_required'};
+    return publishOriginal(args.text,args.attributions??[],config,decisionContext,args.imageId,args.gifId);
   }
   if(name==='run_experiment') {
     return runProjectExperiment(id,args as {projectId?:string;command:string;timeoutSeconds?:number;files:{path:string;content:string}[]});
