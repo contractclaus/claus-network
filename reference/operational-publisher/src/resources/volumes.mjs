@@ -48,7 +48,7 @@ export function managedVolumes({store,budget,workStatus,provider=volumeProvider(
     const resourceId='res_'+digest(id).slice(0,24);
     p={id:resourceId,name:input.name,purpose:input.purpose,provider:'runpod',kind:'managed-network-volume',providerName:'claus-volume-'+id.slice(4),owner:'Claus',workId:input.workId,projectId:input.projectId,sizeGb:input.sizeGb,region:input.region,fundedDays:input.fundedDays,autoRenew:input.autoRenew,fundedUntil:new Date(now()+input.fundedDays*day).toISOString(),createdAt:stamp(),maximum:volumeMaximum(input.sizeGb,input.fundedDays*day,price.maximumMicroUsdPerGbMonth),price,creationAction:id};
    }else{
-    const r=await resource(input.resourceId);if(r.status!=='active'||r.operation||input.expectedRevision!==r.revision)fail('revision_or_operation_conflict');
+    const r=await resource(input.resourceId);if((r.status!=='active'&&!(operation==='volume_delete'&&r.status==='retiring'))||r.operation||input.expectedRevision!==r.revision)fail('revision_or_operation_conflict');
     if(operation==='volume_renew'){
      if(!integer(input.fundedDays,1,30)||!await workActive(r.workId))fail('renewal_invalid');
      const from=Math.max(now(),Date.parse(r.fundedUntil)),until=from+input.fundedDays*day;

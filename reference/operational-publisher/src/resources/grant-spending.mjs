@@ -62,9 +62,11 @@ export function grantSpending(sql){
   },
   async dispatchGrant(r){
    const p=args(r);
-   const rows=await sql.query(`WITH locked AS MATERIALIZED (
+   const rows=await sql.query(`WITH resource AS MATERIALIZED (
+    SELECT result FROM ${table} WHERE id='owned:resource:'||$5::text FOR SHARE
+   ), locked AS MATERIALIZED (
     SELECT b.id,b.result FROM ${table} b JOIN ${table} s ON s.id=$3
-    WHERE b.id=$1 AND ${scope} FOR UPDATE OF b,s
+    WHERE b.id=$1 AND ${scope} AND EXISTS(SELECT 1 FROM resource WHERE result->>'status'='active') FOR UPDATE OF b,s
    ), spending AS (
     UPDATE ${table} e SET result=jsonb_set(e.result,'{state}','"dispatched"'::jsonb),updated_at=now()
     FROM locked WHERE e.id=$2 AND e.result->>'state'='reserved' AND e.result->>'resourceId'=$5 AND e.result->>'maximumMicroUsd'=$6
