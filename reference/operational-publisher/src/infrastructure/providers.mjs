@@ -199,7 +199,11 @@ export function flyDriver({token,request=fetch,now=Date.now}){
       matches(await api(path),work);await api(path+'/start',{method:'POST',body:{}});
       return observation(await api(path),work,config);
     },
-    async logs(work,checkpoint,config){const m=matches(await api(appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId)),work);return JSON.stringify({state:m.state,events:m.events??[],checks:m.checks??[],applicationLogsAvailable:false}).slice(0,16000);},
+    async logs(work,checkpoint,config){
+      const m=matches(await api(appPath(config)+'/machines/'+encodeURIComponent(checkpoint.providerResourceId)),work);
+      let diagnostics;try{diagnostics=await billing.diagnostics(work,checkpoint,config);}catch{diagnostics={available:false,error:'machine_metrics_unavailable',instructionAuthority:false};}
+      return JSON.stringify({state:m.state,events:(m.events??[]).slice(-8),checks:(m.checks??[]).slice(0,16),diagnostics,applicationLogsAvailable:false}).slice(0,16000);
+    },
     async usage(work,checkpoint,config){return billing.usage(work,checkpoint,config);},
     async cost(){return {final:false,source:'provider-invoice-required'};}
   };

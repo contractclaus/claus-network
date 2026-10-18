@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase39-20261018",
+  "source": "claus-goal-phase40-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -23,7 +23,7 @@
     "src/operation-result.ts": "3f21601d8a920f26170d234391f05c018c210d047acd4d607922881e6aa204aa",
     "src/runtime-access.ts": "ab6af7e009dedcb8f5b98c16f6dc54c30f06a5c95d00b3d082a6712fdccae410",
     "src/tool-visibility.ts": "e983ee9a683a0bfdd897344c0f182cf73880022f9a2c1831e62eb32ded2f59fd",
-    "src/tools.ts": "b63587886da34f5b02ee5be997c21f54e91372dcae01485ecd39f2ecb045dbcd",
+    "src/tools.ts": "0e77e98aa2aacb6c825060b3ad5fa9848b996d3d9fd96b9db46475e01ed401c8",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "3460b1ad2c54373afb5d57db3ea999ff115ef5101ad7839699d3dc95b73b545c",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
@@ -98,11 +98,11 @@
     "package.json": "966f78b5c789d7f7ef8837a89b27ef8a945dd11309d384a9a889889e34f7641c",
     "src/external/development-bridge.ts": "58b1327f06bfba5dc5d914e4ee00d7560c6cdc711a44bc68d0f2d4d3aa03dc20",
     "src/external/development-grant.ts": "82f4e0c3de561d152653ab6b3df380c615b6585676303301e3cd24bbebecf6b8",
-    "src/external/providers.ts": "384ad74c7d2838d6b88750f02f7e52eeb5c67bb82a93717ceeef1702d87bef95",
+    "src/external/providers.ts": "32b0903947a49eebfe2bf4f452db52707e7cd7d3b402a4cb2b53a994f74331a5",
     "src/external/service.ts": "dbf9d15c11c5ba3e4d3632f4919fac05501d757f7ca363d2634a41c90cc609e6",
     "src/index.ts": "29995cb68e4d613ce775e81b81954aecb7560115bb0d922b5a35550c900cd0bb",
     "src/external/adapters.ts": "9a07a65cd96233659098dfdf83a2833bb8bb6129e6537db41e2d08429b454777",
-    "src/external/browser-diagnostics.ts": "8ae656bb85eeb010ffe5d8dfd014f73e56026ef5542416e9490821fbec742f36",
+    "src/external/browser-diagnostics.ts": "28d4f8da957ef845166bcbd098f9e43fe9ecd502cfffac1ec932b74983a3d616",
     "src/config.ts": "2a704c099ac6d47c88e86d83dc2b873f94f5068a4810a2836d1f4fc6ec3ba027",
     "src/feedback-source.ts": "134e25a2ef9569bb0e97d2e91966ed52950447d1cd75285e64e4f47ac93cc27c",
     "src/gotchi/service.ts": "3b630d19628dee5f20149a14242e14b8eabea15106af2d322e1a05201dd1d526",
@@ -121,7 +121,7 @@
     "src/application/main.js": "2f4e5b41a4d9dd506d438f499999ccef33e775fe8571f44ab0396f0e0c8ac744",
     "src/application/source.json": "9502a24b0a70969e976d192f5c3826b0b6d03c8b06fbb2ffa1b150ec1fd43536",
     "src/decision-due.ts": "9af7590a0237b8ab04476bccdaba72c0607a158f87d4e85d6aba2c782657e6b8",
-    "src/external/browser-workflow.ts": "f892e6cfa97a3b3f13984ee5b1571354367762302ab8c48a72db22632ce4775e",
+    "src/external/browser-workflow.ts": "7ffdb792010bae23803c587577b27a80ffdd41f6aa27a685902ac73436b1b4a6",
     "src/external/connected-read.ts": "8d9ce70fbd803a6a5fde6512e87a553519d8cfc30606243aae80e448856176ab",
     "src/external/github.ts": "7a4b80556e67b262be7ddd74743d7915fff8d6ef63be37a5092259f34ce58335",
     "src/external/health.ts": "c33f618b5af895307a39bd96c962c124cbd38a697bfd4e8900ebd09f1a72a56b",
@@ -164,8 +164,10 @@
     "src/inference-admission.ts": "3cfe07bb5b0ba01f547ec4a6e3c77959683bec5be259a826b41a7f817999e04a",
     "src/operations/resource-help.ts": "f5e36624efef59ccf730fe067cdce241597a5d61317fdffa21d5a41803b89bae",
     "src/negative-receipt.ts": "b7c582c641e4028606cf2a976429e45903a45c038789afd3432bd05784c84157",
-    "src/operations/trace.ts": "95c97cb482702fc472df998bb7bc0c625489c22c26fb41e09b1d7202197782eb"
+    "src/operations/trace.ts": "95c97cb482702fc472df998bb7bc0c625489c22c26fb41e09b1d7202197782eb",
+    "src/external/browser-events.ts": "444b3a824de5610589a2f087c01e5af162b8588c94a5196354a2e00ba4c3b953",
+    "src/external/runpod-telemetry.ts": "6951d3370f52e9b62cb447ad54527269a4eb7442841541d8002adb69bea90196"
   },
   "referenceSubset": true,
-  "deployed": "dpl_AAB7nX5cLbY1gaMW2X2YwaUo4sva"
+  "deployed": "dpl_mGSAQW79FJQGFimWDt9gCSYnTEsn"
 }

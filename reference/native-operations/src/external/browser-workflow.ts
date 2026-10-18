@@ -1,3 +1,4 @@
+import {captureBrowserEvents} from './browser-events.js';
 import {browserNavigation} from './browser-targets.js';
 import {chromium} from 'playwright-core';
 import {browserUrl,providerJson,ProviderFailure,type ExternalPolicy} from './providers.js';
@@ -42,6 +43,7 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
  const connect=new URL(session.connectUrl??'https://invalid');
  if(typeof session.id!=='string'||session.projectId!==spec.projectId||connect.protocol!=='wss:'||!(connect.hostname==='connect.browserbase.com'||connect.hostname.endsWith('.browserbase.com')))throw new ProviderFailure('browser_connection_invalid',false);
  let browser:Awaited<ReturnType<typeof chromium.connectOverCDP>>|undefined;
+ let capture:ReturnType<typeof captureBrowserEvents>|undefined;
  const observations:any[]=[];let completedSteps=0,failedStep:number|null=null,failurePhase='connection',outcome:any;
  try{
   browser=await chromium.connectOverCDP(session.connectUrl,{timeout:15000});
@@ -51,6 +53,7 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
    await route.continue();
   });
   const page=context.pages()[0]??await context.newPage();page.setDefaultTimeout(5000);
+  capture=captureBrowserEvents(page,plan.steps.filter((s:any)=>s.action==='fill').map((s:any)=>s.value));
   const observe=async()=>{browserUrl(policy,page.url());return {url:page.url(),title:await page.title(),text:(await page.locator('body').innerText()).slice(0,10000),controls:await page.locator('a,button,input,textarea,select,[role="button"]').evaluateAll(nodes=>nodes.slice(0,100).map((n:any)=>({tag:n.tagName.toLowerCase(),role:n.getAttribute('role'),name:(n.innerText||n.getAttribute('aria-label')||n.labels?.[0]?.innerText||n.getAttribute('placeholder')||'').slice(0,180),type:n.type??null})))}};
   failurePhase='initial_navigation';await page.goto(plan.url,{waitUntil:'domcontentloaded',timeout:15000});
   failurePhase='initial_observation';observations.push(await observe());
@@ -83,6 +86,7 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
   // stop; never repeat the whole sequence after a later timeout.
   outcome={state:'stopped',sessionId:session.id,contextId:plan.contextId??null,completedSteps,observations,failedStep,failurePhase,error:error instanceof ProviderFailure?error.message:'browser_step_outcome_unknown',retryWholeWorkflow:false,instructionAuthority:false};
  }
+ if(capture){outcome.diagnostics={events:capture.snapshot()};capture.stop();}
  if(browser)await browser.close().catch(()=>{});
  let sessionRelease:any={state:'unknown',sessionId:session.id};
  try{
