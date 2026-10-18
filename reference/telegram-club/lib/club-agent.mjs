@@ -1,3 +1,4 @@
+import {outgoingActionRisk} from './security/communication-policy.mjs';
 import {createPersonContinuity} from './club-person-continuity.mjs';
 import {clubSupport,sharedPoll} from './club-support.mjs';
 import {createHash} from 'node:crypto';
@@ -90,6 +91,7 @@ export function createClubAgent({store,chain,telegram}){
   async write(id,kind,input){demand(typeof id==='string'&&/^[A-Za-z0-9:_-]{1,160}$/.test(id),400,'invalid_action_id','A stable action ID is required.');const p=agentAction(kind,input),hash=createHash('sha256').update(kind+':'+stable(p)).digest('hex');
    // Retrieve a committed receipt before repeating a chain snapshot.
    const [old]=await sql`SELECT input_hash,result FROM club_agent_actions WHERE id=${id}`;if(old){const legacyPoll=kind==='poll'&&!input.options&&!input.hours?createHash('sha256').update('poll:'+stable({ideaId:p.ideaId})).digest('hex'):null;demand(old.input_hash===hash||old.input_hash===legacyPoll,409,'action_conflict','Action ID already used.');return delivered(kind,old.result);}
+   if(kind==='reply'||kind==='offer'){const risk=outgoingActionRisk(p.text,{reply:true});demand(!risk,409,risk??'social_execution_command_forbidden','Conversation cannot authorize financial execution.');}
    const s=await status();demand(s.enabled,409,'agent_disabled','Claus participation is disabled.');
    if(kind==='reply'||kind==='offer'){const h=createHash('sha256').update(id).digest('hex');p.requestId=h.slice(0,8)+'-'+h.slice(8,12)+'-4'+h.slice(13,16)+'-a'+h.slice(17,20)+'-'+h.slice(20,32);p.mentions=mentionNames(p.text);}
    const snapshot=kind==='poll'?await chain.owners():null;

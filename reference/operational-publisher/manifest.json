@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_9PVJVDrPK7sGUH69E4sS1ixUPwqk",
-  "source": "claus-unified-continuity-20261018",
+  "deployed": "dpl_EgqrEfABuVN4mKZCsqLBiYPWAi9X",
+  "source": "claus-social-execution-boundary-20261018",
   "files": {
     "package-lock.json": "17a170f69c19150c7a17ca9c89a489c5dc769645082c98a4cc199b298bd70662",
     "package.json": "c9dba632aa7e64fdc8fe6c12a481833d5cede7df6563d8e30e19147e3a8f69bb",
@@ -13,7 +13,7 @@
     "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
-    "src/index.js": "e36eb2d98c0bf54e7b6d2f184f1832473c4f1115aa8ef6c8d3ec2c0c26260902",
+    "src/index.js": "98bdbb75d40b7ee95d45ecec4087999bdb0afaa3685f779f8016c61ee35df579",
     "src/infrastructure/broker.mjs": "3dd74c7183844415cffe46a420d56bac9050b52efeb6241d60e473b92baff782",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
     "src/infrastructure/providers.mjs": "0ef70880abe2c6edbae102ef1a23b844f02d5472843eb456a92f77e76dad7135",
@@ -40,11 +40,11 @@
     "src/search/repository.js": "2ed3188ed5a74db0f0999b089fa220cedc3d99c3bd8df7527d888bd1e030fbed",
     "src/search/routes.js": "0563bfb04479ba743a7ab8506377650f86a19f53508c167b9b0569a74677d620",
     "src/search/service.js": "8f3016ce4ec353c80a0b2dd7069b34b2c60064e079174e0475e32247dbd86118",
-    "src/social/policy.js": "14a29a18e50609260a24908c22fa3c164252bf0004e47bf1be342d6ac904f624",
+    "src/social/policy.js": "8d6c768b1c0a21f009f255e57ec4e5eba10f007199e4d323e8c185bef8d5046b",
     "src/social/provider.js": "e9d066afcf5806217a2156af1ab61e4c74261e7672ac73fa707df2101966b028",
     "src/social/repository.js": "9dd5c1d3af5abe1b42d8a04c781c1db082d57d2074eb65d47b3b984bdef297fb",
     "src/social/routes.js": "531fe2356cdd44d9c3951030555462a05aa664b56141e8a446826420e94c70e9",
-    "src/social/service.js": "abda81987c49b5ee2f00b7b9da98a3bf11b483939b7d23751d060671d86f6531",
+    "src/social/service.js": "62b619dd6026ffcc022601103f358a3ba666d83bf78f41aced5891a6a979e6f8",
     "src/surface-publisher/host.js": "ab1ee1877a0977a7ef6be49ed11dfed5193c75336bd9e07af9516968fff121c8",
     "src/surface-publisher/routes.js": "15fc3c2f73837886b57e56ce5acca41cb11a9a0610aff9c43d5da6bb6b3e95ab",
     "src/surface-publisher/service.js": "362de09ecda7d6861b1813f32db9e7b7870fab4d070cb36ebbf139ddb685dcb8",
@@ -168,7 +168,9 @@
     "src/resources/model-capacity.mjs": "7ce2387981ceacd85166e2e426349dd4092cabdb0e4684d4b5d44808edf0245a",
     "src/resources/continuity-status.mjs": "9fc7c268069054347824b9f1afb3d8e260e56c5a0bddce8e7be9666b694f4334",
     "src/runtime-export.mjs": "e8839bec2e817cbc1722cbb2735fc1ebeb86a7389f158ba449fe5d01035b49e4",
-    "src/runtime-export-scope.json": "92425a49d5db2be221bbcbf39c4e685c0753e253a7cdf1c3821af92b29260002"
+    "src/runtime-export-scope.json": "92425a49d5db2be221bbcbf39c4e685c0753e253a7cdf1c3821af92b29260002",
+    "src/security/communication-policy.mjs": "a457513dd9140004fa63acb229cf7d187f298a4f621a1520298d98cfac792e30",
+    "src/security/wallet-boundary.mjs": "ead4fc71a40d9fcaf8c782f3f4f5aad113b641c9b72574e3c0df1a757aefefe6"
   },
   "referenceSubset": true
 }

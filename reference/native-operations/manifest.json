@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-unified-continuity-20261018",
+  "source": "claus-social-execution-boundary-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -34,7 +34,7 @@
     "src/operational-capabilities.ts": "7ae32f2368e69cdd88f995622f2daba006485fdf4b2786e421cbf12e1569c4a1",
     "src/cycle.ts": "788dc36c40947a895aac4dda0cff5735bc9529e67df1cb4ea5165ab61cb24ed9",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
-    "src/social.ts": "67e39ec338e476d83539a32e34e72457daf4b405c561ab3936d85817816d7d7d",
+    "src/social.ts": "e1123da5c619654b10f924342ef6afc2e28759e9bee0fc08095b7f786842233f",
     "src/store.ts": "5454105a85be84ba0faeb954ef5d9900f461c7129bb208cfee5b41feed030529",
     "src/isolated/work.json": "2cd86bd1fe86823e8578e466b4750df1979aa9a2741ac62782034f5f14546b32",
     "src/isolated/work.ts": "64f6c8087bd8a367012a4b38c1b488496bbc065b5c7c2f64724530cfe5d76b21",
@@ -181,8 +181,10 @@
     "src/agent-continuity.ts": "f49dc19000dbd946e4fd4f6ab0812c8e0063b3c26e073f98ba1c8808c3553d7a",
     "src/runtime-export.mjs": "f2511e3856c1cb224d559d8464e883817e33048da51418d281a945ef0bbcc2f5",
     "src/runtime-export-scope.json": "f10ddb14324b6a00f9114b0fec956a1f3693ad64736a61da894ceaf549becc48",
-    "src/runtime-export.d.mts": "e551af6389698e8d6698c2ebfe7cecd853d5f0311574ff92eeec262f47004cc4"
+    "src/runtime-export.d.mts": "e551af6389698e8d6698c2ebfe7cecd853d5f0311574ff92eeec262f47004cc4",
+    "src/security/communication-policy.mjs": "a457513dd9140004fa63acb229cf7d187f298a4f621a1520298d98cfac792e30",
+    "src/security/communication-policy.d.mts": "1e4883b67c25b74441a4847519fcad85ac7f73bb234a3824f8c55e35a1be7b53"
   },
   "referenceSubset": true,
-  "deployed": "dpl_FR4bqosHJ9GyuqKX1g7KkfVacbT7"
+  "deployed": "dpl_3ge4JZTptkvvMZJMqso95emEijhh"
 }
