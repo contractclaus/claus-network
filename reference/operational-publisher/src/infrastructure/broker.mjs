@@ -1,3 +1,4 @@
+import {runtimeVolumes} from './runtime-volumes.mjs';
 import {runtimeSecrets} from './runtime-secrets.mjs';
 import {managedBuilds} from '../resources/builds.mjs';
 import {resourceStore} from '../resources/store.mjs';
@@ -16,9 +17,10 @@ const key=id=>'infrastructure:'+id;
 const safeWork=w=>({id:w.id,projectId:w.projectId,profile:w.profile,manifest:w.manifest,quote:w.quote,createdAt:w.createdAt,leaseUntil:w.leaseUntil,extensions:w.extensions??[]});
 const original=w=>{const {leaseUntil,extensions,...rest}=w;return rest;};
 
-export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus,budget,secrets}={}){
+export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process.env.CLAUS_INFRASTRUCTURE_PROVIDERS??'{"enabled":false,"profiles":[],"releases":[]}'),secret=()=>process.env.CLAUS_OCI_NETWORK_SECRET,request=fetch,now=()=>Date.now(),drivers,releaseStatus,budget,secrets,volumes}={}){
   budget??=infrastructureBudget({request});
   secrets??=runtimeSecrets({now});
+  volumes??=runtimeVolumes({now});
   drivers??={runpod:runpodDriver({token:()=>process.env.CLAUS_RUNPOD_API_KEY,request,now}),fly:flyDriver({token:()=>process.env.CLAUS_FLY_API_TOKEN,request,now})};
   function profile(p,projectId){
     const c=config(),found=c.profiles?.find(x=>x.id===p.id);
@@ -84,6 +86,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     const overPrice=observed.hourlyMicroUsd&&BigInt(observed.hourlyMicroUsd)>BigInt(c.price.hourlyMicroUsd);
     const revoked=!config().enabled||!config().profiles?.some(p=>p.id===c.providerConfig.id&&p.enabled&&p.profileHash===c.providerConfig.profileHash);
     let mustStop=c.leaseUntil<=now()||revoked||overPrice||c.deletionRequested||!!observed.guardViolation;
+    if(!mustStop&&!await volumes.active(c.work)){observed={...observed,guardViolation:'runtime_volume_unfunded_or_inactive'};mustStop=true;}
     if(!mustStop&&!await secrets.active(c.work)){observed={...observed,guardViolation:'runtime_secret_revoked'};mustStop=true;}
     const releaseRevoked=mustStop?false:!await releaseApproved(c.work);
     if((mustStop||releaseRevoked)&&observed.providerResourceId&&!observed.terminal){
@@ -111,7 +114,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     return locked(work,async(get,record)=>{
       const c=get();if(c.phase!=='prepared')return inspectLocked(work,get,record);
       profile(work.profile,work.projectId);await validateQuote(work);check(await releaseApproved(work),'release_not_approved');check(c.leaseUntil>now(),'lease_expired');
-      const environment=await secrets.load(c.work);
+      const environment=await secrets.load(c.work);await volumes.load(c.work);
       await budget('reserve',work);
       await record({phase:'dispatching'});
       try{const observed=await record(await drivers[c.providerConfig.provider].create(c.work,c.price,c.providerConfig,environment));if(observed.providerResourceId)await budget('commit',work);return result(work,observed);}

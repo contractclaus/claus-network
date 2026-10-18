@@ -1,3 +1,4 @@
+import {volumeFundingHandler} from '../src/infrastructure/volume-funding.mjs';
 import {createSearchAdmission} from '../src/discovery/admission.mjs';
 import {CLAUS_IDENTITY} from '../src/partner-launch/policy.mjs';
 import {createRuntimeReleases,RUNTIME_IMAGE_PROFILE,validateRuntimeBuild} from '../src/infrastructure/runtime-release.mjs';
@@ -158,6 +159,7 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
  const domains=createDomains({store,identity,releases,now,ports:domainPorts,enabled:domainsEnabled});
  const ociBuilds=createOciBuilds({store,identity,projects,jobs,artifacts,images:imageArchive,sourceFiles,privateEnabled:ociPrivateEnabled,privateSecret:ociPrivateSecret,reservedPrivateOwner:CLAUS_IDENTITY,now,ports:ociBuildPorts,enabled:ociBuildEnabled});
  const imageRegistry=createImageRegistry({store,identity,projects,artifacts,images:imageArchive,origin:registryOrigin,now});
+ const volumeFunding=volumeFundingHandler({store,now});
  const infrastructure=createInfrastructure({store,identity,projects,now,ports:infrastructurePorts,enabled:infrastructureEnabled});
  const workers=createWorkers({store,identity,projects,artifacts,now,ports:workerPorts,enabled:workersEnabled});
  const collaboration=createCollaboration({renderTemplate,store,identity,apps,visible:contentAdmin.visible,admit:access.collaboration,now});
@@ -190,7 +192,7 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
   }
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {dataRecords,dataFiles,runtimeReleases,sourceFiles,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:async(request,context={})=>{const path=new URL(request.url).pathname;if(path==='/v2'||path.startsWith('/v2/')){try{await admit({route:'resource_image_registry',peer:context.peer??'unknown'});return await imageRegistry.handle(request);}catch(error){return new Response(null,{status:error.code==='rate_limited'?429:503,headers:{'cache-control':'no-store',...(error.retryAfterSeconds?{'retry-after':String(error.retryAfterSeconds)}:{})}});}}return path==='/mcp'?mcp(request,context):http(request,context);}};
+ return {dataRecords,dataFiles,runtimeReleases,sourceFiles,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:async(request,context={})=>{const path=new URL(request.url).pathname;if(path==='/internal/infrastructure/volume-funding')return volumeFunding(request);if(path==='/v2'||path.startsWith('/v2/')){try{await admit({route:'resource_image_registry',peer:context.peer??'unknown'});return await imageRegistry.handle(request);}catch(error){return new Response(null,{status:error.code==='rate_limited'?429:503,headers:{'cache-control':'no-store',...(error.retryAfterSeconds?{'retry-after':String(error.retryAfterSeconds)}:{})}});}}return path==='/mcp'?mcp(request,context):http(request,context);}};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{

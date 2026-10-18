@@ -111,7 +111,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
   async prepare(actor,projectId,{buildId,manifest}){
    await identity.authorize(actor,'infrastructure.manage',{projectId});
    requireThat(manifest&&!Object.hasOwn(manifest,'releaseHash'),'runtime_image_manifest_invalid');
-   const m=validateManifest({...manifest,releaseHash:'sha256:'+'0'.repeat(64)});delete m.releaseHash;requireThat(m.storageGiB===0,'runtime_image_manifest_invalid');
+   const m=validateManifest({...manifest,releaseHash:'sha256:'+'0'.repeat(64)});delete m.releaseHash;
    return store.transaction(async r=>{await identity.authorize(actor,'infrastructure.manage',{projectId},r);const b=await build(r,projectId,buildId);requireThat(m.image===b.image,'runtime_image_changed');
     requireSecretBindingOwner(m,await read(r,'principals',b.ownerId));
     const core={profile:RUNTIME_IMAGE_PROFILE,projectId,ownerId:b.ownerId,buildId,buildHash:b.build.artifactHash,sourceHash:b.build.snapshotId,manifest:m,...(b.build.private?{sourcePrivate:true}:{})},id=digest(core),old=await r.read('runtime-image-releases',id);
@@ -131,7 +131,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
   async revoke(actor,projectId,id,{expectedRevision}){integer(expectedRevision);return store.transaction(async r=>{try{await identity.authorize(actor,'infrastructure.manage',{projectId},r);}catch{await authority(actor,r);}const row=await r.read('runtime-image-releases',id);requireThat(row?.value.projectId===projectId,'not_found');const value={...row.value,approved:false,revokedAt:now()};const saved=await r.write('runtime-image-releases',id,value,expectedRevision);return {...value,revision:saved.revision};});},
   async status(id){
    const row=await read(store,'runtime-image-releases',text(id));if(!row?.approved)return {approved:false,releaseId:id};
-   try{const e=[OWNER_RUNTIME_REVIEW_PROFILE,OWNER_APPLICATION_REVIEW_PROFILE].includes(row.decision.review.profile)?await ownerEvidence(store,row.projectId,id,row.decision.review.reviewId):await evidence(store,row.projectId,id,row.decision.review.caseId);requireThat(digest(e.review)===digest(row.decision.review),'runtime_image_changed');return {approved:true,ownerSecretBindings:(row.manifest.secretBindings?.length??0)>0,releaseId:id,projectId:row.projectId,manifestHash:digest(row.manifest),image:row.manifest.image,reviewHash:digest(e.review),decisionHash:digest(row.decision),reviewType:e.review.profile??RUNTIME_IMAGE_PROFILE};}
+   try{const e=[OWNER_RUNTIME_REVIEW_PROFILE,OWNER_APPLICATION_REVIEW_PROFILE].includes(row.decision.review.profile)?await ownerEvidence(store,row.projectId,id,row.decision.review.reviewId):await evidence(store,row.projectId,id,row.decision.review.caseId);requireThat(digest(e.review)===digest(row.decision.review),'runtime_image_changed');return {approved:true,ownerNetworkVolume:!!row.manifest.networkVolume,ownerSecretBindings:(row.manifest.secretBindings?.length??0)>0,releaseId:id,projectId:row.projectId,manifestHash:digest(row.manifest),image:row.manifest.image,reviewHash:digest(e.review),decisionHash:digest(row.decision),reviewType:e.review.profile??RUNTIME_IMAGE_PROFILE};}
    catch(e){if(e.code==='not_found'||e.code?.startsWith('runtime_image_'))return {approved:false,releaseId:id};throw e;}
   }
  };
