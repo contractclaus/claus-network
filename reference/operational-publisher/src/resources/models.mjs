@@ -1,3 +1,4 @@
+import {confirmedNoExecution} from './negative-receipt.mjs';
 import {digest,sameValue} from './store.mjs';
 import {modelCatalog} from './model-catalog.mjs';
 import {endpointArguments} from './endpoints.mjs';
@@ -85,7 +86,7 @@ export function managedModels({store,seal,open,endpoints,now=Date.now,request=fe
     // A completed refusal plus an authenticated missing journal is distinct
     // from a timeout followed by absence. This broker has fenced all retries.
     const check=await request(relayOrigin+'/api/requests/'+encodeURIComponent(p.originalRequestId),{headers:{authorization:'Bearer '+secret()},redirect:'error',signal:AbortSignal.timeout(20000)});
-    if(check.status===404&&(await check.json()).error==='not_found')await retain(id,p,{status:'failed',outcome:{payment:'not_signed',failure:value.error},admission:'refused',dispatchRetryFenced:true});
+    if(await confirmedNoExecution(check,p.originalRequestId,relayOrigin))await retain(id,p,{status:'failed',outcome:{payment:'not_signed',failure:value.error},admission:'refused',dispatchRetryFenced:true});
    }
    // Even 429/503 can be accompanied by an in-flight original payment. Only
    // the payer's durable journal decides its outcome; never switch here.
