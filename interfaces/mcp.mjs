@@ -1,5 +1,6 @@
+import {requestDiagnostics} from './request-diagnostics.mjs';
 import {SITE_LIMITS} from '../src/shared/index.mjs';
-import {body,errorBody,errorStatus} from './http.mjs';
+import {body,errorBody,errorStatus,knownErrorCode} from './http.mjs';
 import {API_VERSION} from './contract.mjs';
 const VERSION='2025-06-18';
 // Credential bootstrap/rotation belongs in a secure client or CLI, not a model
@@ -10,12 +11,14 @@ const failure=(id,code,message,status=200)=>result({jsonrpc:'2.0',id,error:{code
 export function createMcp({service,origin='https://claus.si',admit=async()=>{}}){
  const routes=service.routes.filter(r=>!SECRET_OPERATIONS.has(r.name));
  return async(request,context={})=>{
-  if(request.headers.get('origin')&&request.headers.get('origin')!==origin)return result({error:'wrong_origin'},403);
+  const diagnostic=requestDiagnostics(request,{requestId:context.requestId,origin,transport:'mcp'});
+  const reply=(value,status=200,headers={})=>result(value,status,{...headers,...diagnostic.headers});
+  if(request.headers.get('origin')&&request.headers.get('origin')!==origin){diagnostic.failure({status:403,code:'wrong_origin',route:'/mcp',phase:'route'});return reply({error:'wrong_origin',requestId:diagnostic.id},403);}
   if(request.method!=='POST')return new Response(null,{status:405,headers:{allow:'POST'}});
   if(!request.headers.get('accept')?.includes('application/json')||!request.headers.get('accept')?.includes('text/event-stream'))return result({error:'accept_required'},406);
   let input;
   try{await admit({route:'mcp',peer:context.peer??'unknown'});input=await body(request,SITE_LIMITS.requestBytes);}
-  catch(e){const status=errorStatus(e),data=errorBody(e);return result({jsonrpc:'2.0',id:null,error:{code:status===429?-32000:-32700,message:status===429?'Rate limited':'Invalid request',data}},status,status===429?{'retry-after':String(data.retryAfterSeconds)}:{});}
+  catch(e){const status=errorStatus(e),data={...errorBody(e),requestId:diagnostic.id};diagnostic.failure({status,error:e,code:knownErrorCode(e),route:'/mcp',phase:'admission'});return reply({jsonrpc:'2.0',id:null,error:{code:status===429?-32000:-32700,message:status===429?'Rate limited':'Invalid request',data}},status,status===429?{'retry-after':String(data.retryAfterSeconds)}:{});}
   if(!input||Array.isArray(input)||input.jsonrpc!=='2.0'||typeof input.method!=='string'||Object.keys(input).some(k=>!['jsonrpc','id','method','params'].includes(k)))return failure(null,-32600,'Invalid Request',400);
   if(!['snapshot_create','content_admin_correct'].includes(input.params?.name)&&Buffer.byteLength(JSON.stringify(input))>300000)return failure(input.id??null,-32600,'Request too large',413);
   const id=input.id;
@@ -35,6 +38,6 @@ export function createMcp({service,origin='https://claus.si',admit=async()=>{}})
    await admit({route:params.name,peer:context.peer??'unknown'});
    const value=await service.execute(params.name,params.arguments??{},rawToken,{signal:request.signal});
    return result({jsonrpc:'2.0',id,result:{content:[{type:'text',text:JSON.stringify(value).length>131072?'Large result is provided in structuredContent.':JSON.stringify(value)}],structuredContent:value,isError:false}});
-  }catch(error){const data=errorBody(error);return result({jsonrpc:'2.0',id,result:{content:[{type:'text',text:JSON.stringify(data)}],isError:true}},200,data.retryAfterSeconds?{'retry-after':String(data.retryAfterSeconds)}:{});}
+  }catch(error){const data={...errorBody(error),requestId:diagnostic.id};diagnostic.failure({status:errorStatus(error),error,code:knownErrorCode(error),operation:params.name,route:'/mcp',phase:'execute'});return reply({jsonrpc:'2.0',id,result:{content:[{type:'text',text:JSON.stringify(data)}],isError:true}},200,data.retryAfterSeconds?{'retry-after':String(data.retryAfterSeconds)}:{});}
  };
 }

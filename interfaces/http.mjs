@@ -1,3 +1,4 @@
+import {requestDiagnostics} from './request-diagnostics.mjs';
 import {SITE_LIMITS} from '../src/shared/index.mjs';
 import {openapi} from './contract.mjs';
 const BROWSER_APP_OPERATIONS=new Set(['app_service_get','app_service_call','app_task_messages','app_task_message','public_task_review','app_task_review_request','app_task_review_submit','app_task_review_challenge','public_app','public_app_records','auth_challenge','auth_session','credential_revoke','app_join','app_session_create','app_session_revoke','app_get','app_records','app_record_create','app_record_update','app_task_post','app_task_claim','app_task_deliver','app_task_accept','app_task_cancel','app_events']);
@@ -37,8 +38,10 @@ const errors={runtime_image_private_owner_review_required:409,runtime_image_owne
  signal_scope_not_reviewed:409,signal_signature_required:409,signal_source_changed:409,
  signal_store_not_registered:409,signal_transaction_conflict:409,signal_budget_exhausted:409,
  invalid_contract_input:400,invalid_address:400,invalid_word:400};
-export const errorStatus=error=>infrastructureErrors[error.code]??dealErrors[error.code]??errors[error.code]??(/^(invalid_|unknown_|missing_|duplicate_|value_|file_|snapshot_|document_)/.test(error.code??'')?400:503);
+export const knownErrorCode=error=>{const c=error?.code;return [infrastructureErrors,dealErrors,errors].some(m=>Object.hasOwn(m,c))?c:null;};
+export const errorStatus=error=>infrastructureErrors[error?.code]??dealErrors[error?.code]??errors[error?.code]??(/^(invalid_|unknown_|missing_|duplicate_|value_|file_|snapshot_|document_)/.test(error?.code??'')?400:503);
 export const errorBody=error=>{
+ error=error??{};
  const status=errorStatus(error),code=error.code&&status!==503?error.code:'service_unavailable';
  const category=status===401?'authentication':status===403?'authorization':status===429?'capacity':
   status===400||status===413?'input':code==='funding_insufficient'?'funding':
@@ -65,22 +68,26 @@ export async function body(request,maximum=300000){
 export function createHttp({service,origin='https://claus.si',admit=async()=>{}}){
  const routes=service.routes.map(route=>({...route,names:[...route.path.matchAll(/\{(\w+)\}/g)].map(m=>m[1]),pattern:new RegExp('^'+route.path.replace(/\{\w+\}/g,'([^/]+)')+'$')}));
  return async(request,context={})=>{
-  let cors={};
+  let cors={},matched,phase='route';
+  const diagnostic=requestDiagnostics(request,{requestId:context.requestId,origin});
+  const reply=(data,status=200,headers={})=>json(data,status,{...headers,...diagnostic.headers,...(headers['access-control-allow-origin']?{'access-control-expose-headers':'x-claus-request-id'}:{})});
   try{
    const url=new URL(request.url),callerOrigin=request.headers.get('origin');
-   if(request.method==='GET'&&url.pathname==='/openapi.json')return json(openapi({origin}),200,{'access-control-allow-origin':'*'});
+   if(request.method==='GET'&&url.pathname==='/openapi.json')return reply(openapi({origin}),200,{'access-control-allow-origin':'*'});
    const preflight=request.method==='OPTIONS',method=preflight?request.headers.get('access-control-request-method'):request.method;
-   const matched=routes.find(r=>r.method===method&&r.pattern.test(url.pathname));
-   if(!matched)return json({error:'not_found',retryable:false},404);
+   matched=routes.find(r=>r.method===method&&r.pattern.test(url.pathname));
+   if(!matched)return reply({error:'not_found',retryable:false},404);
    const publicRead=matched.public&&method==='GET',clausApp=callerOrigin==='https://claus.si'&&BROWSER_APP_OPERATIONS.has(matched.name);
-   if(callerOrigin&&callerOrigin!==origin&&!publicRead&&!clausApp)return json({error:'wrong_origin',retryable:false},403);
+   if(callerOrigin&&callerOrigin!==origin&&!publicRead&&!clausApp){diagnostic.failure({status:403,code:'wrong_origin',operation:matched.name,route:matched.path,phase});return reply({error:'wrong_origin',retryable:false,requestId:diagnostic.id},403);}
    cors=publicRead?{'access-control-allow-origin':'*'}:clausApp?{'access-control-allow-origin':'https://claus.si',vary:'Origin'}:{};
    if(preflight){
     const headers=(request.headers.get('access-control-request-headers')??'').toLowerCase().split(',').map(h=>h.trim()).filter(Boolean);
-    if(!Object.keys(cors).length||headers.some(h=>!['authorization','content-type'].includes(h)))return json({error:'wrong_origin',retryable:false},403);
+    if(!Object.keys(cors).length||headers.some(h=>!['authorization','content-type'].includes(h))){diagnostic.failure({status:403,code:'wrong_origin',operation:matched.name,route:matched.path,phase});return reply({error:'wrong_origin',retryable:false,requestId:diagnostic.id},403);}
     return new Response(null,{status:204,headers:{...cors,'access-control-allow-methods':method,'access-control-allow-headers':'authorization, content-type','access-control-max-age':'300'}});
    }
+   phase='admission';
    await admit({route:matched.name,peer:context.peer??'unknown'});
+   phase='decode';
    const match=url.pathname.match(matched.pattern),input={};
    for(let i=0;i<matched.names.length;i++){
     const name=matched.names[i],value=decodeURIComponent(match[i+1]);
@@ -106,7 +113,8 @@ export function createHttp({service,origin='https://claus.si',admit=async()=>{}}
    }
    const auth=request.headers.get('authorization');
    const token=auth?.match(/^Bearer (cln_[A-Za-z0-9_-]{43})$/)?.[1];
-   return json(await service.execute(matched.name,input,token,{signal:request.signal}),200,cors);
-  }catch(error){const status=errorStatus(error);return json(errorBody(error),status,{...cors,...(status===401?{'www-authenticate':'Bearer realm="Claus Network"'}:status===429?{'retry-after':String(errorBody(error).retryAfterSeconds)}:{})});}
+   phase='execute';
+   return reply(await service.execute(matched.name,input,token,{signal:request.signal}),200,cors);
+  }catch(error){const status=errorStatus(error);diagnostic.failure({status,error,code:knownErrorCode(error),operation:matched?.name,route:matched?.path,phase});return reply({...errorBody(error),requestId:diagnostic.id},status,{...cors,...(status===401?{'www-authenticate':'Bearer realm="Claus Network"'}:status===429?{'retry-after':String(errorBody(error).retryAfterSeconds)}:{})});}
  };
 }

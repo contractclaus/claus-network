@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_FxWmGarQ2ULwFSoA5AvYaYBAEVCZ",
-  "source": "claus-seven-capabilities-20261018",
+  "deployed": "dpl_Dto7dVcCM5EvuwBtuDnxxTUeqJ11",
+  "source": "claus-request-diagnostics-20261018",
   "files": {
     "package-lock.json": "17a170f69c19150c7a17ca9c89a489c5dc769645082c98a4cc199b298bd70662",
     "package.json": "c9dba632aa7e64fdc8fe6c12a481833d5cede7df6563d8e30e19147e3a8f69bb",
@@ -33,7 +33,7 @@
     "src/publisher/review-evidence.js": "2fb68224e62e34c1a0669d93b5db558eec2bf3ecf0b3185a8a175ed0dfe67ad7",
     "src/publisher/review-prompts.json": "51532d005517a904f93e9cc345be10a568e43e337129233c1bce3a0523af7bf5",
     "src/publisher/routes.js": "6ad948112fbacffd1858dd22475a3e1f47e8338ecf09ac4e60b771e2731556fe",
-    "src/publisher/service.js": "c8910826dcea203e42c8635a56cc1f9c0e0d7d8228687b2f7f777338a3879a01",
+    "src/publisher/service.js": "56fb1518884f1e5e28bf50a5d3affdf58233bd2940e30a2557f1204f6ec1df1e",
     "src/runtime-guardian.mjs": "d4980e6982268b32fc46043d04093e09c9c0608a7f3b93c7ca1b4afc954981b9",
     "src/search/policy.js": "70fc0f77ff1c055cdd442463be849f44fbf207abf692e0cb77e9fad094ff06f0",
     "src/search/provider.js": "4813e8d9e836a90dc6fa2b634250c8cc59b2368a980cce360367b2086f46a726",
@@ -160,7 +160,8 @@
     "src/resources/specialty-data.mjs": "50daea35f972ecb10c8f13d3cf1a85e1886d1e2610bfff2bade5ce5316aeae39",
     "src/resources/artifact-signing.mjs": "9da500c90c17ebf6ec2c181a05bf5ee5fb5a04db1494798d369f4b7b2320f933",
     "src/resources/obligations.mjs": "435b581c9c266db5512a18d38c4312339a0c2680aea4ff5df05b407d24ce4be4",
-    "src/recovery/database-recovery.mjs": "d4d21a9694e049c24bfa2b19cc1cbef955eea9d2cb4a1ef563f3a4c15d02f9d3"
+    "src/recovery/database-recovery.mjs": "d4d21a9694e049c24bfa2b19cc1cbef955eea9d2cb4a1ef563f3a4c15d02f9d3",
+    "src/publisher/request-logs.mjs": "9478ba39fc1bf332ee691564a70624a1be92c0a763710e624381bfd8d9611d96"
   },
   "referenceSubset": true
 }
