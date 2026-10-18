@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_7p13pir8feaVBfwfPSWyUSxinKoh",
-  "source": "claus-goal-phase40-20261018",
+  "deployed": "dpl_HnkqY1zDtRq6kqvVHoFEeCDAGXMn",
+  "source": "claus-goal-phase41-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -23,7 +23,7 @@
     "src/jobs-wallet/routes.js": "f61884c6444227a370e5ffea79010d934588493a9b24db9a1b028be2c443664d",
     "src/jobs-wallet/session-cache.js": "2c43c77bca2ae99703be39333da25eb26073ad2ba23cb44bd32614244c63a76c",
     "src/ordinary-buyback-recovery.js": "d852c518fd6807ab3ac675d0d4d9ec6313cd6a05e15cb4b94e8ee036366ad230",
-    "src/ordinary-buybacks.js": "03dabd04737a981cd7f513e611706171f653b70406fced0d397927ab6d97b445",
+    "src/ordinary-buybacks.js": "b1042440f4a5c67e44c44dd21b5173b3f9002bcf2c031f7680be19510f8a2b00",
     "src/publisher/controls.js": "a3362da65fb1ca1e627c57bb56defd4a89d2f70a8a9f1a7547f6254b2c232846",
     "src/publisher/host.js": "83739ed73ae2ff6489113dc4a6b224efeb08690efbb1306e401533730ce37e0b",
     "src/publisher/model-completion.js": "590d2b8bcb55c44cb7059d05a8137980357faff33ee33b5ebafc4697dc6d7bc6",
@@ -81,7 +81,7 @@
     "src/resources/object-provider.mjs": "98e3eb3946886911dac13586859ef1af5ca5b2aba23fa9c3757d4568b0883f13",
     "interfaces/resource-objects.mjs": "2b1f3461ad55c9e1c8a71a181344c9702b860c7e115edeaf8df5dc71aef1133a",
     "tests/resource-objects.test.mjs": "4627ab902444aa23107cffeaf4be50a93f7f8c0f9e80a5d2f8b69cc7f23a0d48",
-    "src/resources/catalog.mjs": "001f0f04461b5d5e01b2e73204f83b0fb719aed65686093d9a058cd1642ac9a8",
+    "src/resources/catalog.mjs": "a2df92e1e9882fd5d4cb39932891b5ab4917949ebf54bddab4f914fa34c2b478",
     "src/resources/endpoints.mjs": "997d3a08774ec8d3a873cbcbb190ad50d4b4687ac2b68730a6041565f49b2e5b",
     "src/resources/endpoint-transport.mjs": "b6fc8d0df460af5e53edf29947c86d873620f9ad9eff1abef1ebe7336d0f5c8a",
     "tests/resource-endpoints.test.mjs": "1f93ab26eb74e7abb4986bc83a129ce402c26ed7563afee3b23bdcab6214f89c",
