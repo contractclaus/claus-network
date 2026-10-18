@@ -1,3 +1,4 @@
+import {installBackupAllowance} from './recovery/backup-allowance.mjs';
 import {installResources} from './resources/routes.mjs';
 import {installInfrastructureRoutes} from './infrastructure/routes.mjs';
 import {installOciRoutes} from './github/oci-routes.mjs';
@@ -58,7 +59,7 @@ app.get('/health',c=>c.json(process.env.SERVICE_ROLE==='operator'
 app.use('/api/*',async(c,next)=>{
   if(c.req.method==='POST'&&/^\/api\/resource-events\/res_[a-f0-9]{24}$/.test(c.req.path))return next();
   if(c.req.method==='POST'&&['/api/oci-builds','/api/infrastructure'].includes(c.req.path)||c.req.method==='GET'&&c.req.path==='/api/infrastructure/guardian')return next();
-  if(c.req.path==='/api/runtime/guardian'||c.req.path==='/api/github'||c.req.path==='/api/partner-launch'||c.req.path==='/api/capital'||c.req.path==='/api/search'||c.req.path==='/api/search/status'||c.req.path==='/api/social'||/^\/api\/social\/receipts\/[a-zA-Z0-9_.:%-]+$/.test(c.req.path)||(c.req.path==='/api/native-missions'||/^\/api\/native-missions\/[a-zA-Z0-9_.:%-]+$/.test(c.req.path)||c.req.path==='/api/native-configuration'||/^\/api\/native-configuration\/[0-9]+$/.test(c.req.path))||c.req.path.startsWith('/api/jobs/')||c.req.path==='/api/programs'||c.req.path==='/api/publisher'||c.req.path==='/api/website-admin'||c.req.path==='/api/resources'||c.req.path==='/api/repository-publisher'||c.req.path==='/api/surface-publisher')return next();
+  if(c.req.path==='/api/runtime/guardian'||c.req.path==='/api/github'||c.req.path==='/api/partner-launch'||c.req.path==='/api/capital'||c.req.path==='/api/search'||c.req.path==='/api/search/status'||c.req.path==='/api/social'||/^\/api\/social\/receipts\/[a-zA-Z0-9_.:%-]+$/.test(c.req.path)||(c.req.path==='/api/native-missions'||/^\/api\/native-missions\/[a-zA-Z0-9_.:%-]+$/.test(c.req.path)||c.req.path==='/api/native-configuration'||/^\/api\/native-configuration\/[0-9]+$/.test(c.req.path))||c.req.path.startsWith('/api/jobs/')||c.req.path==='/api/programs'||c.req.path==='/api/publisher'||c.req.path==='/api/website-admin'||c.req.path==='/api/resources'||c.req.path==='/api/recovery-backup/allowance'||c.req.path==='/api/repository-publisher'||c.req.path==='/api/surface-publisher')return next();
   // Explicit opt-in only: retain the historical default until manual migration.
   // This gate precedes authentication selection, body parsing and all handlers.
   if(process.env.SERVICE_ROLE==='operator') {
@@ -112,6 +113,7 @@ installProgramRoutes(app);
 installPublisherRoutes(app);
 installWebsiteAdmin(app);
 installResources(app);
+installBackupAllowance(app);
 installSurfacePublisherRoutes(app);
 installConfigurationRoutes(app);
 installSocialRoutes(app);
