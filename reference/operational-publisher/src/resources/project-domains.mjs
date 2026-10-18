@@ -1,4 +1,4 @@
-import {digest} from './store.mjs';
+import {digest,sameValue} from './store.mjs';
 import {team} from './providers.mjs';
 const fail=c=>{throw Error('resource_domain_'+c);};
 const hostname=v=>typeof v==='string'&&v.length<=253&&v===v.toLowerCase()&&v.endsWith('.claus.si')&&v!=='www.claus.si'&&v.split('.').every(x=>/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(x));
@@ -19,7 +19,7 @@ export function managedDomains({store,call,now=Date.now}){
    return {exists:true,...view(v),dns:configuration,managed:(await store.get('project-domain',name))?.resourceId===r.id,next:'Use the existing website DNS operation for the returned records. Keep unrelated records unchanged.'};
   }
   if(typeof requestId!=='string'||!requestId||requestId.length>200)fail('request_invalid');const id='act_'+digest(['owner',requestId]).slice(0,24);
-  const prior=await store.get('action',id);if(prior&&(prior.operation!==operation||digest(prior.input)!==digest(input)))fail('request_conflict');if(prior?.output)return prior.output;
+  const prior=await store.get('action',id);if(prior&&(prior.operation!==operation||!sameValue(prior.input,input)))fail('request_conflict');if(prior?.output)return prior.output;
   let prepared=prior?.prepared;
   if(!prepared){
    const existing=await current(r,name),managed=await store.get('project-domain',name);

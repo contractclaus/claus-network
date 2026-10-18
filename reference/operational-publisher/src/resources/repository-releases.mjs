@@ -1,4 +1,4 @@
-import {digest} from './store.mjs';
+import {digest,sameValue} from './store.mjs';
 const fail=c=>{throw Error('resource_repository_'+c);};
 const commit=v=>typeof v==='string'&&/^[a-f0-9]{40}$/.test(v);
 const ref=v=>typeof v==='string'&&v.length>0&&v.length<=180&&/^[A-Za-z0-9_][A-Za-z0-9_./-]*$/.test(v)&&!v.includes('..')&&!v.includes('//')&&!v.endsWith('/')&&!v.endsWith('.')&&!v.endsWith('.lock');
@@ -47,7 +47,7 @@ export function managedReleases({store,call,now=Date.now}){
    if(!Number.isSafeInteger(input.releaseId)||input.releaseId<=0)fail('release_invalid');return releaseView(await api(r.prefix+'/releases/'+input.releaseId));
   }
   if(!clean(requestId,200))fail('request_invalid');const id='act_'+digest(['owner',requestId]).slice(0,24);
-  const existing=await store.get('action',id);if(existing&&(existing.operation!==operation||digest(existing.input)!==digest(input)))fail('request_conflict');if(existing?.output)return existing.output;
+  const existing=await store.get('action',id);if(existing&&(existing.operation!==operation||!sameValue(existing.input,input)))fail('request_conflict');if(existing?.output)return existing.output;
   let prepared=existing?.prepared;
   if(!prepared){
    if(operation==='repository_fastforward'){
@@ -88,7 +88,7 @@ export function managedReleases({store,call,now=Date.now}){
    current??=await byTag(r,prepared.tag);
    if(!current)return {id,state:'outcome_unknown',retry:false};if(!matches(current))fail('release_changed');
    const binding={releaseId:current.id,tag:prepared.tag,commit:prepared.commit,contentHash:digest([current.name,current.body,current.prerelease]),sourceActionId:id};
-   const saved=await store.put('repository-release',r.id+':'+current.id,binding);if(digest(saved.value)!==digest(binding))fail('release_binding_conflict');
+   const saved=await store.put('repository-release',r.id+':'+current.id,binding);if(!sameValue(saved.value,binding))fail('release_binding_conflict');
    return complete({release:releaseView(current),sourceCommit:prepared.commit});
   }
   const path=r.prefix+'/releases/'+prepared.releaseId;let current=await api(path);

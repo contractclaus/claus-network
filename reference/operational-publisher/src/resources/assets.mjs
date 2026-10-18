@@ -1,4 +1,4 @@
-import {digest} from './store.mjs';
+import {digest,sameValue} from './store.mjs';
 const fail=c=>{throw Error('resource_asset_'+c);};
 const name=v=>typeof v==='string'&&/^[a-z][a-z0-9-]{1,99}$/.test(v);
 const clean=(v,n)=>typeof v==='string'&&v.trim().length>0&&v.length<=n&&!/-----BEGIN|Bearer\s|(?:token|secret|password|api[-_]?key)\s*[=:]\s*\S{8}/i.test(v);
@@ -46,7 +46,7 @@ export function managedAssets({store,workStatus,now=Date.now}){
   }
   if(!clean(requestId,200)||!name(input.name)||!Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<0)fail('request_invalid');
   const id='act_'+digest(['owner',requestId]).slice(0,24),previous=await store.get('action',id);
-  if(previous&&(previous.operation!==operation||digest(previous.input)!==digest(input)))fail('request_conflict');
+  if(previous&&(previous.operation!==operation||!sameValue(previous.input,input)))fail('request_conflict');
   if(previous?.output)return previous.output;
   let p=previous?.prepared;
   if(!p){

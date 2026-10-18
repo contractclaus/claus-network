@@ -1,5 +1,5 @@
 import {createSHA256} from 'hash-wasm';
-import {digest} from './store.mjs';
+import {digest,sameValue} from './store.mjs';
 import {objectProvider} from './object-provider.mjs';
 const fail=c=>{throw Error('resource_storage_'+c);};
 const integer=(v,min,max)=>Number.isSafeInteger(v)&&v>=min&&v<=max;
@@ -14,7 +14,7 @@ export function managedObjects({store,budget,seal,open,provider=objectProvider()
  async function begin(operation,input,requestId,principal,prepare){
   if(typeof requestId!=='string'||!requestId||requestId.length>200)fail('request_invalid');
   const id='act_'+digest([principal,requestId]).slice(0,24),old=await store.get('action',id);
-  if(old&&(old.operation!==operation||digest(old.input)!==digest(input)))fail('request_conflict');
+  if(old&&(old.operation!==operation||!sameValue(old.input,input)))fail('request_conflict');
   if(old)return {id,row:old};const prepared=await prepare(id);return {id,row:(await store.begin(id,operation,input,prepared)).row.result};
  }
  return {
