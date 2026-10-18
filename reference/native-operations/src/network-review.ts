@@ -1,3 +1,4 @@
+import {confirmedNoExecution} from './negative-receipt.js';
 import {managedDatabase,managedSchemaReady} from './database-schema.js';
 import {isDealReview,validateNativeDealReview,reviewCapability} from './network-deal-review.js';
 import {configuration,sql} from './store.js';
@@ -165,7 +166,7 @@ export async function networkReviewStatus(id:string,ports:{db?:Query;fetcher?:ty
     // and terminally fail this review; never approve or replay it.
     await db`UPDATE claus_network_reviews SET state='failed',result=${JSON.stringify({error:'inference_delivery_unknown',paymentHoldRetained:true,inferenceId:effectId,outcome:body.outcome??null})}::jsonb,updated_at=now() WHERE id=${id} AND state IN ('running','uncertain')`;
    }
-  }else if(response.status===404&&Date.now()-Date.parse(row.started_at)>800000&&(await json(response)).error==='not_found'){
+  }else if(await confirmedNoExecution(response,effectId,origin)){
    // The fixed payer fences missing request IDs against subsequent admission.
    await db`UPDATE claus_network_reviews SET state='failed',result='{"error":"inference_not_reserved"}'::jsonb,updated_at=now() WHERE id=${id} AND state IN ('running','uncertain')`;
   }

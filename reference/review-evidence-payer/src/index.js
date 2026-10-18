@@ -1,3 +1,4 @@
+import {negativeReceipt} from './negative-receipt.js';
 import {hasSettledCreditProof} from './credit-settlement.js';
 import {operatingBudget} from './operating-budget.js';
 import {createExternalServices} from './external-services.js';
@@ -240,7 +241,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     if(!rows.length) {
       const legacy=await legacyStatus(id,{env,fetcher});
       if(enabled()&&configured(env)&&legacy.kind==='absent'&&await legacyContinuity({env,fetcher})) {
-        if(await confirmAbsent(db,id))return c.json({error:'not_found'},404);
+        if(await confirmAbsent(db,id))return c.json(negativeReceipt(id),404);
         // A concurrent admission won the ID. Preserve its actual state; never
         // release the caller's reservation on a stale pre-network SELECT.
         const fresh=await db`SELECT status,response,outcome FROM claus_inference WHERE id=${id}`;

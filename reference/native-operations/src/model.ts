@@ -1,3 +1,4 @@
+import {confirmedNoExecution} from './negative-receipt.js';
 import {feedbackBuildTools} from './feedback-builds.js';
 import {adaptationTools} from './adaptation-service.js';
 import {continuityTools} from './workspaces/continuity-service.js';
@@ -21,7 +22,7 @@ export async function reconcilePendingInference() {
     if(action.kind!=='inference')continue;
     try {
       const response=await fetch(`${process.env.INFERENCE_URL}/api/requests/${encodeURIComponent(action.id)}`,{headers:{Authorization:`Bearer ${process.env.INFERENCE_SECRET}`},redirect:'error',signal:AbortSignal.timeout(15000)});
-      if(response.status===404&&Date.now()-Date.parse(action.created_at)>300000) {
+      if(Date.now()-Date.parse(action.created_at)>300000&&await confirmedNoExecution(response,action.id,process.env.INFERENCE_URL!)) {
         await reconcileInference(action.id,'failed',{failure:'relay_request_not_reserved',payment:'not_signed'});
       } else if(response.ok) {
         const body=await response.json();
