@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase31-20261018",
+  "source": "claus-goal-phase32-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -160,8 +160,9 @@
     "tests/browser-access.test.ts": "1f625452d8e1ef3fc5cc9ce6f32e42abadf2c9c231f07cfd7b59c0935ea6d24f",
     "src/development-profile.ts": "11b4915fc087cd702302864e00c0d568624960f319f083ad5396a2bfbbb8a5ed",
     "src/development-funding.ts": "7541ff101e3acd1953e366bf046a7be095db80de40057b4997e6456ca5ec3971",
-    "tests/development-continuation.test.ts": "c82151eaecc374126392de1c47b3c284a8173ff835462a9ea098efedcff986ef"
+    "tests/development-continuation.test.ts": "c82151eaecc374126392de1c47b3c284a8173ff835462a9ea098efedcff986ef",
+    "src/inference-admission.ts": "b45843a1072d15258b6b814aeb6e986a615f9d76193c3ab3f16aee0148a651f8"
   },
   "referenceSubset": true,
-  "deployed": "dpl_FkVAn1mmB5ytPiAdj37LjsyyXY8F"
+  "deployed": "dpl_55EVcJnRbhjKHhUEH89K7vCCjM9G"
 }
