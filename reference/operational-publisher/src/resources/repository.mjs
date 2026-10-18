@@ -20,6 +20,7 @@ export function managedRepository({call,request=fetch,token=()=>process.env.CLAU
    const selected=bytes.subarray(offset,offset+48000);return {kind:'file',path:result.path,blobSha:result.sha,bytes:bytes.length,encoding:'base64',content:selected.toString('base64'),offset,nextOffset:offset+selected.length<bytes.length?offset+selected.length:null};
   },
   async repositoryWrite(r,input,actionId,dispatch){
+   if(input.path?.startsWith('.github/workflows/'))error('use_managed_build_workflow');
    const p=prefix(r)+'/contents/'+path(input.path),branch=ref(input.branch??r.defaultBranch??'main');
    if(typeof input.content!=='string'||!['utf8','base64'].includes(input.encoding??'utf8'))error('content_invalid');
    const bytes=Buffer.from(input.content,input.encoding==='base64'?'base64':'utf8');if(bytes.length>2*1024*1024)error('inline_file_too_large');
