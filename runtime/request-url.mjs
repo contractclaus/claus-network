@@ -3,7 +3,7 @@ export function requestUrl(value, origin) {
   const routed = url.searchParams.get('__claus_route');
   // The public path is authoritative when the host preserves it. A direct
   // function invocation may use the explicit rewrite destination instead.
-  if (url.pathname === '/api/gateway' && (routed?.startsWith('/v1/') || routed === '/v2' || routed?.startsWith('/v2/'))) url.pathname = routed;
+  if (url.pathname === '/api/gateway' && (routed === '/internal/infrastructure/volume-funding' || routed?.startsWith('/v1/') || routed === '/v2' || routed?.startsWith('/v2/'))) url.pathname = routed;
   url.searchParams.delete('__claus_route');
   const capture = url.searchParams.get('path');
   const tail = url.pathname.slice(4);

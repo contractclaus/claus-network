@@ -20,6 +20,10 @@
   },
   "rewrites": [
     {
+      "source": "/internal/infrastructure/volume-funding",
+      "destination": "/api/gateway?__claus_route=/internal/infrastructure/volume-funding"
+    },
+    {
       "source": "/v2/",
       "destination": "/api/gateway?__claus_route=/v2/"
     },

@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_HEX5oZNbU9Moi8sxS9fCd3zwwi4L",
-  "source": "claus-goal-phase54-20261018",
+  "deployed": "dpl_7eskXPyDdEnZWgza82sLWJDGQwsk",
+  "source": "claus-goal-phase57-20261018",
   "files": {
     "package-lock.json": "17a170f69c19150c7a17ca9c89a489c5dc769645082c98a4cc199b298bd70662",
     "package.json": "c9dba632aa7e64fdc8fe6c12a481833d5cede7df6563d8e30e19147e3a8f69bb",
@@ -68,7 +68,7 @@
     "src/resources/store.mjs": "2dd29fe3e7944fd283992686b4e04ffdd78558e0d0f3deb85cbcdea82e17ed0a",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
     "src/resources/providers.mjs": "cf81c7462102101f4b22c342849b67b9e6c6d5c945f282b5d7cdf435c5e864a3",
-    "src/resources/service.mjs": "717b4f4c5893663a422d2ec20d47ea4dc900900691d9cb52f80df30260853510",
+    "src/resources/service.mjs": "bc1acc4e0434ddcf5587be3f1a399ab9e0dd1d83cf972b09d1d260fb0ac6f5a3",
     "src/resources/routes.mjs": "01d33b559af53cf891f44a99be4c4010f0ab9a542c0fa3eabb4341ca3a936fc1",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
@@ -81,7 +81,7 @@
     "src/resources/object-provider.mjs": "98e3eb3946886911dac13586859ef1af5ca5b2aba23fa9c3757d4568b0883f13",
     "interfaces/resource-objects.mjs": "2b1f3461ad55c9e1c8a71a181344c9702b860c7e115edeaf8df5dc71aef1133a",
     "tests/resource-objects.test.mjs": "4627ab902444aa23107cffeaf4be50a93f7f8c0f9e80a5d2f8b69cc7f23a0d48",
-    "src/resources/catalog.mjs": "d61ede9c408a9154bf958794af337e543892af4473af5116e4357ba180d57425",
+    "src/resources/catalog.mjs": "4b8a7c064b55741d063ed03b2cf16ec0217351723bef0b72bb79ecb4675d4791",
     "src/resources/endpoints.mjs": "6a1cd7bd4a49b7219a8a5c909f649f38c66bcca8dfb2243879c28869790fd8f9",
     "src/resources/endpoint-transport.mjs": "b6fc8d0df460af5e53edf29947c86d873620f9ad9eff1abef1ebe7336d0f5c8a",
     "tests/resource-endpoints.test.mjs": "1f93ab26eb74e7abb4986bc83a129ce402c26ed7563afee3b23bdcab6214f89c",
@@ -119,7 +119,7 @@
     "src/infrastructure/queue-load.mjs": "f1752c2b7adfa68c24e3ecc111f4336e0fb39374d3180ea6b9d3f70180cdcd1f",
     "tests/queue-load.test.mjs": "eafe498b7e315b9cb884237c696550547fcd88a375812c09de2ec737c5fbe63e",
     "src/resources/repository-releases.mjs": "85c88a8c4f974f2cb1bb61f5f7cf4da2158e907388b608c58041822251f17c21",
-    "src/resources/project-domains.mjs": "acc24b4fab8cc840876e7b12d0752fd1f14fdbbe3f800465214079da32693f9a",
+    "src/resources/project-domains.mjs": "78c0ae3b7c1985636c910873561fb08f21e8c548d439bb5f2668d3d4c2abfe8f",
     "tests/resource-release-domains.test.mjs": "f21d2438d8dd953e176e1507ea9537dc5a5cac345d75479b4def2dab9ad55277",
     "src/recovery/backup-allowance.mjs": "2fbf526563b0ea888c1f6c951c9fc6c2975ca828f1cd1e84a10a3b5f77b9074b",
     "tests/backup-allowance.test.mjs": "5bee743d1832823bf2b99d183b498b3196d4af39b163f23919812314ad5da172",
@@ -154,7 +154,10 @@
     "src/resources/finance.mjs": "05611cf1ede6457d8d53883f5b26bc51585aa872dd6c755348afb4a6fc721585",
     "src/resources/account-usage.mjs": "51c06b1c580fc95ba6a15fb4404cb391d4217b67e2f6751c040522449f7a1258",
     "src/infrastructure/server-state.mjs": "f1dab40688bae15550103e40c0910eaf3f00f2227775ee556de9b05a3b30e1fe",
-    "src/resources/backups.mjs": "5a7d3865694ac2c35a9a628deab853de6a19a768ee933832da5953da8ca9a8ba"
+    "src/resources/backups.mjs": "5a7d3865694ac2c35a9a628deab853de6a19a768ee933832da5953da8ca9a8ba",
+    "src/resources/package-delivery.mjs": "fd84013d1232fb916321d0be4c3b384dbd31142dee72dbfff21e190f105b0b4f",
+    "src/resources/registrar.mjs": "249fd3f04a32e72fa11a88e8e5f41e081c4b25d8235cbca19d7158fae6b5e947",
+    "src/resources/specialty-data.mjs": "50daea35f972ecb10c8f13d3cf1a85e1886d1e2610bfff2bade5ce5316aeae39"
   },
   "referenceSubset": true
 }
