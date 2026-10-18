@@ -1,3 +1,4 @@
+import {createAutoscaling} from './autoscaling.mjs';
 import {maintenancePolicy,maintenanceDue} from './maintenance.mjs';
 import {createFundingReconciler} from './funding.mjs';
 import {createResourceControl} from './control.mjs';
@@ -69,6 +70,7 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
       text(idempotencyKey);text(quoteId);integer(expectedRevision);
       const renewalId=digest({resourceId:id,renewal:idempotencyKey});
       return store.transaction(async tx=>{
+        await internal.beforeReserve?.(tx);
         if(internal.retained)await admission(tx,actor,projectId,(await resource(tx,projectId,id)).value.profile.id,true);else await auth(actor,projectId,'infrastructure.manage',tx);
         const r=await resource(tx,projectId,id),v=r.value,prior=await tx.read('infrastructure-renewals',renewalId);
         if(prior){requireThat(prior.value.quoteId===quoteId,'idempotency_conflict');return visible(r);}
@@ -120,7 +122,7 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
       }
       return {items,nextProjectCursor:projects.nextCursor,resourceCursors,unavailable,complete:projects.nextCursor===null&&resourceCursors.length===0&&unavailable.length===0,observedAt:now()};
     },
-    async discovery(){return {profile:INFRASTRUCTURE_VERSION,enabled,automaticMaintenance:true,providerExecution:enabled&&['quote','verifyRelease','create','inspect','stop','logs','verifyReceipt'].every(name=>typeof ports[name]==='function'),reconciliation:typeof ports.inspect==='function'&&typeof ports.stop==='function',sourcePlans:true,buildExecution:false,renewableLeases:typeof ports.extend==='function',independentProviderGuard:true,readiness:'/v1/projects/{projectId}/infrastructure/readiness',funding:'explicit-project-allowance',images:'immutable-reviewed-digest',unknownOutcomes:'original-resource-reconciliation',updates:'stop-settle-then-create-new-release',resources:'/v1/projects/{projectId}/infrastructure'};},
+    async discovery(){return {profile:INFRASTRUCTURE_VERSION,enabled,automaticMaintenance:true,automaticScaling:true,providerExecution:enabled&&['quote','verifyRelease','create','inspect','stop','logs','verifyReceipt'].every(name=>typeof ports[name]==='function'),reconciliation:typeof ports.inspect==='function'&&typeof ports.stop==='function',sourcePlans:true,buildExecution:false,renewableLeases:typeof ports.extend==='function',independentProviderGuard:true,readiness:'/v1/projects/{projectId}/infrastructure/readiness',funding:'explicit-project-allowance',images:'immutable-reviewed-digest',unknownOutcomes:'original-resource-reconciliation',updates:'stop-settle-then-create-new-release',resources:'/v1/projects/{projectId}/infrastructure'};},
     reconcileFunding:createFundingReconciler({store,ports,now}),
     async readiness(actor,projectId){await auth(actor,projectId);return typeof ports.readiness==='function'?await ports.readiness():{enabled:false,configured:false,profiles:[]};},
     async buildPlan(actor,projectId,{snapshotId,dockerfile}){
@@ -147,12 +149,12 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
     async get(actor,projectId,id){await auth(actor,projectId);return visible(await resource(store,projectId,id));},
     async profiles(actor,projectId){await auth(actor,projectId);const rows=await store.list('infrastructure-grants',{projectId,limit:100});return {items:await Promise.all(rows.map(async r=>{const p=await store.read('infrastructure-profiles',r.value.profileId);return {profile:p?.value??null,allowance:{...r.value,revision:r.revision}};}))};},
     quote:(actor,projectId,input)=>quote(actor,projectId,input),
-    async request(actor,projectId,{quoteId,idempotencyKey}){
+    async request(actor,projectId,{quoteId,idempotencyKey},internal={}){
       text(quoteId);text(idempotencyKey);const id=digest({projectId,infrastructure:idempotencyKey});
-      return store.transaction(async tx=>{await auth(actor,projectId,'infrastructure.manage',tx);const old=await tx.read('infrastructure-resources',id);
+      return store.transaction(async tx=>{if(!internal.retained)await auth(actor,projectId,'infrastructure.manage',tx);await internal.beforeReserve?.(tx);const old=await tx.read('infrastructure-resources',id);
         if(old){requireThat(old.value.quote.id===quoteId,'idempotency_conflict');return visible(old);}
         const q=(await tx.read('infrastructure-quotes',quoteId))?.value;requireThat(q?.projectId===projectId&&q.expiresAt>now(),'infrastructure_quote_expired');
-        const {profile,grant}=await admission(tx,actor,projectId,q.profile.id);requireThat(digest(profile)===digest(q.profile),'infrastructure_profile_changed');
+        const {profile,grant}=await admission(tx,actor,projectId,q.profile.id,internal.retained===true);requireThat(digest(profile)===digest(q.profile),'infrastructure_profile_changed');
         requireThat(!await tx.read('infrastructure-quote-use',quoteId),'infrastructure_quote_already_used');
         requireThat(amount(grant.value.limit)>=grantExposure(profile,grant.value)+amount(q.maximum),'infrastructure_allowance_exhausted');
         const capacityId=grantKey(projectId,profile.id),capacity=await tx.read('infrastructure-capacity',capacityId),active=capacity?.value.active??[];
@@ -162,11 +164,11 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
         const globalId='profile:'+profile.id,global=await tx.read('infrastructure-capacity',globalId),globalActive=global?.value.active??[];
         requireThat(globalActive.length<profile.maxActive,'infrastructure_capacity_reached');
         await tx.write('infrastructure-capacity',globalId,{active:[...globalActive,id]},global?.revision??0);
-        const value={id,projectId,actor,profile,manifest:q.manifest,quote:q,createdAt:now(),leaseUntil:now()+q.leaseSeconds*1000,state:'queued',desired:'running',billing:'reserved',reservedMaximum:q.maximum,extensions:[],operationId:id,attempted:false};
+        const value={id,projectId,actor,profile,manifest:q.manifest,quote:q,...(internal.autoscalingId?{autoscalingId:internal.autoscalingId}:{}),createdAt:now(),leaseUntil:now()+q.leaseSeconds*1000,state:'queued',desired:'running',billing:'reserved',reservedMaximum:q.maximum,extensions:[],operationId:id,attempted:false};
         await adjustGrant(tx,value,amount(q.maximum),0n);
         await tx.write('infrastructure-capacity',capacityId,{projectId,active:[...active,id]},capacity?.revision??0);
         await tx.write('infrastructure-quote-use',quoteId,{resourceId:id},0);
-        const r=await tx.write('infrastructure-resources',id,value,0);await tx.event({type:'infrastructure.requested',projectId,resourceId:id,at:now()});return visible(r);
+        const r=await tx.write('infrastructure-resources',id,value,0);await internal.onReserved?.(tx,id);await tx.event({type:'infrastructure.requested',projectId,resourceId:id,at:now()});return visible(r);
       });
     },
     renew:(actor,projectId,id,input)=>renew(actor,projectId,id,input),
@@ -177,9 +179,9 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
         const saved=await tx.write('infrastructure-resources',id,{...r.value,maintenance},r.revision);await tx.event({type:'infrastructure.maintenance.changed',projectId,resourceId:id,enabled:maintenance!==null,at:now()});return visible(saved);
       });
     },
-    async stop(actor,projectId,id,{expectedRevision,remove=false}){
+    async stop(actor,projectId,id,{expectedRevision,remove=false},internal={}){
       integer(expectedRevision);requireThat(typeof remove==='boolean','invalid_stop');
-      return store.transaction(async tx=>{await auth(actor,projectId,'infrastructure.stop',tx);const r=await resource(tx,projectId,id);requireThat(r.revision===expectedRevision,'revision_conflict');
+      return store.transaction(async tx=>{if(internal.beforeStop)await internal.beforeStop(tx);else await auth(actor,projectId,'infrastructure.stop',tx);const r=await resource(tx,projectId,id);requireThat(r.revision===expectedRevision,'revision_conflict');
         if(done.has(r.value.state))return visible(r);
         return visible(await tx.write('infrastructure-resources',id,{...r.value,desired:remove?'deleted':'stopped',stopRequestedAt:now(),nextAttemptAt:null},r.revision));});
     },
@@ -264,5 +266,6 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
     },
     async tick({after='',limit=20}={}){integer(limit,1,100);const rows=await store.pendingInfrastructure({after,limit});let processed=0;for(const r of rows){if(r.value.nextAttemptAt>now()&&r.value.desired==='running'&&r.value.leaseUntil>now())continue;if((await api.reconcile(r.id)).processed)processed++;}return {processed,nextCursor:rows.length===limit?rows.at(-1).id:null};}
   };
+  api.autoscaling=createAutoscaling({store,identity,admission,quote,request:(...args)=>api.request(...args),renew,stop:(...args)=>api.stop(...args),queueLoad:ports.queueLoad,now});
   return api;
 }

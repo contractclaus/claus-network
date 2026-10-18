@@ -889,6 +889,534 @@
         }
       }
     },
+    "/v1/projects/{projectId}/infrastructure/scaling": {
+      "get": {
+        "operationId": "resource_scaling_list",
+        "description": "GET /v1/projects/{projectId}/infrastructure/scaling. Requires current object read permission.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/infrastructure/scaling/{name}": {
+      "get": {
+        "operationId": "resource_scaling_get",
+        "description": "GET /v1/projects/{projectId}/infrastructure/scaling/{name}. Requires current object read permission.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 81
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        }
+      },
+      "put": {
+        "operationId": "resource_scaling_set",
+        "description": "PUT /v1/projects/{projectId}/infrastructure/scaling/{name}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 81
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "profileId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "manifest": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "const": 1,
+                        "type": "integer"
+                      },
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "http",
+                          "worker",
+                          "job",
+                          "model"
+                        ]
+                      },
+                      "image": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "region": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      "cpu": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 64
+                      },
+                      "memoryMiB": {
+                        "type": "integer",
+                        "minimum": 256,
+                        "maximum": 524288
+                      },
+                      "gpu": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 100
+                      },
+                      "port": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1024,
+                        "maximum": 65535
+                      },
+                      "healthPath": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 101
+                      },
+                      "command": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 1000
+                        }
+                      },
+                      "storageGiB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4096
+                      },
+                      "releaseHash": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 71
+                      },
+                      "gpuCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "minimumVramGiB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1024
+                      },
+                      "networkVolume": {
+                        "type": "object",
+                        "properties": {
+                          "resourceId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 28
+                          },
+                          "path": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        },
+                        "required": [
+                          "resourceId",
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "secretBindings": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "envName": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 101
+                            },
+                            "secretId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 28
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": [
+                            "envName",
+                            "secretId",
+                            "version"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "egressBudgetMiB": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "mode",
+                      "image",
+                      "region",
+                      "cpu",
+                      "memoryMiB",
+                      "gpu",
+                      "port",
+                      "healthPath",
+                      "command",
+                      "storageGiB",
+                      "releaseHash"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "source": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "reported",
+                          "owned-queue"
+                        ]
+                      },
+                      "queueId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 28
+                      },
+                      "workId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 84
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minReplicas": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "maxReplicas": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "targetBacklog": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "scaleUpCooldownSeconds": {
+                    "type": "integer",
+                    "minimum": 30,
+                    "maximum": 3600
+                  },
+                  "scaleDownDelaySeconds": {
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 86400
+                  },
+                  "leaseSeconds": {
+                    "type": "integer",
+                    "minimum": 300,
+                    "maximum": 86400
+                  },
+                  "stateMode": {
+                    "type": "string",
+                    "const": "external-durable"
+                  }
+                },
+                "required": [
+                  "expectedRevision",
+                  "enabled",
+                  "profileId",
+                  "manifest",
+                  "source",
+                  "minReplicas",
+                  "maxReplicas",
+                  "targetBacklog",
+                  "scaleUpCooldownSeconds",
+                  "scaleDownDelaySeconds",
+                  "leaseSeconds",
+                  "stateMode"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/infrastructure/scaling/{name}/signal": {
+      "post": {
+        "operationId": "resource_scaling_signal",
+        "description": "POST /v1/projects/{projectId}/infrastructure/scaling/{name}/signal. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 81
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sampleId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "observedAt": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "backlog": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "busy": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  }
+                },
+                "required": [
+                  "sampleId",
+                  "observedAt",
+                  "backlog",
+                  "busy"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/infrastructure": {
       "get": {
         "operationId": "resource_fleet",
@@ -1071,7 +1599,7 @@
                       "maxStorageGiB": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 2000
+                        "maximum": 4096
                       },
                       "gpuTypes": {
                         "type": "array",
@@ -1081,6 +1609,17 @@
                           "minLength": 1,
                           "maxLength": 200
                         }
+                      },
+                      "maxGpuCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "billingMode": {
+                        "type": "string",
+                        "enum": [
+                          "postpaid"
+                        ]
                       }
                     },
                     "required": [
@@ -1378,6 +1917,231 @@
         }
       }
     },
+    "/v1/projects/{projectId}/infrastructure/private-releases": {
+      "post": {
+        "operationId": "resource_release_private_prepare",
+        "description": "POST /v1/projects/{projectId}/infrastructure/private-releases. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation result"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Credential required"
+          },
+          "403": {
+            "description": "Scope denied"
+          },
+          "409": {
+            "description": "State, funding, revision or idempotency conflict"
+          },
+          "429": {
+            "description": "Capacity exceeded; honor Retry-After"
+          },
+          "503": {
+            "description": "Service unavailable; reconcile mutations before retrying"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "resourceId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28
+                  },
+                  "actionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28
+                  },
+                  "manifest": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "const": 1,
+                        "type": "integer"
+                      },
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "http",
+                          "worker",
+                          "job",
+                          "model"
+                        ]
+                      },
+                      "image": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "region": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      "cpu": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 64
+                      },
+                      "memoryMiB": {
+                        "type": "integer",
+                        "minimum": 256,
+                        "maximum": 524288
+                      },
+                      "gpu": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 100
+                      },
+                      "port": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1024,
+                        "maximum": 65535
+                      },
+                      "healthPath": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 101
+                      },
+                      "command": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 1000
+                        }
+                      },
+                      "storageGiB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4096
+                      },
+                      "gpuCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "minimumVramGiB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1024
+                      },
+                      "networkVolume": {
+                        "type": "object",
+                        "properties": {
+                          "resourceId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 28
+                          },
+                          "path": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        },
+                        "required": [
+                          "resourceId",
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "secretBindings": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "envName": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 101
+                            },
+                            "secretId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 28
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": [
+                            "envName",
+                            "secretId",
+                            "version"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "egressBudgetMiB": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "mode",
+                      "image",
+                      "region",
+                      "cpu",
+                      "memoryMiB",
+                      "gpu",
+                      "port",
+                      "healthPath",
+                      "command",
+                      "storageGiB"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "resourceId",
+                  "actionId",
+                  "manifest"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/projects/{projectId}/infrastructure/releases": {
       "post": {
         "operationId": "resource_release_prepare",
@@ -1503,7 +2267,71 @@
                       "storageGiB": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 2000
+                        "maximum": 4096
+                      },
+                      "gpuCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "minimumVramGiB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1024
+                      },
+                      "networkVolume": {
+                        "type": "object",
+                        "properties": {
+                          "resourceId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 28
+                          },
+                          "path": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        },
+                        "required": [
+                          "resourceId",
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "secretBindings": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "envName": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 101
+                            },
+                            "secretId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 28
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": [
+                            "envName",
+                            "secretId",
+                            "version"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "egressBudgetMiB": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
                       }
                     },
                     "required": [
@@ -1661,8 +2489,7 @@
                     "maxLength": 16000
                   },
                   "published": {
-                    "type": "boolean",
-                    "const": true
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -3212,12 +4039,76 @@
                       "storageGiB": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 2000
+                        "maximum": 4096
                       },
                       "releaseHash": {
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 71
+                      },
+                      "gpuCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "minimumVramGiB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1024
+                      },
+                      "networkVolume": {
+                        "type": "object",
+                        "properties": {
+                          "resourceId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 28
+                          },
+                          "path": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        },
+                        "required": [
+                          "resourceId",
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "secretBindings": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "envName": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 101
+                            },
+                            "secretId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 28
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": [
+                            "envName",
+                            "secretId",
+                            "version"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "egressBudgetMiB": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
                       }
                     },
                     "required": [
@@ -3739,7 +4630,7 @@
                       "maxStorageGiB": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 2000
+                        "maximum": 4096
                       },
                       "gpuTypes": {
                         "type": "array",
@@ -3749,6 +4640,17 @@
                           "minLength": 1,
                           "maxLength": 200
                         }
+                      },
+                      "maxGpuCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "billingMode": {
+                        "type": "string",
+                        "enum": [
+                          "postpaid"
+                        ]
                       }
                     },
                     "required": [

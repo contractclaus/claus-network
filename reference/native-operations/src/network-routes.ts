@@ -11586,6 +11586,384 @@ export const networkRoutes:Record<string,any>={
     },
     "public": false,
     "description": "POST /v1/projects/{projectId}/infrastructure/private-releases. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "resource_scaling_list": {
+    "name": "resource_scaling_list",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/infrastructure/scaling",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "after": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "projectId"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/infrastructure/scaling. Requires current object read permission."
+  },
+  "resource_scaling_get": {
+    "name": "resource_scaling_get",
+    "method": "GET",
+    "path": "/v1/projects/{projectId}/infrastructure/scaling/{name}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 81
+        }
+      },
+      "required": [
+        "projectId",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "GET /v1/projects/{projectId}/infrastructure/scaling/{name}. Requires current object read permission."
+  },
+  "resource_scaling_set": {
+    "name": "resource_scaling_set",
+    "method": "PUT",
+    "path": "/v1/projects/{projectId}/infrastructure/scaling/{name}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 81
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "manifest": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "http",
+                "worker",
+                "job",
+                "model"
+              ]
+            },
+            "image": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "region": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "cpu": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            "memoryMiB": {
+              "type": "integer",
+              "minimum": 256,
+              "maximum": 524288
+            },
+            "gpu": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100
+            },
+            "port": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1024,
+              "maximum": 65535
+            },
+            "healthPath": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 101
+            },
+            "command": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "storageGiB": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4096
+            },
+            "releaseHash": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 71
+            },
+            "gpuCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "minimumVramGiB": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1024
+            },
+            "networkVolume": {
+              "type": "object",
+              "properties": {
+                "resourceId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 28
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "resourceId",
+                "path"
+              ],
+              "additionalProperties": false
+            },
+            "secretBindings": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "envName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 101
+                  },
+                  "secretId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "envName",
+                  "secretId",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "egressBudgetMiB": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            }
+          },
+          "required": [
+            "version",
+            "mode",
+            "image",
+            "region",
+            "cpu",
+            "memoryMiB",
+            "gpu",
+            "port",
+            "healthPath",
+            "command",
+            "storageGiB",
+            "releaseHash"
+          ],
+          "additionalProperties": false
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "reported",
+                "owned-queue"
+              ]
+            },
+            "queueId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 28
+            },
+            "workId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 84
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        "minReplicas": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "maxReplicas": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "targetBacklog": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "scaleUpCooldownSeconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 3600
+        },
+        "scaleDownDelaySeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400
+        },
+        "leaseSeconds": {
+          "type": "integer",
+          "minimum": 300,
+          "maximum": 86400
+        },
+        "stateMode": {
+          "type": "string",
+          "const": "external-durable"
+        }
+      },
+      "required": [
+        "projectId",
+        "name",
+        "expectedRevision",
+        "enabled",
+        "profileId",
+        "manifest",
+        "source",
+        "minReplicas",
+        "maxReplicas",
+        "targetBacklog",
+        "scaleUpCooldownSeconds",
+        "scaleDownDelaySeconds",
+        "leaseSeconds",
+        "stateMode"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "PUT /v1/projects/{projectId}/infrastructure/scaling/{name}. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
+  },
+  "resource_scaling_signal": {
+    "name": "resource_scaling_signal",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/scaling/{name}/signal",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 81
+        },
+        "sampleId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "observedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "backlog": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "busy": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "projectId",
+        "name",
+        "sampleId",
+        "observedAt",
+        "backlog",
+        "busy"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/infrastructure/scaling/{name}/signal. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{

@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase19-20261018",
+  "source": "claus-goal-phase21-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -15,7 +15,7 @@
     "src/work-wallet.ts": "bd0bdeede358a160c54d36dc521a63c065db05c7b745021228da9806aa144c39",
     "src/work-wallet-store.ts": "f6ab532afb7514f92d7d2c6573a39c04edb2300deff89aa7f3c820a8dd68f1bc",
     "src/custody-client.ts": "8ce830c88f50b732a565363621c8dcce7f821777f35a429f1c928da3004d41f8",
-    "src/network-access.ts": "c366cd3ec95d51d5c0802ef329a17bd35aceb63a6721bc1cd5227ec8a1259215",
+    "src/network-access.ts": "b522b7cb2d83ef475bb5b413ec4d365370ac7fbb4ccd7a83560d0f0f894f2020",
     "src/context.ts": "33ee111f17b3a7c820b46b44aa5026cb2eaa2f7976654f5c860de4094e08ade2",
     "src/knowledge.ts": "f98d7fdee97c2af6ac6b06d5229199a565b5836f218c7a8728c29ab7aa0cf581",
     "src/network-care.ts": "736d2a150a32dd325d86e8e5439b0cb8d4dbc3352542ef65de8bac547cb9c9f0",
@@ -30,7 +30,7 @@
     "src/isolated/runner.d.mts": "694bfc8659aac304ea776428af255523a021395b7c3ea7fdeee295e2850b6606",
     "src/isolated/runner.mjs": "664b14555698224c02880e743535873e08e6a82e5f64629ba6461edd8b217df9",
     "src/network-products.ts": "992923d4ac74121ec070bc30efdb3c4a56ed9c17e85d5224c7bcb794bd76dd1b",
-    "src/network-routes.ts": "186dc595251a3769f040b41b4113dfe7bc5135afdcde50a1e520ccfc82e96983",
+    "src/network-routes.ts": "fd9f31fac9f9835d0b0309364d3c718dd3da0d0a18622fa25f1ee57e1fdfb5a0",
     "src/operational-capabilities.ts": "7ae32f2368e69cdd88f995622f2daba006485fdf4b2786e421cbf12e1569c4a1",
     "src/cycle.ts": "13315375f00329251b603a9bbe6533b35175171b331f9e8a446a955fe4a09078",
     "src/operations/runtime-handoff.ts": "2d176726d66c67860ca99bcbf37937790dda26239a349c738a46710deee5179b",
@@ -163,5 +163,5 @@
     "tests/development-continuation.test.ts": "c82151eaecc374126392de1c47b3c284a8173ff835462a9ea098efedcff986ef"
   },
   "referenceSubset": true,
-  "deployed": "dpl_DfoPtBKfzetPejE5Gn37Ue928LU2"
+  "deployed": "dpl_FcALPoZQwhELfegJoRi1qiSWBxk6"
 }

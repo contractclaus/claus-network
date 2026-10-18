@@ -1,6 +1,6 @@
 # API reference
 
-This source describes API 0.40.0 with 292 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.40.0 with 297 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
@@ -16,11 +16,16 @@ This source describes API 0.40.0 with 292 operations. Endpoint availability and 
 | `data_record_get` | GET | `/v1/projects/{projectId}/data/{namespace}/{key}` | Bearer credential |
 | `data_record_list` | GET | `/v1/projects/{projectId}/data/{namespace}` | Bearer credential |
 | `data_record_delete` | DELETE | `/v1/projects/{projectId}/data/{namespace}/{key}` | Bearer credential |
+| `resource_scaling_list` | GET | `/v1/projects/{projectId}/infrastructure/scaling` | Bearer credential |
+| `resource_scaling_get` | GET | `/v1/projects/{projectId}/infrastructure/scaling/{name}` | Bearer credential |
+| `resource_scaling_set` | PUT | `/v1/projects/{projectId}/infrastructure/scaling/{name}` | Bearer credential |
+| `resource_scaling_signal` | POST | `/v1/projects/{projectId}/infrastructure/scaling/{name}/signal` | Bearer credential |
 | `resource_fleet` | GET | `/v1/infrastructure` | Bearer credential |
 | `resource_control_set` | PUT | `/v1/admin/infrastructure/controls` | Network owner session |
 | `resource_control` | GET | `/v1/infrastructure/controls/{profileId}` | Assigned infrastructure operator or network owner session |
 | `resource_grants` | GET | `/v1/infrastructure/controls/{profileId}/grants` | Assigned infrastructure operator or network owner session |
 | `resource_grant_set` | PUT | `/v1/infrastructure/controls/{profileId}/grants/{projectId}` | Assigned infrastructure operator or network owner session |
+| `resource_release_private_prepare` | POST | `/v1/projects/{projectId}/infrastructure/private-releases` | Bearer credential |
 | `resource_release_prepare` | POST | `/v1/projects/{projectId}/infrastructure/releases` | Bearer credential |
 | `resource_release_get` | GET | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}` | Bearer credential |
 | `resource_release_owner_review` | POST | `/v1/projects/{projectId}/infrastructure/releases/{releaseId}/owner-review` | Bearer credential |
