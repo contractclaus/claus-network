@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase6-20261018",
+  "source": "claus-goal-phase7-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -51,7 +51,7 @@
     "src/database-schema.ts": "5e23809a035e425f83313960d339e8c7ac491d4b34f2fa6e435e42e6187f2dac",
     "src/feedback-builds.ts": "3e2da61c58f992c81adc77c08b49c38ec5f77a6b5602c019ea10cc7440811e7f",
     "src/gotchi/store.ts": "8f454cf1bf9b4648a7a7b75396a5a5e71f11b5488b2a680a682bcc33c659c82e",
-    "src/lab-store.ts": "535fe2bda5f9ed7d49ff151dd60175a0bd01153e6389148e0d6c40a649151242",
+    "src/lab-store.ts": "e0cfba14443032f7ce2a3790ad0cb19658f30818ee520b01ec3aeb9c9b575c05",
     "src/network-incidents.ts": "5e219b6f1c075798f9bc6209ca529ac11d26b54b2528895b91e659cc6b97d866",
     "src/network-releases.ts": "e6ad2528ffda667de0cc45967c459d294aa9f65e48a33a458bb9fb0388e07ed2",
     "src/network-review.ts": "edcc7e884b64d06d780a8f6762cc757df9be2ffbef95933e1b1fb0964a70a475",
@@ -156,5 +156,5 @@
     "tests/resources-continuation.test.ts": "125f60859cd13d36bf6d74a74dfca72b7f218c6fd13daff5e85995f2148ba69d"
   },
   "referenceSubset": true,
-  "deployed": "dpl_3yQKQN75pNGqEhov5HZ3NBbPTFy2"
+  "deployed": "dpl_AdWGQRkbPLUTbCatqm9WcWZftgXg"
 }

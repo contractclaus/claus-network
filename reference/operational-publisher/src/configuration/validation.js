@@ -1,14 +1,16 @@
 // ../../../../../../2026-10-11/claus-weiterarbeit/releases/claus-full-operation-native-r18-2026-10-15/src/lab-schema.ts
 var labDefaults = { enabled: false, publicFeed: false, autonomous: false, paidResearch: false, webSearch: false, developments: false, experiments: false, maxActiveIdeas: 3, maxConcurrentJobs: 1, maxStepsPerIdea: 24, modelReservationMicroUsdc: "3000000", modelDailyBudgetMicroUsdc: "0", modelIdeaBudgetMicroUsdc: "0", imdDailyBudgetAtomic: "0", imdIdeaBudgetAtomic: "0", pollSeconds: 60, socialReserveSeconds: 120 };
 function labSettings(value) {
-  const v = { ...labDefaults, ...value };
-  if (Object.keys(v).some((k) => !(k in labDefaults))) throw Error("lab_unknown_setting");
-  for (const key of ["enabled", "publicFeed", "autonomous", "paidResearch", "webSearch", "developments", "experiments"]) if (typeof v[key] !== "boolean") throw Error("lab_invalid_setting");
-  for (const [key, min, max] of [["maxActiveIdeas", 1, 10], ["maxConcurrentJobs", 1, 3], ["maxStepsPerIdea", 1, 80], ["pollSeconds", 30, 3600], ["socialReserveSeconds", 60, 900]]) if (!Number.isSafeInteger(v[key]) || v[key] < min || v[key] > max) throw Error("lab_invalid_setting");
-  for (const key of ["modelReservationMicroUsdc", "modelDailyBudgetMicroUsdc", "modelIdeaBudgetMicroUsdc", "imdDailyBudgetAtomic", "imdIdeaBudgetAtomic"]) if (typeof v[key] !== "string" || !/^\d{1,24}$/.test(v[key])) throw Error("lab_invalid_budget");
-  if (BigInt(v.modelReservationMicroUsdc) > 3000000n || BigInt(v.modelReservationMicroUsdc) < 1n) throw Error("lab_invalid_model_reservation");
-  if (v.paidResearch && (!v.enabled || !v.autonomous || BigInt(v.imdDailyBudgetAtomic) === 0n || BigInt(v.imdIdeaBudgetAtomic) === 0n)) throw Error("lab_paid_budget_required");
-  return v;
+ const v={...labDefaults,...value};
+ if(Object.keys(v).some(k=>!(k in labDefaults)))throw Error('lab_unknown_setting');
+ for(const key of ['enabled','publicFeed','autonomous','paidResearch','webSearch','developments','experiments'])if(typeof v[key]!=='boolean')throw Error('lab_invalid_setting');
+ for(const key of ['maxActiveIdeas','maxConcurrentJobs','maxStepsPerIdea'])if(v[key]!==null&&(!Number.isSafeInteger(v[key])||v[key]<1||v[key]>1000000))throw Error('lab_invalid_setting');
+ for(const [key,min,max]of [['pollSeconds',30,3600],['socialReserveSeconds',60,900]])if(!Number.isSafeInteger(v[key])||v[key]<min||v[key]>max)throw Error('lab_invalid_setting');
+ for(const key of ['modelDailyBudgetMicroUsdc','modelIdeaBudgetMicroUsdc'])if(v[key]!==null&&(typeof v[key]!=='string'||!/^\d{1,24}$/.test(v[key])))throw Error('lab_invalid_budget');
+ for(const key of ['modelReservationMicroUsdc','imdDailyBudgetAtomic','imdIdeaBudgetAtomic'])if(typeof v[key]!=='string'||!/^\d{1,24}$/.test(v[key]))throw Error('lab_invalid_budget');
+ if(BigInt(v.modelReservationMicroUsdc)>3000000n||BigInt(v.modelReservationMicroUsdc)<1n)throw Error('lab_invalid_model_reservation');
+ if(v.paidResearch&&(!v.enabled||!v.autonomous||BigInt(v.imdDailyBudgetAtomic)===0n||BigInt(v.imdIdeaBudgetAtomic)===0n))throw Error('lab_paid_budget_required');
+ return v;
 }
 
 // ../../../../../../2026-10-11/claus-weiterarbeit/releases/claus-full-operation-native-r18-2026-10-15/src/config.ts

@@ -1,13 +1,13 @@
 {
-  "deployed": "dpl_3ctZNVC4JvQps3E3ijRp5NjdoEXw",
-  "source": "claus-goal-phase6-20261018",
+  "deployed": "dpl_HdRagC9hgYHZVSX83cakqWtowcFj",
+  "source": "claus-goal-phase7-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
     "src/configuration/missions.js": "e7bec970c5d4005cea440b8c1d4d0f976dfbfae0d54cfcda0370a81606906bd2",
     "src/configuration/routes.js": "104614febc26edceb338e905f5944d431d1794b6bf77c908a285d8699b4c7c0c",
     "src/configuration/service.js": "ab9e223e7235e927bd15911b4b6732dda80c4b606d3a25abe592b45568ace5af",
-    "src/configuration/validation.js": "bdd4b806c8438412515dc0e190c588c7bdb74059e43571d4507ad40dedbb03a5",
+    "src/configuration/validation.js": "a7aeb3e6052ba4aa19039583f3863bd02656710c58584043b97b066ecca58610",
     "src/github/oci-routes.mjs": "1d09052957188ee1265a12220d80111b45f415aecf5cf82de0c0e24014d148f1",
     "src/github/oci.mjs": "ae67b8edc94c169e89e45c5c65d7a2559462c265c4b061ef61e00562726506ff",
     "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",

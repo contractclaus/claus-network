@@ -46,7 +46,7 @@ export class LabStore {
     // Keep the original attempt counter and every financial effect. A proven
     // unpaid attempt is not completed research; unknown/paid failures still count.
     const used=Math.max(0,idea.steps-r.exempt);
-    return {attempts:idea.steps,used,remaining:Math.max(0,settings.maxStepsPerIdea-used)};
+    return {attempts:idea.steps,used,remaining:settings.maxStepsPerIdea===null?null:Math.max(0,settings.maxStepsPerIdea-used)};
   }
   async maintainQueue(settings:LabSettings,factsHash:string){
     if(!settings.enabled||!settings.autonomous)return;
@@ -66,7 +66,7 @@ export class LabStore {
         ORDER BY updated_at LIMIT 100`,[this.now(),factsHash]);
       for(const row of rows){const idea=this.ideaRow(row);
         if(idea.status==='blocked'&&idea.nextStep==='Research allowance reached; review the current findings.'){
-          if(!(await this.stepUsage(idea.id,settings,q)).remaining)continue;
+          if((await this.stepUsage(idea.id,settings,q)).remaining===0)continue;
           const message='Continuing saved research; reconciled unpaid model attempts do not consume research steps.';
           // Backlog admission still uses maxActiveIdeas; recovery does not
           // activate every stranded dossier at once.
@@ -155,8 +155,8 @@ export class LabStore {
     });
   }
   async claim(worker:string,settings:LabSettings,reconcileOnly=false):Promise<Idea|null>{return this.db.transaction(async q=>{await this.lock(q);
-    const {rows:[{n}]}=await q.query('SELECT count(*)::int AS n FROM claus_lab_ideas WHERE lease_until>$1',[this.now()]);if(n>=settings.maxConcurrentJobs)return null;
-    const {rows:[row]}=await q.query("SELECT * FROM claus_lab_ideas WHERE visibility='public' AND (status IN ('noted','queued','researching','waiting','reviewing') OR EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=claus_lab_ideas.id AND (e.status IN ('reserved','started','uncertain') OR e.kind IN ('imd','experiment') AND e.status='completed' AND e.result->>'materialized'='false' OR e.kind='model' AND e.status='completed' AND e.revision=claus_lab_ideas.revision AND e.result->>'applied'='false'))) AND (status!='noted' OR (SELECT count(*) FROM claus_lab_ideas a WHERE a.status IN ('queued','researching','waiting','reviewing'))<$3) AND next_at<=$1 AND (lease_until IS NULL OR lease_until<$1) AND (NOT $2::boolean OR EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=claus_lab_ideas.id AND (e.kind='model' AND e.status IN ('started','uncertain') OR e.kind='imd' AND (e.status IN ('started','uncertain') AND e.private_data->>'phase' IN ('submitted','submitting','polling') OR e.status='completed' AND e.result->>'materialized'='false')))) ORDER BY next_at,created_at LIMIT 1 FOR UPDATE",[this.now(),reconcileOnly,settings.maxActiveIdeas]);if(!row)return null;
+    const {rows:[{n}]}=await q.query('SELECT count(*)::int AS n FROM claus_lab_ideas WHERE lease_until>$1',[this.now()]);if(settings.maxConcurrentJobs!==null&&n>=settings.maxConcurrentJobs)return null;
+    const {rows:[row]}=await q.query("SELECT * FROM claus_lab_ideas WHERE visibility='public' AND (status IN ('noted','queued','researching','waiting','reviewing') OR EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=claus_lab_ideas.id AND (e.status IN ('reserved','started','uncertain') OR e.kind IN ('imd','experiment') AND e.status='completed' AND e.result->>'materialized'='false' OR e.kind='model' AND e.status='completed' AND e.revision=claus_lab_ideas.revision AND e.result->>'applied'='false'))) AND (status!='noted' OR $3::integer IS NULL OR (SELECT count(*) FROM claus_lab_ideas a WHERE a.status IN ('queued','researching','waiting','reviewing'))<$3) AND next_at<=$1 AND (lease_until IS NULL OR lease_until<$1) AND (NOT $2::boolean OR EXISTS(SELECT 1 FROM claus_lab_effects e WHERE e.idea_id=claus_lab_ideas.id AND (e.kind='model' AND e.status IN ('started','uncertain') OR e.kind='imd' AND (e.status IN ('started','uncertain') AND e.private_data->>'phase' IN ('submitted','submitting','polling') OR e.status='completed' AND e.result->>'materialized'='false')))) ORDER BY next_at,created_at LIMIT 1 FOR UPDATE",[this.now(),reconcileOnly,settings.maxActiveIdeas]);if(!row)return null;
     await q.query("UPDATE claus_lab_ideas SET lease_owner=$2,lease_until=$3,status=CASE WHEN status='noted' THEN 'queued' ELSE status END WHERE id=$1",[row.id,identifier(worker),new Date(this.now().getTime()+720000)]);return this.idea(row.id,q);
   });}
   async defer(id:string,revision:number,seconds:number){await this.assertLease();await this.db.query('UPDATE claus_lab_ideas SET next_at=GREATEST(next_at,$3) WHERE id=$1 AND revision=$2',[id,revision,new Date(this.now().getTime()+seconds*1000)]);}
@@ -239,7 +239,7 @@ export class LabStore {
   async reserve(input:{id:string;ideaId:string;revision:number;kind:Effect['kind'];input:any;amount:string;currency:Effect['currency']},settings:LabSettings){return this.db.transaction(async q=>{await this.lock(q);
     const existing=await this.effect(input.id,q);if(existing){if(hash(existing.input)!==hash(input.input)||existing.ideaId!==input.ideaId||existing.revision!==input.revision||existing.currency!==input.currency||existing.amount!==input.amount)throw Error('lab_effect_conflict');return existing;}
     const idea=await this.require(q,input.ideaId,input.revision);
-    if(input.kind==='imd'){const {rows:[{n}]}=await q.query("SELECT count(*)::int AS n FROM claus_lab_effects WHERE kind='imd' AND status IN ('reserved','started','uncertain')");if(n>=settings.maxConcurrentJobs)throw Error('lab_job_limit');}
+    if(input.kind==='imd'){const {rows:[{n}]}=await q.query("SELECT count(*)::int AS n FROM claus_lab_effects WHERE kind='imd' AND status IN ('reserved','started','uncertain')");if(settings.maxConcurrentJobs!==null&&n>=settings.maxConcurrentJobs)throw Error('lab_job_limit');}
     const usage=await this.stepUsage(idea.id,settings,q);
     if(input.input?.reviewRefresh===true){
       const binding=input.input.reviewBinding;
@@ -252,10 +252,10 @@ export class LabStore {
         AND input->>'reviewRefresh'='true' AND input->'reviewBinding'->>'factsHash'=$2
         AND input->'reviewBinding'->>'candidateHash'=$3 AND input->'reviewBinding'->>'basisHash'=$4`,[idea.id,binding.factsHash,binding.candidateHash,binding.basisHash]);
       if(r.n>=3)throw Error('lab_review_retry_limit');
-    }else if(!usage.remaining)throw Error('lab_step_budget_exhausted');
+    }else if(usage.remaining===0)throw Error('lab_step_budget_exhausted');
     // Keep the final three slots for a finding, recommendation and reviewer.
     // Existing effects above still reconcile/reuse without a new reservation.
-    if(input.kind!=='model'&&usage.remaining<=3)throw Error('lab_conclusion_required');
+    if(input.kind!=='model'&&usage.remaining!==null&&usage.remaining<=3)throw Error('lab_conclusion_required');
     if(!/^\d{1,24}$/.test(input.amount))throw Error('lab_invalid_budget');
     const amount=BigInt(input.amount),period=this.now().toISOString().slice(0,10);
     if(input.kind==='experiment'){
@@ -270,8 +270,8 @@ export class LabStore {
       if(input.currency==='IMD'&&!settings.paidResearch)throw Error('lab_paid_research_disabled');
       // Outstanding commitments from older days remain charged until reconciled.
       const {rows:[totals]}=await q.query("SELECT COALESCE(sum(committed) FILTER (WHERE period=$2 OR status IN ('reserved','started','uncertain')),0)::text AS daily,COALESCE(sum(committed) FILTER (WHERE idea_id=$3),0)::text AS idea FROM (SELECT *,CASE WHEN status='completed' THEN COALESCE(accounted_amount,amount) ELSE amount END AS committed FROM claus_lab_effects WHERE currency=$1 AND status!='failed') e",[input.currency,period,input.ideaId]);
-      if(BigInt(totals.idea)+amount>BigInt(perIdea))throw Object.assign(Error('lab_budget_exhausted'),{scope:'idea'});
-      if(BigInt(totals.daily)+amount>BigInt(daily))throw Object.assign(Error('lab_budget_exhausted'),{scope:'daily'});
+      if(perIdea!==null&&BigInt(totals.idea)+amount>BigInt(perIdea))throw Object.assign(Error('lab_budget_exhausted'),{scope:'idea'});
+      if(daily!==null&&BigInt(totals.daily)+amount>BigInt(daily))throw Object.assign(Error('lab_budget_exhausted'),{scope:'daily'});
     }else if(amount!==0n)throw Error('lab_invalid_budget');
     await q.query("INSERT INTO claus_lab_effects(id,idea_id,revision,kind,status,input_hash,input,amount,currency,period,created_at,updated_at) VALUES($1,$2,$3,$4,'reserved',$5,$6,$7,$8,$9,$10,$10)",[identifier(input.id),idea.id,idea.revision,input.kind,hash(input.input),input.input,input.amount,input.currency,period,this.now()]);
     await q.query('UPDATE claus_lab_ideas SET steps=steps+1 WHERE id=$1',[idea.id]);return (await this.effect(input.id,q))!;
