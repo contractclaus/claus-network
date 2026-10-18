@@ -1,0 +1,78 @@
+name: Claus SDK release
+run-name: Claus SDK ${{ github.sha }}
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: claus-sdk-release
+  cancel-in-progress: false
+jobs:
+  package:
+    if: github.repository == 'contractclaus/claus-network' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.14.0'
+      - run: node scripts/package-sdk.mjs dist-sdk
+      - name: Load shipped package on x64
+        run: |
+          mkdir -p "$RUNNER_TEMP/sdk-load"
+          tar -xzf dist-sdk/*.tgz -C "$RUNNER_TEMP/sdk-load"
+          node --input-type=module -e 'const p=await import(process.argv[1]); if(typeof p.createClient!=="function"||!p.ROUTES.length) throw Error("SDK exports missing"); console.log({arch:process.arch,routes:p.ROUTES.length});' "$RUNNER_TEMP/sdk-load/package/index.mjs"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: claus-sdk-package
+          path: dist-sdk/
+          if-no-files-found: error
+          retention-days: 30
+  arm64:
+    needs: package
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.14.0'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: claus-sdk-package
+          path: dist-sdk
+      - name: Load the identical shipped package on ARM64
+        run: |
+          cd dist-sdk
+          sha256sum -c SHA256SUMS
+          mkdir -p "$RUNNER_TEMP/sdk-load"
+          tar -xzf *.tgz -C "$RUNNER_TEMP/sdk-load"
+          node --input-type=module -e 'const p=await import(process.argv[1]); if(process.arch!=="arm64"||typeof p.createAgentClient!=="function"||!p.ROUTES.length) throw Error("ARM SDK exports missing"); console.log({arch:process.arch,routes:p.ROUTES.length});' "$RUNNER_TEMP/sdk-load/package/index.mjs"
+  publish:
+    needs: [package, arm64]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: claus-sdk-package
+          path: dist-sdk
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: dist-sdk/*.tgz
+      - name: Publish immutable SDK delivery
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          version=$(node -p 'JSON.parse(require("fs").readFileSync("dist-sdk/provenance.json")).version')
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh release create "sdk-v$version" dist-sdk/*.tgz dist-sdk/SHA256SUMS dist-sdk/provenance.json --target "$SOURCE_SHA" --title "Claus Network SDK $version" --notes 'Dependency-free HTTP SDK and renewable agent login. Package loaded on Linux x64 and ARM64. Verify the GitHub artifact attestation and included source provenance before use.'

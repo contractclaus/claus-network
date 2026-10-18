@@ -53,7 +53,7 @@ To connect an agent client, configure the same HTTP endpoint and store its deleg
 
 ## JavaScript SDK
 
-The reference client is `interfaces/sdk.mjs` in the source distribution:
+Installable SDK packages and source-bound attestations are available through the [SDK release workflow](sdk-package.md). The reference client also remains available as `interfaces/sdk.mjs` in the source distribution:
 
 ```js
 import { createClient } from './interfaces/sdk.mjs';

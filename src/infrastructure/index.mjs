@@ -36,7 +36,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
       state:v.state,desired:v.desired,createdAt:v.createdAt,leaseUntil:v.leaseUntil,providerLeaseUntil:v.providerLeaseUntil??null,renewalPending:v.renewalPending===true,terminal:v.terminal===true,storageRetained:v.storageRetained??null,nextAttemptAt:v.nextAttemptAt??null,
       providerResourceId:v.providerResourceId??null,endpoint:v.endpoint??null,
       cost:{asset:v.profile.asset,maximum:maximum(v),actual:v.actual??null,state:v.billing,observation:v.costObservation??null},
-      maintenance:v.maintenance??null,traffic:v.traffic??null,guardViolation:v.guardViolation??null,error:v.error??null,errorDetails:v.errorDetails??null,requiresReconciliation:v.state==='unknown',operationId:v.operationId};
+      maintenance:v.maintenance??null,traffic:v.traffic??null,guardViolation:v.guardViolation??null,error:v.error??null,errorDetails:v.errorDetails??null,requiresReconciliation:v.state==='unknown',replaces:v.replaces??null,replacement:v.replacement??null,operationId:v.operationId};
   }
   async function adjustGrant(tx,v,reserved,spent){
     const id=grantKey(v.projectId,v.profile.id),g=await tx.read('infrastructure-grants',id);requireThat(g,'infrastructure_allowance_missing');
@@ -122,7 +122,7 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
       }
       return {items,nextProjectCursor:projects.nextCursor,resourceCursors,unavailable,complete:projects.nextCursor===null&&resourceCursors.length===0&&unavailable.length===0,observedAt:now()};
     },
-    async discovery(){return {profile:INFRASTRUCTURE_VERSION,enabled,automaticMaintenance:true,automaticScaling:true,providerExecution:enabled&&['quote','verifyRelease','create','inspect','stop','logs','verifyReceipt'].every(name=>typeof ports[name]==='function'),reconciliation:typeof ports.inspect==='function'&&typeof ports.stop==='function',sourcePlans:true,buildExecution:false,renewableLeases:typeof ports.extend==='function',independentProviderGuard:true,readiness:'/v1/projects/{projectId}/infrastructure/readiness',funding:'explicit-project-allowance',images:'immutable-reviewed-digest',unknownOutcomes:'original-resource-reconciliation',updates:'stop-settle-then-create-new-release',resources:'/v1/projects/{projectId}/infrastructure'};},
+    async discovery(){return {profile:INFRASTRUCTURE_VERSION,enabled,automaticMaintenance:true,automaticScaling:true,providerExecution:enabled&&['quote','verifyRelease','create','inspect','stop','logs','verifyReceipt'].every(name=>typeof ports[name]==='function'),reconciliation:typeof ports.inspect==='function'&&typeof ports.stop==='function',sourcePlans:true,buildExecution:false,renewableLeases:typeof ports.extend==='function',independentProviderGuard:true,readiness:'/v1/projects/{projectId}/infrastructure/readiness',funding:'explicit-project-allowance',images:'immutable-reviewed-digest',unknownOutcomes:'original-resource-reconciliation',updates:'confirmed-termination-or-settlement-then-linked-replacement; prior-billing-retained',resources:'/v1/projects/{projectId}/infrastructure'};},
     reconcileFunding:createFundingReconciler({store,ports,now}),
     async readiness(actor,projectId){await auth(actor,projectId);return typeof ports.readiness==='function'?await ports.readiness():{enabled:false,configured:false,profiles:[]};},
     async buildPlan(actor,projectId,{snapshotId,dockerfile}){
@@ -164,7 +164,7 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
         const globalId='profile:'+profile.id,global=await tx.read('infrastructure-capacity',globalId),globalActive=global?.value.active??[];
         requireThat(globalActive.length<profile.maxActive,'infrastructure_capacity_reached');
         await tx.write('infrastructure-capacity',globalId,{active:[...globalActive,id]},global?.revision??0);
-        const value={id,projectId,actor,profile,manifest:q.manifest,quote:q,...(internal.autoscalingId?{autoscalingId:internal.autoscalingId}:{}),createdAt:now(),leaseUntil:now()+q.leaseSeconds*1000,state:'queued',desired:'running',billing:'reserved',reservedMaximum:q.maximum,extensions:[],operationId:id,attempted:false};
+        const value={id,projectId,actor,profile,manifest:q.manifest,quote:q,...(internal.autoscalingId?{autoscalingId:internal.autoscalingId}:{}),...(internal.replaces?{replaces:internal.replaces}:{}),createdAt:now(),leaseUntil:now()+q.leaseSeconds*1000,state:'queued',desired:'running',billing:'reserved',reservedMaximum:q.maximum,extensions:[],operationId:id,attempted:false};
         await adjustGrant(tx,value,amount(q.maximum),0n);
         await tx.write('infrastructure-capacity',capacityId,{projectId,active:[...active,id]},capacity?.revision??0);
         await tx.write('infrastructure-quote-use',quoteId,{resourceId:id},0);
@@ -187,10 +187,27 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
     },
     async logs(actor,projectId,id){await auth(actor,projectId);const r=await resource(store,projectId,id);requireThat(typeof ports.logs==='function','infrastructure_provider_unavailable');const value=await ports.logs(r.value);requireThat(typeof value==='string'&&Buffer.byteLength(value)<=16000,'infrastructure_log_invalid');return {id,content:value,instructionAuthority:false};},
     async update(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision}){
-      await auth(actor,projectId,'infrastructure.manage');const old=await resource(store,projectId,id);integer(expectedRevision);
-      requireThat(old.revision===expectedRevision,'revision_conflict');requireThat(done.has(old.value.state),'resource_must_stop_and_settle');
+      await auth(actor,projectId,'infrastructure.manage');integer(expectedRevision);
       text(idempotencyKey);requireThat(idempotencyKey.length<=128,'invalid_identifier');
-      const result=await api.request(actor,projectId,{quoteId,idempotencyKey:'replacement:'+id+':'+idempotencyKey});return {...result,replaces:id};
+      const replacementKey='replacement:'+id+':'+idempotencyKey;
+      const replacementId=digest({projectId,infrastructure:replacementKey});
+      const beforeReserve=async tx=>{
+        const old=await resource(tx,projectId,id);
+        if(old.value.replacement){
+          requireThat(old.value.replacement.id===replacementId&&old.value.replacement.quoteId===quoteId,'resource_already_replaced');
+          return;
+        }
+        requireThat(old.revision===expectedRevision,'revision_conflict');
+        // Provider-confirmed deletion frees compute, not money. The original
+        // resource, pending invoice and full reservation remain reconcilable.
+        requireThat(done.has(old.value.state)||(old.value.state==='stopped'&&old.value.terminal===true&&old.value.storageRetained===false),'resource_must_stop_and_settle');
+      };
+      const onReserved=async(tx,newId)=>{
+        const old=await resource(tx,projectId,id);
+        await tx.write('infrastructure-resources',id,{...old.value,replacement:{id:newId,quoteId,createdAt:now()}},old.revision);
+      };
+      const result=await api.request(actor,projectId,{quoteId,idempotencyKey:replacementKey},{beforeReserve,onReserved,replaces:id});
+      return {...result,replaces:id};
     },
     async reconcile(id){
       const leaseToken=digest({id,at:now(),random:randomUUID()});
