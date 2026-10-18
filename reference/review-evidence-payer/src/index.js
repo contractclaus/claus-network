@@ -1,3 +1,4 @@
+import {paymentTrace} from './payment-trace.js';
 import {negativeReceipt} from './negative-receipt.js';
 import {hasSettledCreditProof} from './credit-settlement.js';
 import {operatingBudget} from './operating-budget.js';
@@ -109,6 +110,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     const setup=c.req.method==='POST'&&path==='/api/setup';
     const recovery=c.req.method==='POST'&&/^\/api\/reconcile\/[a-zA-Z0-9:_-]{1,160}$/.test(decodedPath);
     const status=c.req.method==='GET'&&decodedPath.startsWith('/api/requests/')&&validRequestId(decodedPath.slice('/api/requests/'.length));
+    const trace=c.req.method==='GET'&&decodedPath.startsWith('/api/trace/')&&validRequestId(decodedPath.slice('/api/trace/'.length));
     const admission=c.req.method==='GET'&&decodedPath.startsWith('/api/admission/')&&validRequestId(decodedPath.slice('/api/admission/'.length));
     const budget=c.req.method==='GET'&&path==='/api/budget';
     const resource=c.req.method==='GET'&&path==='/api/resources';
@@ -116,7 +118,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     const reviewReceipt=['GET','POST'].includes(c.req.method)&&/^\/api\/review-evidence\/[a-zA-Z0-9:_-]{1,160}$/.test(decodedPath);
     const computeId=payment?c.req.header('idempotency-key'):(status?decodedPath.slice('/api/requests/'.length):(admission?decodedPath.slice('/api/admission/'.length):computeReceipt?decodedPath.slice('/api/compute/'.length):''));
     const compute=/^network-compute:[a-f0-9]{64}$/.test(computeId??'');
-    if(!operating&&!externalService&&!payment&&!setup&&!recovery&&!status&&!budget&&!admission&&!computeReceipt&&!reviewReceipt&&!resource)return c.json({error:'payment_route_disabled'},403);
+    if(!operating&&!externalService&&!payment&&!setup&&!recovery&&!status&&!budget&&!admission&&!computeReceipt&&!reviewReceipt&&!resource&&!trace)return c.json({error:'payment_route_disabled'},403);
     if(!authorized(c.req.header('authorization'),(operating||reviewReceipt)?env.PUBLISHER_REVIEW_SECRET:compute?env.NETWORK_COMPUTE_SECRET:setup||recovery||budget?env.OPERATOR_SECRET:env.INFERENCE_SECRET))return c.json({error:'unauthorized'},401);
     if(compute&&payment){
       if(path!=='/api/completion'||env.NETWORK_COMPUTE_ENABLED!=='true')return c.json({error:'compute_disabled',payment:'not_signed'},403);
@@ -229,6 +231,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     return c.json({id,requestHash:r.request_hash,status:r.status,response:r.response,
       accounting:final?{amount:r.accounted_cost,maximum:r.reserved_max,proofHash:'sha256:'+createHash('sha256').update(JSON.stringify(proof)).digest('hex'),final:true}:null});
   });
+  app.get('/api/trace/:id',async c=>{c.header('Cache-Control','no-store');return c.json(await paymentTrace(sql(),c.req.param('id')));});
   app.get('/api/requests/:id',async c=>{
     const id=c.req.param('id');
     if(!env.PAYMENT_DATABASE_URL&&!database)return c.json(unknown());

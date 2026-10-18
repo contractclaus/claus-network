@@ -109,7 +109,7 @@ export function managedEndpoints({store,budget,seal,open,now=Date.now,workStatus
   try{
    const headers={...(key?{[d.auth.header]:(d.auth.scheme==='Bearer'?'Bearer ':'')+key}:{}),...(d.idempotencyHeader?{[d.idempotencyHeader]:id}:{})};
    response=await transport({url:d.url,method:d.method,headers,body:d.method==='POST'?JSON.stringify(input.arguments):undefined,timeoutSeconds:d.timeoutSeconds,maximumBytes:d.maximumResponseBytes});
-  }catch(error){return {id,resourceId:r.id,error:/^resource_endpoint_[a-z_]+$/.test(error?.message??'')?error.message:'resource_endpoint_transport_unavailable',state:'outcome_unknown',retry:false,maximumMicroUsd:maximum,next:'Inspect the original provider request before any new invocation. Transport failure does not prove nonexecution or nonpayment.'};}
+  }catch(error){const code=/^resource_endpoint_[a-z_]+$/.test(error?.message??'')?error.message:'resource_endpoint_transport_unavailable';await store.put('endpoint-diagnostic',id,{error:code,state:'outcome_unknown',observedAt:stamp()});return {id,resourceId:r.id,error:code,state:'outcome_unknown',retry:false,maximumMicroUsd:maximum,next:'Inspect the original provider request before any new invocation. Transport failure does not prove nonexecution or nonpayment.'};}
   const redact=v=>{
    if(Array.isArray(v))return v.map(redact);
    if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,value])=>[k,/(?:^|_)(?:api_?key|access_?token|refresh_?token|secret|password|cookie|authorization|private_?key)(?:$|_)/i.test(k)?'[redacted]':redact(value)]));
