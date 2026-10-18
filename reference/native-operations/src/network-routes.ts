@@ -600,6 +600,17 @@ export const networkRoutes:Record<string,any>={
                 "minLength": 1,
                 "maxLength": 200
               }
+            },
+            "maxGpuCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "billingMode": {
+              "type": "string",
+              "enum": [
+                "postpaid"
+              ]
             }
           },
           "required": [
@@ -750,9 +761,10 @@ export const networkRoutes:Record<string,any>={
           "type": "boolean"
         },
         "expiresAt": {
-          "type": ["integer", "null"],
-          "minimum": 0,
-          "maximum": 9007199254740991
+          "type": [
+            "integer",
+            "null"
+          ]
         },
         "limit": {
           "type": "string",
@@ -877,6 +889,21 @@ export const networkRoutes:Record<string,any>={
               "type": "integer",
               "minimum": 0,
               "maximum": 2000
+            },
+            "gpuCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "minimumVramGiB": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1024
+            },
+            "egressBudgetMiB": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
             }
           },
           "required": [
@@ -1405,9 +1432,10 @@ export const networkRoutes:Record<string,any>={
           ],
           "properties": {
             "until": {
-              "type": ["integer", "null"],
-              "minimum": 0,
-              "maximum": 9007199254740991
+              "type": [
+                "integer",
+                "null"
+              ]
             },
             "leaseSeconds": {
               "type": "integer",
@@ -1420,8 +1448,10 @@ export const networkRoutes:Record<string,any>={
               "maximum": 1800
             },
             "maxTotalCost": {
-              "type": ["string", "null"],
-              "minLength": 1,
+              "type": [
+                "string",
+                "null"
+              ],
               "maxLength": 78
             }
           },
@@ -1589,6 +1619,21 @@ export const networkRoutes:Record<string,any>={
               "type": "string",
               "minLength": 1,
               "maxLength": 71
+            },
+            "gpuCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "minimumVramGiB": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1024
+            },
+            "egressBudgetMiB": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
             }
           },
           "required": [
@@ -1931,6 +1976,17 @@ export const networkRoutes:Record<string,any>={
                 "minLength": 1,
                 "maxLength": 200
               }
+            },
+            "maxGpuCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "billingMode": {
+              "type": "string",
+              "enum": [
+                "postpaid"
+              ]
             }
           },
           "required": [

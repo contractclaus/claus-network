@@ -3,7 +3,7 @@ import {createFundingReconciler} from './funding.mjs';
 import {createResourceControl} from './control.mjs';
 import {randomUUID} from 'node:crypto';
 import {amount,copy,digest,integer,requireThat,text} from '../shared/index.mjs';
-import {reserve,settleReservation} from '../billing/index.mjs';
+import {postpaid,grantExposure,reserveInfrastructure,settleInfrastructure} from './funding-policy.mjs';
 import {INFRASTRUCTURE_VERSION,validateManifest,validateProfile,matchManifest} from './manifest.mjs';
 import {createOciBuildPlan} from './build-plan.mjs';
 
@@ -25,6 +25,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
     requireThat(profile.enabled&&await control.active(reader,profileId),'infrastructure_profile_disabled');
     const grant=await reader.read('infrastructure-grants',grantKey(projectId,profileId));
     requireThat(grant?.value.enabled&&(grant.value.expiresAt===null||grant.value.expiresAt>now()),'infrastructure_allowance_unavailable');
+    if(postpaid(profile)){const {operatingProject}=await import('../operating-access/index.mjs');requireThat(await operatingProject(reader,projectId),'postpaid_owned_project_required');}
     return {profile,profileRevision:row.revision,grant};
   }
   async function resource(reader,projectId,id){const r=await reader.read('infrastructure-resources',text(id));requireThat(r?.value.projectId===projectId,'not_found');return r;}
@@ -34,7 +35,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
       state:v.state,desired:v.desired,createdAt:v.createdAt,leaseUntil:v.leaseUntil,providerLeaseUntil:v.providerLeaseUntil??null,renewalPending:v.renewalPending===true,terminal:v.terminal===true,storageRetained:v.storageRetained??null,nextAttemptAt:v.nextAttemptAt??null,
       providerResourceId:v.providerResourceId??null,endpoint:v.endpoint??null,
       cost:{asset:v.profile.asset,maximum:maximum(v),actual:v.actual??null,state:v.billing,observation:v.costObservation??null},
-      maintenance:v.maintenance??null,error:v.error??null,errorDetails:v.errorDetails??null,requiresReconciliation:v.state==='unknown',operationId:v.operationId};
+      maintenance:v.maintenance??null,traffic:v.traffic??null,guardViolation:v.guardViolation??null,error:v.error??null,errorDetails:v.errorDetails??null,requiresReconciliation:v.state==='unknown',operationId:v.operationId};
   }
   async function adjustGrant(tx,v,reserved,spent){
     const id=grantKey(v.projectId,v.profile.id),g=await tx.read('infrastructure-grants',id);requireThat(g,'infrastructure_allowance_missing');
@@ -47,7 +48,7 @@ export function createInfrastructure({store,identity,projects,now=()=>Date.now()
     requireThat(amount(receipt.actual)<=amount(maximum(v)),'cost_exceeds_reservation');
     const receiptId=text(receipt.id),old=await tx.read('infrastructure-receipts',receiptId);
     requireThat(!old||old.value.resourceId===v.id,'infrastructure_receipt_reused');
-    await settleReservation(tx,v.profile.fundingAccount,v.profile.asset,maximum(v),receipt.actual);
+    await settleInfrastructure(tx,v.profile,maximum(v),receipt.actual);
     await adjustGrant(tx,v,-amount(maximum(v)),amount(receipt.actual));
     if(!old)await tx.write('infrastructure-receipts',receiptId,{resourceId:v.id,receipt:copy(receipt)},0);
     return {billing:'settled',actual:receipt.actual,state:'settled',receiptId,settledAt:now()};
@@ -82,11 +83,11 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
         requireThat(!await tx.read('infrastructure-quote-use',quoteId),'infrastructure_quote_already_used');
         const {profile,grant}=await admission(tx,actor,projectId,v.profile.id,internal.retained===true);
         requireThat(v.leaseUntil+q.leaseSeconds*1000<=now()+profile.maxLeaseSeconds*1000,'infrastructure_lease_too_long');
-        requireThat(amount(grant.value.limit)>=amount(grant.value.reserved)+amount(grant.value.spent)+amount(q.maximum),'infrastructure_allowance_exhausted');
+        requireThat(amount(grant.value.limit)>=grantExposure(profile,grant.value)+amount(q.maximum),'infrastructure_allowance_exhausted');
         if(internal.policyHash&&v.maintenance.maxTotalCost!==null)requireThat(amount(maximum(v))+amount(q.maximum)<=amount(v.maintenance.maxTotalCost),'maintenance_budget_exhausted');
         if(internal.policyHash&&v.maintenance.until!==null)requireThat(v.leaseUntil+q.leaseSeconds*1000<=v.maintenance.until,'maintenance_deadline');
         await control.checkSpend(tx,profile.id,q.maximum,projectId);
-        await reserve(tx,profile.fundingAccount,profile.asset,q.maximum);await adjustGrant(tx,v,amount(q.maximum),0n);
+        await reserveInfrastructure(tx,profile,projectId,q.maximum);await adjustGrant(tx,v,amount(q.maximum),0n);
         const extension={id:renewalId,sequence:(v.extensions?.at(-1)?.sequence??0)+1,previousUntil:v.leaseUntil,quote:q};
         await tx.write('infrastructure-renewals',renewalId,{resourceId:id,quoteId,extension},0);
         await tx.write('infrastructure-quote-use',quoteId,{resourceId:id,renewalId},0);
@@ -153,11 +154,11 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
         const q=(await tx.read('infrastructure-quotes',quoteId))?.value;requireThat(q?.projectId===projectId&&q.expiresAt>now(),'infrastructure_quote_expired');
         const {profile,grant}=await admission(tx,actor,projectId,q.profile.id);requireThat(digest(profile)===digest(q.profile),'infrastructure_profile_changed');
         requireThat(!await tx.read('infrastructure-quote-use',quoteId),'infrastructure_quote_already_used');
-        requireThat(amount(grant.value.limit)>=amount(grant.value.reserved)+amount(grant.value.spent)+amount(q.maximum),'infrastructure_allowance_exhausted');
+        requireThat(amount(grant.value.limit)>=grantExposure(profile,grant.value)+amount(q.maximum),'infrastructure_allowance_exhausted');
         const capacityId=grantKey(projectId,profile.id),capacity=await tx.read('infrastructure-capacity',capacityId),active=capacity?.value.active??[];
         requireThat(active.length<profile.maxActive,'infrastructure_capacity_reached');
         await control.checkSpend(tx,profile.id,q.maximum,projectId);
-        await reserve(tx,profile.fundingAccount,profile.asset,q.maximum);
+        await reserveInfrastructure(tx,profile,projectId,q.maximum);
         const globalId='profile:'+profile.id,global=await tx.read('infrastructure-capacity',globalId),globalActive=global?.value.active??[];
         requireThat(globalActive.length<profile.maxActive,'infrastructure_capacity_reached');
         await tx.write('infrastructure-capacity',globalId,{active:[...globalActive,id]},global?.revision??0);
@@ -252,7 +253,7 @@ async function renew(actor,projectId,id,{quoteId,idempotencyKey,expectedRevision
             const renewalPending=r.value.renewalPending===true&&observed.providerLeaseUntil!==r.value.leaseUntil;
             const maintenance=r.value.maintenance?.last?.state==='renewal_pending'&&!renewalPending&&observed.providerLeaseUntil===r.value.leaseUntil?{...r.value.maintenance,last:{...r.value.maintenance.last,state:'renewed',confirmedAt:now()}}:r.value.maintenance;
             const state=observed.outcome==='unknown'?'unknown':observed.terminal||observed.stopped===true||['stopped','suspended','EXITED'].includes(observed.state)?'stopped':observed.ready?'running':observed.providerResourceId?'provisioning':'unknown';
-            return {state,terminal:observed.terminal===true,storageRetained:observed.storageRetained??null,providerLeaseUntil:observed.providerLeaseUntil??r.value.providerLeaseUntil??null,renewalPending,...(maintenance?{maintenance}:{}),failures:0,nextAttemptAt:null,...(costObservation?{costObservation}:{}),providerResourceId:observed.providerResourceId??r.value.providerResourceId??null,endpoint,observedAt:now(),controllerLease:null,error:observed.error??null,errorDetails:observed.errorDetails??null,...(observed.receipt?await settle(tx,r,observed.receipt):{})};
+            return {state,terminal:observed.terminal===true,storageRetained:observed.storageRetained??null,traffic:observed.traffic??r.value.traffic??null,guardViolation:observed.guardViolation??null,providerLeaseUntil:observed.providerLeaseUntil??r.value.providerLeaseUntil??null,renewalPending,...(maintenance?{maintenance}:{}),failures:0,nextAttemptAt:null,...(costObservation?{costObservation}:{}),providerResourceId:observed.providerResourceId??r.value.providerResourceId??null,endpoint,observedAt:now(),controllerLease:null,error:observed.error??null,errorDetails:observed.errorDetails??null,...(observed.receipt?await settle(tx,r,observed.receipt):{})};
           });
           }
         }
