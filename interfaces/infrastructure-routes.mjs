@@ -3,6 +3,7 @@ export function infrastructureRoutes(route,string,integer,boolean,object){
   const manifest=object({version:{const:1,type:'integer'},mode:{type:'string',enum:['http','worker','job','model']},image:string(256),region:string(40),cpu:{type:'integer',minimum:1,maximum:64},memoryMiB:{type:'integer',minimum:256,maximum:524288},gpu:{type:['string','null'],maxLength:100},port:{type:['integer','null'],minimum:1024,maximum:65535},healthPath:{type:['string','null'],maxLength:101},command:{type:'array',maxItems:32,items:{type:'string',maxLength:1000}},storageGiB:{type:'integer',minimum:0,maximum:2000},releaseHash:string(71)});
   manifest.properties.gpuCount={type:'integer',minimum:0,maximum:8};
   manifest.properties.minimumVramGiB={type:'integer',minimum:0,maximum:1024};
+  manifest.properties.secretBindings={type:'array',maxItems:32,items:object({envName:string(101),secretId:string(28),version:{type:'integer',minimum:1}})};
   manifest.properties.egressBudgetMiB={type:'integer',minimum:1,maximum:1000000};
   const {releaseHash,...runtimeProperties}=manifest.properties;
   const runtimeManifest=object(runtimeProperties),release={...project,releaseId:string(71)};

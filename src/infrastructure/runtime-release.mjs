@@ -1,3 +1,4 @@
+import {requireSecretBindingOwner} from './secret-bindings.mjs';
 import {digest,requireThat,text,integer,sourceText} from '../shared/index.mjs';
 import {validateManifest} from './manifest.mjs';
 import {CLAUS_IDENTITY} from '../partner-launch/policy.mjs';
@@ -29,7 +30,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
  }
  async function bound(r,projectId,id){
   const v=await read(r,'runtime-image-releases',id);requireThat(v?.projectId===projectId,'not_found');
-  const b=await build(r,projectId,v.buildId);requireThat(b.ownerId===v.ownerId&&b.image===v.manifest.image&&b.build.artifactHash===v.buildHash&&b.build.snapshotId===v.sourceHash,'runtime_image_changed');return v;
+  const b=await build(r,projectId,v.buildId);requireThat(b.ownerId===v.ownerId&&b.image===v.manifest.image&&b.build.artifactHash===v.buildHash&&b.build.snapshotId===v.sourceHash,'runtime_image_changed');requireSecretBindingOwner(v.manifest,await read(r,'principals',b.ownerId));return v;
  }
  const context=v=>({profile:RUNTIME_IMAGE_PROFILE,releaseId:v.id,projectId:v.projectId,buildId:v.buildId,buildHash:v.buildHash,sourceHash:v.sourceHash,manifest:v.manifest,...(v.sourcePrivate?{sourcePrivate:true}:{})});
  // This explicitly labelled owner policy applies to Claus-owned applications.
@@ -112,6 +113,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
    requireThat(manifest&&!Object.hasOwn(manifest,'releaseHash'),'runtime_image_manifest_invalid');
    const m=validateManifest({...manifest,releaseHash:'sha256:'+'0'.repeat(64)});delete m.releaseHash;requireThat(m.storageGiB===0,'runtime_image_manifest_invalid');
    return store.transaction(async r=>{await identity.authorize(actor,'infrastructure.manage',{projectId},r);const b=await build(r,projectId,buildId);requireThat(m.image===b.image,'runtime_image_changed');
+    requireSecretBindingOwner(m,await read(r,'principals',b.ownerId));
     const core={profile:RUNTIME_IMAGE_PROFILE,projectId,ownerId:b.ownerId,buildId,buildHash:b.build.artifactHash,sourceHash:b.build.snapshotId,manifest:m,...(b.build.private?{sourcePrivate:true}:{})},id=digest(core),old=await r.read('runtime-image-releases',id);
     if(old)return {...old.value,revision:old.revision};
     const value={...core,id,manifest:{...m,releaseHash:id},createdAt:now(),approved:false};const saved=await r.write('runtime-image-releases',id,value,0);return {...value,revision:saved.revision};});
@@ -129,7 +131,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
   async revoke(actor,projectId,id,{expectedRevision}){integer(expectedRevision);return store.transaction(async r=>{try{await identity.authorize(actor,'infrastructure.manage',{projectId},r);}catch{await authority(actor,r);}const row=await r.read('runtime-image-releases',id);requireThat(row?.value.projectId===projectId,'not_found');const value={...row.value,approved:false,revokedAt:now()};const saved=await r.write('runtime-image-releases',id,value,expectedRevision);return {...value,revision:saved.revision};});},
   async status(id){
    const row=await read(store,'runtime-image-releases',text(id));if(!row?.approved)return {approved:false,releaseId:id};
-   try{const e=[OWNER_RUNTIME_REVIEW_PROFILE,OWNER_APPLICATION_REVIEW_PROFILE].includes(row.decision.review.profile)?await ownerEvidence(store,row.projectId,id,row.decision.review.reviewId):await evidence(store,row.projectId,id,row.decision.review.caseId);requireThat(digest(e.review)===digest(row.decision.review),'runtime_image_changed');return {approved:true,releaseId:id,projectId:row.projectId,manifestHash:digest(row.manifest),image:row.manifest.image,reviewHash:digest(e.review),decisionHash:digest(row.decision),reviewType:e.review.profile??RUNTIME_IMAGE_PROFILE};}
+   try{const e=[OWNER_RUNTIME_REVIEW_PROFILE,OWNER_APPLICATION_REVIEW_PROFILE].includes(row.decision.review.profile)?await ownerEvidence(store,row.projectId,id,row.decision.review.reviewId):await evidence(store,row.projectId,id,row.decision.review.caseId);requireThat(digest(e.review)===digest(row.decision.review),'runtime_image_changed');return {approved:true,ownerSecretBindings:(row.manifest.secretBindings?.length??0)>0,releaseId:id,projectId:row.projectId,manifestHash:digest(row.manifest),image:row.manifest.image,reviewHash:digest(e.review),decisionHash:digest(row.decision),reviewType:e.review.profile??RUNTIME_IMAGE_PROFILE};}
    catch(e){if(e.code==='not_found'||e.code?.startsWith('runtime_image_'))return {approved:false,releaseId:id};throw e;}
   }
  };
