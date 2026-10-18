@@ -1,3 +1,4 @@
+import {outgoingActionRisk} from './security/communication-policy.mjs';
 import {xPersonContinuity} from './person-continuity.js';
 import {networkOperations,networkOperationsEnabled} from './network-operations.js';
 import {clubDue} from './club.js';
@@ -293,6 +294,8 @@ export async function publishReply(text:string,replyTo:string,attributions:Attri
   if(blocked){await db`UPDATE claus_x_inbox SET status='skipped',reason='recipient_opted_out' WHERE post_id=${replyTo} AND status IN ('pending','retrying')`;return {published:false,skipped:true,reason:'recipient_opted_out'};}
   const target=await services.getXPost(replyTo);
   if(target.author_id!==inbox.author_id)throw new ConfirmedFailure('reply_not_requested');
+  const risk=outgoingActionRisk(text,{reply:true,recipient:target.username,participants:(target.entities?.mentions??[]).map((m:any)=>m.username)});
+  if(risk)throw new ConfirmedFailure(risk);
   if(!receivedClausInteraction(target)||(!directlyAddressesClaus(target)&&replyIntent!=='invited_in_context')||consentCommand(target)==='stop') {
     await db`UPDATE claus_x_inbox SET status='skipped',reason='not_addressed_to_claus',deferred_until=NULL WHERE post_id=${replyTo} AND status IN ('pending','retrying')`;
     return {published:false,skipped:true,reason:'not_addressed_to_claus'};

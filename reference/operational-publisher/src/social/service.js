@@ -1,3 +1,4 @@
+import {outgoingActionRisk} from '../security/communication-policy.mjs';
 import {createHash} from 'node:crypto';
 import {requestShape,authorizePost,digest,SocialError} from './policy.js';
 import {providerRequest} from './provider.js';
@@ -21,7 +22,16 @@ export function createSocial({repository,provider=providerRequest,after=()=>proc
     return provider(v.path,v.method,{media:a.base64,media_category:a.category});
    }
    const old=await repository.get(v.actionId);if(old)return existing(old,v);
-   authorizePost(v,await repository.source(v.actionId),after());
+   const source=await repository.source(v.actionId);
+   authorizePost(v,source,after());
+   // Resolve actual provider identity; model-written attribution is not authority.
+   if(v.body.reply){
+    const target=await provider('tweets/'+v.body.reply.in_reply_to_tweet_id+'?tweet.fields=author_id,entities,note_tweet&expansions=author_id&user.fields=username');
+    const author=target?.includes?.users?.find(u=>u.id===target.data?.author_id);
+    if(target?.data?.id!==v.body.reply.in_reply_to_tweet_id||target.data.author_id!==source.action.input?.replyAuthorId||!author?.username)throw new SocialError('social_reply_identity_unavailable',true);
+    const risk=outgoingActionRisk(v.body.text,{reply:true,recipient:author.username,participants:[...(target.data.entities?.mentions??[]),...(target.data.note_tweet?.entities?.mentions??[])].map(m=>m.username)});
+    if(risk)throw new SocialError(risk,true);
+   }
    const reserved=await repository.reserve(v.actionId,v);if(!reserved.created)return existing(reserved.row,v);
    let result;
    try{

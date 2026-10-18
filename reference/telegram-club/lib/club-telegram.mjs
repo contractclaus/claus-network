@@ -1,3 +1,4 @@
+import {assertConversationOnly} from './security/communication-policy.mjs';
 import {reconcileTelegramActivation} from './telegram-activation.mjs';
 import {createHash,randomBytes,timingSafeEqual} from 'node:crypto';
 import {ClubError,demand} from './club-common.mjs';
@@ -7,6 +8,7 @@ export const telegramSecretMatches=(a,b)=>typeof a==='string'&&typeof b==='strin
 export const inviteMatches=(invite,member,request,now=Date.now())=>!!invite&&!!member&&invite.state==='live'&&new Date(invite.expires_at).getTime()>now&&invite.user_id===String(request.from?.id)&&member.user_id===invite.user_id&&member.address===invite.address&&['verified','joined'].includes(member.state)&&invite.invite_link===request.invite_link?.invite_link;
 export function createTelegramClient(token=process.env.CLUB_TELEGRAM_BOT_TOKEN,request=fetch){
  return async(method,payload)=>{
+  if(['sendMessage','sendPhoto','sendAnimation','editMessageText','editMessageCaption'].includes(method))assertConversationOnly(payload.text??payload.caption??'',{reply:true});
   demand(!!token,503,'telegram_unavailable','Telegram is being connected.');
   let r,b;
   try{r=await request('https://api.telegram.org/bot'+token+'/'+method,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(12000)});b=await r.json();}
@@ -24,6 +26,7 @@ export function createClubTelegram({store,chain,call=createTelegramClient(),wake
   if(!row)return (await sql`SELECT state,result FROM club_telegram_outbox WHERE id=${id}`)[0];
   let accepted=false;
   try{
+   if(row.method==='sendMessage')assertConversationOnly(row.payload.text,{reply:true});
    const result=await call(row.method,row.payload);
    accepted=true;
    if(row.method==='sendMessage'&&id.startsWith('club-message:')){
@@ -34,7 +37,7 @@ export function createClubTelegram({store,chain,call=createTelegramClient(),wake
   }catch(e){
    const unsafe=['sendMessage','createChatInviteLink'].includes(row.method);
    const state=accepted||e.uncertain||unsafe&&e.status>=500?(unsafe?'uncertain':'pending'):e.status===429||e.status>=500?'pending':'failed';
-   await sql`UPDATE club_telegram_outbox SET state=${state},error_code=${e.uncertain?'delivery_unknown':'telegram_'+(e.status??'storage_unknown')},next_at=now()+make_interval(secs=>${Math.max(10,Math.min(3600,Number(e.retryAfter)||30))}),lease_until=NULL WHERE id=${id}`;
+   await sql`UPDATE club_telegram_outbox SET state=${state},error_code=${e.definite&&/^social_/.test(e.message)?e.message:e.uncertain?'delivery_unknown':'telegram_'+(e.status??'storage_unknown')},next_at=now()+make_interval(secs=>${Math.max(10,Math.min(3600,Number(e.retryAfter)||30))}),lease_until=NULL WHERE id=${id}`;
    return {state};
   }
  }

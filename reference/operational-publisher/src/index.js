@@ -1,3 +1,4 @@
+import {revokedWalletMutation} from './security/wallet-boundary.mjs';
 import {runtimeExport} from './runtime-export.mjs';
 import {hostMiddleware} from './continuity-host.mjs';
 import {installDatabaseRecovery} from './recovery/database-recovery.mjs';
@@ -62,6 +63,7 @@ app.get('/health',c=>c.json(process.env.SERVICE_ROLE==='operator'
   ? {ready:!!process.env.DATABASE_URL&&!!process.env.SIGNER_PRIVATE_KEY,payer:address,scope:'fixed_operator_with_legacy_observer',inferencePayments:false,labResearch:process.env.OPERATOR_LAB_ENABLED==='true',configPresence:{database:!!process.env.DATABASE_URL,signing:!!process.env.SIGNER_PRIVATE_KEY,legacyStatus:!!process.env.LEGACY_STATUS_SECRET}}
   : {service:'claus-inference',databaseConfigured:!!process.env.DATABASE_URL,signingConfigured:!!process.env.SIGNER_PRIVATE_KEY,scope:'inference_and_policy_gated_wallet',transactionSigning:!!process.env.WALLET_SECRET&&!!process.env.WALLET_POLICY_SECRET,inferencePaymentScheme:inferencePaymentSchemes()[0],maximumInferenceQuoteMicroUsdc:process.env.MAX_INFERENCE_QUOTE_MICRO_USDC??'1000000'}));
 app.use('/api/*',async(c,next)=>{
+  if(revokedWalletMutation(c.req.method,c.req.path))return c.json({error:'generic_wallet_authority_revoked'},403);
   if(c.req.method==='GET'&&c.req.path==='/api/resources/observation')return next();
   if(c.req.method==='POST'&&/^\/api\/resource-events\/res_[a-f0-9]{24}$/.test(c.req.path))return next();
   if(c.req.method==='POST'&&['/api/oci-builds','/api/infrastructure'].includes(c.req.path)||c.req.method==='GET'&&c.req.path==='/api/infrastructure/guardian')return next();

@@ -1,6 +1,6 @@
 {
   "files": {
-    "lib/club-telegram.mjs": "348a8736bf8180eba01d625d50ab967e7a774c3bd398a45fd4acec8f6d54a073",
+    "lib/club-telegram.mjs": "2998ca864791e7f25fc992dc2227896dc4367b5c1b295df02e12e7d38ec7ea40",
     "lib/telegram-activation.mjs": "01df3e7d080b1eb1467bf8c4274419c849c7051a0a67104e770df85ac95f315d",
     "lib/club-person-continuity.mjs": "7b1bd4609ac582bbe1975c1f41df66c909194298d7c62acc03a96db53678eb92",
     "lib/continuity-gate.mjs": "0d5689cf57a0354bd62d4cd26e2de758fa8c3eb52aa0e51e0cebbd13553d4a4b",
@@ -13,10 +13,11 @@
     "lib/runtime-export.mjs": "e8839bec2e817cbc1722cbb2735fc1ebeb86a7389f158ba449fe5d01035b49e4",
     "lib/runtime-export-scope.json": "b01b0f20dafee0b8ddfe2c53df363776c46bdc06eb6a11067a5263219a5eb839",
     "api/continuity-export.mjs": "1c0bde9c165eb9b562ec9044c8dcbc39868f78b4b512c643066cef07155cb00f",
-    "lib/club-agent.mjs": "28470d08e7a2a1b1a20cb17d907e07f51b03c62f0f50eb2b30bd7d0063b33ef0",
-    "lib/club-ballots.mjs": "dbf678765347c7b691d92278d77e4e9f1a7368df822c471d158f15b24ef8b303"
+    "lib/club-agent.mjs": "4f458e22a2657630b10556435e55e5a2315fced359286243d2eca15aa04174ce",
+    "lib/club-ballots.mjs": "dbf678765347c7b691d92278d77e4e9f1a7368df822c471d158f15b24ef8b303",
+    "lib/security/communication-policy.mjs": "a457513dd9140004fa63acb229cf7d187f298a4f621a1520298d98cfac792e30"
   },
   "referenceSubset": true,
-  "source": "claus-unified-continuity-20261018",
-  "deployed": "dpl_F2BLYybbktPumkhdAcmAAydMdb6w"
+  "source": "claus-social-execution-boundary-20261018",
+  "deployed": "included-in-this-web-release"
 }
