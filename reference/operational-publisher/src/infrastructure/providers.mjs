@@ -98,6 +98,7 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
     },
     async quote(work,config){
       const m=work.manifest;check(m.storageGiB===0,'persistent_storage_requires_profile');
+      if(m.image.startsWith('ghcr.io/'))check(config.privateImages===true&&/^ghcr\.io\/contractclaus\/claus-[a-z0-9-]+@sha256:[a-f0-9]{64}$/.test(m.image)&&!!process.env.RESOURCE_RUNPOD_REGISTRY_ID,'private_registry_access_missing');
       const gpu=m.gpu!==null,count=gpu?(m.gpuCount??1):0;
       check(Number.isInteger(count)&&count>=(gpu?1:0)&&count<=(gpu?(config.maxGpuCount??1):0),'gpu_count_not_allowed');
       check(gpu||config.cpuType,'cpu_type_not_configured');
@@ -119,7 +120,7 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
     },
     async create(work,quote){
       const m=work.manifest;
-      const pod=await api('/pods',{method:'POST',body:{name:'claus-'+work.id.slice(-40),image:m.image,cloud:'SECURE',dataCenterIds:[m.region],disk:quote.bootDiskGiB,ports:m.port?[m.port+'/http']:[],entrypoint:m.command.length?m.command:undefined,startSsh:false,startJupyter:false,...(m.gpu?{globalNetworking:false}:{}),...(m.gpu?{gpu:{id:m.gpu,count:m.gpuCount??1,minVcpuCountPerGpu:Math.ceil(m.cpu/(m.gpuCount??1)),minRamPerGpu:Math.ceil(m.memoryMiB/1024/(m.gpuCount??1))}}:{cpu:{id:quote.cpuType,vcpuCount:m.cpu}})}});
+      const pod=await api('/pods',{method:'POST',body:{name:'claus-'+work.id.slice(-40),image:m.image,...(m.image.startsWith('ghcr.io/contractclaus/')?{registry:process.env.RESOURCE_RUNPOD_REGISTRY_ID}:{}),cloud:'SECURE',dataCenterIds:[m.region],disk:quote.bootDiskGiB,ports:m.port?[m.port+'/http']:[],entrypoint:m.command.length?m.command:undefined,startSsh:false,startJupyter:false,...(m.gpu?{globalNetworking:false}:{}),...(m.gpu?{gpu:{id:m.gpu,count:m.gpuCount??1,minVcpuCountPerGpu:Math.ceil(m.cpu/(m.gpuCount??1)),minRamPerGpu:Math.ceil(m.memoryMiB/1024/(m.gpuCount??1))}}:{cpu:{id:quote.cpuType,vcpuCount:m.cpu}})}});
       return observe(pod,work);
     },
     async inspect(work,checkpoint){

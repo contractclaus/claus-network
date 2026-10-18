@@ -1,8 +1,10 @@
+import {privateRegistry} from './private-registry.mjs';
+import {readBuildReceiptZip} from './build-receipt.mjs';
 import {createHash} from 'node:crypto';
 import {digest} from './store.mjs';
 import {buildWorkflow,buildWorkflowPath} from './build-workflow.mjs';
 import {repositoryIdentity} from './repository.mjs';
-export const buildInputs={build_install:['resourceId'],build_start:['resourceId','commit','architecture','timeoutMinutes','mode','command','cacheKey','context','dockerfile'],build_info:['resourceId','actionId'],build_logs:['resourceId','actionId','jobId','offset'],build_artifact:['resourceId','actionId','artifactId'],build_cancel:['resourceId','actionId'],build_caches:['resourceId','page']};
+export const buildInputs={build_image:['resourceId','actionId'],build_install:['resourceId'],build_start:['resourceId','commit','architecture','timeoutMinutes','mode','command','cacheKey','context','dockerfile'],build_info:['resourceId','actionId'],build_logs:['resourceId','actionId','jobId','offset'],build_artifact:['resourceId','actionId','artifactId'],build_cancel:['resourceId','actionId'],build_caches:['resourceId','page']};
 const fail=c=>{throw Error('resource_build_'+c);};
 const priceUrl='https://docs.github.com/en/billing/reference/actions-runner-pricing';
 const packageUrl='https://docs.github.com/en/billing/concepts/product-billing/github-packages';
@@ -31,6 +33,7 @@ export async function buildPrices(request=fetch){
 export function managedBuilds({store,providers,budget,request=fetch,now=Date.now,prices=()=>buildPrices(request),environment=process.env}){
  const gh=(p,o)=>providers.call('github',p,o);
  const stamp=()=>new Date(now()).toISOString();
+ const registry=privateRegistry({request,token:()=>environment.RESOURCE_GITHUB_PACKAGES_TOKEN});
  async function resource(id){const r=await store.get('resource',id);if(!r||r.provider!=='github'||r.owner!=='contractclaus'||!/^claus-[a-z0-9-]+$/.test(r.name)||r.protected)fail('scope_invalid');return r;}
  const prefix=r=>'/repos/contractclaus/'+r.name;
  async function repo(r){const v=await gh(prefix(r));if(v.owner?.login!=='contractclaus'||String(v.id)!==r.providerId)fail('owner_changed');return v;}
@@ -64,8 +67,26 @@ export function managedBuilds({store,providers,budget,request=fetch,now=Date.now
   const [jobs,artifacts]=await Promise.all([gh(prefix(r)+'/actions/runs/'+v.id+'/jobs?per_page=100'),gh(prefix(r)+'/actions/runs/'+v.id+'/artifacts?per_page=100')]);
   return {...visible(v,a,id),jobs:jobs.jobs.map(j=>({id:j.id,name:j.name,state:j.status,conclusion:j.conclusion,startedAt:j.started_at,completedAt:j.completed_at,steps:j.steps?.map(s=>({name:s.name,state:s.status,conclusion:s.conclusion}))})),artifacts:artifacts.artifacts.map(x=>({id:x.id,name:x.name,bytes:x.size_in_bytes,expired:x.expired,expiresAt:x.expires_at,digest:x.digest??null})),artifactRetentionDays:1,next:'Copy useful artifacts to an owned object bucket before their provider expiry. A successful run is not proof of a live service.'};
  }
+ async function imageEvidence({resourceId,actionId}){
+  const r=await resource(resourceId),id=action(actionId),a=await startRecord(r,id);
+  if(a.prepared.dispatchInput.mode!=='container')fail('container_build_required');
+  const previous=await store.get('build-image',id);if(previous)return previous;
+  const v=await findRun(r,id,a);if(!v||v.status!=='completed'||v.conclusion!=='success'||v.run_attempt!==1)fail('successful_original_build_required');
+  const artifacts=await gh(prefix(r)+'/actions/runs/'+v.id+'/artifacts?per_page=100');
+  const matches=artifacts.artifacts.filter(x=>x.name==='claus-receipt-'+id&&!x.expired);
+  if(matches.length!==1||matches[0].size_in_bytes>1000000||!/^sha256:[a-f0-9]{64}$/.test(matches[0].digest??''))fail('image_receipt_unavailable');
+  const artifact=matches[0],url=await redirect(prefix(r)+'/actions/artifacts/'+artifact.id+'/zip');
+  const response=await request(url,{redirect:'error',signal:AbortSignal.timeout(15000)});if(!response.ok)fail('receipt_download_unavailable');
+  const receipt=readBuildReceiptZip(await bounded(response,1000000),artifact.digest);
+  if(receipt.action!==id||receipt.source!==a.input.commit||receipt.status!=='success'||!/^sha256:[a-f0-9]{64}$/.test(receipt.imageDigest??''))fail('image_receipt_mismatch');
+  const image=await registry.inspect({repository:r.name,imageDigest:receipt.imageDigest,source:a.input.commit,actionId:id,architecture:a.input.architecture??'amd64'});
+  const {layerDigests,...metadata}=image;
+  const evidence={version:1,resourceId:r.id,actionId:id,repositoryId:r.providerId,repository:'contractclaus/'+r.name,sourceCommit:a.input.commit,workflowCommit:a.prepared.workflowCommit,workflowSha:a.prepared.workflowSha,runId:v.id,runAttempt:1,artifactId:artifact.id,artifactDigest:artifact.digest,...metadata};
+  const stored=await store.put('build-image',id,evidence);if(digest(stored.value)!==digest(evidence))fail('image_evidence_changed');return stored.value;
+ }
  async function call(operation,input,requestId){
   const r=await resource(input.resourceId);
+  if(operation==='build_image')return imageEvidence(input);
   if(operation==='build_info')return info(r,action(input.actionId));
   if(operation==='build_caches'){const page=input.page??1;positive(page);const v=await gh(prefix(r)+'/actions/caches?per_page=100&page='+page);return {total:v.total_count,items:v.actions_caches.filter(c=>c.key.startsWith('claus-owned-')).map(c=>({id:c.id,key:c.key,bytes:c.size_in_bytes,lastAccessedAt:c.last_accessed_at,createdAt:c.created_at})),nextPage:v.actions_caches.length===100?page+1:null};}
   if(operation==='build_logs'||operation==='build_artifact'){
@@ -91,8 +112,10 @@ export function managedBuilds({store,providers,budget,request=fetch,now=Date.now
   if(!prepared){
    const remote=await repo(r);
    if(operation==='build_install'){
-    const current=await workflow(r,remote.default_branch);if(current&&current.sha!==workflowSha)fail('workflow_exists_preserve_and_reconcile');
-    prepared={resource:r,branch:remote.default_branch};
+    const current=await workflow(r,remote.default_branch),managed=await store.get('build-installation',r.id);
+    const legacy=current&&await store.get('build-definition',r.id+':'+current.sha);
+    if(current&&current.sha!==workflowSha&&current.sha!==managed?.workflowSha&&legacy?.workflowSha!==current.sha)fail('workflow_exists_preserve_and_reconcile');
+    prepared={resource:r,branch:remote.default_branch,previousSha:current?.sha??null};
    }else if(operation==='build_start'){
     if(!/^[a-f0-9]{40}$/.test(input.commit??''))fail('source_commit_required');await gh(prefix(r)+'/git/commits/'+input.commit);
     const architecture=input.architecture??'amd64',minutes=input.timeoutMinutes??60,mode=input.mode??'command';
@@ -110,11 +133,13 @@ export function managedBuilds({store,providers,budget,request=fetch,now=Date.now
   }
   const complete=result=>store.complete(id,{id,...result});
   if(operation==='build_install'){
-   let current=await workflow(r,prepared.branch);if(current&&current.sha!==workflowSha)fail('workflow_changed');
-   if(!current&&await store.dispatch(id))await gh(prefix(r)+'/contents/'+buildWorkflowPath,{method:'PUT',body:{branch:prepared.branch,message:'Install owned build runner\n\nClaus-Action: '+id,content:Buffer.from(buildWorkflow).toString('base64'),author:repositoryIdentity,committer:repositoryIdentity}});
+   let current=await workflow(r,prepared.branch);if(current&&current.sha!==workflowSha&&current.sha!==prepared.previousSha)fail('workflow_changed');
+   if(current?.sha!==workflowSha&&await store.dispatch(id))await gh(prefix(r)+'/contents/'+buildWorkflowPath,{method:'PUT',body:{branch:prepared.branch,...(current?{sha:current.sha}:{}),message:'Install owned build runner\n\nClaus-Action: '+id,content:Buffer.from(buildWorkflow).toString('base64'),author:repositoryIdentity,committer:repositoryIdentity}});
    current=await workflow(r,prepared.branch);if(current?.sha!==workflowSha)return {id,state:'outcome_unknown',retry:false};
    const head=await gh(prefix(r)+'/git/ref/heads/'+encodeURIComponent(prepared.branch));if((await workflow(r,head.object.sha))?.sha!==workflowSha)fail('workflow_changed');
-   await store.put('build-definition',r.id+':'+workflowSha,{commit:head.object.sha,workflowSha,createdAt:stamp()});
+   await store.put('build-definition',r.id+':'+workflowSha,{commit:head.object.sha,workflowSha,resourceId:r.id,createdAt:stamp()});
+   const old=await store.get('build-installation',r.id),installation={workflowSha,revision:(old?.revision??0)+1};
+   if(old?.workflowSha!==workflowSha){if(old)await store.change('build-installation',r.id,old.revision,installation);else await store.put('build-installation',r.id,installation);}
    return complete({resourceId:r.id,installed:true,workflowSha,workflow:buildWorkflowPath,automaticTriggers:false,runningBuildCreated:false});
   }
   if(operation==='build_cancel'){
@@ -141,5 +166,5 @@ export function managedBuilds({store,providers,budget,request=fetch,now=Date.now
   const started=await findRun(r,id,a);if(!started)return {id,state:'outcome_unknown',retry:false,maximumReservedMicroUsd:prepared.maximum,next:'Reconcile the same requestId; do not create another build.'};
   await budget('commit',id,prepared.maximum);return complete(visible(started,a,id));
  }
- return {call};
+ return {call,imageEvidence};
 }

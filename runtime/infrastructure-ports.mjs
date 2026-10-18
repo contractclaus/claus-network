@@ -22,6 +22,7 @@ export function infrastructurePorts({env=process.env,request=fetch}={}){
   const work=w=>({id:w.id,projectId:w.projectId,profile:w.profile,manifest:w.manifest,quote:w.quote,createdAt:w.createdAt,leaseUntil:w.leaseUntil,extensions:w.extensions??[]});
   return {enabled:env.CLAUS_INFRASTRUCTURE_ENABLED==='1',ports:{
     readiness:()=>call('readiness',{}),
+    inspectOwnedBuild:input=>call('inspect_owned_build',input),
     fundingHistory:input=>call('funding_history',input),
     verifyRelease:async input=>(await call('verify_release',input)).approved===true,
     quote:input=>call('quote',input),

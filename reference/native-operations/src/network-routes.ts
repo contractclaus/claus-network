@@ -11174,8 +11174,7 @@ export const networkRoutes:Record<string,any>={
           "maxLength": 16000
         },
         "published": {
-          "type": "boolean",
-          "const": true
+          "type": "boolean"
         }
       },
       "required": [
@@ -11304,6 +11303,142 @@ export const networkRoutes:Record<string,any>={
     },
     "public": true,
     "description": "GET /v1/public/infrastructure/owner-reviews/{reviewId}. Public read."
+  },
+  "resource_release_private_prepare": {
+    "name": "resource_release_private_prepare",
+    "method": "POST",
+    "path": "/v1/projects/{projectId}/infrastructure/private-releases",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "resourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 28
+        },
+        "actionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 28
+        },
+        "manifest": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1,
+              "type": "integer"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "http",
+                "worker",
+                "job",
+                "model"
+              ]
+            },
+            "image": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "region": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "cpu": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            "memoryMiB": {
+              "type": "integer",
+              "minimum": 256,
+              "maximum": 524288
+            },
+            "gpu": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100
+            },
+            "port": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1024,
+              "maximum": 65535
+            },
+            "healthPath": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 101
+            },
+            "command": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "storageGiB": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000
+            },
+            "gpuCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "minimumVramGiB": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1024
+            },
+            "egressBudgetMiB": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            }
+          },
+          "required": [
+            "version",
+            "mode",
+            "image",
+            "region",
+            "cpu",
+            "memoryMiB",
+            "gpu",
+            "port",
+            "healthPath",
+            "command",
+            "storageGiB"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "projectId",
+        "resourceId",
+        "actionId",
+        "manifest"
+      ],
+      "additionalProperties": false
+    },
+    "public": false,
+    "description": "POST /v1/projects/{projectId}/infrastructure/private-releases. Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request."
   }
 };
 export function validate(schema:any,value:any,path='input'):void{

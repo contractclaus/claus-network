@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {openStore} from '../src/storage/index.mjs';
+import {createRuntimeReleases} from '../src/infrastructure/runtime-release.mjs';
+import {CLAUS_IDENTITY} from '../src/partner-launch/policy.mjs';
+import {digest,requireThat} from '../src/shared/index.mjs';
+test('owned private image retains private source and requires its actual owner review and decision',async t=>{
+ const store=openStore(':memory:');t.after(()=>store.close());
+ await store.transaction(async tx=>{
+  await tx.write('principals','claus',{chainId:1,address:CLAUS_IDENTITY},0);
+  await tx.write('principals','other',{chainId:1,address:'0x'+'1'.repeat(40)},0);
+  await tx.write('projects','owned',{ownerId:'claus'},0);await tx.write('projects','foreign',{ownerId:'other'},0);
+ });
+ const identity={credential:async actor=>({kind:'owner',principalId:actor}),authorize:async(actor,_permission,{projectId})=>requireThat(actor==='claus'&&projectId==='owned','scope_denied')};
+ let inspections=0;
+ const receipt={version:1,resourceId:'res_'+'1'.repeat(24),actionId:'act_'+'2'.repeat(24),private:true,architecture:'amd64',runAttempt:1,runId:123,image:'ghcr.io/contractclaus/claus-source@'+digest('image'),imageDigest:digest('image'),artifactDigest:digest('receipt'),sourceCommit:'a'.repeat(40),repository:'contractclaus/claus-source'};
+ const service=createRuntimeReleases({store,identity,origin:'https://api.example.com',inspectOwnedBuild:async()=>{inspections++;return receipt;}});
+ const manifest={version:1,mode:'worker',image:receipt.image,region:'EU-RO-1',cpu:2,memoryMiB:4096,gpu:null,port:null,healthPath:null,command:[],storageGiB:0};
+ const input={resourceId:receipt.resourceId,actionId:receipt.actionId,manifest};
+ await assert.rejects(service.prepareExternal('claus','foreign',input),/owner_scope_denied/);assert.equal(inspections,0);
+ const release=await service.prepareExternal('claus','owned',input);assert.equal(release.sourcePrivate,true);assert.equal(release.approved,false);
+ assert.equal((await service.prepareExternal('claus','owned',input)).id,release.id);
+ await assert.rejects(service.select(store,'owned',{actor:'claus',runtimeReleaseId:release.id}),/private_owner_review_required/);
+ const report='Reviewed the exact private source commit, immutable container digest, selected worker command, dependency bindings and startup behavior. This owner-authored report is deliberately private and is not an independent third-party audit.';
+ await assert.rejects(service.ownerReview('claus','owned',release.id,{report,findingsJson:'[]',published:true}),/owner_review_invalid/);
+ const review=await service.ownerReview('claus','owned',release.id,{report,findingsJson:'[]',published:false});
+ await assert.rejects(service.publicOwnerReview(review.id),/not_found/);assert.equal((await service.status(release.id)).approved,false);
+ await assert.rejects(service.ownerApprove('other','owned',release.id,{reviewId:review.id,reportHash:review.reportHash,acknowledgedFindings:[],expectedRevision:1,reason:'Approve the actual reviewed private worker.'}),/claus_required/);
+ await service.ownerApprove('claus','owned',release.id,{reviewId:review.id,reportHash:review.reportHash,acknowledgedFindings:[],expectedRevision:1,reason:'Approve the actual reviewed private worker.'});
+ assert.equal((await service.status(release.id)).approved,true);
+ await store.transaction(async tx=>{const old=await tx.read('projects','owned');await tx.write('projects','owned',{ownerId:'other'},old.revision);});
+ assert.equal((await service.status(release.id)).approved,false);
+});

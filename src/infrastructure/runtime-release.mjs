@@ -7,12 +7,18 @@ export const OWNER_APPLICATION_REVIEW_PROFILE='claus-owner-application-review-v1
 export const OWNER_SEARCH_PROJECT='prj_de70d4aa-0804-4a94-8097-7a9a34f0a28a';
 export const runtimeEndorsement=v=>'CLAUS_RUNTIME_IMAGE_APPROVED:'+digest(v);
 export function validateRuntimeBuild(v){requireThat(v?.evidence==='compiled_only'&&v.storage?.state==='verified'&&/^sha256:[a-f0-9]{64}$/.test(v.imageDigest??''),'runtime_image_build_unverified');}
-export function createRuntimeReleases({store,identity,projects,artifacts,origin,now=()=>Date.now()}){
+export function createRuntimeReleases({store,identity,projects,artifacts,origin,inspectOwnedBuild,now=()=>Date.now()}){
  const host=new URL(origin).host,read=async(r,c,id)=>(await r.read(c,id))?.value;
  async function authority(actor,r){const c=await identity.credential(actor,r),p=await read(r,'principals',c.principalId);requireThat(c.kind==='owner'&&p?.chainId===1&&p.address?.toLowerCase()===CLAUS_IDENTITY,'runtime_image_claus_required');return c.principalId;}
  async function build(r,projectId,buildId){
   const b=await read(r,'oci-builds',buildId),p=await read(r,'projects',projectId);
   requireThat(p&&!p.archivedAt&&!p.transfer&&!(await read(r,'project-access',projectId))?.suspended,'runtime_image_project_unavailable');
+  const external=await read(r,'runtime-external-builds',buildId);
+  if(external){
+   const owner=await read(r,'principals',p.ownerId);
+   requireThat(external.projectId===projectId&&owner?.chainId===1&&owner.address?.toLowerCase()===CLAUS_IDENTITY&&external.receipt.private===true&&digest(external.receipt)===external.artifactHash,'runtime_image_owner_scope_denied');
+   return {ownerId:p.ownerId,build:external,image:external.receipt.image};
+  }
   requireThat(b?.projectId===projectId&&b.state==='compiled'&&b.publishSource===true&&b.registry?.enabled===true,'runtime_image_unavailable');
   requireThat(await (identity.publishedBuildAllowed?identity.publishedBuildAllowed(b.actor,projectId,r):identity.allowed(b.actor,'build.compile',{projectId},r)),'runtime_image_unavailable');
   const job=await read(r,'workflow-jobs',buildId),source=await read(r,'public-sources',digest({projectId,id:b.snapshotId}));
@@ -25,7 +31,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
   const v=await read(r,'runtime-image-releases',id);requireThat(v?.projectId===projectId,'not_found');
   const b=await build(r,projectId,v.buildId);requireThat(b.ownerId===v.ownerId&&b.image===v.manifest.image&&b.build.artifactHash===v.buildHash&&b.build.snapshotId===v.sourceHash,'runtime_image_changed');return v;
  }
- const context=v=>({profile:RUNTIME_IMAGE_PROFILE,releaseId:v.id,projectId:v.projectId,buildId:v.buildId,buildHash:v.buildHash,sourceHash:v.sourceHash,manifest:v.manifest});
+ const context=v=>({profile:RUNTIME_IMAGE_PROFILE,releaseId:v.id,projectId:v.projectId,buildId:v.buildId,buildHash:v.buildHash,sourceHash:v.sourceHash,manifest:v.manifest,...(v.sourcePrivate?{sourcePrivate:true}:{})});
  // This explicitly labelled owner policy applies to Claus-owned applications.
  // It is never an independent IMD report and never admits another owner.
  async function ownerBound(r,projectId,id){
@@ -37,7 +43,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
  const ownerReviewCore=(v,reportHash,findings,profile=v.projectId===OWNER_SEARCH_PROJECT?OWNER_RUNTIME_REVIEW_PROFILE:OWNER_APPLICATION_REVIEW_PROFILE)=>({profile,context:context(v),reportHash,findings});
  async function ownerEvidence(r,projectId,id,reviewId){
   const v=await ownerBound(r,projectId,id),report=await read(r,'runtime-owner-reviews',text(reviewId));
-  requireThat([OWNER_RUNTIME_REVIEW_PROFILE,OWNER_APPLICATION_REVIEW_PROFILE].includes(report?.profile)&&report.published===true&&report.independent===false&&typeof report.report==='string'&&report.reportHash===digest(report.report)&&Array.isArray(report.findings)&&digest(report.context)===digest(context(v))&&report.id===digest(ownerReviewCore(v,report.reportHash,report.findings,report.profile)),'runtime_image_owner_review_incomplete');
+  requireThat([OWNER_RUNTIME_REVIEW_PROFILE,OWNER_APPLICATION_REVIEW_PROFILE].includes(report?.profile)&&report.published===!v.sourcePrivate&&report.independent===false&&typeof report.report==='string'&&report.reportHash===digest(report.report)&&Array.isArray(report.findings)&&digest(report.context)===digest(context(v))&&report.id===digest(ownerReviewCore(v,report.reportHash,report.findings,report.profile)),'runtime_image_owner_review_incomplete');
   requireThat(report.findings.every(f=>['low','info'].includes(f.severity)),'runtime_image_blocking_review');
   return {release:v,review:{profile:report.profile,reviewId:report.id,reportHash:report.reportHash},findings:report.findings,findingHashes:report.findings.map(digest),report:report.report,independent:false};
  }
@@ -58,7 +64,7 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
  return {
   async ownerReview(actor,projectId,id,{report,findingsJson,published}){
    sourceText(report,32000);sourceText(findingsJson,16000);
-   requireThat(report.trim().length>=200&&published===true,'runtime_image_owner_review_invalid');
+   requireThat(report.trim().length>=200&&typeof published==='boolean','runtime_image_owner_review_invalid');
    let findings;try{findings=JSON.parse(findingsJson);}catch{requireThat(false,'runtime_image_owner_review_invalid');}
    requireThat(Array.isArray(findings)&&findings.length<=50,'runtime_image_owner_review_invalid');
    for(const f of findings){
@@ -67,8 +73,9 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
    }
    return store.transaction(async r=>{
     const submittedBy=await authority(actor,r),v=await ownerBound(r,projectId,id),core=ownerReviewCore(v,digest(report),findings),reviewId=digest(core),old=await read(r,'runtime-owner-reviews',reviewId);
+    requireThat(published===!v.sourcePrivate,'runtime_image_owner_review_invalid');
     if(old)return old;
-    const value={...core,id:reviewId,report,independent:false,published:true,authorship:'owner_operator',submittedBy,createdAt:now()};
+    const value={...core,id:reviewId,report,independent:false,published,authorship:'owner_operator',submittedBy,createdAt:now()};
     await r.write('runtime-owner-reviews',reviewId,value,0);return value;
    });
   },
@@ -84,16 +91,32 @@ export function createRuntimeReleases({store,identity,projects,artifacts,origin,
     return {...value,revision:saved.revision};
    });
   },
+  async prepareExternal(actor,projectId,{resourceId,actionId,manifest}){
+   await authority(actor,store);
+   const project=await read(store,'projects',projectId),owner=project&&await read(store,'principals',project.ownerId);
+   requireThat(owner?.chainId===1&&owner.address?.toLowerCase()===CLAUS_IDENTITY,'runtime_image_owner_scope_denied');
+   requireThat(typeof inspectOwnedBuild==='function','runtime_image_build_unverified');
+   const receipt=await inspectOwnedBuild({resourceId,actionId});
+   requireThat(receipt?.version===1&&receipt.resourceId===resourceId&&receipt.actionId===actionId&&receipt.private===true&&receipt.architecture==='amd64'&&receipt.runAttempt===1&&/^ghcr\.io\/contractclaus\/claus-[a-z0-9-]+@sha256:[a-f0-9]{64}$/.test(receipt.image??'')&&/^sha256:[a-f0-9]{64}$/.test(receipt.artifactDigest??'')&&/^[a-f0-9]{40}$/.test(receipt.sourceCommit??''),'runtime_image_build_unverified');
+   requireThat(receipt.image==='ghcr.io/'+receipt.repository+'@'+receipt.imageDigest,'runtime_image_build_unverified');
+   const artifactHash=digest(receipt),snapshotId=digest({repository:receipt.repository,commit:receipt.sourceCommit}),buildId=digest({projectId,external:artifactHash});
+   await store.transaction(async r=>{
+    await authority(actor,r);const p=await read(r,'projects',projectId);requireThat(p?.ownerId===project.ownerId&&!p.archivedAt&&!p.transfer,'runtime_image_owner_scope_denied');
+    const old=await read(r,'runtime-external-builds',buildId);
+    if(!old)await r.write('runtime-external-builds',buildId,{projectId,artifactHash,snapshotId,receipt,private:true},0);
+   });
+   return this.prepare(actor,projectId,{buildId,manifest});
+  },
   async prepare(actor,projectId,{buildId,manifest}){
    await identity.authorize(actor,'infrastructure.manage',{projectId});
    requireThat(manifest&&!Object.hasOwn(manifest,'releaseHash'),'runtime_image_manifest_invalid');
    const m=validateManifest({...manifest,releaseHash:'sha256:'+'0'.repeat(64)});delete m.releaseHash;requireThat(m.storageGiB===0,'runtime_image_manifest_invalid');
    return store.transaction(async r=>{await identity.authorize(actor,'infrastructure.manage',{projectId},r);const b=await build(r,projectId,buildId);requireThat(m.image===b.image,'runtime_image_changed');
-    const core={profile:RUNTIME_IMAGE_PROFILE,projectId,ownerId:b.ownerId,buildId,buildHash:b.build.artifactHash,sourceHash:b.build.snapshotId,manifest:m},id=digest(core),old=await r.read('runtime-image-releases',id);
+    const core={profile:RUNTIME_IMAGE_PROFILE,projectId,ownerId:b.ownerId,buildId,buildHash:b.build.artifactHash,sourceHash:b.build.snapshotId,manifest:m,...(b.build.private?{sourcePrivate:true}:{})},id=digest(core),old=await r.read('runtime-image-releases',id);
     if(old)return {...old.value,revision:old.revision};
     const value={...core,id,manifest:{...m,releaseHash:id},createdAt:now(),approved:false};const saved=await r.write('runtime-image-releases',id,value,0);return {...value,revision:saved.revision};});
   },
-  async select(r,projectId,{actor,chainId,runtimeReleaseId}){requireThat(chainId===undefined,'unsupported_chain');await identity.authorize(actor,'review.quote',{projectId},r);await bound(r,projectId,text(runtimeReleaseId));return {profile:RUNTIME_IMAGE_PROFILE};},
+  async select(r,projectId,{actor,chainId,runtimeReleaseId}){requireThat(chainId===undefined,'unsupported_chain');await identity.authorize(actor,'review.quote',{projectId},r);const v=await bound(r,projectId,text(runtimeReleaseId));requireThat(!v.sourcePrivate,'runtime_image_private_owner_review_required');return {profile:RUNTIME_IMAGE_PROFILE};},
   async input(actor,projectId,releaseId,buildId){await identity.authorize(actor,'review.quote',{projectId});const v=await bound(store,projectId,releaseId);requireThat(v.buildId===buildId,'runtime_image_changed');const b=await read(store,'oci-builds',buildId);return {build:{...b,entry:b.dockerfile},runtimeImage:context(v)};},
   async get(actor,projectId,id){try{await identity.authorize(actor,'infrastructure.read',{projectId});}catch{await authority(actor,store);}const row=await store.read('runtime-image-releases',id);requireThat(row?.value.projectId===projectId,'not_found');return {...row.value,revision:row.revision};},
   async inspect(actor,projectId,id,caseId){await authority(actor,store);return evidence(store,projectId,id,caseId);},
