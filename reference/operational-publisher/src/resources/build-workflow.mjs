@@ -129,7 +129,7 @@ jobs:
           BUILD_STATUS: \${{ job.status }}
         run: |
           python3 - <<'PY'
-          import os, json, pathlib, stat
+          import os, json, pathlib, stat, shutil
           root=pathlib.Path('.claus-output')
           if root.is_symlink(): raise RuntimeError('output_directory_symlink')
           root.mkdir(exist_ok=True)
@@ -144,6 +144,9 @@ jobs:
           receipt=pathlib.Path(os.environ['RUNNER_TEMP'])/'claus-receipt'
           receipt.mkdir(exist_ok=True)
           (receipt/'claus-result.json').write_text(result)
+          # Stage beneath a visible root: upload-artifact excludes dot directories.
+          exported=pathlib.Path(os.environ['RUNNER_TEMP'])/'claus-output'
+          shutil.copytree(root, exported, ignore=shutil.ignore_patterns('.*'))
           PY
       - name: Upload immutable image receipt
         if: always() && !cancelled() && steps.bounded-result.outcome == 'success'
@@ -159,8 +162,8 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: claus-build-\${{ inputs.action }}
-          path: .claus-output/
+          path: \${{ runner.temp }}/claus-output/
           retention-days: 1
-          if-no-files-found: ignore
+          if-no-files-found: error
           include-hidden-files: false
 `;
