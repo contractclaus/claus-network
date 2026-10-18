@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_JBcj5qphvrUsLkj7YQrGo7k9Zkej",
-  "source": "claus-goal-phase52-20261018",
+  "deployed": "dpl_8oiXDPDrRBR6cxgVZBL26izdKsP4",
+  "source": "claus-goal-phase53-20261018",
   "files": {
     "package-lock.json": "17a170f69c19150c7a17ca9c89a489c5dc769645082c98a4cc199b298bd70662",
     "package.json": "c9dba632aa7e64fdc8fe6c12a481833d5cede7df6563d8e30e19147e3a8f69bb",
@@ -81,7 +81,7 @@
     "src/resources/object-provider.mjs": "98e3eb3946886911dac13586859ef1af5ca5b2aba23fa9c3757d4568b0883f13",
     "interfaces/resource-objects.mjs": "2b1f3461ad55c9e1c8a71a181344c9702b860c7e115edeaf8df5dc71aef1133a",
     "tests/resource-objects.test.mjs": "4627ab902444aa23107cffeaf4be50a93f7f8c0f9e80a5d2f8b69cc7f23a0d48",
-    "src/resources/catalog.mjs": "94f3ce50a42d3aa954be53ede6c00eb94968cb888a95b0de9f4f713acbc40a34",
+    "src/resources/catalog.mjs": "6874ec2a224b355461a423bbe3d49fa35e60df7973df169854899307d6276921",
     "src/resources/endpoints.mjs": "6a1cd7bd4a49b7219a8a5c909f649f38c66bcca8dfb2243879c28869790fd8f9",
     "src/resources/endpoint-transport.mjs": "b6fc8d0df460af5e53edf29947c86d873620f9ad9eff1abef1ebe7336d0f5c8a",
     "tests/resource-endpoints.test.mjs": "1f93ab26eb74e7abb4986bc83a129ce402c26ed7563afee3b23bdcab6214f89c",
