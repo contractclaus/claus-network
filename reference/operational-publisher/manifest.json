@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_HCM6GFmHtkEWKKvpZsCPRWGFm31y",
-  "source": "claus-goal-phase38-20261018",
+  "deployed": "dpl_FgpqgCMPkAY7BgSj2dadpFcoPWPN",
+  "source": "claus-goal-phase39-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -68,11 +68,11 @@
     "src/resources/store.mjs": "57d0de514209f834b8df31e61009cde765a0962d1db06281c50d3a2906e8ce58",
     "src/resources/vault.mjs": "75783f8a566507017a0bb0ef651649d03a54f402f690977a547e6628be5912dd",
     "src/resources/providers.mjs": "cf81c7462102101f4b22c342849b67b9e6c6d5c945f282b5d7cdf435c5e864a3",
-    "src/resources/service.mjs": "4297239d67a0dc66ce534eeb7e87c3843f3417028ba6df3bea83bd676e428731",
+    "src/resources/service.mjs": "bea245cbbc84ed1f26c825b8addf19212865e7e47a83ac485d9f1b4693f0df53",
     "src/resources/routes.mjs": "1c13fc8da97a97642afcf5f164d1e02fe7a821fe46fb3e7c6adef289a1499dd2",
     "tests/resources.test.mjs": "0dcdd61aefe86831baa1d48e2e9e7898aad6ad692bee50a407e2167d68b7c096",
     "tests/gpu-capacity.test.mjs": "0c7832783e55fe5f913f70370a4f4ca0f5657d7bd7042b75624730cc079aa16a",
-    "src/resources/database.mjs": "333435d0d06240d7ae0c132be4bc2e68de1a306858b9fb8deb1f484f6ff49319",
+    "src/resources/database.mjs": "ce9116fda4ca2d0532ee6f935601a748f14edb0d26a5c3819ceb1065206bbdb6",
     "src/resources/repository.mjs": "cb5bfb7bb5409e3667058951f256bf5a6332f8eb7b0e2860d8b55064f9bb7744",
     "src/resources/publishing.mjs": "0108ef391458fa080bc762b6a85ad52756c8e603ac416aab19737d2e788a78bd",
     "src/resources/budget.mjs": "f650e9332c1ef57328b3fdfa2d5bd145e50451433a83942bb30abdc5ee9c504d",
@@ -126,7 +126,7 @@
     "src/resources/account-costs.mjs": "6721903d0ddccaaa7c57d5b64ab96a1fe7a17a3088efe3c752e3f99d7625ba3e",
     "tests/account-costs.test.mjs": "4ad0a5591cbd209b3f9ba31dddec967ee5cef1fee3804ca98ab498fc0098b09c",
     "src/resources/grant-spending.mjs": "0fa66d8c8cf82c1e32aecf676af223f7502a98158d3c47ea2db39d4feb277b11",
-    "src/resources/retirement.mjs": "1035e560e4fd2856c5ff93894dbb03fa231efb9d566d0a1b6084a3045588cbf6",
+    "src/resources/retirement.mjs": "03c2eaaef95a697ad064d105c47a06d0f0d1b5021fd9d8d7a0097981ecba44ce",
     "src/resources/repository-grants.mjs": "cc9ebbd101ebf32a861ef7beea02218dab37f68a41e8ab46529b0ab497948f7a",
     "src/resources/specialists.mjs": "1cc23ae4dc6fa10013cc5d91f1f8d0db220a50b8f16e5abe88671434b2849cd7",
     "src/resources/operational-observation.mjs": "a250d344c84654f86983ae0890843b2ec26466d186bb32b8f0291916b7aff00e",
@@ -139,7 +139,11 @@
     "src/resources/database-compatibility.mjs": "2ef920b45af994ff502f49bb9bfbeafc471ff6c31a7fecad74b905e683cf84e1",
     "src/resources/schema-snapshot.mjs": "0527330f745563d567b31dfe2295b0f8afbf37161cf21f5250b9b8604b0ca441",
     "src/resources/resource-trace.mjs": "288b49b92df06fedc81c3a8c778b3a368e7b3e38bd8bcac105102549c0673822",
-    "src/resources/negative-receipt.mjs": "10447dff4acacf4401032067b4e8edcca12eb4bd0c3b6bbd23144245d7afd80c"
+    "src/resources/negative-receipt.mjs": "10447dff4acacf4401032067b4e8edcca12eb4bd0c3b6bbd23144245d7afd80c",
+    "src/resources/database-retirement.mjs": "fd99d2fc715fe02adec4cb4607b85f9f10ab719492ddc54ac0fb2890f6e8d0de",
+    "src/resources/database-retirement-proof.mjs": "e62074f7c7b7e20dc0772025ab46c805e200ef86c3d5c5ccb7389c6596854fe7",
+    "src/resources/database-retirement.sql": "6a80c93b3802a8846816bd125831196661ec446a39a3a2490215c0616bafa5f7",
+    "src/resources/database-provision.sql": "6657bf15a542a9e18fab15424ed79dfa7172f74f251fd572c012b0102b0caf0e"
   },
   "referenceSubset": true
 }

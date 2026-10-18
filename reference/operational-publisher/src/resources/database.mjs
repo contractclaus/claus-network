@@ -1,3 +1,4 @@
+import {databaseRetirement} from './database-retirement.mjs';
 import {lockedSchemaSnapshot} from './schema-snapshot.mjs';
 import {Pool,neonConfig} from '@neondatabase/serverless';
 import {createHash} from 'node:crypto';
@@ -7,6 +8,8 @@ export function resourceDatabase({env=process.env,poolFactory=options=>new Pool(
  async function withDb(connection,callback){if(!connection)throw Error('resource_database_not_connected');if(typeof WebSocket!=='undefined')neonConfig.webSocketConstructor=WebSocket;const pool=poolFactory({connectionString:connection,max:1,connectionTimeoutMillis:10000});pool.on?.('error',()=>{});try{return await callback(pool);}finally{await pool.end();}}
  function binding(id,connection){const url=new URL(connection),suffix=id.slice(4);if(!/^res_[a-f0-9]{24}$/.test(id)||url.pathname!=='/claus_applications'||decodeURIComponent(url.username)!=='claus_app_'+suffix)throw Error('resource_database_binding_invalid');return {schema:'app_'+suffix,role:'claus_app_'+suffix};}
  return {
+  async retire(id,plan,disposition){return withDb(env.RESOURCE_DATABASE_URL,db=>databaseRetirement({query:(...args)=>db.query(...args),environment:env}).apply(id,plan,disposition));},
+  async retirementState(id,plan){return withDb(env.RESOURCE_DATABASE_URL,db=>databaseRetirement({query:(...args)=>db.query(...args),environment:env}).state(id,plan));},
   async withSchemaSnapshot(id,connection,callback){const {schema}=binding(id,connection);return withDb(connection,async pool=>{const db=await pool.connect();try{return await lockedSchemaSnapshot(db,id,schema,callback);}finally{db.release();}});},
   connection(id,password){if(!env.RESOURCE_DATABASE_URL)throw Error('resource_database_not_connected');const url=new URL(env.RESOURCE_DATABASE_URL);url.username='claus_app_'+id.slice(4);url.password=password;binding(id,url.href);return url.href;},
   async provision(id,connection){const expected=binding(id,connection),password=decodeURIComponent(new URL(connection).password);return withDb(env.RESOURCE_DATABASE_URL,async db=>{const v=(await db.query('SELECT claus_resource_admin.provision($1,$2) AS value',[id,password])).rows[0].value;if(v.schema!==expected.schema||v.role!==expected.role||v.database!=='claus_applications')throw Error('resource_database_binding_invalid');return v;});},

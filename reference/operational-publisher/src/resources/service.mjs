@@ -43,7 +43,7 @@ export function createResourceService({objects=null,repository=null,publishing=n
  const merges=managedRepositoryMerge({store,call:providers.call,now});
  const workers=managedWorkerQueues({store,seal,open,workStatus,now});
  const specialists=managedSpecialists({store,providers,open,workStatus,now,invoke:(...args)=>call(...args)});
- const retirement=managedRetirement({store,providers,now,invoke:(operation,input,requestId)=>call(operation,input,requestId,{retiring:true})});
+ const retirement=managedRetirement({store,providers,database,now,invoke:(operation,input,requestId)=>call(operation,input,requestId,{retiring:true})});
  const costs=accountCosts({store,env:environment,now});
  const releases=managedReleases({store,call:providers.call,now});
  const domains=managedDomains({store,call:providers.call,now});
@@ -119,7 +119,7 @@ export function createResourceService({objects=null,repository=null,publishing=n
   if(operation==='identity'){if(!['vercel','github'].includes(input.provider))fail('provider_invalid');const observation=await providers.identity(input.provider);await catalog.observe(input.provider,observation);return observation;}
   if(operation==='resources'){const p=await store.list('resource',offset);return {...p,items:p.items.map(metadata)};}
   if(operation==='database_schema'){const r=await resource(input.resourceId);if(r.provider!=='postgresql')fail('provider_invalid');const key=await secret(r.connectionSecretId);active(key);return database.inspect(r.id,open(key.sealed,key.id+':'+key.version));}
-  if(operation==='resource'){const r=await resource(input.resourceId);return {...metadata(r),observation:r.kind==='managed-network-volume'?(await volumes.call('volume_info',{resourceId:r.id})):r.kind==='managed-queue'?await queues.call('queue_info',{resourceId:r.id}):r.provider==='http'?{state:r.status,endpoint:r.definition,configurationIsNotExecutionProof:true}:r.provider==='r2'?await objects.inspect(r):r.provider==='postgresql'?await database.inspect(r.id,await databaseConnection(r)):await providers.read(r),observedAt:stamp()};}
+  if(operation==='resource'){const r=await resource(input.resourceId);return {...metadata(r),observation:r.kind==='managed-network-volume'?(await volumes.call('volume_info',{resourceId:r.id})):r.kind==='managed-queue'?await queues.call('queue_info',{resourceId:r.id}):r.provider==='http'?{state:r.status,endpoint:r.definition,configurationIsNotExecutionProof:true}:r.provider==='r2'?await objects.inspect(r):r.provider==='postgresql'?(r.retirementPlanId?await database.retirementState(r.id,r.retirementPlanId):await database.inspect(r.id,await databaseConnection(r))):await providers.read(r),observedAt:stamp()};}
   if(operation==='secrets'){const p=await store.list('secret',offset);return {...p,items:p.items.map(secretMetadata)};}
   if(operation==='bindings')return {items:(await all('binding')).filter(b=>!input.resourceId||b.resourceId===input.resourceId).map(b=>({resourceId:b.resourceId,secretId:b.secretId,version:b.version,envName:b.envName,status:b.status,updatedAt:b.updatedAt,requiresDeployment:true}))};
   if(operation==='deployments'){const r=await resource(input.resourceId);if(r.provider!=='vercel')fail('provider_invalid');return {items:await providers.deployments(r)};}
