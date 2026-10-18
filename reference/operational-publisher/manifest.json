@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_GzS4brFutugew5JtqdB9kW5Y2ARZ",
-  "source": "claus-goal-phase23-20261018",
+  "deployed": "dpl_FnrUL2Zr1URZJUgbUgWuKPtenfAy",
+  "source": "claus-goal-phase24-20261018",
   "files": {
     "package-lock.json": "1f8e4c274e949e72d5213b333ae7f858a80c3b7f96ddc47634a64fa6796c27fb",
     "package.json": "908b1e3d3a0a31ed66ed8ed7a31c08260ef7cb5583121789e7d2b3a90df9a9e2",
@@ -121,8 +121,8 @@
     "src/resources/repository-releases.mjs": "b8874eb51511952132fe98af9c9cfff0541562334ff8664dbada8fc2749c443f",
     "src/resources/project-domains.mjs": "efc91af4ec62039a9f7da9992af930cff4ef5a4eb058126560bff50bb068809d",
     "tests/resource-release-domains.test.mjs": "f21d2438d8dd953e176e1507ea9537dc5a5cac345d75479b4def2dab9ad55277",
-    "src/recovery/backup-allowance.mjs": "95b6c825347e1fba301494c22d85a7a1df866c627b5dc7cb80f6e6bed30482c2",
-    "tests/backup-allowance.test.mjs": "e9e729a77f0cc050525af68812cec1e3c0583e369554f5a4d1a19b40220717a9"
+    "src/recovery/backup-allowance.mjs": "0ae46571dc8da41a3f9627751acc39d3c8cd227e4dacfb6421ff3302ada94297",
+    "tests/backup-allowance.test.mjs": "e1e87fdb3a38804ecc61f06edb9b38e6253168f01390b2350fe3c9a08534392b"
   },
   "referenceSubset": true
 }

@@ -11,8 +11,8 @@ export function backupAllowance({store,budget,secret,now=Date.now}){
   const id='database-recovery-week-'+period;
   const saved=(await store.put('backup-allowance',id,{version:1,id,period,slotStart:period*slots,slots,maximumPerSlot,maximum:slots*maximumPerSlot,validFrom:new Date(period*slots*slotMs).toISOString(),expiresAt:new Date((period+1)*slots*slotMs).toISOString(),createdAt:new Date(time).toISOString(),purpose:'Seven-database read-only encrypted recovery; maximum one attempt per six-hour slot; retained for 30 days.'})).value;
   if(saved.period!==period||saved.maximum!==slots*maximumPerSlot||saved.slots!==slots)throw Error('backup_allowance_conflict');
-  await budget('reserve',id,saved.maximum,'storage');
-  await budget('commit',id,saved.maximum,'storage');
+  await budget('reserve',id,String(saved.maximum),'storage');
+  await budget('commit',id,String(saved.maximum),'storage');
   return {allowance:saved,signature:createHmac('sha256',secret()).update(JSON.stringify(saved)).digest('hex')};
  };
 }
