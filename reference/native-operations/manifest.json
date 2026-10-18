@@ -100,7 +100,7 @@
     "src/external/development-grant.ts": "82f4e0c3de561d152653ab6b3df380c615b6585676303301e3cd24bbebecf6b8",
     "src/external/providers.ts": "7502f9d5342949fd7877411848a1c32a86fa3a45b8fcc33f87208c8b5d7c7dc8",
     "src/external/service.ts": "ecf5be772188350f54a065ebdaea4c12f1174bdd0a50b4a3c717ddb0f2c73fcd",
-    "src/index.ts": "29a0120eac29f77f6cc9aa5bf05cc978e856d3c00971d28d78e7274bd48b3688",
+    "src/index.ts": "e2d4c17f76fbab4fe8586116fe389fa0f8f780fdb1f2f1c71a946edcb68fcbab",
     "src/external/adapters.ts": "9a07a65cd96233659098dfdf83a2833bb8bb6129e6537db41e2d08429b454777",
     "src/external/browser-diagnostics.ts": "28d4f8da957ef845166bcbd098f9e43fe9ecd502cfffac1ec932b74983a3d616",
     "src/config.ts": "58b5256814ad82801f04daa5fc8afcb3e5beb02ca4f5babf33cf5b51bb28955d",
@@ -178,8 +178,11 @@
     "src/continuity-gate.d.mts": "e4b62c77764a91f52e6b8ba665351fe09e6a27cde7a32c92ea50cdf5097881e9",
     "src/native-continuity.ts": "b3919208ed21db711a06f82690607f790ac8cc591cfd75e5a88226beaae4cfd4",
     "src/person-continuity.ts": "eee8947472f0e0f06b683d1081fc7b7cf3c4f347341c1ca2bad2ffae0594de1d",
-    "src/agent-continuity.ts": "f49dc19000dbd946e4fd4f6ab0812c8e0063b3c26e073f98ba1c8808c3553d7a"
+    "src/agent-continuity.ts": "f49dc19000dbd946e4fd4f6ab0812c8e0063b3c26e073f98ba1c8808c3553d7a",
+    "src/runtime-export.mjs": "f2511e3856c1cb224d559d8464e883817e33048da51418d281a945ef0bbcc2f5",
+    "src/runtime-export-scope.json": "f10ddb14324b6a00f9114b0fec956a1f3693ad64736a61da894ceaf549becc48",
+    "src/runtime-export.d.mts": "e551af6389698e8d6698c2ebfe7cecd853d5f0311574ff92eeec262f47004cc4"
   },
   "referenceSubset": true,
-  "deployed": "dpl_DHfwUhZ4eLGzcTidgitAmSJLSQYo"
+  "deployed": "dpl_FR4bqosHJ9GyuqKX1g7KkfVacbT7"
 }

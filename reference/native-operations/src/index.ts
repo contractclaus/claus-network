@@ -1,3 +1,4 @@
+import {runtimeExport} from './runtime-export.mjs';
 import {nativeMiddleware} from './native-continuity.js';
 import {databasePermit} from './database-fence.js';
 import {browserDownloadRoute} from './external/browser-downloads.js';
@@ -61,6 +62,7 @@ import {networkReviewRoutes} from './network-review-routes.js';
 import {networkOperations,networkOperationsEnabled} from './network-operations.js';
 
 const app=new Hono();
+app.get('/internal/recovery/runtime-environment',c=>runtimeExport(c.req.header('authorization')));
 app.use('/api/*',nativeMiddleware);
 app.use('/internal/*',nativeMiddleware);
 app.get('/internal/browser-download',c=>browserDownloadRoute(c.req.raw));

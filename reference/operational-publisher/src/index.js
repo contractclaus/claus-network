@@ -1,3 +1,4 @@
+import {runtimeExport} from './runtime-export.mjs';
 import {hostMiddleware} from './continuity-host.mjs';
 import {installDatabaseRecovery} from './recovery/database-recovery.mjs';
 import {installBackupAllowance} from './recovery/backup-allowance.mjs';
@@ -52,6 +53,7 @@ import {privacyRelay,privacyConfiguration} from './privacy.js';
 
 export function createSignerApp({database}={}) {
 const app=new Hono();
+app.get('/internal/recovery/runtime-environment',c=>runtimeExport(c.req.header('authorization')));
 app.use('/api/*',hostMiddleware(c=>['POST','PUT','PATCH','DELETE'].includes(c.req.method)||c.req.method==='GET'&&(/\/(process|guardian|relay|buybacks)$/.test(c.req.path))));
   installFundingRoutes(app,'signer');
 const sql=database??(()=>{if(!process.env.DATABASE_URL)throw new Error('database_missing');return neon(process.env.DATABASE_URL);});

@@ -1,5 +1,5 @@
 {
-  "deployed": "dpl_AiHBR9FzAByEDLebUANhkvuHUMaP",
+  "deployed": "dpl_9PVJVDrPK7sGUH69E4sS1ixUPwqk",
   "source": "claus-unified-continuity-20261018",
   "files": {
     "package-lock.json": "17a170f69c19150c7a17ca9c89a489c5dc769645082c98a4cc199b298bd70662",
@@ -13,7 +13,7 @@
     "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
-    "src/index.js": "d2e17e729eb1d82e53494de0bf1062477c6dcd485ff4acdabef16917e3bb1783",
+    "src/index.js": "e36eb2d98c0bf54e7b6d2f184f1832473c4f1115aa8ef6c8d3ec2c0c26260902",
     "src/infrastructure/broker.mjs": "3dd74c7183844415cffe46a420d56bac9050b52efeb6241d60e473b92baff782",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
     "src/infrastructure/providers.mjs": "0ef70880abe2c6edbae102ef1a23b844f02d5472843eb456a92f77e76dad7135",
@@ -166,7 +166,9 @@
     "src/continuity-gate.mjs": "0d5689cf57a0354bd62d4cd26e2de758fa8c3eb52aa0e51e0cebbd13553d4a4b",
     "src/continuity-host.mjs": "6a6283e4dedae87a129f633ec3693b860f177e215a796088f8acdcfc0ef8464b",
     "src/resources/model-capacity.mjs": "7ce2387981ceacd85166e2e426349dd4092cabdb0e4684d4b5d44808edf0245a",
-    "src/resources/continuity-status.mjs": "9fc7c268069054347824b9f1afb3d8e260e56c5a0bddce8e7be9666b694f4334"
+    "src/resources/continuity-status.mjs": "9fc7c268069054347824b9f1afb3d8e260e56c5a0bddce8e7be9666b694f4334",
+    "src/runtime-export.mjs": "e8839bec2e817cbc1722cbb2735fc1ebeb86a7389f158ba449fe5d01035b49e4",
+    "src/runtime-export-scope.json": "92425a49d5db2be221bbcbf39c4e685c0753e253a7cdf1c3821af92b29260002"
   },
   "referenceSubset": true
 }
