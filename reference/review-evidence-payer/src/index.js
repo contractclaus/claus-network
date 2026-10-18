@@ -1,3 +1,5 @@
+import {hasInterruptedCreditProof} from './interrupted-credit-settlement.js';
+import {operatingLedger} from './operating-ledger.js';
 import {paymentTrace} from './payment-trace.js';
 import {negativeReceipt} from './negative-receipt.js';
 import {hasSettledCreditProof} from './credit-settlement.js';
@@ -87,7 +89,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   const reviewCredit=createCreditCompletion({env,sql,fetcher,paidFetch,store:creditWork,forceStream:true,allowSmallerOutput:false,allowCapacityDeferral:true,maximumOutputTokens:16384});
   const workHandler=id=>/^network-review:nr_[a-f0-9]{64}$/.test(id)?reviewCredit:independentCredit;
   const creditResult=row=>({status:row.status,response:row.response??null,outcome:row.outcome??null});
-  const workResult=row=>({...creditResult(row),response:recoveredBuilderResponse(row)??row.response??null,id:row.id,rail:'surplus_credit',execution:{active:row.active,activeUntil:row.active_until},...(hasSettledCreditProof(row)?{accounting:{requestId:row.id,amount:row.accounted_cost,maximumMicroUsdc:row.reserved_max,basis:'verified_provider_credit_debit',proof:row.outcome.settlementProof}}:{}),...((row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed')||hasNonpaymentProof(row)
+  const workResult=row=>({...creditResult(row),response:recoveredBuilderResponse(row)??row.response??null,id:row.id,rail:'surplus_credit',execution:{active:row.active,activeUntil:row.active_until},...((hasSettledCreditProof(row)||hasInterruptedCreditProof(row))?{accounting:{requestId:row.id,amount:row.accounted_cost,maximumMicroUsdc:row.reserved_max,basis:'verified_provider_credit_debit',proof:row.outcome.settlementProof}}:{}),...((row.status==='failed'&&row.accounted_cost==='0'&&row.dispatched_at===null&&row.outcome?.payment==='not_signed')||hasNonpaymentProof(row)
     ?{accounting:{requestId:row.id,amount:'0',maximumMicroUsdc:row.reserved_max,basis:'verified_nonpayment'}}:{})});
   const workStatus=async(db,id)=>{const row=await creditWork.readCredit(db,id);if(!row)return null;await creditWork.expireCredit(db);return reconcileCreditWork(db,await creditWork.readCredit(db,id),{env,fetcher});};
   const admitWork=async(db,id,maximum)=>{await reconcileCompletedCreditWork(db,{env,fetcher});return workAdmission(db,env,id,maximum);};
@@ -113,7 +115,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
     const trace=c.req.method==='GET'&&decodedPath.startsWith('/api/trace/')&&validRequestId(decodedPath.slice('/api/trace/'.length));
     const admission=c.req.method==='GET'&&decodedPath.startsWith('/api/admission/')&&validRequestId(decodedPath.slice('/api/admission/'.length));
     const budget=c.req.method==='GET'&&path==='/api/budget';
-    const resource=c.req.method==='GET'&&path==='/api/resources';
+    const resource=c.req.method==='GET'&&['/api/resources','/api/operating-ledger'].includes(path);
     const computeReceipt=c.req.method==='GET'&&/^\/api\/compute\/network-compute:[a-f0-9]{64}$/.test(decodedPath);
     const reviewReceipt=['GET','POST'].includes(c.req.method)&&/^\/api\/review-evidence\/[a-zA-Z0-9:_-]{1,160}$/.test(decodedPath);
     const computeId=payment?c.req.header('idempotency-key'):(status?decodedPath.slice('/api/requests/'.length):(admission?decodedPath.slice('/api/admission/'.length):computeReceipt?decodedPath.slice('/api/compute/'.length):''));
@@ -138,6 +140,7 @@ export function createPaymentApp({env=process.env,database,deriveAccount=private
   app.get('/api/external-services',async c=>c.json(externalServices().catalog()));
   app.post('/api/external-services',async c=>{try{const input=await c.req.json();if(!input||!['quote','call','status'].includes(input.operation))return c.json({error:'external_service_operation_invalid'},400);const service=externalServices();return c.json(input.operation==='status'?await service.status(input.id):input.operation==='quote'?await service.quote(input.input):await service.call(input.id,input.input));}catch(error){return c.json({error:/^external_service_[a-z_]+$/.test(error?.message??'')?error.message:'external_service_unavailable'},409);}});
   app.post('/api/setup',async c=>{await setupBudget(sql());return c.json({ready:true,payer,budget:await budgetSnapshot(sql())});});
+  app.get('/api/operating-ledger',async c=>{c.header('Cache-Control','no-store');return c.json(await operatingLedger(sql()));});
   app.get('/api/resources',async c=>{c.header('Cache-Control','no-store');const value=await resources();await refreshCapitalCash(sql());const capital=await capitalSnapshot(sql());if(capital){value.capital=capital;if(capital.state==='active'){value.budget.remainingMicroUsdc=capital.availableMicroUsdc;value.budget.limitMicroUsdc=String(BigInt(value.budget.committedMicroUsdc)+BigInt(capital.availableMicroUsdc));if(BigInt(capital.availableMicroUsdc)>0n&&value.funding?.reason==='operating_budget_exhausted')value.funding={...value.funding,reason:null,nextAction:'continue_within_rolling_capital_envelope'};value.capacity={...value.capacity,state:BigInt(capital.availableMicroUsdc)===0n?'exhausted':BigInt(capital.availableMicroUsdc)<2000000n?'limited':'available',remainingAuthorizationMicroUsdc:capital.availableMicroUsdc,nativeTwoUsdcReservations:String(BigInt(capital.availableMicroUsdc)/2000000n),payerThreeUsdcReservations:String(BigInt(capital.availableMicroUsdc)/3000000n),nextAction:BigInt(capital.availableMicroUsdc)<2000000n?'wait_for_operating_capacity_or_use_smaller_authorized_request':'continue_within_rolling_capital_envelope'};}}return c.json(value);});
   app.get('/api/budget',async c=>c.json({...await budgetSnapshot(sql()),...(creditLedgerEnabled()?{prepaid:await creditSnapshot(sql())}:{})}));
   app.get('/api/review-evidence/:id',async c=>{
