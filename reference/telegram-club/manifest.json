@@ -1,6 +1,6 @@
 {
   "files": {
-    "lib/club-telegram.mjs": "2998ca864791e7f25fc992dc2227896dc4367b5c1b295df02e12e7d38ec7ea40",
+    "lib/club-telegram.mjs": "a94ab8652bbe1705805de52221b36330cbea5b6c9482f0fc73ea350ba810f018",
     "lib/telegram-activation.mjs": "01df3e7d080b1eb1467bf8c4274419c849c7051a0a67104e770df85ac95f315d",
     "lib/club-person-continuity.mjs": "7b1bd4609ac582bbe1975c1f41df66c909194298d7c62acc03a96db53678eb92",
     "lib/continuity-gate.mjs": "0d5689cf57a0354bd62d4cd26e2de758fa8c3eb52aa0e51e0cebbd13553d4a4b",
@@ -18,6 +18,6 @@
     "lib/security/communication-policy.mjs": "a457513dd9140004fa63acb229cf7d187f298a4f621a1520298d98cfac792e30"
   },
   "referenceSubset": true,
-  "source": "claus-social-execution-boundary-20261018",
+  "source": "claus-connected-observation-recovery-20261018",
   "deployed": "included-in-this-web-release"
 }

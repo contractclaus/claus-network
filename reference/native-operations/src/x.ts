@@ -1,3 +1,4 @@
+import {outgoingActionRisk} from './security/communication-policy.mjs';
 import {recoverSenderReceipts} from './sender-recovery.js';
 import {textPrefix} from './text.ts';
 import { createHmac, randomBytes } from 'node:crypto';
@@ -92,6 +93,7 @@ export async function readXAccount(username:string,paginationToken?:string,reque
 }
 export type Attribution={username:string;sourceUrl:string};
 export function validatePost(text:unknown,attributions:unknown=[],format:'short'|'original'='short',hasGif=false):asserts text is string {
+  const risk=outgoingActionRisk(text);if(risk)throw new ConfirmedFailure(risk);
   const maximum=format==='original'?4000:280;
   if(typeof text!=='string'||!text.trim()&&!hasGif||[...text].length>maximum||!Array.isArray(attributions)||attributions.length>3)throw new ConfirmedFailure(format==='original'?'invalid_original_post':'invalid_short_post');
   // X counts occurrences, including two uses of the same symbol. Reject before

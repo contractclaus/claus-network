@@ -1,4 +1,4 @@
-import {operationSucceeded,networkCheckpointSaved} from './operation-result.js';
+import {operationSucceeded,networkCheckpointSaved,resourceStatusObserved} from './operation-result.js';
 import {textWindow,textPrefix} from './text.ts';
 import {walletOverview,paymentRequest,paymentProgress} from './payment-context.js';
 import {createHash} from 'node:crypto';
@@ -146,7 +146,10 @@ export function continuationView(messages:any[],checkpointId:string) {
 }
 export function toolOutcome(result:any,toolName?:string,input?:any) {
   if(toolName==='network_work'&&networkCheckpointSaved(result,input))return {success:true,checkpointSaved:true};
-  return {success:operationSucceeded(result),...(typeof result?.exitCode==='number'?{exitCode:result.exitCode}:{})};
+  // The inbox reader intentionally returns an array, including [] for no mentions.
+  // Do not make arbitrary arrays or write responses successful receipts.
+  if(toolName==='read_mentions'&&Array.isArray(result))return {success:result.every(row=>row&&typeof row==='object'&&/^\d{1,19}$/.test(row.postId??'')&&row.replyStatus==='pending'&&!row.error),observationOnly:true};
+  return {success:operationSucceeded(result),...(resourceStatusObserved(result)?{observationOnly:true,observedState:result.result.state}:{}),...(typeof result?.exitCode==='number'?{exitCode:result.exitCode}:{})};
 }
 
 // A paid response can arrive after the worker loses its connection. Restore

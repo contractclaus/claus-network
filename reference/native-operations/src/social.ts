@@ -173,7 +173,7 @@ export async function originalPostContext(config:Configuration,db:SocialQuery=sq
     db`SELECT input->>'text' AS text,completed_at,result->'data'->>'id' AS post_id FROM claus_actions WHERE kind='x_post' AND status='completed' AND id !~ ${'^x_original_[0-9]+:[0-9]+$'} AND input->>'replyTo' IS NULL AND result->'data'->>'id' IS NOT NULL ORDER BY completed_at DESC LIMIT 4`
   ]);
   const last=recent[0]?.completed_at;
-  const schedule=originalPostSchedule(config.settings.socialStartedAt!,last?new Date(last).toISOString():null,now);
+  const schedule=originalPostSchedule(config.settings.socialStartedAt!,last?new Date(last).toISOString():null,now,config.policy.rules);
   const enabled=!!(config.settings.enabled&&config.policy.capabilities.xPublish&&!publicChannelBlocked(config.policy,'publish_post'));
   const attempts=enabled?await db`SELECT id,status,result FROM claus_actions WHERE id LIKE ${'x_original_'+Date.parse(schedule.nextAt)+':%'} ORDER BY created_at`:[];
   const delivery=originalDelivery(attempts);
@@ -389,6 +389,7 @@ export async function wakeDecision(generation:number) {
   if(config.policy.capabilities.xPublish&&!publicChannelBlocked(config.policy,'publish_post')) {
     const schedule=await originalPostContext(config);
     if(current.status==='waiting'&&schedule.delivery.mayCompose&&schedule.nextAt&&Date.parse(schedule.nextAt)<Date.parse(current.next_at))current.next_at=schedule.nextAt;
+    if(schedule.due&&schedule.delivery.mayCompose)newMessage=true;
   }
   const networkDue=networkOperationsEnabled(config)&&current.status==='waiting'?await networkOperations.inspect().catch(()=>false):false;
   return scheduledWake(current,newMessage||await clubDue(config)||networkDue);
