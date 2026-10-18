@@ -1,3 +1,4 @@
+import {commercePorts} from './commerce-ports.mjs';
 import {Pool,neonConfig} from '@neondatabase/serverless';
 import ws from 'ws';
 import {createApplication} from './server.mjs';
@@ -40,7 +41,7 @@ export async function openRuntime({env=process.env,allowLocal=false}={}){
    databaseBoundary=async()=>{await store.read('network','authority');return {profile:'local-sqlite',verified:false};};
   }
   const intakePorts=contractIntakePorts(env),oci=ociPorts({env}),infrastructure=infrastructurePorts({env});
-  const app=createApplication({
+  const app=createApplication({commercePorts:commercePorts(env),
    store,origin:env.CLAUS_NETWORK_ORIGIN??'https://claus.si',rateSalt:env.CLAUS_NETWORK_RATE_SALT,
    registryOrigin:env.CLAUS_OCI_REGISTRY_ORIGIN??'https://claus-network-api.vercel.app',dataObjects:await dataObjects(env),imageArchive:await imageArchive(env),sourceObjects:await sourceObjects(env),
    infrastructurePorts:infrastructure.ports,infrastructureEnabled:infrastructure.enabled,

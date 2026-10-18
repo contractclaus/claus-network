@@ -1,3 +1,4 @@
+import {commerceRoutes} from './commerce-routes.mjs';
 import {dataRoutes} from './data-routes.mjs';
 import {dataRecordRoutes} from './data-record-routes.mjs';
 import {workPlanningRoutes} from './work-planning-routes.mjs';
@@ -189,6 +190,7 @@ const descriptions = {
 const route=(name,method,path,properties={},required=Object.keys(properties),publicRead=false)=>({name,method,path,inputSchema:object(properties,required),public:publicRead,
  description:descriptions[name] ?? `${method} ${path}. ${publicRead?'Public read.':method==='GET'?'Requires current object read permission.':'Requires current object mutation permission. Reconcile existing resource IDs before retrying an uncertain request.'}`});
 export const ROUTES=Object.freeze([
+ ...commerceRoutes,
  ...dataRoutes(route,string,integer),
  ...dataRecordRoutes(route,string,integer),
  ...infrastructureRoutes(route,string,integer,boolean,object),
