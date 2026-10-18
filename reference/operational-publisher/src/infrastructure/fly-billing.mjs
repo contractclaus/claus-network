@@ -1,3 +1,4 @@
+import {flyDiagnosticQuery,summarizeFlyDiagnostics} from './fly-diagnostics.mjs';
 import {createHash} from 'node:crypto';
 import {check,providerRequest} from './providers.mjs';
 
@@ -37,6 +38,11 @@ export function flyBilling({token,request=fetch,now=Date.now}){
   }
   return {
     account,
+    async diagnostics(work,checkpoint,config){
+      const id=checkpoint.providerResourceId;
+      const series=await metrics(flyDiagnosticQuery(config.app,id),config);
+      return summarizeFlyDiagnostics(series,config.app,id,now());
+    },
     async readiness(config){const billing=await account(config);await metrics('count(fly_instance_net_sent_bytes)',config);return {billing,metricsAuthenticated:true};},
     async quote(work,config){
       const billing=await account(config);await metrics('count(fly_instance_net_sent_bytes)',config);

@@ -1,3 +1,4 @@
+import {captureBrowserEvents} from './browser-events.js';
 import {browserNavigation} from './browser-targets.js';
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -107,11 +108,13 @@ export async function browserRequest(p:ExternalPolicy,operation:string,input:any
  if(session.projectId!==spec.projectId||typeof session.connectUrl!=='string')throw new ProviderFailure('browser_session_unavailable',true);
  const connect=new URL(session.connectUrl);if(connect.protocol!=='wss:'||!(connect.hostname==='connect.browserbase.com'||connect.hostname.endsWith('.browserbase.com')))throw new ProviderFailure('browser_connection_invalid',true);
  let browser:Awaited<ReturnType<typeof chromium.connectOverCDP>>|undefined;
+ let capture:ReturnType<typeof captureBrowserEvents>|undefined;
  try{
   browser=await chromium.connectOverCDP(session.connectUrl,{timeout:20000});
   const context=browser.contexts()[0];if(!context)throw new ProviderFailure('browser_context_missing',true);
   await context.route('**/*',async route=>{const req=route.request();if(req.isNavigationRequest()){try{await browserNavigation(p,req.url());}catch{await route.abort();return;}}await route.continue();});
   const page=context.pages()[0]??await context.newPage();page.setDefaultTimeout(10000);
+  if(input.diagnostics===true)capture=captureBrowserEvents(page,typeof input.value==='string'?[input.value]:[]);
   if(operation==='browser_navigate')await page.goto(await browserNavigation(p,input.url),{waitUntil:'domcontentloaded',timeout:20000});
   else if(operation==='browser_action'){
    browserUrl(p,page.url());
@@ -133,10 +136,11 @@ export async function browserRequest(p:ExternalPolicy,operation:string,input:any
   // Diagnostics must never discard a successfully read page or cause a second
   // session to be purchased merely because optional measurements were missing.
   let diagnostics;
-  if(input.diagnostics===true){try{diagnostics=await browserDiagnostics(page);}catch{diagnostics={available:false,error:'browser_diagnostics_unavailable',instructionAuthority:false};}}
+  if(input.diagnostics===true){try{diagnostics=await browserDiagnostics(page);}catch{diagnostics={available:false,error:'browser_diagnostics_unavailable',instructionAuthority:false};}diagnostics={...diagnostics,events:capture?.snapshot()};}
   return {sessionId:input.sessionId,...(opened?{sessionMode:'single-request',closedAfterRead:true}:{}),url:page.url(),title:await page.title(),text,controls,...(diagnostics?{diagnostics}:{}),instructionAuthority:false};
  }catch(e){if(e instanceof ProviderFailure)throw e;throw new ProviderFailure('browser_action_outcome_unavailable',operation==='browser_read');}
  finally{
+  capture?.stop();
   let disconnected=false;
   if(browser)try{await browser.close();disconnected=true;}catch{}
   if(opened&&!disconnected)await providerJson('https://api.browserbase.com/v1/sessions/'+input.sessionId,{method:'POST',headers,body:JSON.stringify({status:'REQUEST_RELEASE'})},false);
