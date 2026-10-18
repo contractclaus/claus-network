@@ -139,8 +139,21 @@ jobs:
               if not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)): raise RuntimeError('output_special_file')
               if stat.S_ISREG(mode): size+=item.stat().st_size
           if size>1024**3: raise RuntimeError('output_over_1GiB_use_object_storage')
-          (root/'claus-result.json').write_text(json.dumps({'action':os.environ['CI_ACTION'],'source':os.environ['CI_SOURCE'],'status':os.environ['BUILD_STATUS'],'imageDigest':os.environ.get('IMAGE_DIGEST','')}))
+          result=json.dumps({'action':os.environ['CI_ACTION'],'source':os.environ['CI_SOURCE'],'status':os.environ['BUILD_STATUS'],'imageDigest':os.environ.get('IMAGE_DIGEST','')})
+          (root/'claus-result.json').write_text(result)
+          receipt=pathlib.Path(os.environ['RUNNER_TEMP'])/'claus-receipt'
+          receipt.mkdir(exist_ok=True)
+          (receipt/'claus-result.json').write_text(result)
           PY
+      - name: Upload immutable image receipt
+        if: always() && !cancelled() && steps.bounded-result.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: claus-receipt-\${{ inputs.action }}
+          path: \${{ runner.temp }}/claus-receipt/claus-result.json
+          archive: true
+          retention-days: 1
+          if-no-files-found: error
       - name: Upload retained result
         if: always() && !cancelled() && steps.bounded-result.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

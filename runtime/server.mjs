@@ -112,7 +112,7 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
  }});
  const builds=createBuilds({store,identity,projects,jobs,artifacts,now,limit:access.limit});
  const partnerLaunches=createPartnerLaunches({store,identity,builds,artifacts,sourceFiles,pins:partnerLaunchAssignment,now});
- const runtimeReleases=createRuntimeReleases({store,identity,projects,artifacts,origin:registryOrigin,now});
+ const runtimeReleases=createRuntimeReleases({store,identity,projects,artifacts,origin:registryOrigin,now,inspectOwnedBuild:infrastructurePorts.inspectOwnedBuild});
  reviewSystem=createReviewSystem({store,identity,projects,builds,jobs,artifacts,now,partnerLaunches,runtimeReleases,validatePublicBuild:(artifact,profile)=>profile===RUNTIME_IMAGE_PROFILE?validateRuntimeBuild(artifact):[CAPITAL_PROFILE,PARTNER_PROFILE].includes(profile)?validateCapitalBuild(artifact):profile===NATIVE_PROGRAM_PROFILE?validateNativeProgramBuild(artifact):chain.validateModule(artifact,profile),selectReviewProfile:(reader,projectId,input)=>input.profile===RUNTIME_IMAGE_PROFILE?runtimeReleases.select(reader,projectId,input):input.profile===PARTNER_PROFILE?partnerLaunches.select(reader,projectId,input):input.profile===CAPITAL_PROFILE?selectCapitalReview({reader,identity,projectId,...input}):input.profile===NATIVE_PROGRAM_PROFILE?selectNativeProgramReview({reader,identity,projectId,...input}):deployments.reviewProfile(reader,projectId,input),...reviewPorts});
  const chain=chainPorts.chain??createReadonlyChainRouter({
   sepolia:createChainRead({client:chainPorts.client??createPublicClient({transport:rpcHttp('https://ethereum-sepolia-rpc.publicnode.com',{retryCount:0,timeout:15000})})}),

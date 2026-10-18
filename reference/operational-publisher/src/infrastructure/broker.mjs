@@ -1,3 +1,7 @@
+import {managedBuilds} from '../resources/builds.mjs';
+import {resourceStore} from '../resources/store.mjs';
+import {resourceProviders} from '../resources/providers.mjs';
+import {resourceBudget} from '../resources/budget.mjs';
 import {infrastructureBudget} from './operating-budget.mjs';
 import {flyTarget} from './fly-target.mjs';
 import {runtimeReleaseApproved} from './release.mjs';
@@ -118,6 +122,7 @@ export function createInfrastructureBroker({ledger,config=()=>JSON.parse(process
     });
   }
   async function operate(operation,input){
+    if(operation==='inspect_owned_build'){try{return await managedBuilds({store:resourceStore(),providers:resourceProviders({request}),budget:resourceBudget({request}),request,now}).imageEvidence(input);}catch(e){throw Error(/^resource_[a-z0-9_]+$/.test(e.message)?e.message.replace(/^resource_/, 'infrastructure_'):'infrastructure_owned_build_unavailable');}}
     if(operation==='verify_release')return {approved:await releaseApproved(input)};
     if(operation==='funding_history'){
       const c=config(),p=c.profiles?.find(p=>p.id===input.profileId);
