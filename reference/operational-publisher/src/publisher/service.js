@@ -1,3 +1,4 @@
+import {apiRequestDiagnostics} from './request-logs.mjs';
 import {applyChange,changedManifest,schedulesFor} from './files.mjs';
 import {OperationsHost} from './host.js';
 import {target,hash,sha,validateManifest,validateChanges,patch,denyNewAuthority,isolatedPath,baseManifest} from './policy.js';
@@ -15,7 +16,7 @@ const deploymentView=d=>({id:d.id,url:d.url,projectId:d.projectId,readyState:d.r
 
 // No caller-selected provider path, URL, environment, build command or SQL.
 // The original release and its completed review come from a read-only DB role.
-export function createPublisher({repository,ledger,host=new OperationsHost(),reviewEvidence=trustedReview,controls,nativeArchive}){
+export function createPublisher({repository,ledger,host=new OperationsHost(),reviewEvidence=trustedReview,controls,nativeArchive,requestLogs=apiRequestDiagnostics}){
  async function asset(id){if(!/^asset_[a-f0-9]{32}$/.test(id??''))fail('asset_invalid');const row=await ledger.get('website-asset:'+id);if(row?.status!=='completed')fail('asset_not_ready');return row.result.asset;}
  const control=()=>controls??=publicationControls();
  const retainNative=(scope,deployment,manifest)=>scope==='native'?(nativeArchive??=new NativeArchive({host})).retain(deployment,manifest):Promise.resolve(null);
@@ -99,7 +100,7 @@ export function createPublisher({repository,ledger,host=new OperationsHost(),rev
    return rollback?control().rollbackOperation(c,r,manifest,{passed:true,rollback:{completedAt:new Date().toISOString(),verification:proof},standby}):control().activateOperation(c,r,{passed:true,sourceHash:r.source_hash,reviewEffect:r.review_effect,production:proof,standby,crons:schedulesFor(r,c.crons),verifiedBy:'fixed-publisher'});
   }
   if(operation==='asset'){if(scope!=='web')fail('asset_scope');return asset(args[0]);}
-  if(operation==='diagnostics'){const p=await host.project(scope),d=await host.api('/v13/deployments/'+c.deployment,{},scope);return {observedAt:new Date().toISOString(),project:projectView(p),deployment:deploymentView(d),errorCode:typeof d.errorCode==='string'?d.errorCode.slice(0,120):null,controlMatchesProduction:p.targets?.production?.id===c.deployment};}
+  if(operation==='diagnostics'){const p=await host.project(scope),d=await host.api('/v13/deployments/'+c.deployment,{},scope);return {observedAt:new Date().toISOString(),project:projectView(p),deployment:deploymentView(d),errorCode:typeof d.errorCode==='string'?d.errorCode.slice(0,120):null,controlMatchesProduction:p.targets?.production?.id===c.deployment,...(scope==='api'?{requests:await requestLogs()}: {})};}
   if(operation==='project')return projectView(await host.project(scope));
   if(operation==='baseline'){const [id,manifest]=args;if(id!==c.deployment||!equal(manifest,c.manifest))fail('base_changed');return projectView(await host.baseline(scope,id,c.manifest));}
   if(operation==='read'||operation==='readAsset'){const [id,file]=args,b=await bound(scope,id);if(!target(scope).paths.some(p=>p.test(file?.path))||!b.manifest.some(f=>equal(f,file)))fail('file_denied');return operation==='readAsset'?(await host.readBytes(scope,id,file)).toString('base64'):host.read(scope,id,file);}
