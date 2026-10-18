@@ -1,4 +1,5 @@
 import {flyApps} from './fly-target.mjs';
+import {retryTime} from '../resources/providers.mjs';
 export const check=(value,code)=>{if(!value)throw Error('infrastructure_'+code);};
 export class ProviderError extends Error {
   constructor(status,code,retryAt=null,details=null){super('infrastructure_'+code);this.status=status;this.retryAt=retryAt;this.details=details;}
@@ -10,7 +11,7 @@ export const microUsd=value=>{
 export async function providerRequest(request,url,token,{method='GET',body,stream=false}={}){
   const response=await request(url,{method,redirect:'error',signal:AbortSignal.timeout(stream?5000:18000),headers:{authorization:'Bearer '+token,accept:stream?'text/event-stream':'application/json',...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
   if(!response.ok){
-    const retry=Number(response.headers.get('retry-after'));
+    const retryAt=retryTime(response.headers.get('retry-after'));
     let details=null;
     const reader=response.body?.getReader();
     if(reader)try{
@@ -22,7 +23,7 @@ export async function providerRequest(request,url,token,{method='GET',body,strea
       }
     }catch{/* Malformed provider errors do not hide the original status. */}
     finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
-    throw new ProviderError(response.status,'provider_'+response.status,Number.isFinite(retry)&&retry>0?Date.now()+Math.min(retry,900)*1000:null,details);
+    throw new ProviderError(response.status,'provider_'+response.status,retryAt,details);
   }
   if(response.status===204)return null;
   const reader=response.body?.getReader();check(reader,'provider_response_missing');let length=0;const parts=[];
@@ -83,9 +84,9 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
         check(types.length<=8&&types.every(id=>typeof id==='string'&&id.length<=120),'gpu_catalog_invalid');
         const results=await Promise.allSettled(types.map(async id=>{
           const item=await api('/catalog/gpus/'+encodeURIComponent(id)+'?include=AVAILABILITY&product=POD&cloud=SECURE');
-          check(item.id===id&&Array.isArray(item.dataCenters),'provider_shape_invalid');
+          check(item.id===id&&(!item.dataCenters||Array.isArray(item.dataCenters)),'provider_shape_invalid');
           const rate=microUsd(item.price?.secure).toString();check(BigInt(rate)>0n,'price_invalid');
-          return {gpuType:id,availableRegions:item.dataCenters.filter(d=>['LOW','MEDIUM','HIGH'].includes(d.availability)).map(d=>d.id),hourlyMicroUsd:rate};
+          return {gpuType:id,availableRegions:(item.dataCenters??[]).filter(d=>['LOW','MEDIUM','HIGH'].includes(d.availability)).map(d=>d.id),hourlyMicroUsd:rate,...(Number.isFinite(item.memory)?{vramGiBPerGpu:item.memory}:{}),...(Number.isInteger(item.maxCount?.secure)?{maxGpuCount:item.maxCount.secure}:{})};
         }));
         return {authenticated:true,capacity:{kind:'gpu',observedAt:now(),items:results.map((r,i)=>r.status==='fulfilled'?{...r.value,catalogAvailable:true}:{gpuType:types[i],catalogAvailable:false,error:'catalog_unavailable'}),meaning:'Current GPU availability and catalog price; each workload still needs an approved exact image, region and funded quote.'}};
       }
@@ -96,22 +97,28 @@ export function runpodDriver({token,request=fetch,now=()=>Date.now()}){
     },
     async quote(work,config){
       const m=work.manifest;check(m.storageGiB===0,'persistent_storage_requires_profile');
-      const gpu=m.gpu!==null;check(gpu||config.cpuType,'cpu_type_not_configured');
+      const gpu=m.gpu!==null,count=gpu?(m.gpuCount??1):0;
+      check(Number.isInteger(count)&&count>=(gpu?1:0)&&count<=(gpu?(config.maxGpuCount??1):0),'gpu_count_not_allowed');
+      check(gpu||config.cpuType,'cpu_type_not_configured');
       const item=await api('/catalog/'+(gpu?'gpus/':'cpus/')+encodeURIComponent(gpu?m.gpu:config.cpuType)+'?include=AVAILABILITY&product=POD&cloud=SECURE');
       check(item.id===(gpu?m.gpu:config.cpuType),'catalog_identity_mismatch');
       const region=item.dataCenters?.find(d=>d.id===m.region);
       check(region&&['LOW','MEDIUM','HIGH'].includes(region.availability),'capacity_unavailable');
       if(!gpu)check((m.cpu&(m.cpu-1))===0&&m.cpu>=2&&m.cpu>=item.vcpu.min&&m.cpu<=item.vcpu.max&&m.memoryMiB<=item.ramGbPerVcpu*m.cpu*1024,'cpu_shape_unavailable');
-      const base=microUsd(gpu?item.price?.secure:item.price?.securePerVcpu*m.cpu);
+      if(gpu){
+        check(count<=(item.maxCount?.secure??1),'gpu_count_unavailable');
+        if(m.minimumVramGiB)check(Number.isFinite(item.memory)&&item.memory>=m.minimumVramGiB,'gpu_vram_unavailable');
+      }
+      const base=microUsd(gpu?item.price?.secure*count:item.price?.securePerVcpu*m.cpu);
       check(base>0n,'price_invalid');
       // The protected configuration reserves boot disk and shutdown headroom.
       const hourly=base+BigInt(config.diskHourlyMicroUsd);
       check(hourly<=BigInt(config.maxHourlyMicroUsd),'price_over_limit');
-      return {hourlyMicroUsd:hourly.toString(),providerHourlyMicroUsd:base.toString(),bootDiskGiB:config.bootDiskGiB,cpuType:gpu?null:config.cpuType,priceObservedAt:now()};
+      return {hourlyMicroUsd:hourly.toString(),providerHourlyMicroUsd:base.toString(),bootDiskGiB:config.bootDiskGiB,cpuType:gpu?null:config.cpuType,gpuCount:count,...(gpu?{vramGiBPerGpu:item.memory??null}:{}),priceObservedAt:now()};
     },
     async create(work,quote){
       const m=work.manifest;
-      const pod=await api('/pods',{method:'POST',body:{name:'claus-'+work.id.slice(-40),image:m.image,cloud:'SECURE',dataCenterIds:[m.region],disk:quote.bootDiskGiB,ports:m.port?[m.port+'/http']:[],entrypoint:m.command.length?m.command:undefined,startSsh:false,startJupyter:false,...(m.gpu?{globalNetworking:false}:{}),...(m.gpu?{gpu:{id:m.gpu,count:1,minVcpuCountPerGpu:m.cpu,minRamPerGpu:Math.ceil(m.memoryMiB/1024)}}:{cpu:{id:quote.cpuType,vcpuCount:m.cpu}})}});
+      const pod=await api('/pods',{method:'POST',body:{name:'claus-'+work.id.slice(-40),image:m.image,cloud:'SECURE',dataCenterIds:[m.region],disk:quote.bootDiskGiB,ports:m.port?[m.port+'/http']:[],entrypoint:m.command.length?m.command:undefined,startSsh:false,startJupyter:false,...(m.gpu?{globalNetworking:false}:{}),...(m.gpu?{gpu:{id:m.gpu,count:m.gpuCount??1,minVcpuCountPerGpu:Math.ceil(m.cpu/(m.gpuCount??1)),minRamPerGpu:Math.ceil(m.memoryMiB/1024/(m.gpuCount??1))}}:{cpu:{id:quote.cpuType,vcpuCount:m.cpu}})}});
       return observe(pod,work);
     },
     async inspect(work,checkpoint){

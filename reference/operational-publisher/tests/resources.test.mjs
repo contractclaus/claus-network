@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {createResourceService} from '../src/resources/service.mjs';
 import {sealSecret,openSecret} from '../src/resources/vault.mjs';
 import {retryTime} from '../src/resources/providers.mjs';
-function fixture(){
+function fixture({database}={}){
  const rows=new Map(),key=(k,id)=>k+':'+id,master=Buffer.alloc(32,7),providerObjects=new Map(),envs=new Map();let creates=0,writes=0,status='working',lost=false;
  const store={
   async get(k,id){return structuredClone(rows.get(key(k,id))??null);},
@@ -14,7 +14,7 @@ function fixture(){
   async complete(id,result){rows.get(key('action',id)).output=result;return result;}
  };
  const providers={configured:()=>({vault:true}),async find(p,n){return providerObjects.get(n)??null;},async create(provider,name){creates++;const r={provider,name,providerId:'p1',owner:'claus'};providerObjects.set(name,r);if(lost)throw Error('lost_provider_response');return r;},async read(r){return r;},async envs(){return [...envs].map(([key,v])=>({key,id:v.id,target:['production']}));},async envValue(r,id){return [...envs.values()].find(v=>v.id===id)?.value;},async setEnv(r,key,value){writes++;envs.set(key,{id:'env_'+key,value});}};
- const service=createResourceService({store,providers,seal:(v,a)=>sealSecret(v,a,master),open:(v,a)=>openSecret(v,a,master),workStatus:async()=>status,environment:{}});
+ const service=createResourceService({database,store,providers,seal:(v,a)=>sealSecret(v,a,master),open:(v,a)=>openSecret(v,a,master),workStatus:async()=>status,environment:{}});
  return {service,store,envs,master,get creates(){return creates;},get writes(){return writes;},lost:()=>{lost=true;},finish:()=>{status='completed';}};
 }
 test('uncertain project creation reconciles the original project without another write',async()=>{
@@ -44,4 +44,14 @@ test('application secrets rotate through encrypted bindings and worker grants st
 });
 test('provider retry-after supports seconds and HTTP-date without converting five minutes into tomorrow',()=>{
  const now=Date.parse('2026-10-18T04:00:00Z');assert.equal(retryTime('300',now),now+300000);assert.equal(retryTime('Sun, 18 Oct 2026 04:05:00 GMT',now),now+300000);
+});
+test('database credentials stay encrypted and lifecycle updates bind to the original resource and revision',async()=>{
+ let provisions=0;const changes=[];
+ const database={connection:(id,p)=>'postgresql://claus_app_'+id.slice(4)+':'+p+'@database.invalid/claus_applications',async provision(id){provisions++;return {role:'claus_app_'+id.slice(4),schema:'app_'+id.slice(4),database:'claus_applications'};},async credential(id,connection,revision,revoked,action){changes.push({id,revision,revoked,action});assert(new URL(connection).password.length===43);}};
+ const f=fixture({database}),input={name:'application-state',purpose:'Persist application state'};
+ const first=await f.service.call('database_create',input,'database');assert.equal(provisions,1);assert.equal(first.resource.connectionSecretId,first.secret.id);assert(!JSON.stringify(first).includes('postgresql:'));
+ assert.deepEqual(await f.service.call('database_create',input,'database'),first);assert.equal(provisions,1);
+ const secretId=first.secret.id;await f.service.call('secret_rotate',{secretId,expectedRevision:1},'rotate-db');
+ const row=await f.store.get('secret',secretId);assert.equal(row.version,2);assert(new URL(openSecret(row.sealed,secretId+':2',f.master)).pathname==='/claus_applications');
+ await f.service.call('secret_revoke',{secretId,expectedRevision:2},'revoke-db');assert.deepEqual(changes.map(c=>({id:c.id,revision:c.revision,revoked:c.revoked})),[{id:first.resource.id,revision:1,revoked:false},{id:first.resource.id,revision:2,revoked:true}]);
 });

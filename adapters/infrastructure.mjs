@@ -95,17 +95,13 @@ export function createFlyInfrastructure({token,organization,accountId,projectApp
   };
 }
 
-export function createRunpodInfrastructure({token,accountId,request=fetch,quote,verifyRelease,verifyReceipt,readReceipt,cpuConfiguration}){
+export function createRunpodInfrastructure({token,accountId,request=fetch,quote,verifyRelease,verifyReceipt,readReceipt}){
   text(accountId);const call=client('https://api.runpod.io',token,request);
-  const validate=w=>{check(w,'runpod',accountId);requireThat(w.manifest.storageGiB===0,'infrastructure_storage_not_supported');if(w.manifest.gpu===null)requireThat(w.profile.gpuTypes.length===0&&/^[a-zA-Z0-9_-]{1,64}$/.test(cpuConfiguration?.type??'')&&Number.isInteger(cpuConfiguration?.bootDiskGiB)&&cpuConfiguration.bootDiskGiB>=1&&cpuConfiguration.bootDiskGiB<=20,'infrastructure_cpu_configuration_required');};
-  const resourceName=w=>w.manifest.gpu===null?'claus-'+w.id.slice(-40):shortId(w);
-  async function observe(w,p){
+  const validate=w=>{check(w,'runpod',accountId);requireThat(w.manifest.gpu!==null&&w.manifest.storageGiB===0,'infrastructure_gpu_configuration_unsupported');};
+  function observe(w,p){
     if(!p)return {operationId:w.id,accountId,providerResourceId:w.providerResourceId??null,ready:false,terminal:false,outcome:'unknown'};
-    requireThat(p.name===resourceName(w)&&p.image===w.manifest.image&&(w.manifest.gpu===null||p.env?.CLAUS_RESOURCE_ID===w.id&&p.env?.CLAUS_PROJECT_ID===w.projectId),'infrastructure_resource_mismatch');
-    requireThat(/^[a-zA-Z0-9]{1,64}$/.test(p.id),'infrastructure_resource_mismatch');
-    const endpoint=w.manifest.port&&p.status!=='TERMINATED'?'https://'+p.id+'-'+w.manifest.port+'.proxy.runpod.net':null;
-    let ready=p.status==='RUNNING';if(ready&&endpoint){try{const health=await request(endpoint+w.manifest.healthPath,{method:'GET',redirect:'error',signal:AbortSignal.timeout(5000)});ready=health.ok;await health.body?.cancel();}catch{ready=false;}}
-    return {operationId:w.id,accountId,providerResourceId:p.id,ready,terminal:p.status==='TERMINATED',state:p.status,endpoint};
+    requireThat(p.name===shortId(w)&&p.env?.CLAUS_RESOURCE_ID===w.id&&p.env?.CLAUS_PROJECT_ID===w.projectId&&p.image===w.manifest.image,'infrastructure_resource_mismatch');
+    return {operationId:w.id,accountId,providerResourceId:p.id,ready:p.status==='RUNNING',terminal:p.status==='TERMINATED',state:p.status,endpoint:null};
   }
   async function find(w){
     if(w.providerResourceId){const p=await call('GET','/v2/pods/'+encodeURIComponent(w.providerResourceId),undefined,{notFound:true});if(p)return p;}
@@ -113,7 +109,7 @@ export function createRunpodInfrastructure({token,accountId,request=fetch,quote,
     for(let page=0;page<10;page++){
       const v=await call('GET','/v2/pods?limit=100'+(cursor?'&cursor='+encodeURIComponent(cursor):''));
       requireThat(Array.isArray(v?.pods)&&v.pagination,'infrastructure_response_invalid');
-      for(const p of v.pods)if(w.manifest.gpu===null?p.name===resourceName(w):p.env?.CLAUS_RESOURCE_ID===w.id){requireThat(!matched,'infrastructure_duplicate_resource');matched=p;}
+      for(const p of v.pods)if(p.env?.CLAUS_RESOURCE_ID===w.id){requireThat(!matched,'infrastructure_duplicate_resource');matched=p;}
       if(v.pagination.hasNextPage===false)return matched;
       requireThat(typeof v.pagination.nextCursor==='string'&&v.pagination.nextCursor!==cursor,'infrastructure_cursor_invalid');cursor=v.pagination.nextCursor;
     }
@@ -124,20 +120,20 @@ export function createRunpodInfrastructure({token,accountId,request=fetch,quote,
     async catalog(){const v=await call('GET','/v2/catalog/gpus?include=AVAILABILITY&product=POD&cloud=SECURE');requireThat(Array.isArray(v.gpus),'infrastructure_response_invalid');return v;},
     async create(w){
       validate(w);const found=await find(w);if(found)return observe(w,found);requireThat(w.leaseUntil>Date.now(),'infrastructure_lease_expired');
-      const m=w.manifest;const body=m.gpu===null?{name:resourceName(w),image:m.image,cloud:'SECURE',cpu:{id:cpuConfiguration.type,vcpuCount:m.cpu},dataCenterIds:[m.region],disk:cpuConfiguration.bootDiskGiB,ports:m.port?[m.port+'/http']:[],startSsh:false,startJupyter:false}:{name:shortId(w),image:m.image,cloud:'SECURE',gpu:{id:m.gpu,count:1,minVcpuCountPerGpu:m.cpu,minRamPerGpu:Math.ceil(m.memoryMiB/1024)},dataCenterIds:[m.region],disk:20,ports:[],env:{CLAUS_PROJECT_ID:w.projectId,CLAUS_RESOURCE_ID:w.id},globalNetworking:false,startSsh:false,startJupyter:false};
+      const m=w.manifest;const body={name:shortId(w),image:m.image,cloud:'SECURE',gpu:{id:m.gpu,count:m.gpuCount??1,minVcpuCountPerGpu:Math.ceil(m.cpu/(m.gpuCount??1)),minRamPerGpu:Math.ceil(m.memoryMiB/1024/(m.gpuCount??1))},dataCenterIds:[m.region],disk:20,ports:[],env:{CLAUS_PROJECT_ID:w.projectId,CLAUS_RESOURCE_ID:w.id},globalNetworking:false,startSsh:false,startJupyter:false};
       requireThat(m.command.length===0,'runpod_command_must_be_built_into_image');
-      // CPU model ingress is the provider HTTPS proxy; the application still
-      // requires its body-bound signed admission ticket before inference.
+      // Model serving ingress is provisioned separately; raw provider ports are
+      // never exposed as an authenticated Claus inference endpoint.
       const p=await call('POST','/v2/pods',body);return observe(w,p);
     },
-    async inspect(w){validate(w);return withReceipt(w,await observe(w,await find(w)));},
-    async stop(w){validate(w);const p=await find(w),o=await observe(w,p);if(!p||o.terminal)return withReceipt(w,o);
+    async inspect(w){validate(w);return withReceipt(w,observe(w,await find(w)));},
+    async stop(w){validate(w);const p=await find(w),o=observe(w,p);if(!p||o.terminal)return withReceipt(w,o);
       if(w.desired==='stopped'&&w.leaseUntil>Date.now()){
-        if(w.manifest.gpu===null||p.actions?.includes('stop'))await call('POST','/v2/pods/'+encodeURIComponent(p.id)+'/action',{action:'stop'});
+        if(p.actions?.includes('stop'))await call('POST','/v2/pods/'+encodeURIComponent(p.id)+'/action',{action:'stop'});
       }else await call('DELETE','/v2/pods/'+encodeURIComponent(p.id));
-      return withReceipt(w,await observe(w,await find(w)));
+      return withReceipt(w,observe(w,await find(w)));
     },
-    async logs(w){validate(w);const p=await find(w);await observe(w,p);requireThat(p,'infrastructure_resource_unknown');return call('GET','/v2/pods/'+encodeURIComponent(p.id)+'/logs?tail=100',undefined,{logs:true});},
-    async billing(w){validate(w);const p=await find(w);await observe(w,p);const id=p?.id??w.providerResourceId;requireThat(id,'infrastructure_resource_unknown');return call('GET','/v2/billing/pods?podId='+encodeURIComponent(id)+'&startTime='+encodeURIComponent(new Date(w.createdAt).toISOString())+'&endTime='+encodeURIComponent(new Date().toISOString())+'&bucketSize=hour');}
+    async logs(w){validate(w);const p=await find(w);observe(w,p);requireThat(p,'infrastructure_resource_unknown');return call('GET','/v2/pods/'+encodeURIComponent(p.id)+'/logs?tail=100',undefined,{logs:true});},
+    async billing(w){validate(w);const p=await find(w);observe(w,p);const id=p?.id??w.providerResourceId;requireThat(id,'infrastructure_resource_unknown');return call('GET','/v2/billing/pods?podId='+encodeURIComponent(id)+'&startTime='+encodeURIComponent(new Date(w.createdAt).toISOString())+'&endTime='+encodeURIComponent(new Date().toISOString())+'&bucketSize=hour');}
   };
 }
