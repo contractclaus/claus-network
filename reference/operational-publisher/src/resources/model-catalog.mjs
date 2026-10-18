@@ -28,7 +28,7 @@ export function modelCatalog({store,request=fetch,now=Date.now}){
   return next;
  }
  async function current(force=false){return force?refresh():(await store.get('model-catalog','surplus'))??refresh();}
- return {refresh,current,async listed(model,version){const c=await current();if(c.version!==version||Date.parse(c.validUntil)<=now())fail('catalog_stale');const m=c.models.find(x=>x.id===model);if(!m)fail('model_unlisted');return m;},async read(input){
+ return {refresh,current,async listed(model,version){let c=await current();if(Date.parse(c.validUntil)<=now())c=await refresh();const m=c.models.find(x=>x.id===model);if(!m)fail('model_unlisted');if(c.version!==version){const pinned=await store.get('model-catalog-version',version),original=pinned?.models.find(x=>x.id===model);if(!original||digest(original)!==digest(m))fail('catalog_terms_changed');}return m;},async read(input){
   if(input.refresh!==undefined&&typeof input.refresh!=='boolean'||input.query!==undefined&&(typeof input.query!=='string'||input.query.length>160)||input.offset!==undefined&&(!Number.isSafeInteger(input.offset)||input.offset<0)||input.version!==undefined&&!/^[a-f0-9]{64}$/.test(input.version))fail('catalog_input');
   const c=input.version?await store.get('model-catalog-version',input.version):await current(input.refresh===true);if(!c)fail('catalog_missing');
   const models=c.models.filter(x=>!input.query||(x.id+' '+x.provider+' '+x.features.join(' ')).toLowerCase().includes(input.query.toLowerCase())),offset=input.offset??0;

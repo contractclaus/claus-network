@@ -1,6 +1,6 @@
 {
-  "deployed": "dpl_J4Qp4XC1Z798WiK3F1ob26B9XkCA",
-  "source": "claus-goal-phase59-20261018",
+  "deployed": "dpl_FxWmGarQ2ULwFSoA5AvYaYBAEVCZ",
+  "source": "claus-seven-capabilities-20261018",
   "files": {
     "package-lock.json": "17a170f69c19150c7a17ca9c89a489c5dc769645082c98a4cc199b298bd70662",
     "package.json": "c9dba632aa7e64fdc8fe6c12a481833d5cede7df6563d8e30e19147e3a8f69bb",
@@ -13,7 +13,7 @@
     "src/github/publication.mjs": "d3ecfed9e9da2edb86c189d263b324adb73283ba67bb5e3cba5f5abc7370f8e9",
     "src/github/routes.mjs": "7ff199b24168552a04af94beaddaddb092c2b3dfb78f7f6edcf9f12f1f0e744a",
     "src/github/service.mjs": "ac671cd22314a0c5ba1cbd97af447b38a52a55ed698b2d7c5f47f896f5b518dc",
-    "src/index.js": "6b252170517b51ac3e2c821346d29b46e649a58813933c68e7ce46660e99ccd1",
+    "src/index.js": "6051ce7dc709181362ad7827a00fc684ff8e102e8fadbebc37474cd68fbdd7dc",
     "src/infrastructure/broker.mjs": "3dd74c7183844415cffe46a420d56bac9050b52efeb6241d60e473b92baff782",
     "src/infrastructure/fly-target.mjs": "6a754cb8e01085a43ab7a101e318b946504ef63ce693682d031df9aa33a02c82",
     "src/infrastructure/providers.mjs": "83c9ebebf321c3e7ed592301e1398c7d936406d7774a5b298039ee357ab107bf",
@@ -133,7 +133,7 @@
     "src/resources/worker-queues.mjs": "e7bd1d55ae7d4ce4b756a3998802e5ea78df49cb9c60ae66bdeba24be3a36b0d",
     "src/resources/worker-client.mjs": "0e8061f1b1feb5f8b42cbca5112c07d2465202496c944b7b3bc276b96ab73f84",
     "src/resources/repository-merge.mjs": "1c299ac8d082e70839849cb084f1a87b56411019d906a2be9000ccb550ace166",
-    "src/resources/model-catalog.mjs": "c8de984d984387f268bb3f9d7d58cb7a391c68f8772e6f7b35f92a549dea8f8d",
+    "src/resources/model-catalog.mjs": "3fa8d61072e2690cd76288e41e8ec8c3be255455f3db5a076edd2698e9979765",
     "src/resources/models.mjs": "66147283915dd943d05a57678e0d6c0dc70e8a0bcfd63264a7d454ac0528120f",
     "src/resources/model-format.mjs": "0edc35bd23942a3ded9bdaf34a2f59491ea6315fa76d4a43d2cff7c9b8e74d82",
     "src/resources/database-compatibility.mjs": "2ef920b45af994ff502f49bb9bfbeafc471ff6c31a7fecad74b905e683cf84e1",
@@ -159,7 +159,8 @@
     "src/resources/registrar.mjs": "249fd3f04a32e72fa11a88e8e5f41e081c4b25d8235cbca19d7158fae6b5e947",
     "src/resources/specialty-data.mjs": "50daea35f972ecb10c8f13d3cf1a85e1886d1e2610bfff2bade5ce5316aeae39",
     "src/resources/artifact-signing.mjs": "9da500c90c17ebf6ec2c181a05bf5ee5fb5a04db1494798d369f4b7b2320f933",
-    "src/resources/obligations.mjs": "435b581c9c266db5512a18d38c4312339a0c2680aea4ff5df05b407d24ce4be4"
+    "src/resources/obligations.mjs": "435b581c9c266db5512a18d38c4312339a0c2680aea4ff5df05b407d24ce4be4",
+    "src/recovery/database-recovery.mjs": "d4d21a9694e049c24bfa2b19cc1cbef955eea9d2cb4a1ef563f3a4c15d02f9d3"
   },
   "referenceSubset": true
 }

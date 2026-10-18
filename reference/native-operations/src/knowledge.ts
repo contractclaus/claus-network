@@ -1,3 +1,4 @@
+import {knowledgeWorkState} from './knowledge-work.js';
 import {textWindow,textPrefix} from './text.ts';
 import {createHash} from 'node:crypto';
 import type {Configuration} from './config.js';
@@ -98,7 +99,11 @@ export function pinnedKnowledgeBody(record:RecordEntry,row:any,channel:'public'|
 export async function readKnowledgeResolved(args:KnowledgeArgs,config:Configuration,published:any,channel:'public'|'club'='public',db=sql()) {
   const records=knowledgeRecords(config,published,channel);
   const needed=records.filter(r=>r.bodyRef&&(args.id?r.id===args.id:!args.kind||r.kind===args.kind));
-  if((!args.id&&!args.query?.trim())||!needed.length)return readKnowledge(args,config,published,channel);
+  const withWork=async(result:any)=>{
+    const selected=result.record?records.filter(r=>r.id===result.record.id):records.filter(r=>(result.records??[]).some((x:any)=>x.id===r.id));
+    return {...result,relatedWork:await knowledgeWorkState(selected,channel,()=>db)};
+  };
+  if((!args.id&&!args.query?.trim())||!needed.length)return withWork(readKnowledge(args,config,published,channel));
   // Check the snapshot and query shape before I/O. Exact pagination must be
   // applied to the full body below, not to the shorter inline summary.
   readKnowledge({...args,offset:args.id?0:args.offset},config,published,channel);
@@ -106,7 +111,10 @@ export async function readKnowledgeResolved(args:KnowledgeArgs,config:Configurat
   const rows=await db`SELECT id,body,visibility FROM claus_memories WHERE id IN (SELECT jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb))
     AND (visibility='public' OR visibility='private_network' AND ${channel}='public')`;
   const bodies=new Map(needed.map(record=>[record.id,pinnedKnowledgeBody(record,rows.find((row:any)=>row.id===record.bodyRef!.id),channel)]));
-  return readKnowledge(args,config,published,channel,records.map(r=>bodies.has(r.id)?{...r,body:bodies.get(r.id)!}:r));
+  const hydrated=records.map(r=>bodies.has(r.id)?{...r,body:bodies.get(r.id)!}:r);
+  const result:any=readKnowledge(args,config,published,channel,hydrated);
+  const selected=result.record?hydrated.filter(r=>r.id===result.record.id):hydrated.filter(r=>(result.records??[]).some((x:any)=>x.id===r.id));
+  return {...result,relatedWork:await knowledgeWorkState(selected,channel,()=>db)};
 }
 
 // Structural checks name their exact scope. They do not certify arbitrary prose.

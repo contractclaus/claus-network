@@ -29,6 +29,11 @@ export function runtimeResourceView(resources:any,profiles:any,now=Date.now()){
   const grantExpiry=time(grant?.expiresAt),expiry=time(r.leaseUntil),providerExpiry=time(r.providerLeaseUntil),maintenance=r.maintenance??null,issues:string[]=[];
   const fundingStatus=grant&&remaining!==null&&(grant.expiresAt===null||grantExpiry!==null)&&typeof grant.enabled==='boolean'?'available'
    :!grant&&!duplicates.has(id)&&observedProjects.has(r.projectId)?'unassigned':active(r)?'unavailable':'unknown';
+  // Retain the observed block without implying its cause or authorizing a restart.
+  if(r.state==='stopped'&&r.terminal===true&&r.desired==='running'&&maintenance?.last?.state==='blocked'){
+   issues.push('stopped_resource_with_blocked_maintenance');
+   issues.push(text(maintenance.last.code)?maintenance.last.code:'maintenance_blocked');
+  }
   if(active(r)){
    if(r.renewalPending)issues.push('provider_extension_not_confirmed');
    if(r.state!=='running')issues.push('resource_not_ready');

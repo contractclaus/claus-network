@@ -1,3 +1,4 @@
+import {validateBrowserFile,validateBrowserCapture,loadBrowserFile,captureBrowserFile} from './browser-media.js';
 import {captureBrowserEvents} from './browser-events.js';
 import {browserNavigation} from './browser-targets.js';
 import {chromium} from 'playwright-core';
@@ -8,9 +9,11 @@ export function workflowInput(policy:ExternalPolicy,input:any){
  browserUrl(policy,input.url);
  if(input.contextId!==undefined&&!/^[a-zA-Z0-9-]{8,100}$/.test(input.contextId))throw new ProviderFailure('browser_context_invalid',true);
  for(const s of input.steps){
-  if(!s||typeof s!=='object'||!['read','navigate','click','fill','download'].includes(s.action)||Object.keys(s).some(k=>!['action','url','target','value'].includes(k)))throw new ProviderFailure('browser_step_invalid',true);
+  if(!s||typeof s!=='object'||!['read','navigate','click','fill','download','upload','screenshot'].includes(s.action)||Object.keys(s).some(k=>!['action','url','target','value','file','capture'].includes(k)))throw new ProviderFailure('browser_step_invalid',true);
   if(s.action==='navigate')browserUrl(policy,s.url);
-  if(['click','fill','download'].includes(s.action)||s.action==='read'&&s.target!==undefined){
+  if(s.action==='upload')validateBrowserFile(s.file);
+  if(s.action==='screenshot')validateBrowserCapture(s.capture);
+  if(['click','fill','download','upload'].includes(s.action)||s.action==='read'&&s.target!==undefined){
    const t=s.target;if(!t||typeof t!=='object'||Object.keys(t).some(k=>!['role','name','label'].includes(k))||!(typeof t.role==='string'&&typeof t.name==='string'||typeof t.label==='string')||JSON.stringify(t).length>1000)throw new ProviderFailure('browser_target_invalid',true);
   }
   if(s.action==='fill'&&(typeof s.value!=='string'||s.value.length>8000))throw new ProviderFailure('browser_value_invalid',true);
@@ -62,12 +65,17 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
    browserUrl(policy,page.url());
    let report;
    if(step.action==='navigate')await page.goto(await navigate(policy,step.url),{waitUntil:'domcontentloaded',timeout:15000});
-   if(step.action==='click'||step.action==='fill'||step.action==='download'||step.action==='read'&&step.target!==undefined){
+   if(step.action==='click'||step.action==='fill'||step.action==='download'||step.action==='upload'||step.action==='read'&&step.target!==undefined){
     const t=step.target,loc=typeof t.label==='string'?page.getByLabel(t.label,{exact:true}):page.getByRole(t.role,{name:t.name,exact:true});
     if(await loc.count()!==1||!await loc.isVisible())throw new ProviderFailure('browser_target_not_unique',true);
     if(step.action==='read'){
      report=await loc.evaluate(readonlyBrowserReport);
      if(report.denied)throw new ProviderFailure('browser_readonly_report_required',true);
+    }else if(step.action==='upload'){
+     if(await loc.getAttribute('type')!=='file')throw new ProviderFailure('browser_file_input_required',true);
+     const file=await loadBrowserFile(step.file,original+':step-'+stepIndex);
+     browserUrl(policy,page.url());await loc.setInputFiles(file);
+     report={state:'file_selected',resourceId:step.file.resourceId,objectId:step.file.objectId,sha256:step.file.sha256,bytes:file.buffer.length,filename:file.name,deliveryNotConfirmed:true};
     }else if(step.action==='fill'){
      if((await loc.getAttribute('type'))==='password')throw new ProviderFailure('browser_secret_entry_denied',true);
      await loc.fill(step.value);
@@ -78,6 +86,7 @@ export async function browserWorkflow(policy:ExternalPolicy,input:any,original:s
      report={filename:download.suggestedFilename(),state:'downloaded',next:'browser_downloads'};
     }else await loc.click();
    }
+   if(step.action==='screenshot')report=await captureBrowserFile(page,step.capture,original+':step-'+stepIndex);
    completedSteps++;failurePhase='observation';observations.push({...await observe(),...(report?{report}:{})});
   }
   outcome={state:'completed',sessionId:session.id,contextId:plan.contextId??null,completedSteps,observations,instructionAuthority:false};

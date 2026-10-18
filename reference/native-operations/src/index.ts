@@ -1,3 +1,4 @@
+import {databasePermit} from './database-fence.js';
 import {browserDownloadRoute} from './external/browser-downloads.js';
 import {developmentToolsRoute} from './external/development-bridge.js';
 import {managedSchemaReady} from './database-schema.js';
@@ -35,6 +36,8 @@ import { start } from 'workflow/api';
 import { life,clubWake } from './life.js';
 import {wakeClub} from './club-wake.js';
 import * as store from './store.js';
+import {createHash as databaseBindingHash} from 'node:crypto';
+const storeBindingHash=(value:string)=>databaseBindingHash('sha256').update(value).digest('hex');
 import { authorized } from './config.js';
 import { modelReady } from './model.js';
 import { verifyX, xReady } from './x.js';
@@ -85,6 +88,7 @@ app.use('/api/*',async(c,next)=>{
   if(Number(c.req.header('content-length')??0)>(c.req.path==='/api/config'?256000:c.req.path==='/api/workspaces'?150000:100000)) return c.json({error:'request_too_large'},413);
   await next();
 });
+app.get('/api/database-identity',async c=>c.json({instance:process.env.NATIVE_DATABASE_INSTANCE??null,allowed:await databasePermit(),bindingHash:storeBindingHash(process.env.DATABASE_URL??'')}));
 app.post('/api/external-tools',async c=>{const id=c.req.header('idempotency-key');if(!id||!/^[-a-zA-Z0-9_:]{1,160}$/.test(id))return c.json({error:'idempotency_key_required'},400);const raw=await c.req.text();if(Buffer.byteLength(raw)>32000)return c.json({error:'request_too_large'},413);try{return c.json(await executeTool(id,'external_tools',JSON.parse(raw)));}catch(e){return c.json({error:e instanceof Error?e.message:'external_tool_unavailable'},409);}});
 app.post('/api/network-care',async c=>{try{if(!networkOperationsEnabled(await store.configuration()))return c.json({error:'disabled'},403);return c.json(await networkCare(await c.req.json()));}catch(e){return c.json({error:e instanceof Error?e.message:'unavailable'},409);}});
 app.get('/api/network-releases',async c=>c.json({releases:await networkReleaseFeed()}));
