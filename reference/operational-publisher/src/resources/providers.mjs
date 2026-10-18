@@ -35,7 +35,7 @@ export function resourceProviders({request=fetch,env=process.env}={}){
    }
    await this.identity('github');return repository(await github('/user/repos',{method:'POST',body:{name,description:input.purpose,private:input.private!==false,auto_init:false}}));
   },
-  async read(resource){return this.find(resource.provider,resource.name);},
+  async read(resource){let found;if(resource.provider==='vercel'){const v=await vercel('/v9/projects/'+encodeURIComponent(resource.providerId),{missing:true});found=v?project(v):null;}else found=await this.find(resource.provider,resource.name);if(found&&found.providerId!==resource.providerId)throw Error('resource_provider_identity_changed');return found;},
   async envs(resource){return (await vercel('/v10/projects/'+resource.providerId+'/env')).envs??[];},
   async envValue(resource,id){return (await vercel('/v1/projects/'+resource.providerId+'/env/'+id)).value;},
   async setEnv(resource,name,value,prior){return vercel('/'+(prior?'v9':'v10')+'/projects/'+resource.providerId+'/env'+(prior?'/'+prior.id:''),{method:prior?'PATCH':'POST',body:{key:name,value,type:'encrypted',target:['production']}});},
