@@ -1,6 +1,6 @@
 {
   "kind": "native-host-source-reference",
-  "source": "claus-goal-phase18-20261018",
+  "source": "claus-goal-phase19-20261018",
   "files": {
     "src/operations/policy.ts": "29f3574eee340166ca1c27cbdee482e2f383a39906623a2c7ad85676a6bfeeb9",
     "src/operations/host.ts": "5ff399b1293b234949dc6804b272bc19d96bdde55302f34f956c732b75de3ec2",
@@ -22,8 +22,8 @@
     "src/network-operations.ts": "8f7c83debc2f09090ee7096430345370ff3b6df7340eedc8579ff28f199d98f8",
     "src/operation-result.ts": "3f21601d8a920f26170d234391f05c018c210d047acd4d607922881e6aa204aa",
     "src/runtime-access.ts": "ab6af7e009dedcb8f5b98c16f6dc54c30f06a5c95d00b3d082a6712fdccae410",
-    "src/tool-visibility.ts": "5d3cc2dbcaf8f21eb28d8bb3e71bfb5fd03045a2a082c61c536f76ec09c98474",
-    "src/tools.ts": "127f5b6a38fc71c476ee4ed3304541f2761c5a3255b3043a9a6b6f1f455af061",
+    "src/tool-visibility.ts": "e983ee9a683a0bfdd897344c0f182cf73880022f9a2c1831e62eb32ded2f59fd",
+    "src/tools.ts": "b63587886da34f5b02ee5be997c21f54e91372dcae01485ecd39f2ecb045dbcd",
     "src/trade-program.ts": "5e4d75a7bf1fcc9c1485635b6e8d8bf9155d97516728eb4fdcf17c08b1f33844",
     "src/isolated/bridge.ts": "3460b1ad2c54373afb5d57db3ea999ff115ef5101ad7839699d3dc95b73b545c",
     "src/isolated/network.json": "36063bc84e4cfb20d50ebe3bc59e03220e29717ff9b2598cba4af5e20b96f503",
@@ -78,9 +78,9 @@
     "src/isolated/app-receipt.d.mts": "f08e190dd4f0630eee4898a4ca13c6b23076bdd3fc66d6630ae046cdfef5405a",
     "src/isolated/app-receipt.mjs": "a1f3a124b31ff91ade0a0762c37eead31230342141c107554dbefc085e415aea",
     "src/archive.ts": "6221787da6e6eaa7dacd0a27b8c9d3c03df2b120e583cbbb4d0217db37c99f95",
-    "src/development-execution.ts": "04612cd010c12555277a6f6076d5d10867289f103fd4ba21d5dcc41aa56d9b07",
-    "src/development-workspace.ts": "67d2bfa626bd5695be40ecfb9875273b7aa6e9a935be44feead9c84dc8239276",
-    "src/development-export.ts": "dea77094b789052878dadd3b55ab2666e9af94015a93658b110b025ff5f000e7",
+    "src/development-execution.ts": "365f40e4a6b0cfe48eb9521098800a878f5e4af94e0d46b1023f02ed5327bcdc",
+    "src/development-workspace.ts": "899a7bdae22d56d620ba0ec91872dc762887f6ad1c8eb3ab85d92b81f3778e89",
+    "src/development-export.ts": "8934060edd2d4cb9619e1dbdb0a966376bf677a7dea92ee8a96e18af1eb80610",
     "src/twitter-policy.ts": "5b82096732d5faa367449d400a2b56faefe26ce572872631a6cd836f2f597375",
     "src/development-source.ts": "83c6ea53ec2c0d577cb875cef57483d792c0feb0062cfd97750968daa8e43356",
     "src/investment-proposals.ts": "277eee7a82c204644bf6d35125e95be3d862a29bd962cf6c5290cd6bb111e695",
@@ -96,8 +96,8 @@
     "src/capital.ts": "0ce0254ed8984add9840a86579eb39987af447d467ffe67537408da7306ea391",
     "package-lock.json": "b966dfb3bc7add424f6d74d0b9363b98e3d2507db9e667bebaecccb25f1f6e19",
     "package.json": "966f78b5c789d7f7ef8837a89b27ef8a945dd11309d384a9a889889e34f7641c",
-    "src/external/development-bridge.ts": "3d68f95e159d7f2e4bb68f643b02bf1d19d8e583c3a24146d7fe69c9030b6c5e",
-    "src/external/development-grant.ts": "2bfe6f06d4a960d24b7bc59f7b84e02102481f01162a93add710390f777cb43f",
+    "src/external/development-bridge.ts": "58b1327f06bfba5dc5d914e4ee00d7560c6cdc711a44bc68d0f2d4d3aa03dc20",
+    "src/external/development-grant.ts": "82f4e0c3de561d152653ab6b3df380c615b6585676303301e3cd24bbebecf6b8",
     "src/external/providers.ts": "384ad74c7d2838d6b88750f02f7e52eeb5c67bb82a93717ceeef1702d87bef95",
     "src/external/service.ts": "dbf9d15c11c5ba3e4d3632f4919fac05501d757f7ca363d2634a41c90cc609e6",
     "src/index.ts": "29995cb68e4d613ce775e81b81954aecb7560115bb0d922b5a35550c900cd0bb",
@@ -146,7 +146,7 @@
     "src/developments.ts": "ae2a1722e427757903398f2f46bc1412693b5545a11a2c86c6d506f0c6b3c5d4",
     "src/network-semantic-search.ts": "6da1146d7dd5d5d5b79fa48d10fc0a6020f08a4ab027a7b3160fb34e7e11a659",
     "tests/network-semantic-search.test.ts": "103f94aaaca98561c7718ee3608c47771967496bbec6d8c4aa83103686003e1d",
-    "src/development-limits.ts": "3a8dec822f52c7922a1058eaa58c77c9a3a2c34954f5733b28c65d38d15824f0",
+    "src/development-limits.ts": "50517e637d81e7bb719669a415c69169f39e07fa7c62815e25342053653697f2",
     "src/operations/files.d.mts": "2f7ca91b08b0d4c0aaab61986f9fea44886de08e03f4632d88e944856d521670",
     "src/operations/files.mjs": "ce9b616e5440890b1d66085c2685712e2f31980c93db427acfbe45d64ac3c010",
     "src/operations/website-admin.ts": "113346188770465f2d2ceae94078afe513c400ba691d220ecb3c41927c55aa10",
@@ -157,8 +157,11 @@
     "src/external/browser-targets.ts": "f1e651cd7f78ed4f2dfcb0f9860eb9ae419da712c87d35da3b6796f5489617ed",
     "src/external/browser-access.ts": "eda29c0b2787bd71eb2f01246c92ff290d27f2ec71f5abc360e2771f51cde5b6",
     "src/external/browser-downloads.ts": "a8e38a47497b0b33b2f5c5d726b29d2f396d0f64a3d251db9bd309535f113b31",
-    "tests/browser-access.test.ts": "1f625452d8e1ef3fc5cc9ce6f32e42abadf2c9c231f07cfd7b59c0935ea6d24f"
+    "tests/browser-access.test.ts": "1f625452d8e1ef3fc5cc9ce6f32e42abadf2c9c231f07cfd7b59c0935ea6d24f",
+    "src/development-profile.ts": "11b4915fc087cd702302864e00c0d568624960f319f083ad5396a2bfbbb8a5ed",
+    "src/development-funding.ts": "7541ff101e3acd1953e366bf046a7be095db80de40057b4997e6456ca5ec3971",
+    "tests/development-continuation.test.ts": "c82151eaecc374126392de1c47b3c284a8173ff835462a9ea098efedcff986ef"
   },
   "referenceSubset": true,
-  "deployed": "dpl_AoehmYLnSFGsipVUAWHYZr5p6FrL"
+  "deployed": "dpl_DfoPtBKfzetPejE5Gn37Ue928LU2"
 }

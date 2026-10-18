@@ -1,1 +1,1 @@
-export const DEVELOPMENT_LIMITS=Object.freeze({files:64,sourceBytes:500000,minSeconds:10,seconds:900,active:4});
+export const DEVELOPMENT_LIMITS=Object.freeze({files:512,sourceBytes:3000000,minSeconds:10,seconds:86340,active:8});
