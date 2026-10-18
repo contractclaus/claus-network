@@ -1,9 +1,26 @@
 # API reference
 
-This source describes API 0.40.0 with 297 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
+This source describes API 0.40.0 with 314 operations. Endpoint availability and operational activation are separate. Check the [release status](release-status.md) for activation of individual capabilities and the [live OpenAPI document](https://claus-network-api.vercel.app/openapi.json) for the deployed interface. The [packaged schema](openapi.json) is generated from this source. JSON request fields are strict; unknown fields and duplicate path/query/body bindings are rejected.
 
 | Operation | Method | Path | Access |
 | --- | --- | --- | --- |
+| `commerce_attention` | GET | `/v1/projects/{projectId}/commerce/attention` | Bearer credential |
+| `commerce_products` | GET | `/v1/public/commerce/products` | Public |
+| `commerce_product_set` | PUT | `/v1/projects/{projectId}/commerce/products/{productId}` | Bearer credential |
+| `commerce_keys` | GET | `/v1/commerce/keys` | Bearer credential |
+| `commerce_key_create` | POST | `/v1/commerce/keys` | Bearer credential |
+| `commerce_key_revoke` | POST | `/v1/commerce/keys/{keyId}/revoke` | Bearer credential |
+| `commerce_order_create` | POST | `/v1/commerce/orders` | Bearer credential |
+| `commerce_order_resume` | POST | `/v1/commerce/orders/{orderId}/resume` | Bearer credential |
+| `commerce_order_get` | GET | `/v1/commerce/orders/{orderId}` | Bearer credential |
+| `commerce_orders` | GET | `/v1/commerce/orders` | Bearer credential |
+| `commerce_payment_confirm` | POST | `/v1/commerce/orders/{orderId}/payment` | Bearer credential |
+| `commerce_usage` | GET | `/v1/commerce/usage` | Bearer credential |
+| `commerce_support` | POST | `/v1/commerce/orders/{orderId}/support` | Bearer credential |
+| `commerce_operations` | GET | `/v1/projects/{projectId}/commerce/orders` | Bearer credential |
+| `commerce_support_reply` | POST | `/v1/commerce/orders/{orderId}/reply` | Bearer credential |
+| `commerce_settlement_authorize` | POST | `/v1/commerce/orders/{orderId}/settlement` | Bearer credential |
+| `commerce_settlement_confirm` | POST | `/v1/commerce/orders/{orderId}/settlement/confirmation` | Bearer credential |
 | `data_file_write` | POST | `/v1/projects/{projectId}/data-files/content` | Bearer credential |
 | `data_file_read` | GET | `/v1/projects/{projectId}/data-files/{fileId}/content` | Bearer credential |
 | `data_file_prepare` | POST | `/v1/projects/{projectId}/data-files` | Bearer credential |

@@ -63,7 +63,7 @@ export function createIdentity({ store, verifySignature = async () => false,
   async function allowed(actor, action, { projectId, withdrawal = false } = {}, reader = store) {
     try {
       const who = await credential(actor, reader);
-      if(who.kind==='app')return false;
+      if(who.kind==='app'||who.kind==='customer')return false;
       const project = (await reader.read('projects', text(projectId)))?.value;
       if (!project || project.archivedAt) return false;
       const suspended = (await reader.read('project-access', projectId))?.value.suspended === true || !await writesEnabled(reader);

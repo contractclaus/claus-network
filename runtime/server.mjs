@@ -1,3 +1,4 @@
+import {createCommerce} from '../src/commerce/index.mjs';
 import {volumeFundingHandler} from '../src/infrastructure/volume-funding.mjs';
 import {createSearchAdmission} from '../src/discovery/admission.mjs';
 import {CLAUS_IDENTITY} from '../src/partner-launch/policy.mjs';
@@ -67,7 +68,7 @@ import {createSignalRead,createSignalRouter} from '../adapters/signal-read.mjs';
 import {contractIntakeHealth} from './contract-intake-config.mjs';
 import {createPublicAppearances} from '../src/releases/appearance.mjs';
 
-export function createApplication({dataObjects=null,registryOrigin='https://claus-network-api.vercel.app',imageArchive=null,ociBuildPorts={},ociBuildEnabled=false,ociPrivateEnabled=false,ociPrivateSecret=null,infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
+export function createApplication({commercePorts={},dataObjects=null,registryOrigin='https://claus-network-api.vercel.app',imageArchive=null,ociBuildPorts={},ociBuildEnabled=false,ociPrivateEnabled=false,ociPrivateSecret=null,infrastructurePorts={},infrastructureEnabled=false,sourceObjects=null,store,origin='https://claus.si',rateSalt,now=()=>Date.now(),reviewPorts={},chainPorts={},operatorPorts={},inferencePorts={},intakePorts={},dealPorts={},arbitrationEnabled=false,domainPorts={},domainsEnabled=false,workersEnabled=false,workerPorts={},appStorage=null,appWritesEnabled=true,partnerLaunchAssignment=process.env.CLAUS_PARTNER_LAUNCH_ASSIGNMENT}){
  requireThat(typeof rateSalt==='string'&&rateSalt.length>=32,'rate_salt_required');
  let access,signals;
  const identity=createIdentity({store,limit:(key,reader)=>access.limit(key,reader),consumeProjects:(tx,principalId)=>access.consumeProjects(tx,principalId),
@@ -169,7 +170,8 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
  const workPlanning=createWorkPlanning({store,identity,apps,collaboration,services,projects,visible:contentAdmin.visible,admit:access.collaboration,validateAction:(name,input,path)=>validate(ROUTES.find(r=>r.name===name).inputSchema,input,path),now});
  const webhooks=createWebhooks({store,identity,apps,admit:access.collaboration,now,deriveSecret:id=>createHmac('sha256',rateSalt).update('claus-webhook/v1:'+id).digest('hex'),deliver:deliverWebhook});
  const runtimes=createRuntimes({store,identity,workers,readWeb:publicWebRead,now,route:name=>ROUTES.find(r=>r.name===name),execute:(name,input,actor)=>service.executeAs(name,input,actor)});
- const service=createService({searchAdmission,dataRecords,dataFiles,runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
+ const commerce=createCommerce({store,identity,inspect:projectInspection,deriveKey:value=>createHmac('sha256',rateSalt).update('claus-customer-key/1:'+value).digest('base64url'),enabled:false,...commercePorts,now});
+ const service=createService({commerce,searchAdmission,dataRecords,dataFiles,runtimeReleases,imageRegistry,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,workPlanning,dependencies,projectInspection,publicWork,collaboration,arbitration,workers,domains,deals,workflows,discovery,apps,contentAdmin,access,identity,projects,builds,jobs,reviews:reviewSystem.flow,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals});
  const admit=async({route,peer})=>{
   const at=now(),window=Math.floor(at/300000);
   try {
@@ -192,7 +194,7 @@ export function createApplication({dataObjects=null,registryOrigin='https://clau
   }
  };
  const http=createHttp({service,origin,admit}),mcp=createMcp({service,origin,admit});
- return {dataRecords,dataFiles,runtimeReleases,sourceFiles,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:async(request,context={})=>{const path=new URL(request.url).pathname;if(path==='/internal/infrastructure/volume-funding')return volumeFunding(request);if(path==='/v2'||path.startsWith('/v2/')){try{await admit({route:'resource_image_registry',peer:context.peer??'unknown'});return await imageRegistry.handle(request);}catch(error){return new Response(null,{status:error.code==='rate_limited'?429:503,headers:{'cache-control':'no-store',...(error.retryAfterSeconds?{'retry-after':String(error.retryAfterSeconds)}:{})}});}}return path==='/mcp'?mcp(request,context):http(request,context);}};
+ return {commerce,dataRecords,dataFiles,runtimeReleases,sourceFiles,ociBuilds,infrastructure,partnerLaunches,runtimes,compute,webhooks,arbitration,workers,domains,workflows,discovery,apps,contentAdmin,access,identity,projects,jobs,builds,artifacts,reviewSystem,deployments,approvals,services,wallets,releases,vaults,transfers,inference,intake,signals,service,fetch:async(request,context={})=>{const path=new URL(request.url).pathname;if(path==='/internal/infrastructure/volume-funding')return volumeFunding(request);if(path==='/v2'||path.startsWith('/v2/')){try{await admit({route:'resource_image_registry',peer:context.peer??'unknown'});return await imageRegistry.handle(request);}catch(error){return new Response(null,{status:error.code==='rate_limited'?429:503,headers:{'cache-control':'no-store',...(error.retryAfterSeconds?{'retry-after':String(error.retryAfterSeconds)}:{})}});}}return path==='/mcp'?mcp(request,context):http(request,context);}};
 }
 export function listen(application,{host='127.0.0.1',port=0}={}){
  const server=createServer(async(req,res)=>{
