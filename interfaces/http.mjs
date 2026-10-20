@@ -50,6 +50,7 @@ export const errorBody=error=>{
   ...(status===429&&Number.isSafeInteger(error.retryAt)?{retryAt:error.retryAt}:{}),
   ...(status===429?{retryAfterSeconds:Number.isSafeInteger(error.retryAfterSeconds)&&error.retryAfterSeconds>0?(Number.isSafeInteger(error.retryAt)?error.retryAfterSeconds:Math.min(300,error.retryAfterSeconds)):60}:{}),
   ...(code==='oci_build_capacity_reached'&&['project_concurrency','global_concurrency','public_window'].includes(error.capacityScope)?{capacityScope:error.capacityScope}:{}),
+  ...(status===400&&error.expected?.unit==='unix_seconds'&&Number.isSafeInteger(error.expected.minimum)&&Number.isSafeInteger(error.expected.maximum)?{expected:{unit:'unix_seconds',minimum:error.expected.minimum,maximum:error.expected.maximum}}:{}),
   ...(status===400&&typeof error.field==='string'&&error.field.length<200?{field:error.field}:{})};
 };
 const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}});
