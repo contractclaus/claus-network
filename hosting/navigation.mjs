@@ -1,7 +1,7 @@
-// The host adds navigation only; the selected release source stays immutable.
+// Only /view/ adds navigation. /r/ always serves the exact published source.
 function navigation({releaseId,paths,frameOrigin}){
  if(parent===window)return;
- const base='/r/'+releaseId.slice(7)+'/',allowed=new Set(paths);let connected=false;
+ const base='/view/'+releaseId.slice(7)+'/',allowed=new Set(paths);let connected=false;
  addEventListener('message',event=>{if(event.source===parent&&event.origin===frameOrigin&&event.data?.type==='claus-site-host-ready'&&event.data.releaseId===releaseId)connected=true;});
  const ready=()=>parent.postMessage({type:'claus-site-ready',releaseId},frameOrigin);
  addEventListener('pageshow',ready);ready();

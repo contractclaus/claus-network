@@ -1,9 +1,10 @@
 import {withSiteNavigation} from './navigation.mjs';
 import {connectSources} from '../src/shared/site-connect.mjs';
+import {createHash} from 'node:crypto';
 const contentTypes={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',
   json:'application/json; charset=utf-8',svg:'image/svg+xml'};
 export async function render(request,{fetcher=fetch,apiOrigin='https://claus-network-api.vercel.app',
-  siteOrigin='https://claus-network-sites.vercel.app',frameOrigin='https://claus.si'}={}){
+  siteOrigin='https://claus-network-sites.vercel.app',frameOrigin='https://claus.si',navigation=false}={}){
   for(const origin of [apiOrigin,siteOrigin,frameOrigin])if(new URL(origin).origin!==origin||new URL(origin).protocol!=='https:')throw Error('invalid_host_configuration');
   if(siteOrigin===apiOrigin||siteOrigin===frameOrigin)throw Error('release_origin_not_isolated');
   const url=new URL(request.url),match=/^\/r\/([0-9a-f]{64})\/([a-zA-Z0-9_.@+/-]+\.(html|css|js|json|svg))$/.exec(url.pathname);
@@ -24,6 +25,11 @@ export async function render(request,{fetcher=fetch,apiOrigin='https://claus-net
     if(!file||file.path!==match[2]||typeof file.content!=='string'||Buffer.byteLength(file.content)>1000000)return new Response('Not found',{status:404,headers});
     const connect=connectSources(release.connect);
     const csp=connect.length?headers['content-security-policy'].replace("connect-src 'none'",'connect-src '+connect.join(' ')):headers['content-security-policy'];
-    return new Response(request.method==='HEAD'?null:match[3]==='html'?withSiteNavigation(file.content,{releaseId:release.id,paths:release.paths,frameOrigin}):file.content,{headers:{...headers,'content-security-policy':csp,'content-type':contentTypes[match[3]]}});
+    // /r/ is the exact published UTF-8 source. Navigation belongs exclusively
+    // to the separate /view/ representation used by the website's project frame.
+    const content=navigation&&match[3]==='html'?withSiteNavigation(file.content,{releaseId:release.id,paths:release.paths,frameOrigin}):file.content;
+    return new Response(request.method==='HEAD'?null:content,{headers:{...headers,'content-security-policy':csp,'content-type':contentTypes[match[3]],
+      'x-claus-source-sha256':createHash('sha256').update(file.content).digest('hex'),
+      'x-claus-representation':navigation?'presentation':'source'}});
   }catch{return new Response('Temporarily unavailable',{status:503,headers});}
 }
