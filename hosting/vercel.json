@@ -1,0 +1,23 @@
+{
+  "buildCommand": "node scripts/prepare.mjs",
+  "outputDirectory": "public",
+  "functions": {
+    "api/gateway.mjs": {
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/view/(.*)",
+      "dest": "/api/gateway?__claus_view=$1"
+    },
+    {
+      "src": "/r/(.*)",
+      "dest": "/api/gateway?__claus_route=$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/gateway?__claus_site_path=$1"
+    }
+  ]
+}

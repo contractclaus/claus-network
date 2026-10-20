@@ -1,6 +1,15 @@
 import {withSiteNavigation} from './navigation.mjs';
 import {connectSources} from '../src/shared/site-connect.mjs';
 import {createHash} from 'node:crypto';
+import {digest,SITE_LIMITS} from '../src/shared/index.mjs';
+async function releaseJson(response){
+ const length=Number(response.headers.get('content-length')??0);if(length>SITE_LIMITS.requestBytes)throw Error('invalid_release');
+ const reader=response.body?.getReader();if(!reader)throw Error('invalid_release');
+ const chunks=[];let size=0;
+ try{for(;;){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;if(size>SITE_LIMITS.requestBytes)throw Error('invalid_release');chunks.push(value);}}
+ catch(error){await reader.cancel().catch(()=>{});throw error;}finally{reader.releaseLock();}
+ return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks,size)));
+}
 const contentTypes={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',
   json:'application/json; charset=utf-8',svg:'image/svg+xml'};
 export async function render(request,{fetcher=fetch,apiOrigin='https://claus-network-api.vercel.app',
@@ -17,12 +26,11 @@ export async function render(request,{fetcher=fetch,apiOrigin='https://claus-net
     const response=await fetcher(apiOrigin+'/v1/public/releases/sha256%3A'+match[1]+'/file?filePath='+encodeURIComponent(match[2]),{redirect:'error',signal:AbortSignal.timeout(10000)});
     if(response.status===404)return new Response('Not found',{status:404,headers});
     if(!response.ok)throw Error('unavailable');
-    const length=Number(response.headers.get('content-length')??0);if(length>3200000)throw Error('invalid_release');
-    const body=await response.text();if(Buffer.byteLength(body)>3200000)throw Error('invalid_release');
-    const release=JSON.parse(body);
+    const release=await releaseJson(response);
     if(release.id!=='sha256:'+match[1]||!(release.expiresAt===null||Number.isSafeInteger(release.expiresAt)&&release.expiresAt>Date.now()))throw Error('invalid_release');
     const file=release.file??release.files?.find(file=>file.path===match[2]);
     if(!file||file.path!==match[2]||typeof file.content!=='string'||Buffer.byteLength(file.content)>1000000)return new Response('Not found',{status:404,headers});
+    if(file.hash!==digest({path:file.path,content:file.content}))throw Error('release_integrity_mismatch');
     const connect=connectSources(release.connect);
     const csp=connect.length?headers['content-security-policy'].replace("connect-src 'none'",'connect-src '+connect.join(' ')):headers['content-security-policy'];
     // /r/ is the exact published UTF-8 source. Navigation belongs exclusively
