@@ -20,7 +20,7 @@ export async function render(request,{fetcher=fetch,apiOrigin='https://claus-net
   const headers={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
     'permissions-policy':'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
     'access-control-allow-origin':'*','cross-origin-resource-policy':'cross-origin',
-    'content-security-policy':`sandbox allow-scripts allow-forms allow-downloads; default-src 'none'; script-src 'unsafe-inline' ${siteOrigin}; style-src 'unsafe-inline' ${siteOrigin}; img-src data: ${siteOrigin}; connect-src 'none'; worker-src 'none'; font-src data:; media-src data:; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors ${frameOrigin}`};
+    'content-security-policy':`sandbox allow-scripts allow-forms allow-downloads${navigation?' allow-popups allow-popups-to-escape-sandbox':''}; default-src 'none'; script-src 'unsafe-inline' ${siteOrigin}; style-src 'unsafe-inline' ${siteOrigin}; img-src data: ${siteOrigin}; connect-src 'none'; worker-src 'none'; font-src data:; media-src data:; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors ${frameOrigin}`};
   if(!match||match[2].split('/').some(p=>!p||p==='.'||p==='..')||url.search||!['GET','HEAD'].includes(request.method))return new Response('Not found',{status:404,headers});
   try{
     const response=await fetcher(apiOrigin+'/v1/public/releases/sha256%3A'+match[1]+'/file?filePath='+encodeURIComponent(match[2]),{redirect:'error',signal:AbortSignal.timeout(10000)});
