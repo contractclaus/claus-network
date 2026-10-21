@@ -1,15 +1,20 @@
 // Only /view/ adds navigation. /r/ always serves the exact published source.
 function navigation({releaseId,paths,frameOrigin}){
  if(parent===window)return;
- const base='/view/'+releaseId.slice(7)+'/',allowed=new Set(paths);let connected=false;
- addEventListener('message',event=>{if(event.source===parent&&event.origin===frameOrigin&&event.data?.type==='claus-site-host-ready'&&event.data.releaseId===releaseId)connected=true;});
- const ready=()=>parent.postMessage({type:'claus-site-ready',releaseId},frameOrigin);
- addEventListener('pageshow',ready);ready();
+ const base='/view/'+releaseId.slice(7)+'/',allowed=new Set(paths);let connected=false,retry=null,attempts=0;
+ addEventListener('message',event=>{if(event.source===parent&&event.origin===frameOrigin&&event.data?.type==='claus-site-host-ready'&&event.data.releaseId===releaseId){connected=true;clearTimeout(retry);}});
+ const ready=()=>{if(connected)return;parent.postMessage({type:'claus-site-ready',releaseId},frameOrigin);if(++attempts<40)retry=setTimeout(ready,250);};
+ addEventListener('pagehide',()=>clearTimeout(retry));
+ addEventListener('pageshow',()=>{clearTimeout(retry);ready();});ready();
  document.addEventListener('click',event=>{
-  if(!connected||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.altKey||event.shiftKey)return;
+  if(!event.isTrusted||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.altKey||event.shiftKey)return;
   const link=event.target instanceof Element?event.target.closest('a[href]'):null;
-  if(!link||link.hasAttribute('download')||link.target&&link.target!=='_self')return;
+  if(!link||link.hasAttribute('download'))return;
   const target=new URL(link.href,location.href);
+  if(['https:','http:'].includes(target.protocol)&&target.origin!==location.origin){
+   link.target='_blank';link.rel='noopener noreferrer';return;
+  }
+  if(!connected||link.target&&link.target!=='_self')return;
   if(target.origin!==location.origin||!target.pathname.startsWith(base)||target.search||target.pathname===location.pathname)return;
   const path=target.pathname.slice(base.length);
   if(!allowed.has(path)||!path.endsWith('.html')||target.hash&&!/^#[A-Za-z0-9_=:.%~-]{1,360}$/.test(target.hash))return;
