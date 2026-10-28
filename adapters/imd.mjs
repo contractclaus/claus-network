@@ -146,6 +146,8 @@ export function createImdReviewProvider({ store, sealer, resolveInput, fetch: fe
     },
     async challenge(offerId) {
       const saved = await record(offerId);
+      // Check before the provider converts expiry into a generic HTTP rejection.
+      requireThat(saved.quote.expiresAt > Math.floor(now() / 1000) + 60, 'payment_window_expired');
       const result = await call('/requests/' + id(offerId) + '/submit', { method: 'POST', token: saved.credentials.requestToken, statuses: [402] });
       validateQuote(result.quote, saved.request);
       requireThat(canonical(result.quote) === canonical(saved.quote) && canonical(result.input) === canonical(preparedAuditInput(saved.request.input)), 'provider_challenge_mismatch');
