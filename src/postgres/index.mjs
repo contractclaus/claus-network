@@ -37,6 +37,18 @@ export async function openPostgresStore({ pool, schema = 'claus_network', migrat
           WHERE collection=$1 AND left(id,length($2))=$2 AND id>$3 AND ($5::text IS NULL OR body->>'projectId'=$5) ORDER BY id LIMIT $4`, [collection, prefix, after, limit, projectId ?? null]);
         return rows.map(row => ({ id: row.id, revision: integer(Number(row.revision), 1), value: row.body }));
       },
+      async listRunnableJobs({kinds,after='',limit=1000,at}) {
+        assertActive();integer(limit,1,1000);integer(at,0);
+        requireThat(typeof after==='string' && Array.isArray(kinds) && kinds.length>0 &&
+          kinds.every(kind=>['compile','compile-profile-v2','review-quote','review-execute'].includes(kind)),'invalid_job_kinds');
+        const {rows}=await client.query(`SELECT id,revision,body FROM ${documents}
+          WHERE collection='workflow-jobs' AND id>$1 AND body->>'kind'=ANY($2::text[])
+          AND body->>'state' IN ('queued','running','waiting')
+          AND (body->>'availableAt')::bigint<=$3
+          AND (body->'lease' IS NULL OR body->'lease'='null'::jsonb OR (body#>>'{lease,until}')::bigint<=$3)
+          ORDER BY id LIMIT $4`,[after,kinds,at,limit]);
+        return rows.map(row=>({id:row.id,revision:integer(Number(row.revision),1),value:row.body}));
+      },
       async events({ after = 0, limit = 1000 } = {}) {
         assertActive(); integer(after); integer(limit, 1, 1000);
         const { rows } = await client.query(`SELECT sequence,body FROM ${eventTable} WHERE sequence>$1 ORDER BY sequence LIMIT $2`, [after, limit]);

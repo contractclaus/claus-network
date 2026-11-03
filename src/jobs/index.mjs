@@ -67,9 +67,16 @@ export function createJobs({ store, identity, now = () => Date.now(), onCancel =
         const scanKey = digest([...kinds].sort());
         const scan = after ? null : await tx.read('job-scan-cursors', scanKey);
         const start = after || scan?.value.after || '';
-        const records = await tx.list('workflow-jobs', { after: start, limit: 1000 });
+        // Select due work before pagination. Historical inference jobs must
+        // not delay compilation or collecting an already-paid review result.
+        // Leasing, authority checks and dispatch/reconcile decisions stay below.
+        const list = typeof tx.listRunnableJobs==='function' &&
+          kinds.every(kind=>['compile','compile-profile-v2','review-quote','review-execute'].includes(kind))
+          ? options=>tx.listRunnableJobs({...options,kinds,at:now()})
+          : options=>tx.list('workflow-jobs',options);
+        const records = await list({ after: start, limit: 1000 });
         if (!after && start && records.length < 1000) {
-          const wrapped = await tx.list('workflow-jobs', { limit: 1000 - records.length });
+          const wrapped = await list({ limit: 1000 - records.length });
           records.push(...wrapped.filter(record => record.id <= start));
         }
         const nextCursor = records.length === 1000 ? records.at(-1).id : '';
