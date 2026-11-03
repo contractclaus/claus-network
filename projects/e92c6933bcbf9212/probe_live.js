@@ -8,6 +8,6 @@ for (const id of ids) {
     const rpc = await viewAccount(id);
     const facts = await gatherFacts({ accountId: id, rpc, store: {}, amount: 0.5 });
     const r = assess(facts);
-    console.log(JSON.stringify({ id, exists: facts.exists, ageDays: facts.ageDays, txCount: facts.txCount, decision: r.decision, codes: r.reasons.map(x => x.code) }));
+    console.log(JSON.stringify({ id, exists: facts.exists, ageDays: facts.ageDays, txCount: facts.txCount, decision: r.decision, codes: r.reasons.map(x => x.level + ":" + x.code) }));
   } catch (e) { console.log(JSON.stringify({ id, error: String(e.message || e) })); }
 }

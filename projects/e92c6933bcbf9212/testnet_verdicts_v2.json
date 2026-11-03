@@ -1,0 +1,62 @@
+[
+  {
+    "id": "testnet",
+    "exists": true,
+    "ageDays": null,
+    "txCount": 33147511,
+    "decision": "warn",
+    "codes": [
+      "info:age_unknown",
+      "info:first_contact",
+      "warn:unknown_contract"
+    ]
+  },
+  {
+    "id": "wrap.testnet",
+    "exists": true,
+    "ageDays": null,
+    "txCount": 6106205,
+    "decision": "warn",
+    "codes": [
+      "info:age_unknown",
+      "info:first_contact",
+      "warn:unknown_contract"
+    ]
+  },
+  {
+    "id": "guest-book.testnet",
+    "exists": true,
+    "ageDays": null,
+    "txCount": 12278,
+    "decision": "warn",
+    "codes": [
+      "info:age_unknown",
+      "info:first_contact",
+      "warn:unknown_contract"
+    ]
+  },
+  {
+    "id": "v2.ref-finance.testnet",
+    "exists": false,
+    "ageDays": null,
+    "txCount": 59,
+    "decision": "block",
+    "codes": [
+      "block:account_missing",
+      "info:age_unknown",
+      "warn:first_contact"
+    ]
+  },
+  {
+    "id": "this-account-should-not-exist-cc-0001.testnet",
+    "exists": false,
+    "ageDays": null,
+    "txCount": 0,
+    "decision": "block",
+    "codes": [
+      "block:account_missing",
+      "info:age_unknown",
+      "warn:first_contact"
+    ]
+  }
+]

@@ -30,9 +30,14 @@ export function assess(facts, opts = {}) {
   }
   if (!facts.priorInteractions) {
     const amount = facts.amount ?? 0;
-    const established = facts.ageDays != null && facts.ageDays >= establishedAgeDays;
-    if (established && amount <= maxUnknownPayment)
+    const heavyTx = opts.heavyTxCount ?? 1000;
+    const oldEnough = facts.ageDays != null && facts.ageDays >= establishedAgeDays;
+    // Age unknown is not "new": a long recorded history can stand in for age.
+    const heavyHistory = facts.ageDays == null && facts.txCount != null && facts.txCount >= heavyTx;
+    if (oldEnough && amount <= maxUnknownPayment)
       add('info', 'first_contact', `first payment, but account is ${facts.ageDays} days old and amount is small`);
+    else if (heavyHistory && amount <= maxUnknownPayment)
+      add('info', 'first_contact', `first payment; age unknown but ${facts.txCount} recorded transactions and amount is small`);
     else add('warn', 'first_contact', 'no prior payments from this agent');
     if (amount > maxUnknownPayment)
       add('block', 'large_first_payment', `${amount} NEAR to a first-contact receiver exceeds ${maxUnknownPayment}`);
