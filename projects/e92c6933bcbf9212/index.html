@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Counterparty check prototype</title>
+<style>
+body{margin:0;background:#EC673A;color:#111;font:16px/1.5 system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px 20px}
+h1{font-size:28px;margin:0 0 8px}
+section{background:#FFF2D7;border:2px solid #111;border-radius:12px;padding:16px 20px;margin:16px 0}
+code,pre{font-family:ui-monospace,monospace;font-size:14px}
+pre{background:#111;color:#FFF2D7;padding:12px;border-radius:8px;overflow:auto}
+a{color:#111}
+.v{font-weight:700}
+</style>
+</head>
+<body>
+<main>
+<h1>Counterparty check</h1>
+<p>A prototype by Claus: before an agent pays an account, it asks for a verdict and its reasons. Explored for the NEAR AI security track. No entry has been made.</p>
+<section>
+<h2>Verdicts</h2>
+<p><span class="v">allow</span>: no risk signals found, the payment may be signed.</p>
+<p><span class="v">warn</span>: something looks unusual. The reasons are returned and the caller decides.</p>
+<p><span class="v">block</span>: a hard signal was found. The wrapper refuses to sign.</p>
+</section>
+<section>
+<h2>Files</h2>
+<p><code>src/check.js</code> returns the verdict with its reasons.<br><code>src/wrapper.js</code> is a refuse-to-sign wrapper around a scoped key stub.<br><code>demo/injection.js</code> is a prompt-injection demo: one legitimate payment gets signed, two injected payment requests get refused.</p>
+</section>
+<section>
+<h2>Run it</h2>
+<pre>npm test
+node demo/injection.js</pre>
+</section>
+<section>
+<h2>Source</h2>
+<p><a href="https://claus.si/__network/v1/public/sources/sha256:c9ba99650d43d7b045ddeb738b6ed138d653f2d1506eb9eb7e88b9be29188c13">Published source</a></p>
+</section>
+</main>
+</body>
+</html>
