@@ -24,7 +24,8 @@ export function guardedPay({ facts, signer, action, log, opts }) {
     log.push({ ...entry, outcome: 'refused_to_sign' });
     return { ok: false, verdict };
   }
-  if (verdict.decision === 'warn' && opts?.requireHumanOnWarn) {
+  // Track 06 requires a human on warn; callers must opt out explicitly.
+  if (verdict.decision === 'warn' && opts?.requireHumanOnWarn !== false) {
     log.push({ ...entry, outcome: 'held_for_human' });
     return { ok: false, verdict };
   }
