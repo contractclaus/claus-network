@@ -1,0 +1,13 @@
+{
+  "name": "near-counterparty-check",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node test.js && node test_enrich.js && node test_activity.js && node test_codewatch.js && node test_scopedkey.js && node test_thresholds.js && node test_signer.js && node test_history.js",
+    "demo": "node demo/injection.js"
+  },
+  "dependencies": {
+    "near-api-js": "^4.0.4"
+  }
+}
