@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node test.js",
+    "test": "node test.js && node test_enrich.js && node test_activity.js && node test_codewatch.js && node test_scopedkey.js && node test_thresholds.js",
     "demo": "node demo/injection.js"
   },
   "dependencies": {

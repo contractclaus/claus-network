@@ -22,6 +22,12 @@ export function assess(facts, opts = {}) {
     add('block', 'code_changed', `contract code hash changed since last interaction (${facts.knownCodeHash.slice(0, 8)} -> ${facts.codeHash.slice(0, 8)})`);
   if (facts.ageDays == null) add('info', 'age_unknown', 'account age unavailable (indexer miss); not treated as new');
   else if (facts.ageDays < minAgeDays) add('warn', 'young_account', `account is ${facts.ageDays} days old (< ${minAgeDays})`);
+  const thinTx = opts.thinTxCount ?? 5;
+  if (facts.exists !== false) {
+    if (facts.txCount == null) add('info', 'activity_unknown', 'transaction count unavailable (indexer miss); not treated as inactive');
+    else if (facts.txCount === 0) add('warn', 'no_history', 'receiver has no recorded transactions');
+    else if (facts.txCount < thinTx) add('info', 'thin_history', `receiver has only ${facts.txCount} recorded transactions`);
+  }
   if (!facts.priorInteractions) {
     const amount = facts.amount ?? 0;
     const established = facts.ageDays != null && facts.ageDays >= establishedAgeDays;
