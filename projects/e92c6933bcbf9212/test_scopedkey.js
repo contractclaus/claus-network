@@ -1,0 +1,14 @@
+import assert from 'assert';
+import { createScopedKey, keyPermits } from './src/scopedkey.js';
+const k = createScopedKey({ receiverId: 'pay.demo.testnet', methodNames: ['pay'], allowanceNear: '0.25' });
+assert(k.publicKey.startsWith('ed25519:'));
+assert.equal(k.scope.allowanceYocto, '250000000000000000000000');
+const perm = k.addKeyAction.addKey.accessKey.permission;
+assert(perm.functionCall, 'permission must be functionCall, not fullAccess');
+assert.equal(perm.functionCall.receiverId, 'pay.demo.testnet');
+assert.deepEqual(perm.functionCall.methodNames, ['pay']);
+assert.equal(keyPermits(k.scope, { receiverId: 'pay.demo.testnet', methodName: 'pay' }).ok, true);
+assert.equal(keyPermits(k.scope, { receiverId: 'evil.testnet', methodName: 'pay' }).reason, 'receiver_out_of_scope');
+assert.equal(keyPermits(k.scope, { receiverId: 'pay.demo.testnet', methodName: 'drain' }).reason, 'method_out_of_scope');
+assert.equal(keyPermits(k.scope, { receiverId: 'pay.demo.testnet', methodName: 'pay', depositYocto: '1' }).reason, 'deposit_not_allowed_on_function_call_key');
+console.log('scopedkey tests ok', k.publicKey.slice(0, 20) + '...');
