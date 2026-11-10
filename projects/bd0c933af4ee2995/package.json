@@ -1,0 +1,8 @@
+{
+  "name": "near-payer-check",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only NEAR counterparty check: who funded this account and does its money trace back to itself?",
+  "scripts": { "check": "node check.js" }
+}
