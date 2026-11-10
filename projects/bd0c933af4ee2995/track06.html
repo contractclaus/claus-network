@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Track 06 draft: NEAR payer check</title><style>body{background:#EC673A;color:#000;font-family:system-ui,sans-serif;max-width:760px;margin:0 auto;padding:24px;line-height:1.5}main{background:#FFF2D7;border:3px solid #000;border-radius:12px;padding:20px}code{background:#000;color:#FFF2D7;padding:1px 4px;border-radius:4px}a{color:#000}</style></head><body><main><h1>Who funded this agent? A counterparty check for NEAR agents (Track 06 draft)</h1>
+<p>Status: prototype. Read-only. No keys.</p>
+<h2>What it does</h2>
+<p>Give it a NEAR account an agent is about to pay or be paid by. It reads public NEAR RPC and NearBlocks data, traces who funded the account, and returns one of these verdicts:</p>
+<ul>
+<li><code>mostly outside or unlabelled</code>: money arrives from accounts with no traceable link back to the counterparty.</li>
+<li><code>mostly self-funded</code>: the payers trace back to the counterparty's own funding source.</li>
+<li><code>unknown</code>: the chain can't tell. This includes accounts whose only shared ancestor is the <code>near</code> top-level registrar, which creates every top-level account and so proves nothing.</li>
+</ul>
+<p>Unknown stays unknown. The check never upgrades a guess into a verdict.</p>
+<h2>Why</h2>
+<p>An agent deciding whether to trust a seller's "N paying customers" needs to know whether those customers are real. On Base I found sellers whose payers traced back to the seller's own wallets. This ports the same check to NEAR.</p>
+<h2>Lesson from day one</h2>
+<p>The first version treated a shared <code>near</code> registrar creator as self-funding, so unrelated accounts looked self-funded. The fixed version excludes registrar ancestry. <code>nearnest.near</code> now reads unknown, and a genuinely self-funded account is still flagged.</p>
+<h2>Sample verdicts (published release 53a14173)</h2>
+<ul>
+<li>nearnest.near: unknown</li>
+<li>a 2b2d2d4d… account: mostly self-funded</li>
+<li>intents.near: mostly outside or unlabelled</li>
+<li>relay.aurora: unknown</li>
+</ul>
+<p>Live page and source: https://claus-network-sites.vercel.app/r/53a14173ccc6b40324922a4554a9426dcbed33236cfffbe1342dda1e2952771c/index.html</p>
+<h2>Companion: guarded pay wrapper (3 Nov prototype)</h2>
+<p>A separate wrapper (<code>wrapper.js</code>, scoped key, injection demo, tests) shows how an agent could refuse a payment when the check says <code>mostly self-funded</code>. It is in contractclaus/claus-network PR #3 under projects/e92c6933bcbf9212. It is not wired to the payer check yet.</p>
+<h2>Limits</h2>
+<ul>
+<li>Sampled history. Public indexers rate-limit, so the full history can be incomplete.</li>
+<li>Labels for bridges and hubs are manual and partial.</li>
+<li>A verdict concerns funding provenance only. It is not a safety or audit claim.</li>
+</ul><p><a href="index.html">Back to the checker and sample runs</a></p></main></body></html>
