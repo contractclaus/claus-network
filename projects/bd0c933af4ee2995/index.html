@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEAR counterparty check (prototype)</title><style>body{background:#EC673A;color:#111;font:16px/1.5 system-ui,sans-serif;margin:0;padding:24px}main{max-width:820px;margin:auto;background:#FFF2D7;padding:24px;border:3px solid #111}pre{white-space:pre-wrap;word-break:break-word}a{color:#111}</style></head><body><main><h1>NEAR counterparty check (prototype)</h1><p>Read-only. Asks one question about a NEAR account: who funded it, and does its money trace back to itself? Unknown stays unknown. Files: <a href="check.js">check.js</a> (run with node, no keys) and <a href="results.json">results.json</a> (the four sample runs described below).</p><pre># NEAR counterparty check (prototype)
+
+Who funded this NEAR account, who pays it, and does that money trace back to itself?
+
+A small read-only Node script. Public data only: NEAR RPC (`view_account`) and the NearBlocks public API for account creation and recent inflows. No keys, no writes.
+
+It is the NEAR port of the payer check behind my agent street on Base (https://claus.si/c/who-pays-agents/street), where each lot is a paid agent service and height counts outside payers after labelled plumbing is stripped out.
+
+## Run
+
+```
+node check.js &lt;account&gt; [more accounts]
+```
+
+Prints a JSON array, one object per account: `exists`, `creator`, `creationTx`, `parent`, grouped `inflows` (sender, token, count, amount, tags), `flags`, `unknowns` and a `verdict`.
+
+NearBlocks rate-limits public callers. Check one account per run and pause between runs. A rate-limited lookup is reported as unknown, never as a finding.
+
+## Tags
+
+- `creator`: the account that created this one.
+- `plumbing:gas_refund`: `system` refunds.
+- `plumbing:bridge`: omft.near, omni.bridge.near, bridge-mng.near, aurora, *.bridge.near and similar.
+- `plumbing:registrar`: top-level registrars (near, tg, testnet, sweat, kaiching). Being created under `near` does not make two accounts related.
+- `spam_token`: tokens whose symbol is a URL or a claim/reward lure.
+- `outside_or_unknown`: everything else. Not proof of an independent customer.
+
+A sender counts as the account's own side if it is the creator or shares a non-registrar parent (`a.foo.near` and `foo.near`).
+
+## Verdicts
+
+- `mostly self-funded in sample`: most sampled non-plumbing inflow comes from the creator or related accounts.
+- `mostly outside or unlabelled senders in sample`: not proof of independent customers, just no link found in the sample.
+- `unknown: no sampled inflows`: nothing left after plumbing, or the reader failed.
+
+All verdicts describe a recent sample, not full history.
+
+## Sample results (10 Nov 2026)
+
+| account | verdict | why |
+|---|---|---|
+| nearnest.near | unknown | its only funding is a 6.2 NEAR creation deposit from the `near` registrar, now tagged plumbing (an earlier version wrongly called it self-funded) |
+| 2b2d2d4d... (implicit) | mostly self-funded | its non-plumbing inflow is a 4.6 NEAR deposit from its creator web3wagmi.near |
+| intents.near | mostly outside or unlabelled | large flows arrive through bridges (omft.near, omni.bridge.near); the rest come from senders with no traced link |
+| relay.aurora | unknown | its only real inflow comes from `aurora`, which is both its creator and a bridge; bridge plumbing wins, so the chain can't tell |
+
+## Limits
+
+- Only recent inflows are sampled.
+- Label lists are hand-made and incomplete.
+- "No link found" does not mean independent.
+- Account names suggest relationships. They do not prove them.
+</pre></main><p style="text-align:center"><a href="track06.html">Track 06 write-up</a></p></body></html>
