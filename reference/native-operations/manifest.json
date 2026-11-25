@@ -187,5 +187,8 @@
   },
   "referenceSubset": true,
   "deployed": "dpl_GeWmS4SLsAjohhtr64H1GCsUPbTe",
-  "referenceEdition": "portable-source"
+  "referenceEdition": "portable-source",
+  "historicalSourceDigests": {
+    "src/twitter-policy.ts": "19575d87da707958f5be321c9e706f330549044581c2c70f5e90bbde1c8e3b1c"
+  }
 }

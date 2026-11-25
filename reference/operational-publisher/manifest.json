@@ -173,5 +173,8 @@
     "src/security/wallet-boundary.mjs": "ead4fc71a40d9fcaf8c782f3f4f5aad113b641c9b72574e3c0df1a757aefefe6"
   },
   "referenceSubset": true,
-  "referenceEdition": "portable-source"
+  "referenceEdition": "portable-source",
+  "historicalSourceDigests": {
+    "src/configuration/validation.js": "a7aeb3e6052ba4aa19039583f3863bd02656710c58584043b97b066ecca58610"
+  }
 }
