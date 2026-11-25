@@ -37,7 +37,7 @@ The [legacy Inbox reference](reference-intake.json) is different: its original c
 
 ## Source and validation
 
-The released runtime is pinned to [db3c4f22f67c4a6baab8c14657afb4c95a1f3d98](https://github.com/contractclaus/claus-network/commit/db3c4f22f67c4a6baab8c14657afb4c95a1f3d98). The [scope assessment](reference-release-assessment.json) identifies the independent report, exact source, reused core review and accepted limitations.
+See [the portable source for the released runtime](https://github.com/contractclaus/claus-network/commit/541a84ac9c1daee1cdd7eb504bdedd9dd0c2c868). The [scope assessment](reference-release-assessment.json) identifies the independent report, exact source, reused core review and accepted limitations.
 
 The preceding 0.12.5 release gate passed 423 checks, with 10 optional environment-dependent skips and no failures. The 0.12.8 fair queue correction passed its focused checks. The final 0.12.9 verification correction passed 51 focused checks, with one optional external-PostgreSQL case skipped. Unchanged evidence is reused rather than rerun. Focused recovery checks and real local Ethereum/Sepolia flows supplement that gate; the live references above establish the actual released paths. The 0.12.5 Sepolia integration covers both unchanged-version cancellation and superseded approval. Its chain-1 integration covers supersession; the earlier 0.12.4 chain-1 cancellation check is reused because that branch is unchanged. The combined chain-1 fixture retains the production decision cap. These checks do not claim universal correctness or unlimited capacity.
 
